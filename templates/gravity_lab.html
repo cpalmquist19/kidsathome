@@ -1,0 +1,3233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Lab - Kids at Home</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
+    <link rel="stylesheet" href="{{ static_file('css/gravity_lab.css') }}">
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cosmic-purple': '#7C3AED',
+                        'space-blue': '#2563EB',
+                        'star-gold': '#D97706',
+                        'nebula-pink': '#BE185D',
+                        'galaxy-indigo': '#4F46E5'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen" style="background-image: url('{{ static_file('images/ChatGPT-Gravity-Lab-Mars.png') }}'); background-size: cover; background-position: center; background-attachment: fixed;">
+    <!-- Navigation -->
+    <nav class="relative bg-gradient-to-b from-blue-900/95 to-blue-800/95 backdrop-blur-sm sticky top-0 z-50">
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo Section -->
+                <a href="/" class="group flex items-center space-x-3 hover:scale-105 transition-transform duration-300">
+                    <div class="relative">
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <span class="text-2xl font-bold text-white group-hover:text-gray-200 transition-colors duration-300">
+                        Kids at Home
+                    </span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="/" class="group flex items-center space-x-2 text-gray-300 hover:text-blue-400 transition-colors duration-300 relative">
+                        <i class="fas fa-home text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Home</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/system_generator" class="group flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-colors duration-300 relative">
+                        <i class="fas fa-star text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Space Explorer</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="min-h-screen flex items-center justify-center px-4 py-12">
+        <!-- Background Stars -->
+        <div class="absolute inset-0 opacity-60">
+            <div class="absolute top-1/5 left-1/5 w-1 h-1 bg-white rounded-full"></div>
+            <div class="absolute top-1/3 right-1/4 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute bottom-1/3 left-1/6 w-1.5 h-1.5 bg-purple-300 rounded-full"></div>
+            <div class="absolute bottom-1/5 right-1/5 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-1/2 left-1/8 w-1 h-1 bg-white rounded-full"></div>
+            <div class="absolute top-2/3 right-1/8 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute top-1/6 left-1/3 w-1 h-1 bg-purple-300 rounded-full"></div>
+            <div class="absolute bottom-1/4 left-1/2 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-3/4 right-1/3 w-1.5 h-1.5 bg-white rounded-full"></div>
+            <div class="absolute bottom-1/6 right-1/2 w-1 h-1 bg-blue-300 rounded-full"></div>
+        </div>
+        
+        <!-- Main Lab Card -->
+        <div class="relative z-10 max-w-7xl mx-auto w-full px-4">
+            <div class="group relative mb-8">
+                <div class="absolute -inset-1 bg-gradient-to-r from-cyan-600/30 via-blue-600/30 to-indigo-600/30 rounded-xl blur-sm group-hover:blur-md transition-all duration-500"></div>
+                <div class="relative bg-gray-900/80 backdrop-blur-sm rounded-xl p-8 border border-gray-700/50">
+                    <!-- Header -->
+                    <div class="text-center mb-8">
+                        <div class="flex justify-center mb-4">
+                            <i class="fas fa-flask text-6xl text-cyan-400 animate-pulse-slow"></i>
+                        </div>
+                        <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                            Gravity Lab
+                        </h1>
+                        <p class="text-xl text-gray-300 mb-6">
+                            Discover how gravity affects your weight across the universe!
+                        </p>
+                    </div>
+                    
+                    <!-- Lab Content -->
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        <!-- Left Sidebar - 40% width on large screens, full width on mobile -->
+                        <div class="w-full lg:w-2/5 space-y-6">
+                        <!-- Space Objects Panel -->
+                        <div class="bg-gray-800/50 rounded-lg p-6 border border-gray-600/50 h-[500px] overflow-hidden">
+                            <h2 class="text-xl font-bold text-white mb-6 flex items-center justify-between cursor-pointer" onclick="toggleSection('space-objects-panel')">
+                                <div class="flex items-center">
+                                    <i class="fas fa-rocket text-purple-400 mr-3"></i>
+                                    Space Objects
+                                </div>
+                                <i id="space-objects-panel-icon" class="fas fa-chevron-down text-gray-400 collapsible-icon"></i>
+                            </h2>
+                            
+                            <div id="space-objects-panel-content" class="collapsible-content overflow-y-auto h-[400px] scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-700 space-objects-scrollable">
+                                <!-- Search Bar -->
+                                <div class="mb-4">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               id="object-search" 
+                                               placeholder="Search objects..." 
+                                               class="w-full px-4 py-2 pl-10 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                    </div>
+                                </div>
+                                
+                                <!-- Category Filter Buttons -->
+                                <div class="mb-6">
+                                    <div class="flex flex-wrap gap-2 justify-center">
+                                        <button onclick="filterObjects('all')" class="category-filter active" data-category="all">
+                                            <i class="fas fa-globe mr-2"></i>All
+                                        </button>
+                                        <button onclick="filterObjects('extreme')" class="category-filter" data-category="extreme">
+                                            <i class="fas fa-bolt mr-2"></i>Extreme
+                                        </button>
+                                        <button onclick="filterObjects('comet')" class="category-filter" data-category="comet">
+                                            <i class="fas fa-comet mr-2"></i>Comets
+                                        </button>
+                                        <button onclick="filterObjects('star')" class="category-filter" data-category="star">
+                                            <i class="fas fa-sun mr-2"></i>Stars
+                                        </button>
+                                        <button onclick="filterObjects('planet')" class="category-filter" data-category="planet">
+                                            <i class="fas fa-globe-americas mr-2"></i>Planets
+                                        </button>
+                                        <button onclick="filterObjects('exoplanet')" class="category-filter" data-category="exoplanet">
+                                            <i class="fas fa-rocket mr-2"></i>Exoplanets
+                                        </button>
+                                        <button onclick="filterObjects('moon')" class="category-filter" data-category="moon">
+                                            <i class="fas fa-moon mr-2"></i>Moons
+                                        </button>
+                                        <button onclick="filterObjects('dwarf planet')" class="category-filter" data-category="dwarf planet">
+                                            <i class="fas fa-asterisk mr-2"></i>Dwarf Planets
+                                        </button>
+                                        <button onclick="filterObjects('large object')" class="category-filter" data-category="large object">
+                                            <i class="fas fa-home mr-2"></i>Large Objects
+                                        </button>
+                                        <button onclick="filterObjects('small object')" class="category-filter" data-category="small object">
+                                            <i class="fas fa-circle mr-2"></i>Small Objects
+                                        </button>
+                                        <button onclick="filterObjects('custom')" class="category-filter" data-category="custom">
+                                            <i class="fas fa-cog mr-2"></i>Custom
+                                        </button>
+                                        <button onclick="filterObjects('dso')" class="category-filter" data-category="dso">
+                                            <i class="fas fa-star-of-life mr-2"></i>DSO
+                                        </button>
+                                        <button onclick="filterObjects('fictional')" class="category-filter" data-category="fictional">
+                                            <i class="fas fa-magic mr-2"></i>Fictional
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Small Objects Note -->
+                                <div id="small-objects-note" class="hidden mb-4 p-3 bg-amber-900/30 border border-amber-600/50 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-info-circle text-amber-400 mr-2"></i>
+                                        <p class="text-amber-200 text-sm font-medium">Results Are Estimated for Small Objects</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- DSO Objects Note -->
+                                <div id="dso-objects-note" class="hidden mb-4 p-3 bg-purple-900/30 border border-purple-600/50 rounded-lg">
+                                    <div class="flex items-start">
+                                        <i class="fas fa-info-circle text-purple-400 mr-2 mt-0.5"></i>
+                                        <div>
+                                            <p class="text-purple-200 text-sm font-medium mb-1">Deep Space Objects (DSO) Note:</p>
+                                            <p class="text-purple-300 text-xs">These objects are so massive and spread out that gravity becomes extremely weak at their "surface." The tiny weights you see reflect the enormous distances from their centers of mass. This is why galaxies don't collapse under their own gravity!</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Object Grid -->
+                                <div id="objects-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-2 p-1">
+                                    <!-- Objects will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Input Panel -->
+                        <div class="bg-gray-800/50 rounded-lg p-6 border border-gray-600/50">
+                            <h2 class="text-xl font-bold text-white mb-6 flex items-center justify-between cursor-pointer" onclick="toggleSection('input-panel')">
+                                <div class="flex items-center">
+                                    <i class="fas fa-user-edit text-cyan-400 mr-3"></i>
+                                    Enter Your Details
+                                </div>
+                                <i id="input-panel-icon" class="fas fa-chevron-down text-gray-400 collapsible-icon"></i>
+                            </h2>
+                            
+                            <div id="input-panel-content" class="space-y-6 collapsible-content">
+                                <div>
+                                    <label class="block text-gray-300 text-sm font-medium mb-3">
+                                        <i class="fas fa-weight text-blue-400 mr-2"></i>
+                                        Weight: <span id="weight-value" class="text-cyan-400 font-bold">70 lbs</span>
+                                    </label>
+                                    <input type="range" 
+                                           id="weight-slider"
+                                           class="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                                           min="1" max="500" value="70"
+                                           oninput="updateWeight(this.value)">
+                                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                        <span>1 lb</span>
+                                        <span>500 lbs</span>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-gray-300 text-sm font-medium mb-3">
+                                        <i class="fas fa-ruler text-green-400 mr-2"></i>
+                                        Height: <span id="height-value" class="text-cyan-400 font-bold">4'6"</span>
+                                    </label>
+                                    <input type="range" 
+                                           id="height-slider"
+                                           class="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                                           min="12" max="96" value="54"
+                                           oninput="updateHeight(this.value)">
+                                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                        <span>1'0"</span>
+                                        <span>8'0"</span>
+                                    </div>
+                                </div>
+                                
+                                <button onclick="calculateWeights()" class="w-full mt-6 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-cyan-500/25 transform hover:scale-105">
+                                    <i class="fas fa-flask mr-2"></i>
+                                    Calculate Weights
+                                </button>
+                                
+                                <!-- Your Weight Across Worlds Section -->
+                                <div class="mt-8 pt-6 border-t border-gray-600/50">
+                                    <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                                        <i class="fas fa-globe text-indigo-400 mr-3"></i>
+                                        Your Weight Across Worlds
+                                    </h3>
+                                    
+                                    <!-- Human Figure Display -->
+                                    <div class="flex flex-col items-center mb-6">
+                                        <div class="mb-4">
+                                            <h4 class="text-md font-semibold text-white mb-2">Your Figure</h4>
+                                            <div class="bg-gray-700/50 rounded-lg p-3 border border-gray-600/50 flex justify-center">
+                                                <div id="human-figure" class="relative">
+                                                    <!-- Head -->
+                                                    <div id="head" class="absolute bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full border-2 border-blue-400"></div>
+                                                    
+                                                    <!-- Torso -->
+                                                    <div id="torso" class="absolute bg-gradient-to-b from-cyan-400 to-blue-500 rounded-lg border-2 border-blue-400"></div>
+                                                    
+                                                    <!-- Arms -->
+                                                    <div id="left-arm" class="absolute bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full border-2 border-blue-400"></div>
+                                                    <div id="right-arm" class="absolute bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full border-2 border-blue-400"></div>
+                                                    
+                                                    <!-- Legs -->
+                                                    <div id="left-leg" class="absolute bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full border-2 border-blue-400"></div>
+                                                    <div id="right-leg" class="absolute bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full border-2 border-blue-400"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Figure Stats -->
+                                        <div class="text-center text-sm text-gray-300">
+                                            <p>Height: <span id="figure-height" class="text-cyan-400 font-bold">4'6"</span></p>
+                                            <p>Weight: <span id="figure-weight" class="text-cyan-400 font-bold">70 lbs</span></p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-center text-gray-400 py-4">
+                                        <i class="fas fa-rocket text-2xl mb-3 text-cyan-400 opacity-70"></i>
+                                        <p class="text-sm font-medium mb-1">Select a celestial body</p>
+                                        <p class="text-xs opacity-75">from the 'Space Objects' list to see your weight there</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        
+                        <!-- Custom Object Panel -->
+                        <div class="bg-gray-800/50 rounded-lg p-6 border border-gray-600/50">
+                            <h2 class="text-xl font-bold text-white mb-6 flex items-center justify-between cursor-pointer" onclick="toggleSection('custom-object-panel')">
+                                <div class="flex items-center">
+                                    <i class="fas fa-cog text-orange-400 mr-3"></i>
+                                    Custom Object
+                                </div>
+                                <i id="custom-object-panel-icon" class="fas fa-chevron-down text-gray-400 collapsible-icon"></i>
+                            </h2>
+                            
+                            <div id="custom-object-panel-content" class="collapsible-content">
+                                <div class="grid md:grid-cols-1 gap-6">
+                                    <!-- Object Name -->
+                                    <div>
+                                        <label class="block text-gray-300 text-sm font-medium mb-3">
+                                            <i class="fas fa-tag text-orange-400 mr-2"></i>
+                                            Object Name: <span id="custom-name-value" class="text-orange-400 font-bold">My Custom Object</span>
+                                        </label>
+                                        <input type="text" 
+                                               id="custom-name-input"
+                                               class="w-full px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                               placeholder="Enter object name..."
+                                               value="My Custom Object"
+                                               oninput="updateCustomName(this.value)">
+                                    </div>
+                                    
+                                    <!-- Mass Slider -->
+                                    <div>
+                                        <label class="block text-gray-300 text-sm font-medium mb-3">
+                                            <i class="fas fa-weight text-green-400 mr-2"></i>
+                                            Mass: <span id="custom-mass-value" class="text-orange-400 font-bold">1.0×10²⁴ kg</span>
+                                        </label>
+                                        <input type="range" 
+                                               id="custom-mass-slider"
+                                               class="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                                               min="-30" max="35" value="24"
+                                               oninput="updateCustomMass(this.value)">
+                                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                            <span>1×10⁻³⁰ kg</span>
+                                            <span>1×10³⁵ kg</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Radius Slider -->
+                                    <div>
+                                        <label class="block text-gray-300 text-sm font-medium mb-3">
+                                            <i class="fas fa-ruler text-blue-400 mr-2"></i>
+                                            Radius: <span id="custom-radius-value" class="text-orange-400 font-bold">1.0×10⁶ m</span>
+                                        </label>
+                                        <input type="range" 
+                                               id="custom-radius-slider"
+                                               class="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                                               min="-6" max="12" value="6"
+                                               oninput="updateCustomRadius(this.value)">
+                                        <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                            <span>1×10⁻⁶ m</span>
+                                            <span>1×10¹² m</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Calculate Button and Info -->
+                                <div class="mt-6 flex flex-col gap-4 items-center">
+                                    <button onclick="calculateCustomObject()" class="w-full px-8 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-orange-500/25 transform hover:scale-105">
+                                        <i class="fas fa-calculator mr-2"></i>
+                                        Calculate Weight
+                                    </button>
+                                    
+                                    <!-- Custom Object Info -->
+                                    <div id="custom-object-info" class="hidden w-full p-3 bg-orange-900/30 border border-orange-600/50 rounded-lg">
+                                        <div class="flex flex-col items-center">
+                                            <div class="flex items-center mb-3">
+                                                <div class="text-2xl mr-3">🔧</div>
+                                                <div>
+                                                    <h3 class="text-lg font-bold text-white" id="custom-object-name">Custom Object</h3>
+                                                    <p class="text-xs text-gray-400" id="custom-object-type">Custom Object</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="grid grid-cols-2 gap-4 text-sm w-full">
+                                                <div class="text-center">
+                                                    <div class="text-gray-300 text-xs">Surface Gravity</div>
+                                                    <div class="text-orange-400 font-bold" id="custom-gravity">0.00 m/s²</div>
+                                                </div>
+                                                <div class="text-center">
+                                                    <div class="text-gray-300 text-xs">vs Earth</div>
+                                                    <div class="text-purple-400 font-bold" id="custom-gravity-ratio">0.00×</div>
+                                                </div>
+                                                <div class="text-center">
+                                                    <div class="text-gray-300 text-xs">Mass</div>
+                                                    <div class="text-orange-400 font-bold text-xs" id="custom-mass-display">0 kg</div>
+                                                </div>
+                                                <div class="text-center">
+                                                    <div class="text-gray-300 text-xs">Radius</div>
+                                                    <div class="text-green-400 font-bold text-xs" id="custom-radius-display">0 m</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-center mt-2">
+                                                <div class="text-gray-300 text-xs">Density</div>
+                                                <div class="text-cyan-400 font-bold text-xs" id="custom-density-display">0 kg/m³</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                        
+                        <!-- Main Content Area - 60% width on large screens, full width on mobile -->
+                        <div class="w-full lg:w-3/5">
+                            <!-- This area is reserved for future content -->
+                            <div class="bg-gray-800/30 rounded-lg p-8 border border-gray-600/30 h-full flex items-start justify-center">
+                                <div class="text-center text-gray-400">
+                                    <i class="fas fa-rocket text-4xl mb-4 text-cyan-400 opacity-50"></i>
+                                    <p class="text-lg font-medium mb-2">Ready for Results</p>
+                                    <p class="text-sm opacity-75">Select a celestial body to see your weight calculations here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Animations and Slider Styles -->
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes wiggle {
+            0%, 7% { transform: rotateZ(0); }
+            15% { transform: rotateZ(-15deg); }
+            20% { transform: rotateZ(10deg); }
+            25% { transform: rotateZ(-10deg); }
+            30% { transform: rotateZ(6deg); }
+            35% { transform: rotateZ(-4deg); }
+            40%, 100% { transform: rotateZ(0); }
+        }
+        
+        /* Custom Slider Styles */
+        .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        
+        .slider::-webkit-slider-track {
+            background: #374151;
+            height: 12px;
+            border-radius: 6px;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(45deg, #06b6d4, #3b82f6);
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+            transition: all 0.2s ease;
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 6px 16px rgba(6, 182, 212, 0.6);
+        }
+        
+        .slider::-moz-range-track {
+            background: #374151;
+            height: 12px;
+            border-radius: 6px;
+            border: none;
+        }
+        
+        .slider::-moz-range-thumb {
+            background: linear-gradient(45deg, #06b6d4, #3b82f6);
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+            transition: all 0.2s ease;
+        }
+        
+        .slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 6px 16px rgba(6, 182, 212, 0.6);
+        }
+        
+        /* Human Figure CSS Silhouette */
+        #human-figure {
+            width: 100px;
+            height: 180px;
+            position: relative;
+            transition: all 0.3s ease;
+            margin: 0 auto;
+            overflow: visible;
+        }
+        
+        #head {
+            width: 20px;
+            height: 20px;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        #torso {
+            width: 32px;
+            height: 50px;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        #left-arm {
+            width: 6px;
+            height: 35px;
+            top: 35px;
+            left: 12px;
+            transform: rotate(20deg);
+        }
+        
+        #right-arm {
+            width: 6px;
+            height: 35px;
+            top: 35px;
+            right: 12px;
+            transform: rotate(-20deg);
+        }
+        
+        #left-leg {
+            width: 10px;
+            height: 50px;
+            top: 80px;
+            left: 35px;
+        }
+        
+        #right-leg {
+            width: 10px;
+            height: 50px;
+            top: 80px;
+            right: 35px;
+        }
+        
+        /* Category Filter Buttons */
+        .category-filter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 8px;
+            border: 1px solid rgba(75, 85, 99, 0.5);
+            background-color: rgba(55, 65, 81, 0.5);
+            color: #d1d5db;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            white-space: nowrap;
+            min-width: 100px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .category-filter:hover {
+            background-color: rgba(75, 85, 99, 0.6);
+            border-color: rgba(107, 114, 128, 0.6);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .category-filter.active {
+            background: linear-gradient(135deg, #0891b2, #2563eb);
+            border-color: rgba(6, 182, 212, 0.6);
+            color: white;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .category-filter.active:hover {
+            background: linear-gradient(135deg, #0e7490, #1d4ed8);
+            box-shadow: 0 6px 16px rgba(6, 182, 212, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        /* Object Grid Items */
+        .object-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 8px;
+            border-radius: 8px;
+            border: 2px solid rgba(75, 85, 99, 0.5);
+            background-color: rgba(55, 65, 81, 0.3);
+            color: #d1d5db;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 80px;
+            text-align: center;
+        }
+        
+        .object-card:hover {
+            background-color: rgba(75, 85, 99, 0.5);
+            border-color: rgba(6, 182, 212, 0.5);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(6, 182, 212, 0.25);
+        }
+        
+        .object-card:hover .object-icon {
+            transform: scale(1.1);
+        }
+        
+        .object-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            transition: transform 0.2s ease;
+            display: block;
+        }
+        
+        .object-name {
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.2;
+            margin-bottom: 2px;
+            word-wrap: break-word;
+        }
+        
+        .object-type {
+            font-size: 9px;
+            color: #9ca3af;
+            text-align: center;
+            line-height: 1;
+            text-transform: capitalize;
+        }
+        
+        /* Search Input */
+        #object-search:focus {
+            @apply ring-2 ring-cyan-500 border-transparent;
+        }
+        
+        /* Collapsible sections styles */
+        .collapsible-content {
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            overflow: hidden;
+        }
+        
+        .collapsible-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        /* Custom scrollbar styles */
+        .scrollbar-thin {
+            scrollbar-width: thin;
+        }
+        
+        .scrollbar-thumb-gray-500::-webkit-scrollbar-thumb {
+            background-color: #6b7280;
+            border-radius: 6px;
+        }
+        
+        .scrollbar-track-gray-700::-webkit-scrollbar-track {
+            background-color: #374151;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        /* Force scrollbar to always be visible when content overflows */
+        .space-objects-scrollable {
+            overflow-y: scroll !important;
+        }
+    </style>
+
+    <script>
+        // Collapsible sections functionality
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + '-content');
+            const icon = document.getElementById(sectionId + '-icon');
+            
+            if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                // Collapse
+                content.style.maxHeight = '0px';
+                content.style.opacity = '0';
+                icon.style.transform = 'rotate(0deg)';
+                localStorage.setItem('card-state-' + sectionId, 'closed');
+            } else {
+                // Expand
+                content.style.maxHeight = content.scrollHeight + 'px';
+                content.style.opacity = '1';
+                icon.style.transform = 'rotate(180deg)';
+                localStorage.setItem('card-state-' + sectionId, 'open');
+            }
+        }
+        
+        // Function to set section state
+        function setSectionState(sectionId, isOpen) {
+            const content = document.getElementById(sectionId + '-content');
+            const icon = document.getElementById(sectionId + '-icon');
+            
+            if (isOpen) {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                content.style.opacity = '1';
+                icon.style.transform = 'rotate(180deg)';
+                localStorage.setItem('card-state-' + sectionId, 'open');
+            } else {
+                content.style.maxHeight = '0px';
+                content.style.opacity = '0';
+                icon.style.transform = 'rotate(0deg)';
+                localStorage.setItem('card-state-' + sectionId, 'closed');
+            }
+        }
+        
+        // Initialize sections based on localStorage or default state
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = ['space-objects-panel', 'input-panel', 'custom-object-panel'];
+            
+            sections.forEach(sectionId => {
+                const content = document.getElementById(sectionId + '-content');
+                if (content) {
+                    // Check localStorage for saved state
+                    const savedState = localStorage.getItem('card-state-' + sectionId);
+                    
+                    // Default states: all closed except space-objects-panel
+                    let shouldBeOpen = false;
+                    
+                    if (savedState) {
+                        // Use saved state
+                        shouldBeOpen = savedState === 'open';
+                    } else {
+                        // Use default state (only space-objects-panel open)
+                        shouldBeOpen = sectionId === 'space-objects-panel';
+                    }
+                    
+                    // Set the state
+                    setSectionState(sectionId, shouldBeOpen);
+                    
+                    // Special handling for space objects to ensure scrollbar visibility
+                    if (sectionId === 'space-objects-panel' && shouldBeOpen) {
+                        content.style.overflowY = 'scroll';
+                    }
+                }
+            });
+        });
+        
+        // Slider interaction functions
+        function updateWeight(value) {
+            document.getElementById('weight-value').textContent = value + ' lbs';
+            document.getElementById('figure-weight').textContent = value + ' lbs';
+            updateFigure();
+        }
+        
+        function updateHeight(value) {
+            const feet = Math.floor(value / 12);
+            const inches = value % 12;
+            const heightText = feet + "'" + inches + '"';
+            document.getElementById('height-value').textContent = heightText;
+            document.getElementById('figure-height').textContent = heightText;
+            updateFigure();
+        }
+        
+        function updateFigure() {
+            const weight = parseInt(document.getElementById('weight-slider').value);
+            const height = parseInt(document.getElementById('height-slider').value);
+            
+            // Calculate scaling factors
+            const heightScale = height / 54; // Base height is 54 inches (4'6")
+            
+            // Normalized weight scaling - scale across the full slider range (1-500 lbs)
+            const minWeight = 1;
+            const maxWeight = 500;
+            const weightRange = maxWeight - minWeight;
+            
+            // Calculate normalized position in the weight range (0 to 1)
+            const normalizedWeight = (weight - minWeight) / weightRange;
+            
+            // Scale from 0.5x to 2.0x based on normalized position
+            const widthScale = 0.5 + (normalizedWeight * 1.5);
+            
+            // Update torso width based on weight
+            const torso = document.getElementById('torso');
+            const baseTorsoWidth = 32;
+            const newTorsoWidth = baseTorsoWidth * widthScale;
+            torso.style.width = newTorsoWidth + 'px';
+            torso.style.left = '50%';
+            torso.style.transform = 'translateX(-50%)';
+            
+            // Update arm width based on weight
+            const leftArm = document.getElementById('left-arm');
+            const rightArm = document.getElementById('right-arm');
+            const baseArmWidth = 6;
+            const newArmWidth = baseArmWidth * widthScale;
+            leftArm.style.width = newArmWidth + 'px';
+            rightArm.style.width = newArmWidth + 'px';
+            
+            // Update arm positions to match torso width
+            const armOffset = (newTorsoWidth / 2) + 8;
+            leftArm.style.left = (50 - armOffset) + 'px';
+            rightArm.style.right = (50 - armOffset) + 'px';
+            
+            // Update leg width based on weight
+            const leftLeg = document.getElementById('left-leg');
+            const rightLeg = document.getElementById('right-leg');
+            const baseLegWidth = 10;
+            const newLegWidth = baseLegWidth * widthScale;
+            leftLeg.style.width = newLegWidth + 'px';
+            rightLeg.style.width = newLegWidth + 'px';
+            
+            // Update leg positions - bring them closer together
+            const legOffset = 12;
+            leftLeg.style.left = (50 - legOffset) + 'px';
+            rightLeg.style.right = (50 - legOffset) + 'px';
+            
+            // Apply height scaling to the entire figure
+            const figure = document.getElementById('human-figure');
+            figure.style.transform = `scaleY(${heightScale})`;
+        }
+        
+        function calculateWeights() {
+            const weight = document.getElementById('weight-slider').value;
+            const height = document.getElementById('height-slider').value;
+            const feet = Math.floor(height / 12);
+            const inches = height % 12;
+            
+            // For now, show a placeholder message with the current values
+            alert(`Gravity Lab is coming soon!\n\nYour current settings:\nWeight: ${weight} lbs\nHeight: ${feet}'${inches}"\n\nGravity calculations will be ready shortly!`);
+        }
+        
+        // Celestial object data structure using mass and radius for calculations
+        // Values updated to match latest NASA data for maximum accuracy
+        const celestialData = {
+            'cxo_j164710': { 
+                name: 'CXO J164710.2-455216', 
+                mass: 2.785e30, // kg (1.4 solar masses - magnetar in Westerlund 1)
+                radius: 10000, // m (10 km - typical neutron star radius)
+                icon: '🧲',
+                type: 'extreme'
+            },
+            'crab_pulsar': { 
+                name: 'Crab Pulsar (PSR B0531+21)', 
+                mass: 2.785e30, // kg (1.4 solar masses - neutron star from SN 1054)
+                radius: 10000, // m (10 km - typical neutron star radius)
+                icon: '🦀',
+                type: 'extreme'
+            },
+            'sagittarius_a': { 
+                name: 'Sagittarius A*', 
+                mass: 8.57e36, // kg (4.3 million solar masses - Milky Way center black hole)
+                radius: 1.29e10, // m (12.9 million km - Schwarzschild radius: 4.3M × 3km)
+                icon: '⚫',
+                type: 'extreme'
+            },
+            'ton_618': { 
+                name: 'TON 618', 
+                mass: 1.31e41, // kg (66 billion solar masses - hyperluminous quasar)
+                radius: 1.98e11, // m (198 billion km - Schwarzschild radius: 66B × 3km)
+                icon: '⚫',
+                type: 'extreme'
+            },
+            'phoenix_a': { 
+                name: 'Phoenix A*', 
+                mass: 1.99e41, // kg (100 billion solar masses - largest known black hole)
+                radius: 3e11, // m (300 billion km - Schwarzschild radius: 100B × 3km)
+                icon: '⚫',
+                type: 'extreme'
+            },
+            'sun': { 
+                name: 'Sun', 
+                mass: 1.989e30, // kg (mass of Sun)
+                radius: 6.96e8, // m (radius of Sun)
+                icon: '☀️',
+                type: 'star'
+            },
+            'sirius_a': { 
+                name: 'Sirius A', 
+                mass: 3.978e30, // kg (2 solar masses - bright main sequence star)
+                radius: 1.19e9, // m (1.19 million km radius)
+                icon: '⭐',
+                type: 'star'
+            },
+            'sirius_b': { 
+                name: 'Sirius B', 
+                mass: 1.989e30, // kg (1 solar mass - white dwarf)
+                radius: 5.84e6, // m (5,840 km - incredibly dense white dwarf)
+                icon: '⚪',
+                type: 'extreme'
+            },
+            'betelgeuse': { 
+                name: 'Betelgeuse', 
+                mass: 1.989e31, // kg (10 solar masses - red supergiant)
+                radius: 6.17e11, // m (617 million km radius - 887× Sun's radius)
+                icon: '🔴',
+                type: 'star'
+            },
+            'stephenson_218': { 
+                name: 'Stephenson 2-18', 
+                mass: 3.978e31, // kg (20 solar masses - red hypergiant)
+                radius: 1.5e12, // m (1.5 billion km radius - largest known star)
+                icon: '🌅',
+                type: 'star'
+            },
+            'r136a1': { 
+                name: 'R136a1', 
+                mass: 3.178e32, // kg (160 solar masses - most massive known star)
+                radius: 2.1e10, // m (21 million km radius - Wolf-Rayet star)
+                icon: '💫',
+                type: 'star'
+            },
+            'achernar': { 
+                name: 'Achernar', 
+                mass: 1.392e31, // kg (7 solar masses - B3V blue-white star)
+                radius: 4.9e9, // m (4.9 million km radius - rapidly rotating oblate star)
+                icon: '💙',
+                type: 'star'
+            },
+            'vega': { 
+                name: 'Vega', 
+                mass: 4.257e30, // kg (2.14 solar masses - A0V blue-white star)
+                radius: 1.64e9, // m (2.36 solar radii - rapid rotator)
+                icon: '⭐',
+                type: 'star'
+            },
+            'spica': { 
+                name: 'Spica', 
+                mass: 2.279e31, // kg (11.43 solar masses - B1III blue giant primary)
+                radius: 5.2e9, // m (7.47 solar radii - close binary system)
+                icon: '💫',
+                type: 'star'
+            },
+            'canopus': { 
+                name: 'Canopus', 
+                mass: 1.693e31, // kg (8.5 solar masses - A9II white supergiant)
+                radius: 4.9e10, // m (71 solar radii - bright giant star)
+                icon: '🌟',
+                type: 'star'
+            },
+            'mercury': { 
+                name: 'Mercury', 
+                mass: 3.3011e23, // kg (updated to latest NASA value)
+                radius: 2.4397e6, // m (updated to latest NASA value)
+                icon: '☿',
+                type: 'planet'
+            },
+            'venus': { 
+                name: 'Venus', 
+                mass: 4.8675e24, // kg (updated to latest NASA value)
+                radius: 6.0518e6, // m (updated to latest NASA value)
+                icon: '♀',
+                type: 'planet'
+            },
+            'earth': { 
+                name: 'Earth', 
+                mass: 5.97237e24, // kg (updated to latest NASA value)
+                radius: 6.371e6, // m
+                icon: '🌍',
+                type: 'planet'
+            },
+            'moon': { 
+                name: 'Moon', 
+                mass: 7.342e22, // kg
+                radius: 1.737e6, // m
+                icon: '🌙',
+                type: 'moon'
+            },
+            'mars': { 
+                name: 'Mars', 
+                mass: 6.4171e23, // kg (updated to latest NASA value)
+                radius: 3.3895e6, // m (updated to latest NASA value)
+                icon: '♂',
+                type: 'planet'
+            },
+            'jupiter': { 
+                name: 'Jupiter', 
+                mass: 1.8982e27, // kg (updated to latest NASA value)
+                radius: 6.9911e7, // m (updated to latest NASA value)
+                icon: '♃',
+                type: 'planet'
+            },
+            'saturn': { 
+                name: 'Saturn', 
+                mass: 5.6834e26, // kg (updated to latest NASA value)
+                radius: 5.8232e7, // m (updated to latest NASA value)
+                icon: '♄',
+                type: 'planet'
+            },
+            'uranus': { 
+                name: 'Uranus', 
+                mass: 8.681e25, // kg
+                radius: 2.5362e7, // m (updated to latest NASA value)
+                icon: '♅',
+                type: 'planet'
+            },
+            'neptune': { 
+                name: 'Neptune', 
+                mass: 1.02413e26, // kg (updated to latest NASA value)
+                radius: 2.4622e7, // m (updated to latest NASA value)
+                icon: '♆',
+                type: 'planet'
+            },
+            'pluto': { 
+                name: 'Pluto', 
+                mass: 1.303e22, // kg (latest NASA value)
+                radius: 1.1883e6, // m (latest NASA value)
+                icon: '♇',
+                type: 'dwarf planet'
+            },
+            'phobos': { 
+                name: 'Phobos', 
+                mass: 1.0659e16, // kg (Mars moon)
+                radius: 1.12e4, // m (Mars moon)
+                icon: '🔴',
+                type: 'moon'
+            },
+            'deimos': { 
+                name: 'Deimos', 
+                mass: 1.4762e15, // kg (Mars moon)
+                radius: 6.2e3, // m (Mars moon)
+                icon: '🔴',
+                type: 'moon'
+            },
+            'ceres': { 
+                name: 'Ceres', 
+                mass: 9.3835e20, // kg (dwarf planet)
+                radius: 4.76e5, // m (dwarf planet)
+                icon: '🪨',
+                type: 'dwarf planet'
+            },
+            'haumea': { 
+                name: 'Haumea', 
+                mass: 4.006e21, // kg (dwarf planet)
+                radius: 7.98e5, // m (dwarf planet)
+                icon: '🥚',
+                type: 'dwarf planet'
+            },
+            'makemake': { 
+                name: 'Makemake', 
+                mass: 3.1e21, // kg (dwarf planet)
+                radius: 7.15e5, // m (dwarf planet)
+                icon: '❄️',
+                type: 'dwarf planet'
+            },
+            'eris': { 
+                name: 'Eris', 
+                mass: 1.6466e22, // kg (dwarf planet)
+                radius: 1.163e6, // m (dwarf planet)
+                icon: '❄️',
+                type: 'dwarf planet'
+            },
+            'gonggong': { 
+                name: 'Gonggong', 
+                mass: 1.75e21, // kg (dwarf planet)
+                radius: 6.15e5, // m (dwarf planet)
+                icon: '🔴',
+                type: 'dwarf planet'
+            },
+            'quaoar': { 
+                name: 'Quaoar', 
+                mass: 1.4e21, // kg (dwarf planet)
+                radius: 5.55e5, // m (dwarf planet)
+                icon: '🪨',
+                type: 'dwarf planet'
+            },
+            'sedna': { 
+                name: 'Sedna', 
+                mass: 8.3e20, // kg (dwarf planet)
+                radius: 4.98e5, // m (dwarf planet)
+                icon: '🔴',
+                type: 'dwarf planet'
+            },
+            'orcus': { 
+                name: 'Orcus', 
+                mass: 6.41e20, // kg (dwarf planet)
+                radius: 4.58e5, // m (dwarf planet)
+                icon: '💀',
+                type: 'dwarf planet'
+            },
+            'salacia': { 
+                name: 'Salacia', 
+                mass: 4.92e20, // kg (dwarf planet)
+                radius: 4.23e5, // m (dwarf planet)
+                icon: '🌊',
+                type: 'dwarf planet'
+            },
+            'marble': { 
+                name: 'Marble', 
+                mass: 0.005, // kg (average marble mass)
+                radius: 0.0075, // m (average marble radius ~1.5cm diameter)
+                icon: '🔵',
+                type: 'small object'
+            },
+            'die': { 
+                name: 'Die', 
+                mass: 0.0041, // kg (standard 16mm die mass)
+                radius: 0.008, // m (16mm die radius ~8mm)
+                icon: '🎲',
+                type: 'small object'
+            },
+            'grain_of_salt': { 
+                name: 'Grain of Salt', 
+                mass: 0.000179, // kg (179 micrograms average)
+                radius: 0.00015, // m (0.3mm grain radius)
+                icon: '🧂',
+                type: 'small object'
+            },
+            'lego_piece': { 
+                name: 'LEGO Piece', 
+                mass: 0.00012, // kg (120 milligrams - 1x1 round brick)
+                radius: 0.0032, // m (6.4mm diameter / 2)
+                icon: '🧱',
+                type: 'small object'
+            },
+            'house': { 
+                name: 'American House', 
+                mass: 100000, // kg (100 tons - average American house)
+                radius: 7.98, // m (approximated from 2000 sq ft house)
+                icon: '🏠',
+                type: 'large object'
+            },
+            'car': { 
+                name: 'Average Car', 
+                mass: 1800, // kg (4000 pounds - average car)
+                radius: 2.5, // m (approximated from typical car dimensions)
+                icon: '🚗',
+                type: 'large object'
+            },
+            'feather': { 
+                name: 'Feather', 
+                mass: 0.000002, // kg (2 mg - small chicken feather)
+                radius: 0.003, // m (3 mm - approximate radius of small feather)
+                icon: '🪶',
+                type: 'small object'
+            },
+            'water_droplet': { 
+                name: 'Water Droplet', 
+                mass: 0.00005, // kg (50 mg - typical raindrop)
+                radius: 0.0023, // m (2.3 mm - calculated from raindrop size)
+                icon: '💧',
+                type: 'small object'
+            },
+            'airpods': { 
+                name: 'AirPods', 
+                mass: 0.004, // kg (4g - single AirPod with case)
+                radius: 0.0085, // m (17mm - approximate radius of AirPod case)
+                icon: '🎧',
+                type: 'small object'
+            },
+            'cheerio': { 
+                name: 'Cheerio', 
+                mass: 0.00014, // kg (0.14g - single cheerio)
+                radius: 0.0063, // m (6.3mm - radius of cheerio)
+                icon: '🍩',
+                type: 'small object'
+            },
+            'sprinkle': { 
+                name: 'Ice Cream Sprinkle', 
+                mass: 0.000002, // kg (2mg - tiny sprinkle)
+                radius: 0.0005, // m (1mm diameter / 2)
+                icon: '✨',
+                type: 'small object'
+            },
+            'ice_cube': { 
+                name: 'Ice Cube', 
+                mass: 0.014, // kg (14g - standard ice cube)
+                radius: 0.006, // m (6mm - standing on the ice cube, half its 12mm radius)
+                icon: '🧊',
+                type: 'small object'
+            },
+            'tree': { 
+                name: 'Tree', 
+                mass: 5000, // kg (5 tons - average mature tree)
+                radius: 8, // m (standing on ground near tree, ~8m from center of mass)
+                icon: '🌳',
+                type: 'large object'
+            },
+            'mouse': { 
+                name: 'Computer Mouse', 
+                mass: 0.1, // kg (100g - average computer mouse)
+                radius: 0.05, // m (standing on the mouse, ~5cm from center)
+                icon: '🖱️',
+                type: 'small object'
+            },
+            'empty_water_bottle': { 
+                name: 'Empty Water Bottle', 
+                mass: 0.025, // kg (25g - empty 18oz plastic bottle)
+                radius: 0.03, // m (standing on bottle, ~3cm from center)
+                icon: '🍼',
+                type: 'small object'
+            },
+            'filled_water_bottle': { 
+                name: 'Filled Water Bottle', 
+                mass: 0.535, // kg (535g - 25g bottle + 510g water)
+                radius: 0.03, // m (standing on bottle, ~3cm from center)
+                icon: '🍶',
+                type: 'small object'
+            },
+            'earths_water': { 
+                name: 'All of Earth\'s Water', 
+                mass: 1.4e21, // kg (1.4×10²¹ kg - total mass of all water on Earth)
+                radius: 700000, // m (700km - radius of sphere containing all Earth's water)
+                icon: '🌊',
+                type: 'large object'
+            },
+            'mount_everest': { 
+                name: 'Mount Everest', 
+                mass: 8.1e13, // kg (81 trillion kg - estimated mass of Everest)
+                radius: 10000, // m (standing on the mountain, ~10km from center)
+                icon: '🏔️',
+                type: 'large object'
+            },
+            'olympus_mons': { 
+                name: 'Olympus Mons', 
+                mass: 2.4e14, // kg (240 trillion kg - estimated mass of Olympus Mons)
+                radius: 15000, // m (standing on the volcano, ~15km from center)
+                icon: '🌋',
+                type: 'large object'
+            },
+            'valles_marineris': { 
+                name: 'Valles Marineris', 
+                mass: 1.5e14, // kg (150 trillion kg - mass of surrounding terrain)
+                radius: 20000, // m (standing in the canyon, ~20km from center)
+                icon: '🏞️',
+                type: 'large object'
+            },
+            'tsunami': { 
+                name: 'Tsunami', 
+                mass: 6.765e12, // kg (6.765 trillion kg - volume from Hunga Tonga eruption)
+                radius: 1150, // m (approximate radius of affected water volume)
+                icon: '🌊',
+                type: 'large object'
+            },
+            'pyramid_of_giza': { 
+                name: 'Pyramid of Giza', 
+                mass: 5.9e9, // kg (5.9 million tons - Great Pyramid of Khufu)
+                radius: 84.2, // m (radius of equivalent sphere with same volume)
+                icon: '🔺',
+                type: 'large object'
+            },
+            'great_wall_of_china': { 
+                name: 'The Great Wall of China', 
+                mass: 2.1e11, // kg (210 million tons - estimated total mass of all sections)
+                radius: 250, // m (standing on the wall, ~250m from center of mass)
+                icon: '🏯',
+                type: 'large object'
+            },
+            'ikeya_seki': { 
+                name: 'Comet Ikeya-Seki (C/1965 S1)', 
+                mass: 1e14, // kg (100 trillion kg - great sungrazer comet)
+                radius: 3000, // m (3 km radius - estimated from brightness)
+                icon: '☄️',
+                type: 'comet'
+            },
+            'bennett': { 
+                name: 'Comet Bennett (C/1969 Y1)', 
+                mass: 5e13, // kg (50 trillion kg - bright comet with long tail)
+                radius: 2000, // m (2 km radius)
+                icon: '☄️',
+                type: 'comet'
+            },
+            'kohoutek': { 
+                name: 'Comet Kohoutek (C/1973 E1)', 
+                mass: 8e13, // kg (80 trillion kg - Oort cloud comet)
+                radius: 2500, // m (2.5 km radius)
+                icon: '☄️',
+                type: 'comet'
+            },
+            'west': { 
+                name: 'Comet West (C/1975 V1)', 
+                mass: 6e13, // kg (60 trillion kg - fragmented comet)
+                radius: 2200, // m (2.2 km radius)
+                icon: '☄️',
+                type: 'comet'
+            },
+            'shoemaker_levy_9': { 
+                name: 'Comet Shoemaker-Levy 9 (D/1993 F2)', 
+                mass: 3e12, // kg (3 trillion kg - fragmented before Jupiter impact)
+                radius: 1000, // m (1 km radius - largest fragment)
+                icon: '☄️',
+                type: 'comet'
+            },
+            'hyakutake': { 
+                name: 'Comet Hyakutake (C/1996 B2)', 
+                mass: 4e13, // kg (40 trillion kg - close approach comet)
+                radius: 1800, // m (1.8 km radius)
+                icon: '☄️',
+                type: 'comet'
+            },
+            'hale_bopp': { 
+                name: 'Comet Hale-Bopp (C/1995 O1)', 
+                mass: 2e15, // kg (2 quadrillion kg - massive long-period comet)
+                radius: 6000, // m (6 km radius - very large comet)
+                icon: '☄️',
+                type: 'comet'
+            },
+            'mcnaught': { 
+                name: 'Comet McNaught (C/2006 P1)', 
+                mass: 1.5e14, // kg (150 trillion kg - second brightest since 1935)
+                radius: 3500, // m (3.5 km radius)
+                icon: '☄️',
+                type: 'comet'
+            },
+            'holmes': { 
+                name: 'Comet Holmes (17P)', 
+                mass: 2e12, // kg (2 trillion kg - periodic comet with outbursts)
+                radius: 800, // m (0.8 km radius)
+                icon: '☄️',
+                type: 'comet'
+            },
+            'lovejoy': { 
+                name: 'Comet Lovejoy (C/2011 W3)', 
+                mass: 1e13, // kg (10 trillion kg - sungrazer that survived)
+                radius: 1500, // m (1.5 km radius)
+                icon: '☄️',
+                type: 'comet'
+            },
+            'halleys_comet': { 
+                name: 'Halley\'s Comet (1P/Halley)', 
+                mass: 2.2e14, // kg (220 trillion kg - most famous periodic comet)
+                radius: 4000, // m (4 km average radius - 15x8x8 km ellipsoid)
+                icon: '☄️',
+                type: 'comet'
+            },
+            // Deep Space Objects (DSO) - Scientifically accurate full object dimensions
+            'pleiades': { 
+                name: 'The Pleiades (M45)', 
+                mass: 8e32, // kg (800 solar masses - young open star cluster)
+                radius: 3.5e17, // m (35 light-years radius - full cluster size)
+                icon: '✨',
+                type: 'dso'
+            },
+            'omega_centauri': { 
+                name: 'Omega Centauri (NGC 5139)', 
+                mass: 4e36, // kg (4 million solar masses - globular cluster)
+                radius: 8.6e17, // m (86 light-years radius - full cluster size)
+                icon: '🔮',
+                type: 'dso'
+            },
+            'jewel_box': { 
+                name: 'The Jewel Box (NGC 4755)', 
+                mass: 1.2e33, // kg (1200 solar masses - open star cluster)
+                radius: 1.5e17, // m (15 light-years radius - full cluster size)
+                icon: '💎',
+                type: 'dso'
+            },
+            'orion_nebula': { 
+                name: 'The Orion Nebula (M42)', 
+                mass: 2e32, // kg (2000 solar masses - stellar nursery)
+                radius: 3e17, // m (30 light-years radius - full nebula size)
+                icon: '🌌',
+                type: 'dso'
+            },
+            'carina_nebula': { 
+                name: 'The Carina Nebula (NGC 3372)', 
+                mass: 9e32, // kg (900,000 solar masses - massive star-forming region)
+                radius: 1.5e18, // m (150 light-years radius - full nebula size)
+                icon: '🌟',
+                type: 'dso'
+            },
+            'crab_nebula': { 
+                name: 'The Crab Nebula (M1)', 
+                mass: 4.5e30, // kg (4.5 solar masses - supernova remnant)
+                radius: 2.8e16, // m (2.8 light-years radius - full nebula size)
+                icon: '🦀',
+                type: 'dso'
+            },
+            'tarantula_nebula': { 
+                name: 'The Tarantula Nebula (30 Doradus)', 
+                mass: 4.5e35, // kg (450,000 solar masses - largest star-forming region in Local Group)
+                radius: 6.5e17, // m (65 light-years radius - full nebula size)
+                icon: '🕷️',
+                type: 'dso'
+            },
+            'whirlpool_galaxy': { 
+                name: 'The Whirlpool Galaxy (M51)', 
+                mass: 1.6e41, // kg (160 billion solar masses - grand design spiral galaxy)
+                radius: 3e20, // m (30,000 light-years radius - full galaxy size)
+                icon: '🌀',
+                type: 'dso'
+            },
+            'pinwheel_galaxy': { 
+                name: 'The Pinwheel Galaxy (M101)', 
+                mass: 1e41, // kg (100 billion solar masses - face-on spiral galaxy)
+                radius: 4.5e20, // m (45,000 light-years radius - full galaxy size)
+                icon: '🎡',
+                type: 'dso'
+            },
+            'andromeda_galaxy': { 
+                name: 'The Andromeda Galaxy (M31)', 
+                mass: 8e41, // kg (800 billion solar masses - nearest major galaxy)
+                radius: 1.1e21, // m (110,000 light-years radius - full galaxy size)
+                icon: '🌌',
+                type: 'dso'
+            },
+            'sloan_great_wall': { 
+                name: 'The Sloan Great Wall', 
+                mass: 2.5e46, // kg (2.5×10¹⁶ solar masses - largest known cosmic structure)
+                radius: 9.5e24, // m (1 billion light-years radius - massive wall of galaxies)
+                icon: '🏗️',
+                type: 'dso'
+            },
+            'hercules_corona_borealis_great_wall': { 
+                name: 'The Hercules-Corona Borealis Great Wall', 
+                mass: 5e46, // kg (5×10¹⁶ solar masses - largest structure in observable universe)
+                radius: 1.5e25, // m (1.6 billion light-years radius - colossal wall of galaxies)
+                icon: '🌉',
+                type: 'dso'
+            },
+            'hd100546': { 
+                name: 'HD 100546 (KR Muscae)', 
+                mass: 4.775e30, // kg (2.4 solar masses - Herbig Ae/Be star, B8-A0 spectral type)
+                radius: 1.67e9, // m (2.4 solar radii - young pre-main sequence star)
+                icon: '💫',
+                type: 'star'
+            },
+            'hd100546b': { 
+                name: 'HD 100546 b', 
+                mass: 5.67e27, // kg (3 Jupiter masses - gas giant protoplanet in formation)
+                radius: 2.14e8, // m (3 Jupiter radii - estimated for forming gas giant)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'hd100546c': { 
+                name: 'HD 100546 c', 
+                mass: 3.78e28, // kg (20 Jupiter masses - massive protoplanet/brown dwarf candidate)
+                radius: 8.56e7, // m (1.2 Jupiter radii - compact massive object)
+                icon: '🔴',
+                type: 'exoplanet'
+            },
+            'hd100546d': { 
+                name: 'HD 100546 d', 
+                mass: 5.88e27, // kg (3.1 Jupiter masses - candidate gas giant exoplanet)
+                radius: 2.14e8, // m (3 Jupiter radii - estimated for gas giant)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'j1407': { 
+                name: 'J1407 (V1400 Centauri)', 
+                mass: 1.989e30, // kg (1 solar mass - young K5IV pre-main sequence star)
+                radius: 6.96e8, // m (1 solar radius - similar to Sun)
+                icon: '⭐',
+                type: 'star'
+            },
+            'j1407b': { 
+                name: 'J1407b (Super Saturn)', 
+                mass: 1.14e28, // kg (6 Jupiter masses - substellar object with massive rings)
+                radius: 8.56e7, // m (1.2 Jupiter radii - estimated radius)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'trappist1': { 
+                name: 'TRAPPIST-1', 
+                mass: 1.77e29, // kg (0.089 solar masses - ultra-cool dwarf star)
+                radius: 8.42e7, // m (0.121 solar radii - very small star)
+                icon: '🔴',
+                type: 'star'
+            },
+            'trappist1b': { 
+                name: 'TRAPPIST-1 b', 
+                mass: 8.21e24, // kg (1.374 Earth masses - rocky exoplanet)
+                radius: 7.15e6, // m (1.121 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'trappist1c': { 
+                name: 'TRAPPIST-1 c', 
+                mass: 6.90e24, // kg (1.156 Earth masses - rocky exoplanet)
+                radius: 6.98e6, // m (1.095 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'trappist1d': { 
+                name: 'TRAPPIST-1 d', 
+                mass: 2.32e24, // kg (0.388 Earth masses - small rocky exoplanet)
+                radius: 5.03e6, // m (0.788 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'trappist1e': { 
+                name: 'TRAPPIST-1 e', 
+                mass: 4.13e24, // kg (0.692 Earth masses - habitable zone exoplanet)
+                radius: 5.87e6, // m (0.920 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'trappist1f': { 
+                name: 'TRAPPIST-1 f', 
+                mass: 6.20e24, // kg (1.039 Earth masses - habitable zone exoplanet)
+                radius: 6.67e6, // m (1.045 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'trappist1g': { 
+                name: 'TRAPPIST-1 g', 
+                mass: 7.88e24, // kg (1.321 Earth masses - habitable zone exoplanet)
+                radius: 7.19e6, // m (1.127 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'trappist1h': { 
+                name: 'TRAPPIST-1 h', 
+                mass: 1.95e24, // kg (0.326 Earth masses - small rocky exoplanet)
+                radius: 4.56e6, // m (0.715 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler186': { 
+                name: 'Kepler-186', 
+                mass: 9.55e29, // kg (0.48 solar masses - red dwarf star)
+                radius: 3.27e8, // m (0.47 solar radii)
+                icon: '🔴',
+                type: 'star'
+            },
+            'kepler186b': { 
+                name: 'Kepler-186 b', 
+                mass: 7.40e24, // kg (1.24 Earth masses - rocky exoplanet)
+                radius: 6.83e6, // m (1.07 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler186c': { 
+                name: 'Kepler-186 c', 
+                mass: 1.25e25, // kg (2.10 Earth masses - super-Earth exoplanet)
+                radius: 7.98e6, // m (1.25 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler186d': { 
+                name: 'Kepler-186 d', 
+                mass: 1.52e25, // kg (2.54 Earth masses - super-Earth exoplanet)
+                radius: 8.94e6, // m (1.40 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler186e': { 
+                name: 'Kepler-186 e', 
+                mass: 1.28e25, // kg (2.15 Earth masses - super-Earth exoplanet)
+                radius: 8.11e6, // m (1.27 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler186f': { 
+                name: 'Kepler-186 f', 
+                mass: 1.02e25, // kg (1.71 Earth masses - first Earth-sized planet in habitable zone)
+                radius: 7.47e6, // m (1.17 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'proxima_centauri': { 
+                name: 'Proxima Centauri', 
+                mass: 2.43e29, // kg (0.122 solar masses - red dwarf star)
+                radius: 1.99e8, // m (0.286 solar radii - closest star to Sun)
+                icon: '🔴',
+                type: 'star'
+            },
+            'proxima_centauri_b': { 
+                name: 'Proxima Centauri b', 
+                mass: 7.17e24, // kg (1.2 Earth masses - closest exoplanet to Earth)
+                radius: 7.15e6, // m (1.12 Earth radii - habitable zone exoplanet)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler452': { 
+                name: 'Kepler-452', 
+                mass: 2.19e30, // kg (1.10 solar masses - G-type star similar to Sun)
+                radius: 7.66e8, // m (1.10 solar radii)
+                icon: '☀️',
+                type: 'star'
+            },
+            'kepler452b': { 
+                name: 'Kepler-452b (Earth 2.0)', 
+                mass: 2.03e25, // kg (3.4 Earth masses - super-Earth in habitable zone)
+                radius: 9.47e6, // m (1.48 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler16a': { 
+                name: 'Kepler-16 A', 
+                mass: 2.29e30, // kg (1.15 solar masses - primary binary star)
+                radius: 7.52e8, // m (1.08 solar radii)
+                icon: '⭐',
+                type: 'star'
+            },
+            'kepler16b': { 
+                name: 'Kepler-16b (Tatooine)', 
+                mass: 1.07e27, // kg (0.333 Jupiter masses - circumbinary exoplanet)
+                radius: 8.02e7, // m (1.15 Jupiter radii)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'gliese667c': { 
+                name: 'Gliese 667 C', 
+                mass: 1.95e29, // kg (0.31 solar masses - red dwarf star)
+                radius: 2.51e8, // m (0.36 solar radii)
+                icon: '🔴',
+                type: 'star'
+            },
+            'gliese667cc': { 
+                name: 'Gliese 667 Cc', 
+                mass: 1.07e25, // kg (3.8 Earth masses - super-Earth in habitable zone)
+                radius: 8.66e6, // m (1.36 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler90': { 
+                name: 'Kepler-90', 
+                mass: 2.09e30, // kg (1.05 solar masses - G-type star with 8 planets)
+                radius: 7.52e8, // m (1.08 solar radii)
+                icon: '☀️',
+                type: 'star'
+            },
+            'kepler90b': { 
+                name: 'Kepler-90 b', 
+                mass: 1.55e25, // kg (2.6 Earth masses - rocky super-Earth)
+                radius: 7.15e6, // m (1.12 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler90c': { 
+                name: 'Kepler-90 c', 
+                mass: 1.61e26, // kg (2.7 Neptune masses - Neptune-sized gas giant)
+                radius: 2.93e7, // m (4.6 Earth radii)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'kepler90i': { 
+                name: 'Kepler-90 i', 
+                mass: 1.07e25, // kg (1.8 Earth masses - rocky super-Earth)
+                radius: 7.98e6, // m (1.25 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler90d': { 
+                name: 'Kepler-90 d', 
+                mass: 1.61e26, // kg (2.7 Neptune masses - Neptune-sized gas giant)
+                radius: 2.93e7, // m (4.6 Earth radii)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'kepler90e': { 
+                name: 'Kepler-90 e', 
+                mass: 1.07e25, // kg (1.8 Earth masses - super-Earth)
+                radius: 7.98e6, // m (1.25 Earth radii)
+                icon: '🌍',
+                type: 'exoplanet'
+            },
+            'kepler90f': { 
+                name: 'Kepler-90 f', 
+                mass: 1.61e26, // kg (2.7 Neptune masses - Neptune-sized gas giant)
+                radius: 2.93e7, // m (4.6 Earth radii)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'kepler90g': { 
+                name: 'Kepler-90 g', 
+                mass: 2.14e27, // kg (1.13 Jupiter masses - Jupiter-sized gas giant)
+                radius: 8.02e7, // m (1.15 Jupiter radii)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'kepler90h': { 
+                name: 'Kepler-90 h', 
+                mass: 1.89e27, // kg (0.998 Jupiter masses - Saturn-sized gas giant in habitable zone)
+                radius: 8.02e7, // m (1.15 Jupiter radii)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            '51pegasi': { 
+                name: '51 Pegasi', 
+                mass: 2.19e30, // kg (1.10 solar masses - G-type star, first exoplanet host)
+                radius: 7.52e8, // m (1.08 solar radii)
+                icon: '⭐',
+                type: 'star'
+            },
+            '51pegasi_b': { 
+                name: '51 Pegasi b (Dimidium)', 
+                mass: 2.14e27, // kg (1.13 Jupiter masses - first discovered exoplanet)
+                radius: 8.02e7, // m (1.15 Jupiter radii - hot Jupiter)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'hd189733': { 
+                name: 'HD 189733', 
+                mass: 1.79e30, // kg (0.90 solar masses - K-type star with blue planet)
+                radius: 6.96e8, // m (1.0 solar radius)
+                icon: '⭐',
+                type: 'star'
+            },
+            'hd189733_b': { 
+                name: 'HD 189733 b', 
+                mass: 2.14e27, // kg (1.13 Jupiter masses - hot Jupiter with blue atmosphere)
+                radius: 8.02e7, // m (1.15 Jupiter radii - beautiful but deadly)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'wasp17': { 
+                name: 'WASP-17', 
+                mass: 2.19e30, // kg (1.10 solar masses - F-type star with retrograde planet)
+                radius: 7.66e8, // m (1.10 solar radii)
+                icon: '⭐',
+                type: 'star'
+            },
+            'wasp17b': { 
+                name: 'WASP-17b (Ditsö̀)', 
+                mass: 9.69e26, // kg (0.512 Jupiter masses - extremely low density planet)
+                radius: 1.39e8, // m (1.991 Jupiter radii - less dense than marshmallow)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'rigel': { 
+                name: 'Rigel', 
+                mass: 3.978e31, // kg (20 solar masses - B8Ia blue supergiant)
+                radius: 7.8e10, // m (112 solar radii - one of the most luminous stars)
+                icon: '💙',
+                type: 'star'
+            },
+            'barnards_star': { 
+                name: 'Barnard\'s Star', 
+                mass: 2.864e29, // kg (0.144 solar masses - M4V red dwarf)
+                radius: 1.36e8, // m (0.196 solar radii - very small and dim)
+                icon: '🔴',
+                type: 'star'
+            },
+            'arcturus': { 
+                name: 'Arcturus', 
+                mass: 1.392e30, // kg (0.7 solar masses - K1.5III orange giant)
+                radius: 1.11e10, // m (16 solar radii - evolved giant star)
+                icon: '🧡',
+                type: 'star'
+            },
+            'polaris': { 
+                name: 'Polaris', 
+                mass: 1.193e31, // kg (6 solar masses - F7Ib yellow supergiant)
+                radius: 2.37e10, // m (34 solar radii - Cepheid variable)
+                icon: '⭐',
+                type: 'star'
+            },
+            'tau_ceti': { 
+                name: 'Tau Ceti', 
+                mass: 1.589e30, // kg (0.8 solar masses - G8V yellow dwarf)
+                radius: 5.57e8, // m (0.8 solar radii - similar to Sun)
+                icon: '☀️',
+                type: 'star'
+            },
+            'van_maanen': { 
+                name: 'Van Maanen\'s Star', 
+                mass: 1.989e30, // kg (1 solar mass - DZ7 white dwarf)
+                radius: 8.9e6, // m (0.013 solar radii - extremely dense)
+                icon: '⚪',
+                type: 'extreme'
+            },
+            'fomalhaut': { 
+                name: 'Fomalhaut', 
+                mass: 3.178e30, // kg (1.6 solar masses - A3V white star)
+                radius: 1.25e9, // m (1.8 solar radii - young main sequence)
+                icon: '⭐',
+                type: 'star'
+            },
+            'cygnus_x1': { 
+                name: 'Cygnus X-1', 
+                mass: 2.09e31, // kg (10.5 solar masses - stellar black hole)
+                radius: 3.15e4, // m (31.5 km - Schwarzschild radius)
+                icon: '⚫',
+                type: 'extreme'
+            },
+            'cygnus_x1_companion': { 
+                name: 'Cygnus X-1 Companion (HDE 226868)', 
+                mass: 2.985e31, // kg (15 solar masses - O9.7Iab blue supergiant)
+                radius: 1.39e10, // m (20 solar radii - massive blue star)
+                icon: '💙',
+                type: 'star'
+            },
+            'gliese_436': { 
+                name: 'Gliese 436', 
+                mass: 8.99e29, // kg (0.452 solar masses - M2.5V red dwarf)
+                radius: 3.22e8, // m (0.464 solar radii - small red dwarf)
+                icon: '🔴',
+                type: 'star'
+            },
+            'gliese_436_b': { 
+                name: 'Gliese 436 b', 
+                mass: 1.52e26, // kg (25.4 Earth masses - hot Neptune)
+                radius: 2.58e7, // m (4.05 Earth radii - gas giant)
+                icon: '🪐',
+                type: 'exoplanet'
+            },
+            'kepler_70': { 
+                name: 'Kepler 70', 
+                mass: 9.95e29, // kg (0.5 solar masses - subdwarf B star)
+                radius: 1.39e8, // m (0.2 solar radii - hot subdwarf)
+                icon: '⭐',
+                type: 'star'
+            },
+            'kepler_70_b': { 
+                name: 'Kepler 70 b (Unconfirmed)', 
+                mass: 2.63e24, // kg (0.44 Earth masses - rocky planet candidate)
+                radius: 4.84e6, // m (0.759 Earth radii - small rocky world)
+                icon: '🪨',
+                type: 'exoplanet'
+            },
+            'kepler_70_c': { 
+                name: 'Kepler 70 c (Unconfirmed)', 
+                mass: 3.91e24, // kg (0.655 Earth masses - rocky planet candidate)
+                radius: 5.53e6, // m (0.867 Earth radii - rocky world)
+                icon: '🪨',
+                type: 'exoplanet'
+            },
+            'thuban': { 
+                name: 'Thuban (Alpha Draconis)', 
+                mass: 5.57e30, // kg (2.8 solar masses - A0III white giant)
+                radius: 2.37e9, // m (3.4 solar radii - evolved giant star)
+                icon: '⭐',
+                type: 'star'
+            },
+            'aldebaran': { 
+                name: 'Aldebaran (Alpha Tauri)', 
+                mass: 2.31e30, // kg (1.16 solar masses - K5III red giant)
+                radius: 3.14e10, // m (45.1 solar radii - massive red giant)
+                icon: '🧡',
+                type: 'star'
+            },
+            'saiph': { 
+                name: 'Saiph (Kappa Orionis)', 
+                mass: 2.98e31, // kg (15 solar masses - B0.5Ia blue supergiant)
+                radius: 1.53e10, // m (22 solar radii - massive blue star)
+                icon: '💙',
+                type: 'star'
+            },
+            'alnitak': { 
+                name: 'Alnitak (Zeta Orionis)', 
+                mass: 6.56e31, // kg (33 solar masses - O9.5Ib blue supergiant)
+                radius: 1.39e10, // m (20 solar radii - hot blue supergiant)
+                icon: '💙',
+                type: 'star'
+            },
+            'alnilam': { 
+                name: 'Alnilam (Epsilon Orionis)', 
+                mass: 7.96e31, // kg (40 solar masses - B0Ia blue supergiant)
+                radius: 1.95e10, // m (28 solar radii - central star of Orion's Belt)
+                icon: '💙',
+                type: 'star'
+            },
+            'mintaka': { 
+                name: 'Mintaka (Delta Orionis)', 
+                mass: 4.77e31, // kg (24 solar masses - O9.5II blue giant)
+                radius: 1.11e10, // m (16 solar radii - western star of Orion's Belt)
+                icon: '💙',
+                type: 'star'
+            },
+            'bellatrix': { 
+                name: 'Bellatrix (Gamma Orionis)', 
+                mass: 1.67e31, // kg (8.4 solar masses - B2III blue giant)
+                radius: 4.52e9, // m (6.5 solar radii - "Amazon Star")
+                icon: '💙',
+                type: 'star'
+            },
+            'meissa': { 
+                name: 'Meissa (Lambda Orionis)', 
+                mass: 5.57e31, // kg (28 solar masses - O8III blue giant)
+                radius: 6.96e9, // m (10 solar radii - star marking Orion's head)
+                icon: '💙',
+                type: 'star'
+            },
+            'ushakaron': { 
+                name: 'Ushakaron (Xi Tauri)', 
+                mass: 2.98e30, // kg (1.5 solar masses - main sequence star)
+                radius: 8.35e8, // m (1.2 solar radii - slightly larger than Sun)
+                icon: '⭐',
+                type: 'star'
+            },
+            'acrab': { 
+                name: 'Acrab (Beta Scorpii)', 
+                mass: 2.09e31, // kg (10.5 solar masses - B0.5V blue main sequence)
+                radius: 4.38e9, // m (6.3 solar radii - massive blue star)
+                icon: '💙',
+                type: 'star'
+            },
+            'eternal_infinity_beast_egg': { 
+                name: 'Eternal Infinity Beast Egg', 
+                mass: 4.536e26, // kg (1 octillion lbs - mythical cosmic entity)
+                radius: 1000, // m (1 km - compact but incredibly dense)
+                icon: '🥚',
+                type: 'fictional'
+            },
+            'kryptonite_leviathan_egg': { 
+                name: 'Kryptonite Leviathan Egg', 
+                mass: 1.905e25, // kg (42 septillion lbs - alien cosmic entity)
+                radius: 3, // m (3 meters - extremely compact and dense)
+                icon: '🥚',
+                type: 'fictional'
+            },
+            'hyper_star': { 
+                name: 'Hyper Star', 
+                mass: 4.536e32, // kg (1 decillion lbs - ultra-dense stellar remnant)
+                radius: 0.3048, // m (1 foot - incredibly compact)
+                icon: '⭐',
+                type: 'fictional'
+            },
+            'hyper_planet': { 
+                name: 'Hyper Planet', 
+                mass: 4.536e29, // kg (1 nonillion lbs - massive fictional world)
+                radius: 2.36e7, // m (3.7 Earth radii - super-Earth sized)
+                icon: '🪐',
+                type: 'fictional'
+            },
+            'hyper_galaxy': { 
+                name: 'Hyper Galaxy', 
+                mass: 4.536e41, // kg (1 undecillion lbs - galaxy of 1 billion hyper stars)
+                radius: 9.46e22, // m (10 million light years - massive galaxy)
+                icon: '🌌',
+                type: 'fictional'
+            },
+            'hyper_universe': { 
+                name: 'Hyper Universe', 
+                mass: 2.27e55, // kg (5 duodecillion lbs - universe of 50 trillion hyper galaxies)
+                radius: 9.46e26, // m (100 billion light years - entire universe)
+                icon: '🌌',
+                type: 'fictional'
+            },
+            // Jupiter's Galilean Moons
+            'io': { 
+                name: 'Io', 
+                mass: 8.9319e22, // kg (Jupiter's innermost Galilean moon)
+                radius: 1.8216e6, // m (slightly larger than Earth's Moon)
+                icon: '🌋',
+                type: 'moon'
+            },
+            'callisto': { 
+                name: 'Callisto', 
+                mass: 1.0759e23, // kg (Jupiter's outermost Galilean moon)
+                radius: 2.4103e6, // m (third largest moon in solar system)
+                icon: '🌑',
+                type: 'moon'
+            },
+            'ganymede': { 
+                name: 'Ganymede', 
+                mass: 1.4819e23, // kg (largest moon in solar system)
+                radius: 2.6341e6, // m (larger than Mercury)
+                icon: '🌕',
+                type: 'moon'
+            },
+            'europa': { 
+                name: 'Europa', 
+                mass: 4.7998e22, // kg (Jupiter's icy moon)
+                radius: 1.5608e6, // m (slightly smaller than Earth's Moon)
+                icon: '🧊',
+                type: 'moon'
+            },
+            // Neptune's Moons
+            'triton': { 
+                name: 'Triton', 
+                mass: 2.1390e22, // kg (Neptune's largest moon)
+                radius: 1.3534e6, // m (retrograde orbit)
+                icon: '❄️',
+                type: 'moon'
+            },
+            'proteus': { 
+                name: 'Proteus', 
+                mass: 4.4e19, // kg (Neptune's second largest moon)
+                radius: 2.1e5, // m (irregular shape)
+                icon: '🥔',
+                type: 'moon'
+            },
+            // Saturn's Moons
+            'mimas': { 
+                name: 'Mimas', 
+                mass: 3.75e19, // kg (Saturn's moon with Death Star crater)
+                radius: 1.98e5, // m (smallest round moon)
+                icon: '⚫',
+                type: 'moon'
+            },
+            'enceladus': { 
+                name: 'Enceladus', 
+                mass: 1.08e20, // kg (Saturn's icy moon with geysers)
+                radius: 2.52e5, // m (icy surface)
+                icon: '💎',
+                type: 'moon'
+            },
+            'rhea': { 
+                name: 'Rhea', 
+                mass: 2.31e21, // kg (Saturn's second largest moon)
+                radius: 7.64e5, // m (heavily cratered)
+                icon: '🌑',
+                type: 'moon'
+            },
+            'dione': { 
+                name: 'Dione', 
+                mass: 1.095e21, // kg (Saturn's moon with wispy terrain)
+                radius: 5.61e5, // m (icy surface)
+                icon: '💫',
+                type: 'moon'
+            },
+            'tethys': { 
+                name: 'Tethys', 
+                mass: 6.17e20, // kg (Saturn's moon with giant canyon)
+                radius: 5.33e5, // m (icy body)
+                icon: '🌊',
+                type: 'moon'
+            },
+            'titan': { 
+                name: 'Titan', 
+                mass: 1.3452e23, // kg (Saturn's largest moon)
+                radius: 2.5747e6, // m (larger than Mercury, has atmosphere)
+                icon: '🪐',
+                type: 'moon'
+            },
+            'hyperion': { 
+                name: 'Hyperion', 
+                mass: 5.62e18, // kg (Saturn's irregular moon)
+                radius: 1.35e5, // m (sponge-like appearance)
+                icon: '🧽',
+                type: 'moon'
+            },
+            'methone': { 
+                name: 'Methone', 
+                mass: 1.5e13, // kg (Saturn's small moon)
+                radius: 1.45e4, // m (egg-shaped)
+                icon: '🥚',
+                type: 'moon'
+            },
+            'pan': { 
+                name: 'Pan', 
+                mass: 4.95e15, // kg (Saturn's shepherd moon)
+                radius: 1.45e4, // m (walnut-shaped)
+                icon: '🥜',
+                type: 'moon'
+            },
+            // Uranus's Moons
+            'oberon': { 
+                name: 'Oberon', 
+                mass: 3.014e21, // kg (Uranus's outermost major moon)
+                radius: 7.61e5, // m (heavily cratered)
+                icon: '🌑',
+                type: 'moon'
+            },
+            'titania': { 
+                name: 'Titania', 
+                mass: 3.527e21, // kg (Uranus's largest moon)
+                radius: 7.89e5, // m (canyon systems)
+                icon: '🌕',
+                type: 'moon'
+            },
+            'ariel': { 
+                name: 'Ariel', 
+                mass: 1.353e21, // kg (Uranus's brightest moon)
+                radius: 5.79e5, // m (youngest surface)
+                icon: '✨',
+                type: 'moon'
+            },
+            'umbriel': { 
+                name: 'Umbriel', 
+                mass: 1.172e21, // kg (Uranus's darkest moon)
+                radius: 5.85e5, // m (heavily cratered)
+                icon: '🌚',
+                type: 'moon'
+            },
+            // Saturn's Iapetus
+            'iapetus': { 
+                name: 'Iapetus', 
+                mass: 1.805e21, // kg (Saturn's two-toned moon)
+                radius: 7.35e5, // m (walnut ridge)
+                icon: '🌓',
+                type: 'moon'
+            },
+        };
+
+        // Universal gravitational constant
+        const G = 6.674e-11; // m³/(kg·s²)
+
+        // Calculate surface gravity for any object
+        function calculateSurfaceGravity(mass, radius) {
+            // Formula: g = GM/r²
+            return (G * mass) / (radius * radius);
+        }
+
+        // Format weight with appropriate units (moved to global scope)
+        function formatWeight(weight) {
+            if (weight >= 2000000000000000000000000000000000000) { // 2 undecillion lbs or more
+                return (weight / 1000000000000000000000000000000000000).toFixed(1) + ' undecillion lbs';
+            } else if (weight >= 200000000000000000000000000000000000) { // 200 decillion lbs or more
+                return (weight / 1000000000000000000000000000000000).toFixed(1) + ' decillion lbs';
+            } else if (weight >= 2000000000000000000000000000000000) { // 2 decillion lbs or more
+                return (weight / 1000000000000000000000000000000000).toFixed(1) + ' decillion lbs';
+            } else if (weight >= 200000000000000000000000000000000) { // 200 nonillion lbs or more
+                return (weight / 1000000000000000000000000000000).toFixed(1) + ' nonillion lbs';
+            } else if (weight >= 2000000000000000000000000000000) { // 2 nonillion lbs or more
+                return (weight / 1000000000000000000000000000000).toFixed(1) + ' nonillion lbs';
+            } else if (weight >= 200000000000000000000000000000) { // 200 octillion lbs or more
+                return (weight / 1000000000000000000000000000).toFixed(1) + ' octillion lbs';
+            } else if (weight >= 2000000000000000000000000000) { // 2 octillion lbs or more
+                return (weight / 1000000000000000000000000000).toFixed(1) + ' octillion lbs';
+            } else if (weight >= 200000000000000000000000000) { // 200 septillion lbs or more
+                return (weight / 1000000000000000000000000).toFixed(1) + ' septillion lbs';
+            } else if (weight >= 2000000000000000000000000) { // 2 septillion lbs or more
+                return (weight / 1000000000000000000000000).toFixed(1) + ' septillion lbs';
+            } else if (weight >= 200000000000000000000000) { // 200 sextillion lbs or more
+                return (weight / 1000000000000000000000).toFixed(1) + ' sextillion lbs';
+            } else if (weight >= 2000000000000000000000) { // 2 sextillion lbs or more
+                return (weight / 1000000000000000000000).toFixed(1) + ' sextillion lbs';
+            } else if (weight >= 200000000000000000000) { // 200 quintillion lbs or more
+                return (weight / 1000000000000000000).toFixed(1) + ' quintillion lbs';
+            } else if (weight >= 2000000000000000000) { // 2 quintillion lbs or more
+                return (weight / 1000000000000000000).toFixed(1) + ' quintillion lbs';
+            } else if (weight >= 200000000000000000) { // 200 quadrillion lbs or more
+                return (weight / 1000000000000000).toFixed(1) + ' quadrillion lbs';
+            } else if (weight >= 1000000000000000) { // 1 quadrillion lbs or more
+                return (weight / 1000000000000000).toFixed(1) + ' quadrillion lbs';
+            } else if (weight >= 200000000000000) { // 200 trillion lbs or more
+                return (weight / 1000000000000).toFixed(1) + ' trillion lbs';
+            } else if (weight >= 2000000000000) { // 2 trillion lbs or more
+                return (weight / 1000000000000).toFixed(1) + ' trillion lbs';
+            } else if (weight >= 100000000000) { // 100 billion lbs or more
+                return (weight / 1000000000).toFixed(1) + ' billion lbs';
+            } else if (weight >= 1000000000) { // 1 billion lbs or more
+                return (weight / 1000000000).toFixed(1) + ' billion lbs';
+            } else if (weight >= 2000000) { // 2 million lbs or more
+                return (weight / 1000000).toFixed(1) + ' million lbs';
+            } else if (weight >= 2000) { // 2 thousand lbs or more
+                return (weight / 1000).toFixed(1) + ' thousand lbs';
+            } else if (weight >= 1) {
+                return weight.toFixed(1) + ' lbs';
+            } else if (weight >= 0.001) {
+                return (weight * 16).toFixed(2) + ' oz';
+            } else if (weight >= 0.00001) {
+                return (weight * 453.592).toFixed(2) + ' g';
+            } else if (weight >= 0.0000008) {
+                return (weight * 453592).toFixed(2) + ' mg';
+            } else if (weight >= 0.00000000001) {
+                return (weight * 453592000).toFixed(2) + ' μg';
+            } else if (weight >= 0.00000000000001) {
+                return (weight * 453592000000).toFixed(2) + ' ng';
+            } else if (weight >= 0.00000000000000001) {
+                return (weight * 453592000000000).toFixed(2) + ' pg';
+            } else if (weight >= 0.00000000000000000001) {
+                return (weight * 453592000000000000).toFixed(2) + ' fg';
+            } else if (weight >= 0.00000000000000000000001) {
+                return (weight * 453592000000000000000).toFixed(2) + ' ag';
+            } else if (weight >= 0.00000000000000000000000001) {
+                return (weight * 453592000000000000000000).toFixed(2) + ' zg';
+            } else if (weight >= 0.00000000000000000000000000001) {
+                return (weight * 453592000000000000000000000).toFixed(2) + ' yg';
+            } else {
+                return weight.toExponential(2) + ' lbs';
+            }
+        }
+
+        // Format mass with appropriate units
+        function formatMass(mass) {
+            if (mass >= 1e27) {
+                return (mass / 1e27).toFixed(3) + '×10²⁷ kg';
+            } else if (mass >= 1e24) {
+                return (mass / 1e24).toFixed(3) + '×10²⁴ kg';
+            } else if (mass >= 1e21) {
+                return (mass / 1e21).toFixed(3) + '×10²¹ kg';
+            } else if (mass >= 1e18) {
+                return (mass / 1e18).toFixed(3) + '×10¹⁸ kg';
+            } else if (mass >= 1e15) {
+                return (mass / 1e15).toFixed(3) + '×10¹⁵ kg';
+            } else if (mass >= 1e12) {
+                return (mass / 1e12).toFixed(3) + '×10¹² kg';
+            } else if (mass >= 1e9) {
+                return (mass / 1e9).toFixed(3) + '×10⁹ kg';
+            } else if (mass >= 1e6) {
+                return (mass / 1e6).toFixed(3) + '×10⁶ kg';
+            } else if (mass >= 1e3) {
+                return (mass / 1e3).toFixed(3) + '×10³ kg';
+            } else if (mass >= 1) {
+                return mass.toFixed(3) + ' kg';
+            } else if (mass >= 0.001) {
+                return (mass * 1000).toFixed(3) + ' g';
+            } else if (mass >= 0.000001) {
+                return (mass * 1000000).toFixed(3) + ' mg';
+            } else if (mass >= 0.000000001) {
+                return (mass * 1000000000).toFixed(3) + ' μg';
+            } else {
+                return mass.toExponential(3) + ' kg';
+            }
+        }
+
+        // Format radius with appropriate units
+        function formatRadius(radius) {
+            if (radius >= 1e9) {
+                return (radius / 1e9).toFixed(3) + '×10⁹ m';
+            } else if (radius >= 1e6) {
+                return (radius / 1e6).toFixed(3) + '×10⁶ m';
+            } else if (radius >= 1e3) {
+                return (radius / 1e3).toFixed(3) + '×10³ m';
+            } else if (radius >= 1) {
+                return radius.toFixed(3) + ' m';
+            } else if (radius >= 0.01) {
+                return (radius * 100).toFixed(3) + ' cm';
+            } else if (radius >= 0.001) {
+                return (radius * 1000).toFixed(3) + ' mm';
+            } else if (radius >= 0.000001) {
+                return (radius * 1000000).toFixed(3) + ' μm';
+            } else {
+                return radius.toExponential(3) + ' m';
+            }
+        }
+
+        // Format surface gravity with appropriate precision
+        function formatSurfaceGravity(gravity) {
+            if (gravity >= 1) {
+                return gravity.toFixed(2) + ' m/s²';
+            } else if (gravity >= 0.01) {
+                return gravity.toFixed(4) + ' m/s²';
+            } else if (gravity >= 0.001) {
+                return gravity.toFixed(6) + ' m/s²';
+            } else if (gravity >= 0.000001) {
+                return gravity.toFixed(8) + ' m/s²';
+            } else {
+                return gravity.toExponential(3) + ' m/s²';
+            }
+        }
+
+        // Calculate density for any object
+        function calculateDensity(mass, radius) {
+            // Formula: ρ = m/V where V = (4/3)πr³
+            const volume = (4/3) * Math.PI * Math.pow(radius, 3);
+            return mass / volume;
+        }
+
+        // Format density with appropriate units
+        function formatDensity(density) {
+            if (density >= 1e12) {
+                return (density / 1e12).toFixed(3) + '×10¹² kg/m³';
+            } else if (density >= 1e9) {
+                return (density / 1e9).toFixed(3) + '×10⁹ kg/m³';
+            } else if (density >= 1e6) {
+                return (density / 1e6).toFixed(3) + '×10⁶ kg/m³';
+            } else if (density >= 1e3) {
+                return (density / 1e3).toFixed(3) + '×10³ kg/m³';
+            } else if (density >= 1) {
+                return density.toFixed(3) + ' kg/m³';
+            } else if (density >= 0.001) {
+                return (density * 1000).toFixed(3) + ' g/m³';
+            } else if (density >= 0.000001) {
+                return (density * 1000000).toFixed(3) + ' mg/m³';
+            } else if (density >= 0.000000001) {
+                return (density * 1000000000).toFixed(3) + ' μg/m³';
+            } else {
+                return density.toExponential(3) + ' kg/m³';
+            }
+        }
+
+        // Format weight difference with appropriate units (moved to global scope)
+        function formatWeightDifference(weight) {
+            if (weight >= 2000000000000000000000000000000000000) { // 2 undecillion lbs or more
+                return (weight / 1000000000000000000000000000000000000).toFixed(1) + ' undecillion lbs';
+            } else if (weight >= 200000000000000000000000000000000000) { // 200 decillion lbs or more
+                return (weight / 1000000000000000000000000000000000).toFixed(1) + ' decillion lbs';
+            } else if (weight >= 2000000000000000000000000000000000) { // 2 decillion lbs or more
+                return (weight / 1000000000000000000000000000000000).toFixed(1) + ' decillion lbs';
+            } else if (weight >= 200000000000000000000000000000000) { // 200 nonillion lbs or more
+                return (weight / 1000000000000000000000000000000).toFixed(1) + ' nonillion lbs';
+            } else if (weight >= 2000000000000000000000000000000) { // 2 nonillion lbs or more
+                return (weight / 1000000000000000000000000000000).toFixed(1) + ' nonillion lbs';
+            } else if (weight >= 200000000000000000000000000000) { // 200 octillion lbs or more
+                return (weight / 1000000000000000000000000000).toFixed(1) + ' octillion lbs';
+            } else if (weight >= 2000000000000000000000000000) { // 2 octillion lbs or more
+                return (weight / 1000000000000000000000000000).toFixed(1) + ' octillion lbs';
+            } else if (weight >= 200000000000000000000000000) { // 200 septillion lbs or more
+                return (weight / 1000000000000000000000000).toFixed(1) + ' septillion lbs';
+            } else if (weight >= 2000000000000000000000000) { // 2 septillion lbs or more
+                return (weight / 1000000000000000000000000).toFixed(1) + ' septillion lbs';
+            } else if (weight >= 200000000000000000000000) { // 200 sextillion lbs or more
+                return (weight / 1000000000000000000000).toFixed(1) + ' sextillion lbs';
+            } else if (weight >= 2000000000000000000000) { // 2 sextillion lbs or more
+                return (weight / 1000000000000000000000).toFixed(1) + ' sextillion lbs';
+            } else if (weight >= 200000000000000000000) { // 200 quintillion lbs or more
+                return (weight / 1000000000000000000).toFixed(1) + ' quintillion lbs';
+            } else if (weight >= 2000000000000000000) { // 2 quintillion lbs or more
+                return (weight / 1000000000000000000).toFixed(1) + ' quintillion lbs';
+            } else if (weight >= 200000000000000000) { // 200 quadrillion lbs or more
+                return (weight / 1000000000000000).toFixed(1) + ' quadrillion lbs';
+            } else if (weight >= 1000000000000000) { // 1 quadrillion lbs or more
+                return (weight / 1000000000000000).toFixed(1) + ' quadrillion lbs';
+            } else if (weight >= 200000000000000) { // 200 trillion lbs or more
+                return (weight / 1000000000000).toFixed(1) + ' trillion lbs';
+            } else if (weight >= 2000000000000) { // 2 trillion lbs or more
+                return (weight / 1000000000000).toFixed(1) + ' trillion lbs';
+            } else if (weight >= 100000000000) { // 100 billion lbs or more
+                return (weight / 1000000000).toFixed(1) + ' billion lbs';
+            } else if (weight >= 1000000000) { // 1 billion lbs or more
+                return (weight / 1000000000).toFixed(1) + ' billion lbs';
+            } else if (weight >= 2000000) { // 2 million lbs or more
+                return (weight / 1000000).toFixed(1) + ' million lbs';
+            } else if (weight >= 2000) { // 2 thousand lbs or more
+                return (weight / 1000).toFixed(1) + ' thousand lbs';
+            } else if (weight >= 1) {
+                return weight.toFixed(1) + ' lbs';
+            } else if (weight >= 0.001) {
+                return (weight * 16).toFixed(2) + ' oz';
+            } else if (weight >= 0.00001) {
+                return (weight * 453.592).toFixed(2) + ' g';
+            } else if (weight >= 0.0000008) {
+                return (weight * 453592).toFixed(2) + ' mg';
+            } else if (weight >= 0.00000000001) {
+                return (weight * 453592000).toFixed(2) + ' μg';
+            } else if (weight >= 0.00000000000001) {
+                return (weight * 453592000000).toFixed(2) + ' ng';
+            } else if (weight >= 0.00000000000000001) {
+                return (weight * 453592000000000).toFixed(2) + ' pg';
+            } else if (weight >= 0.00000000000000000001) {
+                return (weight * 453592000000000000).toFixed(2) + ' fg';
+            } else if (weight >= 0.00000000000000000000001) {
+                return (weight * 453592000000000000000).toFixed(2) + ' ag';
+            } else if (weight >= 0.00000000000000000000000001) {
+                return (weight * 453592000000000000000000).toFixed(2) + ' zg';
+            } else if (weight >= 0.00000000000000000000000000001) {
+                return (weight * 453592000000000000000000000).toFixed(2) + ' yg';
+            } else {
+                return weight.toExponential(2) + ' lbs';
+            }
+        }
+
+        // Calculate Earth's surface gravity for reference
+        const earthGravity = calculateSurfaceGravity(celestialData.earth.mass, celestialData.earth.radius);
+
+        // Convert any object's gravity to Earth gravity ratio
+        function getGravityRatio(celestialObject) {
+            const objectGravity = calculateSurfaceGravity(celestialObject.mass, celestialObject.radius);
+            return objectGravity / earthGravity;
+        }
+
+        function calculatePlanetWeight(celestialKey) {
+            const earthWeight = parseFloat(document.getElementById('weight-slider').value);
+            const height = parseInt(document.getElementById('height-slider').value);
+            const feet = Math.floor(height / 12);
+            const inches = height % 12;
+            
+            // Get celestial object data
+            const celestialObject = celestialData[celestialKey];
+            if (!celestialObject) {
+                alert('Celestial object data not found!');
+                return;
+            }
+            
+            // Calculate gravity ratio using mass and radius
+            const gravityRatio = getGravityRatio(celestialObject);
+            const calculatedGravity = calculateSurfaceGravity(celestialObject.mass, celestialObject.radius);
+            
+            // Calculate weight on the celestial object
+            const celestialWeight = earthWeight * gravityRatio;
+            
+            // Debug logging for grain of salt
+            if (celestialKey === 'grain_of_salt') {
+                console.log('Grain of Salt Debug:');
+                console.log('Earth Weight:', earthWeight);
+                console.log('Gravity Ratio:', gravityRatio);
+                console.log('Celestial Weight:', celestialWeight);
+                console.log('Formatted Weight:', formatWeight(celestialWeight));
+            }
+            
+            // Debug logging for LEGO piece
+            if (celestialKey === 'lego_piece') {
+                console.log('LEGO Piece Debug:');
+                console.log('Earth Weight:', earthWeight);
+                console.log('Gravity Ratio:', gravityRatio);
+                console.log('Celestial Weight:', celestialWeight);
+                console.log('Formatted Weight:', formatWeight(celestialWeight));
+            }
+            
+            // Debug logging for Oganesson atom
+            if (celestialKey === 'oganesson_atom') {
+                console.log('Oganesson Atom Debug:');
+                console.log('Earth Weight:', earthWeight);
+                console.log('Gravity Ratio:', gravityRatio);
+                console.log('Celestial Weight:', celestialWeight);
+                console.log('Celestial Weight in scientific notation:', celestialWeight.toExponential());
+                console.log('Formatted Weight:', formatWeight(celestialWeight));
+                console.log('Weight * 453592000000000000000000:', (celestialWeight * 453592000000000000000000).toExponential());
+            }
+            
+            // Debug logging for house and proton
+            if (celestialKey === 'house' || celestialKey === 'proton') {
+                console.log(`${celestialKey.toUpperCase()} Debug:`);
+                console.log('Earth Weight:', earthWeight);
+                console.log('Gravity Ratio:', gravityRatio);
+                console.log('Celestial Weight:', celestialWeight);
+                console.log('Celestial Weight in scientific notation:', celestialWeight.toExponential());
+                console.log('Formatted Weight:', formatWeight(celestialWeight));
+                console.log('Object Mass:', celestialObject.mass);
+                console.log('Object Radius:', celestialObject.radius);
+                console.log('Calculated Gravity:', calculatedGravity);
+            }
+            
+            // Display results with additional scientific data
+            displayCelestialResults(celestialObject, earthWeight, celestialWeight, gravityRatio, calculatedGravity, feet, inches);
+        }
+        
+        function displayCelestialResults(celestialObject, earthWeight, celestialWeight, gravityRatio, calculatedGravity, feet, inches) {
+            // Format scientific notation for display
+            function formatScientific(number) {
+                if (number >= 1e30) {
+                    return (number / 1e30).toFixed(3) + '×10³⁰';
+                } else if (number >= 1e27) {
+                    return (number / 1e27).toFixed(3) + '×10²⁷';
+                } else if (number >= 1e26) {
+                    return (number / 1e26).toFixed(3) + '×10²⁶';
+                } else if (number >= 1e25) {
+                    return (number / 1e25).toFixed(3) + '×10²⁵';
+                } else if (number >= 1e24) {
+                    return (number / 1e24).toFixed(3) + '×10²⁴';
+                } else if (number >= 1e23) {
+                    return (number / 1e23).toFixed(3) + '×10²³';
+                } else if (number >= 1e22) {
+                    return (number / 1e22).toFixed(3) + '×10²²';
+                } else if (number >= 1e16) {
+                    return (number / 1e16).toFixed(3) + '×10¹⁶';
+                } else if (number >= 1e15) {
+                    return (number / 1e15).toFixed(3) + '×10¹⁵';
+                } else if (number >= 1e6) {
+                    return (number / 1e6).toFixed(1) + '×10⁶';
+                } else if (number >= 1e3) {
+                    return (number / 1e3).toFixed(1) + '×10³';
+                } else if (number >= 1) {
+                    return number.toFixed(1);
+                } else if (number >= 1e-3) {
+                    return (number / 1e-3).toFixed(1) + '×10⁻³';
+                } else if (number >= 1e-6) {
+                    return (number / 1e-6).toFixed(1) + '×10⁻⁶';
+                } else if (number >= 1e-9) {
+                    return (number / 1e-9).toFixed(1) + '×10⁻⁹';
+                } else if (number >= 1e-12) {
+                    return (number / 1e-12).toFixed(1) + '×10⁻¹²';
+                } else if (number >= 1e-15) {
+                    return (number / 1e-15).toFixed(1) + '×10⁻¹⁵';
+                } else if (number >= 1e-18) {
+                    return (number / 1e-18).toFixed(1) + '×10⁻¹⁸';
+                } else if (number >= 1e-21) {
+                    return (number / 1e-21).toFixed(1) + '×10⁻²¹';
+                } else {
+                    return number.toExponential(2);
+                }
+            }
+            
+            
+            // Update the center panel with results
+            const iconHtml = celestialObject.name === 'Eternal Infinity Beast Egg' 
+                ? `<img src="{{ static_file('images/MJ-Eternal-Infinity-Beast-Egg.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Kryptonite Leviathan Egg'
+                ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hyper Star'
+                ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hyper Planet'
+                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hyper Galaxy'
+                ? `<img src="{{ static_file('images/MJ-Hyper-Galaxy.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hyper Universe'
+                ? `<img src="{{ static_file('images/MJ-Hyper-Universe.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : `<div class="text-2xl mb-2">${celestialObject.icon}</div>`;
+            
+            const resultsHTML = `
+                <div class="bg-gray-700/50 rounded-lg p-6 border border-gray-600/50 mb-4 w-full max-w-4xl mx-auto">
+                    <div class="text-center">
+                        ${iconHtml}
+                        <h3 class="text-lg font-bold text-white mb-2">${celestialObject.name}</h3>
+                        <p class="text-xs text-gray-400 mb-3 capitalize">${celestialObject.type}</p>
+                        
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Your Earth Weight:</span>
+                                <span class="text-cyan-400 font-bold">${earthWeight.toFixed(1)} lbs</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Weight on ${celestialObject.name}:</span>
+                                <span class="text-yellow-400 font-bold">${formatWeight(celestialWeight)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Surface Gravity:</span>
+                                <span class="text-blue-400 font-bold">${formatSurfaceGravity(calculatedGravity)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">vs Earth:</span>
+                                <span class="text-purple-400 font-bold">${gravityRatio < 0.001 ? gravityRatio.toExponential(3) + '×' : gravityRatio.toFixed(3) + '×'}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Mass:</span>
+                                <span class="text-orange-400 font-bold">${formatMass(celestialObject.mass)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Radius:</span>
+                                <span class="text-green-400 font-bold">${formatRadius(celestialObject.radius)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Density:</span>
+                                <span class="text-cyan-400 font-bold">${formatDensity(calculateDensity(celestialObject.mass, celestialObject.radius))}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Your Height:</span>
+                                <span class="text-gray-400 font-bold">${feet}'${inches}"</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 p-2 bg-gray-800/50 rounded">
+                            <p class="text-xs text-gray-400">
+                                ${getWeightComparison(celestialWeight, earthWeight)}
+                            </p>
+                            ${celestialObject.type === 'dso' ? `
+                                <p class="text-xs text-purple-300 mt-2 italic">
+                                    💡 The tiny weight reflects the enormous size of this ${celestialObject.type === 'dso' ? 'deep space object' : celestialObject.type}. 
+                                    Gravity weakens dramatically with distance!
+                                </p>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Explore Button -->
+                        <div class="text-center mt-6">
+                            <button onclick="exploreObject('${celestialObject.name.replace(/'/g, "\\'")}')" class="w-full px-6 py-3 text-white font-bold rounded-lg transition-all duration-300 shadow-lg transform hover:scale-105 ${getObjectTheme(celestialObject.name)}">
+                                <i class="fas fa-rocket mr-2"></i>
+                                Explore ${celestialObject.name}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Display results in the main content area (60% width area)
+            const mainContentArea = document.querySelector('.w-full.lg\\:w-3\\/5 .bg-gray-800\\/30');
+            if (mainContentArea) {
+                mainContentArea.innerHTML = resultsHTML;
+            }
+        }
+        
+        function getWeightComparison(planetWeight, earthWeight) {
+            const difference = planetWeight - earthWeight;
+            const percentage = ((planetWeight / earthWeight) * 100 - 100).toFixed(1);
+            
+            
+            if (difference > 0) {
+                return `You would weigh ${formatWeightDifference(Math.abs(difference))} MORE (+${percentage}%) than on Earth`;
+            } else if (difference < 0) {
+                return `You would weigh ${formatWeightDifference(Math.abs(difference))} LESS (${percentage}%) than on Earth`;
+            } else {
+                return `You would weigh the same as on Earth`;
+            }
+        }
+        
+        function clearResults() {
+            // Restore the original instruction area
+            const resultsArea = document.querySelector('.bg-gray-700\\/50.rounded-lg.p-4');
+            if (resultsArea && resultsArea.closest('.text-center.text-gray-400.py-8')) {
+                resultsArea.closest('.text-center.text-gray-400.py-8').innerHTML = `
+                    <i class="fas fa-rocket text-3xl mb-4 text-cyan-400 opacity-70"></i>
+                    <p class="text-sm font-medium mb-2">Select a celestial body</p>
+                    <p class="text-xs opacity-75">from the 'Planetary Weights' list to see your weight there</p>
+                `;
+            }
+        }
+        
+        function getObjectTheme(objectName) {
+            const themes = {
+                'CXO J164710.2-455216': 'bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 shadow-purple-600/25 hover:shadow-purple-600/40',
+                'Crab Pulsar (PSR B0531+21)': 'bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-500 hover:to-blue-700 shadow-cyan-400/25 hover:shadow-cyan-400/40',
+                'Sagittarius A*': 'bg-gradient-to-r from-black to-gray-800 hover:from-gray-900 hover:to-black shadow-black/25 hover:shadow-black/40',
+                'TON 618': 'bg-gradient-to-r from-gray-900 to-black hover:from-black hover:to-gray-900 shadow-gray-900/25 hover:shadow-gray-900/40',
+                'Phoenix A*': 'bg-gradient-to-r from-red-900 to-black hover:from-black hover:to-red-900 shadow-red-900/25 hover:shadow-red-900/40',
+                'Sun': 'bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 shadow-yellow-500/25 hover:shadow-yellow-500/40',
+                'Sirius A': 'bg-gradient-to-r from-blue-300 to-cyan-400 hover:from-blue-400 hover:to-cyan-500 shadow-blue-300/25 hover:shadow-blue-300/40',
+                'Sirius B': 'bg-gradient-to-r from-blue-200 to-white hover:from-blue-300 hover:to-gray-100 shadow-blue-200/25 hover:shadow-blue-200/40',
+                'Betelgeuse': 'bg-gradient-to-r from-red-400 to-orange-500 hover:from-red-500 hover:to-orange-600 shadow-red-400/25 hover:shadow-red-400/40',
+                'Stephenson 2-18': 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-orange-500/25 hover:shadow-orange-500/40',
+                'R136a1': 'bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 shadow-purple-500/25 hover:shadow-purple-500/40',
+                'Achernar': 'bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 shadow-blue-400/25 hover:shadow-blue-400/40',
+                'Vega': 'bg-gradient-to-r from-blue-200 to-white hover:from-blue-300 hover:to-gray-100 shadow-blue-200/25 hover:shadow-blue-200/40',
+                'Spica': 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-blue-500/25 hover:shadow-blue-500/40',
+                'Canopus': 'bg-gradient-to-r from-yellow-200 to-white hover:from-yellow-300 hover:to-gray-100 shadow-yellow-200/25 hover:shadow-yellow-200/40',
+                'Mercury': 'bg-gradient-to-r from-gray-500 to-gray-700 hover:from-gray-600 hover:to-gray-800 shadow-gray-500/25 hover:shadow-gray-500/40',
+                'Venus': 'bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 shadow-yellow-400/25 hover:shadow-yellow-400/40',
+                'Earth': 'bg-gradient-to-r from-blue-500 to-green-600 hover:from-blue-600 hover:to-green-700 shadow-blue-500/25 hover:shadow-blue-500/40',
+                'Moon': 'bg-gradient-to-r from-gray-300 to-gray-500 hover:from-gray-400 hover:to-gray-600 shadow-gray-300/25 hover:shadow-gray-300/40',
+                'Mars': 'bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 shadow-red-500/25 hover:shadow-red-500/40',
+                'Jupiter': 'bg-gradient-to-r from-orange-500 to-yellow-600 hover:from-orange-600 hover:to-yellow-700 shadow-orange-500/25 hover:shadow-orange-500/40',
+                'Saturn': 'bg-gradient-to-r from-yellow-300 to-yellow-500 hover:from-yellow-400 hover:to-yellow-600 shadow-yellow-300/25 hover:shadow-yellow-300/40',
+                'Uranus': 'bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 shadow-cyan-400/25 hover:shadow-cyan-400/40',
+                'Neptune': 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 shadow-blue-600/25 hover:shadow-blue-600/40',
+                'Pluto': 'bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 shadow-purple-500/25 hover:shadow-purple-500/40',
+                'Phobos': 'bg-gradient-to-r from-red-400 to-red-600 hover:from-red-500 hover:to-red-700 shadow-red-400/25 hover:shadow-red-400/40',
+                'Deimos': 'bg-gradient-to-r from-red-300 to-red-500 hover:from-red-400 hover:to-red-600 shadow-red-300/25 hover:shadow-red-300/40',
+                'Ceres': 'bg-gradient-to-r from-gray-400 to-gray-600 hover:from-gray-500 hover:to-gray-700 shadow-gray-400/25 hover:shadow-gray-400/40',
+                'Haumea': 'bg-gradient-to-r from-white to-gray-300 hover:from-gray-100 hover:to-gray-400 shadow-white/25 hover:shadow-white/40',
+                'Makemake': 'bg-gradient-to-r from-blue-200 to-blue-400 hover:from-blue-300 hover:to-blue-500 shadow-blue-200/25 hover:shadow-blue-200/40',
+                'Eris': 'bg-gradient-to-r from-blue-300 to-blue-500 hover:from-blue-400 hover:to-blue-600 shadow-blue-300/25 hover:shadow-blue-300/40',
+                'Gonggong': 'bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 shadow-red-500/25 hover:shadow-red-500/40',
+                'Quaoar': 'bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 shadow-orange-400/25 hover:shadow-orange-400/40',
+                'Sedna': 'bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900 shadow-red-600/25 hover:shadow-red-600/40',
+                'Orcus': 'bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-900 shadow-gray-600/25 hover:shadow-gray-600/40',
+                'Salacia': 'bg-gradient-to-r from-blue-400 to-cyan-500 hover:from-blue-500 hover:to-cyan-600 shadow-blue-400/25 hover:shadow-blue-400/40',
+                'Marble': 'bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 shadow-blue-500/25 hover:shadow-blue-500/40',
+                'Die': 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-red-500/25 hover:shadow-red-500/40',
+                'Grain of Salt': 'bg-gradient-to-r from-gray-300 to-gray-500 hover:from-gray-400 hover:to-gray-600 shadow-gray-300/25 hover:shadow-gray-300/40',
+                'LEGO Piece': 'bg-gradient-to-r from-red-400 to-yellow-500 hover:from-red-500 hover:to-yellow-600 shadow-red-400/25 hover:shadow-red-400/40',
+                'American House': 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-amber-500/25 hover:shadow-amber-500/40',
+                'Average Car': 'bg-gradient-to-r from-slate-500 to-gray-600 hover:from-slate-600 hover:to-gray-700 shadow-slate-500/25 hover:shadow-slate-500/40',
+                'Feather': 'bg-gradient-to-r from-gray-100 to-gray-300 hover:from-gray-200 hover:to-gray-400 shadow-gray-100/25 hover:shadow-gray-200/40',
+                'Water Droplet': 'bg-gradient-to-r from-blue-400 to-cyan-500 hover:from-blue-500 hover:to-cyan-600 shadow-blue-400/25 hover:shadow-blue-400/40',
+                'AirPods': 'bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-900 shadow-gray-600/25 hover:shadow-gray-600/40',
+                'Cheerio': 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 shadow-yellow-400/25 hover:shadow-yellow-400/40',
+                'Ice Cream Sprinkle': 'bg-gradient-to-r from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600 shadow-pink-400/25 hover:shadow-pink-400/40',
+                'Ice Cube': 'bg-gradient-to-r from-blue-200 to-cyan-300 hover:from-blue-300 hover:to-cyan-400 shadow-blue-200/25 hover:shadow-blue-200/40',
+                'Tree': 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 shadow-green-600/25 hover:shadow-green-600/40',
+                'Computer Mouse': 'bg-gradient-to-r from-slate-500 to-gray-700 hover:from-slate-600 hover:to-gray-800 shadow-slate-500/25 hover:shadow-slate-500/40',
+                'Empty Water Bottle': 'bg-gradient-to-r from-gray-300 to-gray-500 hover:from-gray-400 hover:to-gray-600 shadow-gray-300/25 hover:shadow-gray-300/40',
+                'Filled Water Bottle': 'bg-gradient-to-r from-blue-400 to-cyan-500 hover:from-blue-500 hover:to-cyan-600 shadow-blue-400/25 hover:shadow-blue-400/40',
+                'All of Earth\'s Water': 'bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 shadow-blue-600/25 hover:shadow-blue-600/40',
+                'Mount Everest': 'bg-gradient-to-r from-gray-500 to-gray-700 hover:from-gray-600 hover:to-gray-800 shadow-gray-500/25 hover:shadow-gray-500/40',
+                'Olympus Mons': 'bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 shadow-red-500/25 hover:shadow-red-500/40',
+                'Valles Marineris': 'bg-gradient-to-r from-amber-600 to-orange-700 hover:from-amber-700 hover:to-orange-800 shadow-amber-600/25 hover:shadow-amber-600/40',
+                'Tsunami': 'bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 shadow-blue-600/25 hover:shadow-blue-600/40',
+                'Pyramid of Giza': 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 shadow-amber-500/25 hover:shadow-amber-500/40',
+                'The Great Wall of China': 'bg-gradient-to-r from-red-600 to-orange-700 hover:from-red-700 hover:to-orange-800 shadow-red-600/25 hover:shadow-red-600/40',
+                'Comet Ikeya-Seki (C/1965 S1)': 'bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 shadow-cyan-400/25 hover:shadow-cyan-400/40',
+                'Comet Bennett (C/1969 Y1)': 'bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 shadow-blue-400/25 hover:shadow-blue-400/40',
+                'Comet Kohoutek (C/1973 E1)': 'bg-gradient-to-r from-purple-400 to-blue-500 hover:from-purple-500 hover:to-blue-600 shadow-purple-400/25 hover:shadow-purple-400/40',
+                'Comet West (C/1975 V1)': 'bg-gradient-to-r from-teal-400 to-cyan-500 hover:from-teal-500 hover:to-cyan-600 shadow-teal-400/25 hover:shadow-teal-400/40',
+                'Comet Shoemaker-Levy 9 (D/1993 F2)': 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-red-500/25 hover:shadow-red-500/40',
+                'Comet Hyakutake (C/1996 B2)': 'bg-gradient-to-r from-green-400 to-teal-500 hover:from-green-500 hover:to-teal-600 shadow-green-400/25 hover:shadow-green-400/40',
+                'Comet Hale-Bopp (C/1995 O1)': 'bg-gradient-to-r from-white to-cyan-300 hover:from-gray-100 hover:to-cyan-400 shadow-white/25 hover:shadow-white/40',
+                'Comet McNaught (C/2006 P1)': 'bg-gradient-to-r from-yellow-300 to-orange-400 hover:from-yellow-400 hover:to-orange-500 shadow-yellow-300/25 hover:shadow-yellow-300/40',
+                'Comet Holmes (17P)': 'bg-gradient-to-r from-gray-300 to-blue-400 hover:from-gray-400 hover:to-blue-500 shadow-gray-300/25 hover:shadow-gray-300/40',
+                'Comet Lovejoy (C/2011 W3)': 'bg-gradient-to-r from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600 shadow-pink-400/25 hover:shadow-pink-400/40',
+                'Halley\'s Comet (1P/Halley)': 'bg-gradient-to-r from-gray-200 to-gray-500 hover:from-gray-300 hover:to-gray-600 shadow-gray-200/25 hover:shadow-gray-200/40',
+                'The Pleiades (M45)': 'bg-gradient-to-r from-blue-300 to-purple-400 hover:from-blue-400 hover:to-purple-500 shadow-blue-300/25 hover:shadow-blue-300/40',
+                'Omega Centauri (NGC 5139)': 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-purple-500/25 hover:shadow-purple-500/40',
+                'The Jewel Box (NGC 4755)': 'bg-gradient-to-r from-yellow-400 to-pink-500 hover:from-yellow-500 hover:to-pink-600 shadow-yellow-400/25 hover:shadow-yellow-400/40',
+                'The Orion Nebula (M42)': 'bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 shadow-cyan-400/25 hover:shadow-cyan-400/40',
+                'The Carina Nebula (NGC 3372)': 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 shadow-pink-500/25 hover:shadow-pink-500/40',
+                'The Crab Nebula (M1)': 'bg-gradient-to-r from-orange-400 to-red-500 hover:from-orange-500 hover:to-red-600 shadow-orange-400/25 hover:shadow-orange-400/40',
+                'The Tarantula Nebula (30 Doradus)': 'bg-gradient-to-r from-red-600 to-orange-700 hover:from-red-700 hover:to-orange-800 shadow-red-600/25 hover:shadow-red-600/40',
+                'The Whirlpool Galaxy (M51)': 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-indigo-500/25 hover:shadow-indigo-500/40',
+                'The Pinwheel Galaxy (M101)': 'bg-gradient-to-r from-blue-400 to-cyan-500 hover:from-blue-500 hover:to-cyan-600 shadow-blue-400/25 hover:shadow-blue-400/40',
+                'The Andromeda Galaxy (M31)': 'bg-gradient-to-r from-violet-500 to-purple-700 hover:from-violet-600 hover:to-purple-800 shadow-violet-500/25 hover:shadow-violet-500/40',
+                'The Sloan Great Wall': 'bg-gradient-to-r from-gray-600 to-indigo-800 hover:from-gray-700 hover:to-indigo-900 shadow-gray-600/25 hover:shadow-gray-600/40',
+                'The Hercules-Corona Borealis Great Wall': 'bg-gradient-to-r from-slate-700 to-purple-900 hover:from-slate-800 hover:to-purple-950 shadow-slate-700/25 hover:shadow-slate-700/40',
+                'My Custom Object': 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 shadow-orange-500/25 hover:shadow-orange-500/40',
+                'Eternal Infinity Beast Egg': 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-purple-500/25 hover:shadow-purple-500/40',
+                'Kryptonite Leviathan Egg': 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-500/25 hover:shadow-green-500/40',
+                'Hyper Star': 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 shadow-yellow-500/25 hover:shadow-yellow-500/40',
+                'Hyper Planet': 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-blue-500/25 hover:shadow-blue-500/40',
+                'Hyper Galaxy': 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-indigo-500/25 hover:shadow-indigo-500/40',
+                'Hyper Universe': 'bg-gradient-to-r from-slate-800 to-gray-900 hover:from-slate-900 hover:to-black shadow-slate-800/25 hover:shadow-slate-800/40'
+            };
+            
+            return themes[objectName] || 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-500/25 hover:shadow-purple-500/40';
+        }
+        
+        function exploreObject(objectName) {
+            // Launch the jumping simulator for the selected object
+            launchJumpingSimulator(objectName);
+        }
+        
+        // Jumping Simulator Functions
+        function launchJumpingSimulator(objectName) {
+            // Find the celestial object data
+            let celestialObject = null;
+            for (const key in celestialData) {
+                if (celestialData[key].name === objectName) {
+                    celestialObject = celestialData[key];
+                    break;
+                }
+            }
+            
+            if (!celestialObject) {
+                console.error('Object not found:', objectName);
+                return;
+            }
+            
+            const earthWeight = parseFloat(document.getElementById('weight-slider').value);
+            const height = parseInt(document.getElementById('height-slider').value);
+            const feet = Math.floor(height / 12);
+            const inches = height % 12;
+            
+            // Calculate gravity ratio
+            const gravityRatio = getGravityRatio(celestialObject);
+            const calculatedGravity = calculateSurfaceGravity(celestialObject.mass, celestialObject.radius);
+            
+            // Display the jumping simulator
+            displayJumpingSimulator(celestialObject, earthWeight, calculatedGravity, gravityRatio, feet, inches);
+        }
+        
+        function displayJumpingSimulator(celestialObject, earthWeight, calculatedGravity, gravityRatio, feet, inches) {
+            const iconHtml = celestialObject.name === 'Eternal Infinity Beast Egg' 
+                ? `<img src="{{ static_file('images/MJ-Eternal-Infinity-Beast-Egg.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Kryptonite Leviathan Egg'
+                ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hyper Star'
+                ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hyper Planet'
+                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hyper Galaxy'
+                ? `<img src="{{ static_file('images/MJ-Hyper-Galaxy.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hyper Universe'
+                ? `<img src="{{ static_file('images/MJ-Hyper-Universe.png') }}" alt="${celestialObject.name}" class="w-16 h-16 object-contain mx-auto mb-2">`
+                : `<div class="text-2xl mb-2">${celestialObject.icon}</div>`;
+            
+            const simulatorHTML = `
+                <div class="bg-gray-700/50 rounded-lg p-6 border border-gray-600/50 mb-4 w-full max-w-4xl mx-auto">
+                    <div class="text-center mb-6">
+                        ${iconHtml}
+                        <h3 class="text-lg font-bold text-white mb-2">${celestialObject.name}</h3>
+                        <p class="text-xs text-gray-400 mb-4 capitalize">Jumping Simulator</p>
+                        
+                        <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+                            <div class="text-center p-3 bg-gray-800/50 rounded">
+                                <div class="text-gray-300 text-xs">Surface Gravity</div>
+                                <div class="text-blue-400 font-bold">${formatSurfaceGravity(calculatedGravity)}</div>
+                            </div>
+                            <div class="text-center p-3 bg-gray-800/50 rounded">
+                                <div class="text-gray-300 text-xs">vs Earth</div>
+                                <div class="text-purple-400 font-bold">${gravityRatio < 0.001 ? gravityRatio.toExponential(3) + '×' : gravityRatio.toFixed(3) + '×'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Jumping Area -->
+                    <div id="jumping-area" class="relative bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg p-8 mb-6 focus:outline-none focus:ring-2 focus:ring-cyan-500" style="height: 300px;" tabindex="0">
+                        <!-- Ground -->
+                        <div class="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-600 to-gray-500 rounded-b-lg"></div>
+                        
+                        <!-- Character (Jumping Figure) -->
+                        <div id="jumping-character" class="absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-all duration-500 ease-out">
+                            <div class="w-8 h-12 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-lg border-2 border-blue-400 relative">
+                                <!-- Head -->
+                                <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full border-2 border-blue-400"></div>
+                                <!-- Arms -->
+                                <div class="absolute top-2 -left-2 w-2 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full border border-blue-400"></div>
+                                <div class="absolute top-2 -right-2 w-2 h-6 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full border border-blue-400"></div>
+                                <!-- Legs -->
+                                <div class="absolute bottom-0 left-1 w-2 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full border border-blue-400"></div>
+                                <div class="absolute bottom-0 right-1 w-2 h-4 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full border border-blue-400"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Jump Height Indicator -->
+                        <div id="jump-indicator" class="absolute right-4 top-4 bg-gray-800/80 rounded-lg p-3 text-center hidden">
+                            <div class="text-xs text-gray-300">Jump Height</div>
+                            <div id="jump-height-value" class="text-lg font-bold text-yellow-400">0 ft</div>
+                        </div>
+                        
+                        <!-- Position Indicator -->
+                        <div id="position-indicator" class="absolute left-4 top-4 bg-gray-800/80 rounded-lg p-3 text-center">
+                            <div class="text-xs text-gray-300">Position</div>
+                            <div id="position-value" class="text-lg font-bold text-green-400">Center</div>
+                        </div>
+                        
+                        <!-- Controls Info -->
+                        <div class="absolute bottom-4 left-4 bg-gray-800/80 rounded-lg p-2 text-xs text-gray-300">
+                            <div>SPACEBAR: Jump</div>
+                            <div>← →: Move</div>
+                        </div>
+                        
+                        <!-- Jump Trail Effect -->
+                        <div id="jump-trail" class="absolute inset-0 pointer-events-none opacity-0">
+                            <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-1 h-0 bg-gradient-to-t from-cyan-400/50 to-transparent"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="text-center space-y-4">
+                        <button id="jump-button" onclick="performJump('${celestialObject.name.replace(/'/g, "\\'")}', ${calculatedGravity})" class="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-green-500/25 transform hover:scale-105">
+                            <i class="fas fa-keyboard mr-2"></i>
+                            Press SPACEBAR to Jump
+                        </button>
+                        
+                        <button onclick="backToStats('${celestialObject.name.replace(/'/g, "\\'")}')" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Back to Stats
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Display in main content area
+            const mainContentArea = document.querySelector('.w-full.lg\\:w-3\\/5 .bg-gray-800\\/30');
+            if (mainContentArea) {
+                mainContentArea.innerHTML = simulatorHTML;
+                
+                // Auto-focus the jumping area and set up keyboard controls
+                setTimeout(() => {
+                    const jumpingArea = document.getElementById('jumping-area');
+                    if (jumpingArea) {
+                        jumpingArea.focus();
+                        setupKeyboardControls(celestialObject.name, calculatedGravity);
+                    }
+                }, 100);
+            }
+        }
+        
+        function performJump(objectName, gravity) {
+            const character = document.getElementById('jumping-character');
+            const indicator = document.getElementById('jump-indicator');
+            const jumpHeightValue = document.getElementById('jump-height-value');
+            const jumpButton = document.getElementById('jump-button');
+            
+            if (isJumping) return; // Prevent multiple jumps
+            
+            isJumping = true;
+            
+            // Disable button during jump
+            jumpButton.disabled = true;
+            jumpButton.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // Calculate jump height (assuming Earth jump height of 2 feet)
+            const earthJumpHeight = 2; // feet
+            const earthGravity = 9.81; // m/s²
+            const jumpHeight = (earthJumpHeight * earthGravity) / gravity;
+            
+            // Update indicator
+            jumpHeightValue.textContent = `${jumpHeight.toFixed(1)} ft`;
+            indicator.classList.remove('hidden');
+            
+            // Perform jump animation
+            const maxHeight = Math.min(jumpHeight * 20, 200); // Scale for visual (max 200px)
+            const jumpDuration = Math.sqrt(2 * maxHeight / 1000) * 1000; // Duration based on gravity
+            
+            // Start the jump animation
+            animateJump(maxHeight, jumpDuration);
+            
+            // Reset after jump
+            setTimeout(() => {
+                // Re-enable controls
+                jumpButton.disabled = false;
+                jumpButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                isJumping = false;
+            }, jumpDuration * 2); // Total jump time is up + down
+        }
+        
+        function animateJump(maxHeight, jumpDuration) {
+            const character = document.getElementById('jumping-character');
+            if (!character) return;
+            
+            // Store the starting Y position
+            const startY = characterY;
+            
+            // Animate upward
+            character.style.transition = `transform ${jumpDuration}ms ease-out`;
+            characterY = startY - maxHeight;
+            updateCharacterPosition();
+            
+            // Animate downward
+            setTimeout(() => {
+                character.style.transition = `transform ${jumpDuration}ms ease-in`;
+                characterY = startY;
+                updateCharacterPosition();
+            }, jumpDuration);
+        }
+        
+        function backToStats(objectName) {
+            // Stop animation loop
+            stopMovementAnimation();
+            
+            // Find the celestial object and redisplay stats
+            let celestialObject = null;
+            for (const key in celestialData) {
+                if (celestialData[key].name === objectName) {
+                    celestialObject = celestialData[key];
+                    break;
+                }
+            }
+            
+            if (celestialObject) {
+                const earthWeight = parseFloat(document.getElementById('weight-slider').value);
+                const height = parseInt(document.getElementById('height-slider').value);
+                const feet = Math.floor(height / 12);
+                const inches = height % 12;
+                
+                const gravityRatio = getGravityRatio(celestialObject);
+                const calculatedGravity = calculateSurfaceGravity(celestialObject.mass, celestialObject.radius);
+                const celestialWeight = earthWeight * gravityRatio;
+                
+                displayCelestialResults(celestialObject, earthWeight, celestialWeight, gravityRatio, calculatedGravity, feet, inches);
+            }
+        }
+        
+        // Keyboard Controls and Character Position
+        let characterX = 0; // Continuous X position in pixels (0 = center)
+        let characterY = 0; // Y position for jumping
+        let currentObjectName = '';
+        let currentGravity = 0;
+        let isJumping = false;
+        let isMovingLeft = false;
+        let isMovingRight = false;
+        let movementSpeed = 2; // pixels per frame
+        let animationFrame = null;
+        let jumpingAreaWidth = 0;
+        
+        function setupKeyboardControls(objectName, gravity) {
+            currentObjectName = objectName;
+            currentGravity = gravity;
+            characterX = 0; // Reset to center
+            characterY = 0;
+            isMovingLeft = false;
+            isMovingRight = false;
+            
+            // Get jumping area dimensions
+            const jumpingArea = document.getElementById('jumping-area');
+            if (jumpingArea) {
+                jumpingAreaWidth = jumpingArea.offsetWidth - 32; // Account for padding
+                jumpingArea.addEventListener('keydown', handleKeyDown);
+                jumpingArea.addEventListener('keyup', handleKeyUp);
+                
+                // Start animation loop
+                startMovementAnimation();
+            }
+        }
+        
+        function startMovementAnimation() {
+            function animate() {
+                updateMovement();
+                updateCharacterPosition();
+                animationFrame = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        function stopMovementAnimation() {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+                animationFrame = null;
+            }
+        }
+        
+        function handleKeyDown(event) {
+            switch(event.code) {
+                case 'Space':
+                    event.preventDefault();
+                    if (!isJumping) {
+                        performJump(currentObjectName, currentGravity);
+                    }
+                    break;
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    isMovingLeft = true;
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    isMovingRight = true;
+                    break;
+            }
+        }
+        
+        function handleKeyUp(event) {
+            switch(event.code) {
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    isMovingLeft = false;
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    isMovingRight = false;
+                    break;
+            }
+        }
+        
+        function updateMovement() {
+            // Update X position based on movement flags
+            if (isMovingLeft) {
+                characterX -= movementSpeed;
+            }
+            if (isMovingRight) {
+                characterX += movementSpeed;
+            }
+            
+            // Keep character within bounds
+            const maxX = jumpingAreaWidth / 2 - 16; // Half width minus character width
+            characterX = Math.max(-maxX, Math.min(maxX, characterX));
+        }
+        
+        function updateCharacterPosition() {
+            const character = document.getElementById('jumping-character');
+            if (!character) return;
+            
+            // Apply continuous X position and current Y position
+            character.style.transform = `translate(${characterX}px, ${characterY}px)`;
+        }
+        
+        function updatePositionIndicator() {
+            const positionValue = document.getElementById('position-value');
+            if (!positionValue) return;
+            
+            // Show relative position
+            if (characterX < -50) {
+                positionValue.textContent = 'Left';
+            } else if (characterX > 50) {
+                positionValue.textContent = 'Right';
+            } else {
+                positionValue.textContent = 'Center';
+            }
+        }
+        
+        // New Interface Functions
+        let currentFilter = 'all';
+        let searchTerm = '';
+        
+        function initializeObjectGrid() {
+            const grid = document.getElementById('objects-grid');
+            grid.innerHTML = '';
+            
+            Object.keys(celestialData).forEach(key => {
+                const obj = celestialData[key];
+                if (shouldShowObject(obj)) {
+                    const card = createObjectCard(key, obj);
+                    grid.appendChild(card);
+                }
+            });
+        }
+        
+        function createObjectCard(key, obj) {
+            const card = document.createElement('div');
+            card.className = 'object-card';
+            card.onclick = () => calculatePlanetWeight(key);
+            
+            // Check if this is a fictional object and use custom image
+            const iconHtml = obj.name === 'Eternal Infinity Beast Egg' 
+                ? `<img src="{{ static_file('images/MJ-Eternal-Infinity-Beast-Egg.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : obj.name === 'Kryptonite Leviathan Egg'
+                ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : obj.name === 'Hyper Star'
+                ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : obj.name === 'Hyper Planet'
+                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : obj.name === 'Hyper Galaxy'
+                ? `<img src="{{ static_file('images/MJ-Hyper-Galaxy.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : obj.name === 'Hyper Universe'
+                ? `<img src="{{ static_file('images/MJ-Hyper-Universe.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : `<div class="object-icon">${obj.icon}</div>`;
+            
+            card.innerHTML = `
+                ${iconHtml}
+                <div class="object-name">${obj.name}</div>
+                <div class="object-type">${obj.type}</div>
+            `;
+            
+            return card;
+        }
+        
+        function shouldShowObject(obj) {
+            const matchesFilter = currentFilter === 'all' || obj.type === currentFilter;
+            const matchesSearch = searchTerm === '' || 
+                obj.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                obj.type.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            return matchesFilter && matchesSearch;
+        }
+        
+        function filterObjects(category) {
+            currentFilter = category;
+            
+            // Update active button
+            document.querySelectorAll('.category-filter').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-category="${category}"]`).classList.add('active');
+            
+            // Show/hide small objects note
+            const smallObjectsNote = document.getElementById('small-objects-note');
+            if (category === 'small object') {
+                smallObjectsNote.classList.remove('hidden');
+            } else {
+                smallObjectsNote.classList.add('hidden');
+            }
+            
+            // Show/hide DSO objects note
+            const dsoObjectsNote = document.getElementById('dso-objects-note');
+            if (category === 'dso') {
+                dsoObjectsNote.classList.remove('hidden');
+            } else {
+                dsoObjectsNote.classList.add('hidden');
+            }
+            
+            // Refresh grid
+            initializeObjectGrid();
+        }
+        
+        function searchObjects() {
+            searchTerm = document.getElementById('object-search').value;
+            initializeObjectGrid();
+        }
+        
+        // Custom Object Functions
+        let customObject = {
+            name: 'My Custom Object',
+            mass: 1e24, // kg
+            radius: 1e6, // m
+            icon: '🔧',
+            type: 'custom'
+        };
+        
+        function updateCustomName(value) {
+            customObject.name = value || 'My Custom Object';
+            document.getElementById('custom-name-value').textContent = customObject.name;
+        }
+        
+        function updateCustomMass(exponent) {
+            const exp = parseInt(exponent);
+            customObject.mass = Math.pow(10, exp);
+            document.getElementById('custom-mass-value').textContent = formatMass(customObject.mass);
+            updateCustomDensity();
+        }
+        
+        function updateCustomRadius(exponent) {
+            const exp = parseInt(exponent);
+            customObject.radius = Math.pow(10, exp);
+            document.getElementById('custom-radius-value').textContent = formatRadius(customObject.radius);
+            updateCustomDensity();
+        }
+        
+        function updateCustomDensity() {
+            const density = calculateDensity(customObject.mass, customObject.radius);
+            document.getElementById('custom-density-display').textContent = formatDensity(density);
+        }
+        
+        function calculateCustomObject() {
+            const earthWeight = parseFloat(document.getElementById('weight-slider').value);
+            const height = parseInt(document.getElementById('height-slider').value);
+            const feet = Math.floor(height / 12);
+            const inches = height % 12;
+            
+            // Calculate gravity ratio using mass and radius
+            const gravityRatio = getGravityRatio(customObject);
+            const calculatedGravity = calculateSurfaceGravity(customObject.mass, customObject.radius);
+            
+            // Calculate weight on the custom object
+            const customWeight = earthWeight * gravityRatio;
+            
+            // Calculate density
+            const density = calculateDensity(customObject.mass, customObject.radius);
+            
+            // Update custom object info display
+            document.getElementById('custom-object-name').textContent = customObject.name;
+            document.getElementById('custom-gravity').textContent = calculatedGravity.toFixed(2) + ' m/s²';
+            document.getElementById('custom-gravity-ratio').textContent = gravityRatio.toFixed(2) + '×';
+            document.getElementById('custom-mass-display').textContent = formatMass(customObject.mass);
+            document.getElementById('custom-radius-display').textContent = formatRadius(customObject.radius);
+            document.getElementById('custom-density-display').textContent = formatDensity(density);
+            
+            // Show the custom object info
+            document.getElementById('custom-object-info').classList.remove('hidden');
+            
+            // Display results in the center panel
+            displayCelestialResults(customObject, earthWeight, customWeight, gravityRatio, calculatedGravity, feet, inches);
+        }
+        
+        // Update the shouldShowObject function to include custom objects
+        function shouldShowObject(obj) {
+            const matchesFilter = currentFilter === 'all' || obj.type === currentFilter;
+            const matchesSearch = searchTerm === '' || 
+                obj.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                obj.type.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            return matchesFilter && matchesSearch;
+        }
+        
+        // Update the createObjectCard function to handle custom objects
+        function createObjectCard(key, obj) {
+            const card = document.createElement('div');
+            card.className = 'object-card';
+            
+            if (key === 'custom') {
+                card.onclick = () => calculateCustomObject();
+            } else {
+                card.onclick = () => calculatePlanetWeight(key);
+            }
+            
+            // Check if this is a fictional object and use custom image
+            const iconHtml = obj.name === 'Eternal Infinity Beast Egg' 
+                ? `<img src="{{ static_file('images/MJ-Eternal-Infinity-Beast-Egg.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : obj.name === 'Kryptonite Leviathan Egg'
+                ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : obj.name === 'Hyper Star'
+                ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : obj.name === 'Hyper Planet'
+                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : obj.name === 'Hyper Galaxy'
+                ? `<img src="{{ static_file('images/MJ-Hyper-Galaxy.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : obj.name === 'Hyper Universe'
+                ? `<img src="{{ static_file('images/MJ-Hyper-Universe.png') }}" alt="${obj.name}" class="w-8 h-8 object-contain">`
+                : `<div class="object-icon">${obj.icon}</div>`;
+            
+            card.innerHTML = `
+                ${iconHtml}
+                <div class="object-name">${obj.name}</div>
+                <div class="object-type">${obj.type}</div>
+            `;
+            
+            return card;
+        }
+        
+        // Update the initializeObjectGrid function to include custom objects
+        function initializeObjectGrid() {
+            const grid = document.getElementById('objects-grid');
+            grid.innerHTML = '';
+            
+            // Add all celestial objects
+            Object.keys(celestialData).forEach(key => {
+                const obj = celestialData[key];
+                if (shouldShowObject(obj)) {
+                    const card = createObjectCard(key, obj);
+                    grid.appendChild(card);
+                }
+            });
+            
+            // Add custom object if filter matches
+            if (currentFilter === 'all' || currentFilter === 'custom') {
+                if (shouldShowObject(customObject)) {
+                    const card = createObjectCard('custom', customObject);
+                    grid.appendChild(card);
+                }
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial values and update figure
+            updateWeight(70);
+            updateHeight(54);
+            
+            // Initialize custom object values
+            updateCustomMass(24);
+            updateCustomRadius(6);
+            
+            // Initialize the new object grid
+            initializeObjectGrid();
+            
+            // Add search event listener
+            document.getElementById('object-search').addEventListener('input', searchObjects);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Name Diversity Test - 1000 Names</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .stats { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px; 
+            margin: 20px 0; 
+        }
+        .stat-card { 
+            background: #2a2a2a; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border: 1px solid #444;
+        }
+        .stat-card h3 { margin-top: 0; color: #4CAF50; }
+        .progress { 
+            width: 100%; 
+            height: 20px; 
+            background: #333; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            margin: 10px 0;
+        }
+        .progress-bar { 
+            height: 100%; 
+            background: linear-gradient(90deg, #4CAF50, #8BC34A); 
+            transition: width 0.3s ease;
+        }
+        .name-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+            gap: 5px; 
+            margin: 20px 0; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            background: #2a2a2a; 
+            padding: 15px; 
+            border-radius: 8px;
+        }
+        .name-item { 
+            padding: 3px 6px; 
+            background: #3a3a3a; 
+            border-radius: 4px; 
+            font-size: 0.9em; 
+            text-align: center;
+        }
+        .name-item.duplicate { background: #ff4444; color: #fff; }
+        .name-item.common { background: #ff8800; color: #fff; }
+        .controls { margin: 20px 0; }
+        button { 
+            background: #4CAF50; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        .frequency-list { 
+            max-height: 300px; 
+            overflow-y: auto; 
+            background: #2a2a2a; 
+            padding: 10px; 
+            border-radius: 6px;
+        }
+        .frequency-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 3px 0; 
+            border-bottom: 1px solid #444;
+        }
+        .length-dist { 
+            display: flex; 
+            align-items: end; 
+            gap: 2px; 
+            height: 100px; 
+            margin: 10px 0;
+        }
+        .length-bar { 
+            background: #4CAF50; 
+            min-width: 20px; 
+            border-radius: 2px 2px 0 0;
+        }
+        .results { margin-top: 20px; }
+        .error { color: #ff4444; }
+        .success { color: #4CAF50; }
+        .warning { color: #ff8800; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 Name Diversity Test - 1000 Names</h1>
+        <p>This test generates 1000 random star and planet names to analyze diversity, frequency patterns, and randomization quality.</p>
+        
+        <div class="controls">
+            <button id="runTest" onclick="runTest()">Run 1000 Name Test</button>
+            <button id="clearResults" onclick="clearResults()">Clear Results</button>
+        </div>
+
+        <div id="progress" style="display: none;">
+            <div class="progress">
+                <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+            </div>
+            <p id="progressText">Starting test...</p>
+        </div>
+
+        <div id="results" class="results"></div>
+    </div>
+    
+    <script src="static/js/celestial_names_data.js"></script>
+    <script src="static/js/system_core.js"></script>
+    <script>
+        let generatedNames = [];
+        let nameFrequencies = {};
+        let testResults = {};
+
+        async function runTest() {
+            const runBtn = document.getElementById('runTest');
+            const progressDiv = document.getElementById('progress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const resultsDiv = document.getElementById('results');
+
+            runBtn.disabled = true;
+            progressDiv.style.display = 'block';
+            resultsDiv.innerHTML = '';
+
+            generatedNames = [];
+            nameFrequencies = {};
+            testResults = {};
+
+            try {
+                // Load names once for training
+                progressText.textContent = 'Loading celestial names...';
+                const names = await SystemGen.loadCelestialNames();
+                
+                // Create name generator
+                const nameGen = new SystemGen.MarkovNameGenerator(2);
+                nameGen.train(names);
+
+                // Generate 1000 names with progress updates
+                const totalNames = 1000;
+                const batchSize = 50;
+                
+                for (let i = 0; i < totalNames; i += batchSize) {
+                    const currentBatch = Math.min(batchSize, totalNames - i);
+                    
+                    for (let j = 0; j < currentBatch; j++) {
+                        // Generate both star and planet names
+                        const starName = nameGen.generate({ minLength: 4, maxLength: 12 });
+                        const planetName = nameGen.generate({ minLength: 4, maxLength: 10 });
+                        
+                        generatedNames.push(starName, planetName);
+                        
+                        // Count frequencies
+                        nameFrequencies[starName] = (nameFrequencies[starName] || 0) + 1;
+                        nameFrequencies[planetName] = (nameFrequencies[planetName] || 0) + 1;
+                    }
+                    
+                    // Update progress
+                    const progress = ((i + currentBatch) / totalNames) * 100;
+                    progressBar.style.width = progress + '%';
+                    progressText.textContent = `Generating names... ${i + currentBatch}/${totalNames * 2} (${progress.toFixed(1)}%)`;
+                    
+                    // Allow UI to update
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+
+                progressText.textContent = 'Analyzing results...';
+                await analyzeResults();
+
+                progressDiv.style.display = 'none';
+                displayResults();
+
+            } catch (error) {
+                progressDiv.style.display = 'none';
+                resultsDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+                console.error('Test error:', error);
+            } finally {
+                runBtn.disabled = false;
+            }
+        }
+
+        function analyzeResults() {
+            const totalNames = generatedNames.length;
+            const uniqueNames = Object.keys(nameFrequencies).length;
+            const duplicates = totalNames - uniqueNames;
+            
+            // Calculate statistics
+            testResults.totalGenerated = totalNames;
+            testResults.uniqueNames = uniqueNames;
+            testResults.duplicates = duplicates;
+            testResults.diversityRatio = (uniqueNames / totalNames * 100).toFixed(2);
+            
+            // Find most common names
+            const sortedFreqs = Object.entries(nameFrequencies)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 20);
+            testResults.mostCommon = sortedFreqs;
+            
+            // Find duplicates
+            testResults.duplicateNames = sortedFreqs.filter(([name, count]) => count > 1);
+            
+            // Length analysis
+            const lengthCounts = {};
+            generatedNames.forEach(name => {
+                const len = name.length;
+                lengthCounts[len] = (lengthCounts[len] || 0) + 1;
+            });
+            testResults.lengthDistribution = lengthCounts;
+            
+            // Character pattern analysis
+            const firstChars = {};
+            const lastChars = {};
+            generatedNames.forEach(name => {
+                if (name.length > 0) {
+                    firstChars[name[0]] = (firstChars[name[0]] || 0) + 1;
+                    lastChars[name[name.length - 1]] = (lastChars[name[name.length - 1]] || 0) + 1;
+                }
+            });
+            testResults.firstCharDistribution = firstChars;
+            testResults.lastCharDistribution = lastChars;
+            
+            // Quality assessment
+            let qualityScore = 0;
+            let qualityIssues = [];
+            
+            // Diversity check (should be > 80%)
+            if (testResults.diversityRatio > 80) {
+                qualityScore += 30;
+            } else {
+                qualityIssues.push(`Low diversity: ${testResults.diversityRatio}% (should be >80%)`);
+            }
+            
+            // Duplicate check (should be < 20%)
+            const duplicateRatio = (duplicates / totalNames * 100).toFixed(2);
+            if (duplicateRatio < 20) {
+                qualityScore += 30;
+            } else {
+                qualityIssues.push(`Too many duplicates: ${duplicateRatio}% (should be <20%)`);
+            }
+            
+            // Length distribution check (should have variety)
+            const lengthVariety = Object.keys(lengthCounts).length;
+            if (lengthVariety >= 6) {
+                qualityScore += 20;
+            } else {
+                qualityIssues.push(`Limited length variety: ${lengthVariety} different lengths`);
+            }
+            
+            // Most common name frequency check (shouldn't dominate)
+            const maxFreq = testResults.mostCommon[0] ? testResults.mostCommon[0][1] : 0;
+            const maxFreqRatio = (maxFreq / totalNames * 100).toFixed(2);
+            if (maxFreqRatio < 5) {
+                qualityScore += 20;
+            } else {
+                qualityIssues.push(`Most common name appears ${maxFreqRatio}% of the time (should be <5%)`);
+            }
+            
+            testResults.qualityScore = qualityScore;
+            testResults.qualityIssues = qualityIssues;
+            testResults.duplicateRatio = duplicateRatio;
+            testResults.maxFreqRatio = maxFreqRatio;
+        }
+
+        function displayResults() {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>📊 Overall Statistics</h3>
+                        <p><strong>Total Names Generated:</strong> ${testResults.totalGenerated}</p>
+                        <p><strong>Unique Names:</strong> ${testResults.uniqueNames}</p>
+                        <p><strong>Duplicates:</strong> ${testResults.duplicates}</p>
+                        <p><strong>Diversity Ratio:</strong> ${testResults.diversityRatio}%</p>
+                        <p><strong>Duplicate Ratio:</strong> ${testResults.duplicateRatio}%</p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3>🎯 Quality Assessment</h3>
+                        <p><strong>Quality Score:</strong> ${testResults.qualityScore}/100</p>
+                        ${testResults.qualityIssues.length > 0 ? 
+                            `<p class="warning"><strong>Issues:</strong></p><ul>${testResults.qualityIssues.map(issue => `<li>${issue}</li>`).join('')}</ul>` :
+                            '<p class="success">✅ No major issues detected!</p>'
+                        }
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3>📏 Length Distribution</h3>
+                        <div class="length-dist">
+                            ${Object.entries(testResults.lengthDistribution)
+                                .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+                                .map(([length, count]) => {
+                                    const height = (count / Math.max(...Object.values(testResults.lengthDistribution))) * 80;
+                                    return `<div class="length-bar" style="height: ${height}px" title="Length ${length}: ${count} names"></div>`;
+                                }).join('')}
+                        </div>
+                        ${Object.entries(testResults.lengthDistribution)
+                            .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+                            .map(([length, count]) => `<small>${length}: ${count}</small>`).join(' • ')}
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>🔥 Most Common Names (Top 10)</h3>
+                        <div class="frequency-list">
+                            ${testResults.mostCommon.slice(0, 10).map(([name, count]) => {
+                                const percentage = (count / testResults.totalGenerated * 100).toFixed(2);
+                                const isProblematic = percentage > 3;
+                                return `<div class="frequency-item ${isProblematic ? 'warning' : ''}">
+                                    <span>${name}</span>
+                                    <span>${count} (${percentage}%)</span>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3>🔄 Duplicate Names</h3>
+                        <div class="frequency-list">
+                            ${testResults.duplicateNames.length > 0 ? 
+                                testResults.duplicateNames.map(([name, count]) => {
+                                    const percentage = (count / testResults.totalGenerated * 100).toFixed(2);
+                                    return `<div class="frequency-item">
+                                        <span>${name}</span>
+                                        <span>${count} times (${percentage}%)</span>
+                                    </div>`;
+                                }).join('') :
+                                '<p class="success">✅ No duplicates found!</p>'
+                            }
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>📝 Sample Generated Names</h3>
+                    <div class="name-grid">
+                        ${generatedNames.slice(0, 100).map(name => {
+                            const freq = nameFrequencies[name];
+                            const isDuplicate = freq > 1;
+                            const isCommon = freq > 3;
+                            return `<div class="name-item ${isDuplicate ? 'duplicate' : ''} ${isCommon ? 'common' : ''}" 
+                                     title="${name} appears ${freq} time${freq > 1 ? 's' : ''}">
+                                     ${name}
+                                 </div>`;
+                        }).join('')}
+                    </div>
+                    <p><small>Showing first 100 names. Red = duplicate, Orange = common (4+ times)</small></p>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('progress').style.display = 'none';
+            generatedNames = [];
+            nameFrequencies = {};
+            testResults = {};
+        }
+    </script>
+</body>
+</html>

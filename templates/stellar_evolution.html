@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Evolution - Kids at Home</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- D3.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
+    <link rel="stylesheet" href="{{ static_file('css/stellar_evolution.css') }}">
+    <!-- Custom JavaScript -->
+    <script src="{{ static_file('js/stellar_evolution.js') }}"></script>
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cosmic-purple': '#7C3AED',
+                        'space-blue': '#2563EB',
+                        'star-gold': '#D97706',
+                        'nebula-pink': '#BE185D',
+                        'galaxy-indigo': '#4F46E5',
+                        'stellar-orange': '#FF6B35',
+                        'stellar-gold': '#FFD700'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                        'stellar-glow': 'stellarGlow 2s ease-in-out infinite alternate',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen stellar-bg">
+    <!-- Star Field Background -->
+    <div class="star-field" id="starField"></div>
+    
+    <!-- Navigation -->
+    <nav class="relative bg-gradient-to-b from-blue-900/95 to-blue-800/95 backdrop-blur-sm sticky top-0 z-50">
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo Section -->
+                <a href="/" class="group flex items-center space-x-3 hover:scale-105 transition-transform duration-300">
+                    <div class="relative">
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <span class="text-2xl font-bold text-white group-hover:text-gray-200 transition-colors duration-300">
+                        Kids at Home
+                    </span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="/" class="group flex items-center space-x-2 text-gray-300 hover:text-blue-400 transition-colors duration-300 relative">
+                        <i class="fas fa-home text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Home</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/system_generator" class="group flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-colors duration-300 relative">
+                        <i class="fas fa-star text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Space Explorer</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/gravity_lab" class="group flex items-center space-x-2 text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative">
+                        <i class="fas fa-flask text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Gravity Lab</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-cyan-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="min-h-screen flex items-center justify-center px-4 py-12">
+        <!-- Main Stellar Evolution Card -->
+        <div class="relative z-10 max-w-6xl mx-auto w-full px-4">
+            <div class="stellar-glow">
+                <div class="stellar-card p-8">
+                    <!-- Header -->
+                    <div class="text-center mb-8">
+                        <div class="flex justify-center mb-4">
+                            <i class="fas fa-star text-6xl stellar-icon animate-stellar-glow"></i>
+                        </div>
+                        <h1 class="text-4xl md:text-5xl font-bold mb-4 stellar-title">
+                            Stellar Evolution
+                        </h1>
+                        <p class="text-xl stellar-text mb-6">
+                            Watch stars evolve through their incredible lifecycles!
+                        </p>
+                    </div>
+                    
+                    <!-- Three.js Simulation Area - Full Screen -->
+                    <div class="relative w-full" style="height: 70vh; min-height: 500px;">
+                        <!-- Simulation Container - Full Size -->
+                        <div id="simulation-container" class="w-full h-full bg-black rounded-lg border border-gray-700 overflow-hidden relative">
+                            <!-- Three.js will render here -->
+                            
+                            <!-- Overlay UI System -->
+                            <div class="absolute inset-0 pointer-events-none">
+                                <!-- Top Left - Data Display -->
+                                <div class="absolute top-4 left-4 pointer-events-auto">
+                                    <div class="stellar-panel bg-black/80 backdrop-blur-sm">
+                                        <div class="grid grid-cols-3 gap-4 text-center">
+                                            <div>
+                                                <div class="text-xs stellar-text">Phase</div>
+                                                <div id="current-phase" class="text-sm font-bold stellar-subtitle">Nebula</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-xs stellar-text">Mass</div>
+                                                <div id="star-mass" class="text-sm font-bold stellar-subtitle">1.0 M☉</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-xs stellar-text">Metallicity</div>
+                                                <div id="star-metallicity" class="text-sm font-bold stellar-subtitle">0.02 Z☉</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Top Right - Timeline Controls -->
+                                <div class="absolute top-4 right-4 pointer-events-auto">
+                                    <div class="stellar-panel bg-black/80 backdrop-blur-sm">
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <button id="play-pause-btn" class="stellar-btn stellar-interactive text-sm px-3 py-2">
+                                                    <i class="fas fa-play mr-1"></i>
+                                                    Play
+                                                </button>
+                                                <div class="text-xs stellar-text">Speed:</div>
+                                                <select id="speed-select" class="bg-gray-700 text-white text-xs px-2 py-1 rounded">
+                                                    <option value="0.5">0.5x</option>
+                                                    <option value="1" selected>1x</option>
+                                                    <option value="2">2x</option>
+                                                    <option value="5">5x</option>
+                                                </select>
+                                            </div>
+                                            <!-- Countdown Timer -->
+                                            <div id="countdown-container" class="hidden">
+                                                <div class="text-xs stellar-text text-center mb-1">Next Phase In:</div>
+                                                <div id="countdown-timer" class="text-lg font-bold stellar-subtitle text-center">
+                                                    <span id="countdown-seconds">20</span>s
+                                                </div>
+                                                <div class="w-full bg-gray-700 rounded-full h-1 mt-1">
+                                                    <div id="countdown-progress" class="bg-gradient-to-r from-blue-400 to-purple-400 h-1 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Bottom Left - Main Controls -->
+                                <div class="absolute bottom-4 left-4 pointer-events-auto">
+                                    <div class="flex gap-2">
+                                        <button id="spawn-cloud-btn" class="stellar-btn stellar-interactive">
+                                            <i class="fas fa-cloud mr-2"></i>
+                                            Spawn Cloud
+                                        </button>
+                                        <button id="reset-btn" class="stellar-btn stellar-interactive bg-red-600 hover:bg-red-700">
+                                            <i class="fas fa-trash mr-2"></i>
+                                            Reset
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Bottom Right - Phase Info -->
+                                <div class="absolute bottom-4 right-4 pointer-events-auto">
+                                    <div class="stellar-panel bg-black/80 backdrop-blur-sm max-w-xs">
+                                        <div class="text-xs stellar-text mb-1">Evolution Progress</div>
+                                        <div class="stellar-progress mb-2">
+                                            <div id="evolution-progress" class="stellar-progress-bar" style="width: 0%"></div>
+                                        </div>
+                                        <div id="phase-description" class="text-xs stellar-text">
+                                            A dense cloud of gas and dust begins to collapse under its own gravity...
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Center - Instructions (when no cloud) -->
+                                <div id="instructions" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div class="text-center stellar-panel bg-black/80 backdrop-blur-sm p-6">
+                                        <i class="fas fa-cloud text-4xl stellar-icon mb-4"></i>
+                                        <h3 class="text-xl font-bold stellar-subtitle mb-2">Ready to Create a Star!</h3>
+                                        <p class="stellar-text">Click "Spawn Cloud" to begin stellar evolution</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cloud Selection Modal -->
+                    <div id="cloud-selection-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                        <div class="stellar-panel bg-gray-900 p-8 rounded-lg max-w-2xl mx-4 w-full">
+                            <div class="flex items-center mb-6">
+                                <i class="fas fa-cloud text-3xl stellar-icon mr-4"></i>
+                                <h3 class="text-2xl font-bold stellar-subtitle">Create Your Star</h3>
+                            </div>
+                            
+                            <!-- Star Type Selection -->
+                            <div class="mb-8">
+                                <h4 class="text-lg font-semibold stellar-subtitle mb-4">Star Type</h4>
+                                <div class="grid grid-cols-4 gap-3">
+                                    <button class="type-option stellar-btn stellar-interactive p-3 text-center" data-type="O">
+                                        <div class="text-lg font-bold text-blue-300">O</div>
+                                        <div class="text-xs stellar-text">Blue Giant</div>
+                                    </button>
+                                    <button class="type-option stellar-btn stellar-interactive p-3 text-center" data-type="B">
+                                        <div class="text-lg font-bold text-blue-200">B</div>
+                                        <div class="text-xs stellar-text">Blue</div>
+                                    </button>
+                                    <button class="type-option stellar-btn stellar-interactive p-3 text-center" data-type="A">
+                                        <div class="text-lg font-bold text-white">A</div>
+                                        <div class="text-xs stellar-text">White</div>
+                                    </button>
+                                    <button class="type-option stellar-btn stellar-interactive p-3 text-center" data-type="F">
+                                        <div class="text-lg font-bold text-yellow-100">F</div>
+                                        <div class="text-xs stellar-text">Yellow-White</div>
+                                    </button>
+                                    <button class="type-option stellar-btn stellar-interactive p-3 text-center" data-type="G">
+                                        <div class="text-lg font-bold text-yellow-300">G</div>
+                                        <div class="text-xs stellar-text">Yellow (Sun)</div>
+                                    </button>
+                                    <button class="type-option stellar-btn stellar-interactive p-3 text-center" data-type="K">
+                                        <div class="text-lg font-bold text-orange-300">K</div>
+                                        <div class="text-xs stellar-text">Orange</div>
+                                    </button>
+                                    <button class="type-option stellar-btn stellar-interactive p-3 text-center" data-type="M">
+                                        <div class="text-lg font-bold text-red-400">M</div>
+                                        <div class="text-xs stellar-text">Red Dwarf</div>
+                                    </button>
+                                    <button class="type-option stellar-btn stellar-interactive p-3 text-center" data-type="random">
+                                        <div class="text-lg font-bold text-purple-300">?</div>
+                                        <div class="text-xs stellar-text">Random</div>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="flex gap-4 justify-end">
+                                <button id="cancel-cloud-selection" class="px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
+                                    Cancel
+                                </button>
+                                <button id="spawn-selected-cloud" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    <i class="fas fa-magic mr-2"></i>
+                                    Spawn Star
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Confirmation Modal -->
+                    <div id="reset-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                        <div class="stellar-panel bg-gray-900 p-6 rounded-lg max-w-md mx-4">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-exclamation-triangle text-yellow-400 text-2xl mr-3"></i>
+                                <h3 class="text-lg font-bold stellar-subtitle">Reset Simulation</h3>
+                            </div>
+                            <p class="stellar-text mb-6">
+                                Are you sure you want to reset the simulation? This will clear the current gas cloud and return to the initial state.
+                            </p>
+                            <div class="flex gap-3 justify-end">
+                                <button id="cancel-reset" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
+                                    Cancel
+                                </button>
+                                <button id="confirm-reset" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                                    <i class="fas fa-trash mr-2"></i>
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stellar Evolution Timeline Preview -->
+                    <div class="mt-12">
+                        <h3 class="text-2xl font-bold stellar-subtitle text-center mb-8">Stellar Evolution Timeline</h3>
+                        <div class="stellar-timeline max-w-4xl mx-auto">
+                            <div class="stellar-timeline-item">
+                                <h4 class="text-lg font-semibold stellar-subtitle mb-2">Protostar</h4>
+                                <p class="stellar-text text-sm">A young star still forming from collapsing gas and dust clouds.</p>
+                            </div>
+                            <div class="stellar-timeline-item">
+                                <h4 class="text-lg font-semibold stellar-subtitle mb-2">Main Sequence</h4>
+                                <p class="stellar-text text-sm">The longest phase where stars fuse hydrogen into helium in their cores.</p>
+                            </div>
+                            <div class="stellar-timeline-item">
+                                <h4 class="text-lg font-semibold stellar-subtitle mb-2">Red Giant</h4>
+                                <p class="stellar-text text-sm">Stars expand and cool as they exhaust their hydrogen fuel.</p>
+                            </div>
+                            <div class="stellar-timeline-item">
+                                <h4 class="text-lg font-semibold stellar-subtitle mb-2">White Dwarf</h4>
+                                <p class="stellar-text text-sm">The dense, hot core left behind after a star sheds its outer layers.</p>
+                            </div>
+                            <div class="stellar-timeline-item">
+                                <h4 class="text-lg font-semibold stellar-subtitle mb-2">Supernova</h4>
+                                <p class="stellar-text text-sm">The explosive death of massive stars, creating heavy elements.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Animations -->
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes wiggle {
+            0%, 7% { transform: rotateZ(0); }
+            15% { transform: rotateZ(-15deg); }
+            20% { transform: rotateZ(10deg); }
+            25% { transform: rotateZ(-10deg); }
+            30% { transform: rotateZ(6deg); }
+            35% { transform: rotateZ(-4deg); }
+            40%, 100% { transform: rotateZ(0); }
+        }
+        
+        /* Selection Effects */
+        .type-option.selected {
+            background: linear-gradient(135deg, #7C3AED, #4F46E5) !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+        }
+        
+        .type-option:hover {
+            transform: scale(1.02);
+            transition: all 0.2s ease;
+        }
+        
+        .type-option {
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .type-option.selected {
+            border-color: #7C3AED;
+        }
+    </style>
+
+</body>
+</html>

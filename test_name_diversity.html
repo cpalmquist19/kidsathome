@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Name Diversity Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .system { border: 1px solid #ccc; margin: 10px 0; padding: 10px; }
+        .star { font-weight: bold; color: #0066cc; }
+        .planet { margin-left: 20px; color: #666; }
+    </style>
+</head>
+<body>
+    <h1>Name Diversity Test</h1>
+    <p>This test generates multiple systems with the same seed to verify that names are now diverse instead of repetitive.</p>
+    <button onclick="runTest()">Run Test</button>
+    <div id="results"></div>
+    
+    <script src="static/js/celestial_names_data.js"></script>
+    <script src="static/js/system_core.js"></script>
+    <script>
+        async function runTest() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Testing Name Diversity</h2>';
+            
+            try {
+                // Test with the same seed multiple times to see if names are now diverse
+                const seed = 'diversity-test-123';
+                
+                for (let i = 0; i < 3; i++) {
+                    resultsDiv.innerHTML += `<div class="system">`;
+                    resultsDiv.innerHTML += `<h3>System ${i + 1} (same seed: ${seed}):</h3>`;
+                    
+                    const data = await SystemGen.generateSystem({ seed: seed });
+                    
+                    resultsDiv.innerHTML += `<p class="star">⭐ Star: ${data.star.name}</p>`;
+                    
+                    if (data.planets.length > 0) {
+                        resultsDiv.innerHTML += `<p>🪐 Planets:</p>`;
+                        data.planets.forEach((planet, index) => {
+                            resultsDiv.innerHTML += `<p class="planet">${index + 1}. ${planet.name}</p>`;
+                        });
+                    } else {
+                        resultsDiv.innerHTML += `<p class="planet">No planets</p>`;
+                    }
+                    
+                    resultsDiv.innerHTML += `</div>`;
+                }
+                
+                // Test with different seeds to show they produce different results
+                resultsDiv.innerHTML += '<h3>Testing with different seeds (should be different):</h3>';
+                for (let i = 0; i < 3; i++) {
+                    const testSeed = `different-seed-${i}`;
+                    const data = await SystemGen.generateSystem({ seed: testSeed });
+                    resultsDiv.innerHTML += `<div class="system">`;
+                    resultsDiv.innerHTML += `<p class="star">⭐ Star: ${data.star.name} (seed: ${testSeed})</p>`;
+                    resultsDiv.innerHTML += `<p class="planet">Planets: ${data.planets.length}</p>`;
+                    resultsDiv.innerHTML += `</div>`;
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Test error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+/* Gravity Lab Custom Styles */
+
+/* Planet Button Styles */
+.planet-button {
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.planet-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.planet-button:active {
+    transform: translateY(0);
+}
+
+/* Mercury - Gray with orange accents */
+.planet-mercury {
+    background: linear-gradient(135deg, #8c7853, #c4a484);
+    color: #2c1810;
+    border-color: #d4af37;
+}
+
+.planet-mercury:hover {
+    background: linear-gradient(135deg, #a08863, #d4b894);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+}
+
+/* Venus - Yellow-white with sulfuric clouds */
+.planet-venus {
+    background: linear-gradient(135deg, #ffd700, #ffeb3b);
+    color: #8b4513;
+    border-color: #ff9800;
+}
+
+.planet-venus:hover {
+    background: linear-gradient(135deg, #ffeb3b, #fff59d);
+    box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4);
+}
+
+/* Earth - Blue with green accents */
+.planet-earth {
+    background: linear-gradient(135deg, #2196f3, #4caf50);
+    color: white;
+    border-color: #03a9f4;
+}
+
+.planet-earth:hover {
+    background: linear-gradient(135deg, #42a5f5, #66bb6a);
+    box-shadow: 0 8px 25px rgba(3, 169, 244, 0.4);
+}
+
+/* Mars - Red with orange highlights */
+.planet-mars {
+    background: linear-gradient(135deg, #f44336, #ff5722);
+    color: white;
+    border-color: #ff6b35;
+}
+
+.planet-mars:hover {
+    background: linear-gradient(135deg, #ef5350, #ff7043);
+    box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+}
+
+/* Jupiter - Orange with bands */
+.planet-jupiter {
+    background: linear-gradient(135deg, #ff9800, #ffc107);
+    color: #2c1810;
+    border-color: #ff6f00;
+}
+
+.planet-jupiter:hover {
+    background: linear-gradient(135deg, #ffb74d, #ffd54f);
+    box-shadow: 0 8px 25px rgba(255, 111, 0, 0.4);
+}
+
+/* Saturn - Golden yellow with rings accent */
+.planet-saturn {
+    background: linear-gradient(135deg, #ffeb3b, #ffc107);
+    color: #8b4513;
+    border-color: #ff9800;
+}
+
+.planet-saturn:hover {
+    background: linear-gradient(135deg, #fff59d, #ffd54f);
+    box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4);
+}
+
+/* Uranus - Cyan with blue tint */
+.planet-uranus {
+    background: linear-gradient(135deg, #00bcd4, #4fc3f7);
+    color: white;
+    border-color: #00acc1;
+}
+
+.planet-uranus:hover {
+    background: linear-gradient(135deg, #26c6da, #81d4fa);
+    box-shadow: 0 8px 25px rgba(0, 172, 193, 0.4);
+}
+
+/* Neptune - Deep blue */
+.planet-neptune {
+    background: linear-gradient(135deg, #3f51b5, #2196f3);
+    color: white;
+    border-color: #303f9f;
+}
+
+.planet-neptune:hover {
+    background: linear-gradient(135deg, #5c6bc0, #42a5f5);
+    box-shadow: 0 8px 25px rgba(48, 63, 159, 0.4);
+}
+
+/* Pluto - Brownish-gray with icy highlights */
+.planet-pluto {
+    background: linear-gradient(135deg, #8d6e63, #a1887f);
+    color: #3e2723;
+    border-color: #5d4037;
+}
+
+.planet-pluto:hover {
+    background: linear-gradient(135deg, #a1887f, #bcaaa4);
+    box-shadow: 0 8px 25px rgba(93, 64, 55, 0.4);
+}
+
+/* Phobos - Reddish-brown with cratered surface */
+.planet-phobos {
+    background: linear-gradient(135deg, #d32f2f, #f44336);
+    color: #ffebee;
+    border-color: #b71c1c;
+}
+
+.planet-phobos:hover {
+    background: linear-gradient(135deg, #f44336, #ff5722);
+    box-shadow: 0 8px 25px rgba(183, 28, 28, 0.4);
+}
+
+/* Deimos - Darker reddish-brown with irregular shape */
+.planet-deimos {
+    background: linear-gradient(135deg, #b71c1c, #d32f2f);
+    color: #ffebee;
+    border-color: #8d0000;
+}
+
+.planet-deimos:hover {
+    background: linear-gradient(135deg, #d32f2f, #f44336);
+    box-shadow: 0 8px 25px rgba(141, 0, 0, 0.4);
+}
+
+/* Ceres - Rocky asteroid-like appearance */
+.planet-ceres {
+    background: linear-gradient(135deg, #795548, #8d6e63);
+    color: #efebe9;
+    border-color: #5d4037;
+}
+
+.planet-ceres:hover {
+    background: linear-gradient(135deg, #8d6e63, #a1887f);
+    box-shadow: 0 8px 25px rgba(93, 64, 55, 0.4);
+}
+
+/* Haumea - Egg-shaped with icy surface */
+.planet-haumea {
+    background: linear-gradient(135deg, #e1f5fe, #b3e5fc);
+    color: #01579b;
+    border-color: #0277bd;
+}
+
+.planet-haumea:hover {
+    background: linear-gradient(135deg, #b3e5fc, #81d4fa);
+    box-shadow: 0 8px 25px rgba(2, 119, 189, 0.4);
+}
+
+/* Makemake - Icy surface with reddish tint */
+.planet-makemake {
+    background: linear-gradient(135deg, #ffebee, #ffcdd2);
+    color: #b71c1c;
+    border-color: #d32f2f;
+}
+
+.planet-makemake:hover {
+    background: linear-gradient(135deg, #ffcdd2, #ef9a9a);
+    box-shadow: 0 8px 25px rgba(211, 47, 47, 0.4);
+}
+
+/* Eris - Icy surface with blue tint */
+.planet-eris {
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    color: #0d47a1;
+    border-color: #1976d2;
+}
+
+.planet-eris:hover {
+    background: linear-gradient(135deg, #bbdefb, #90caf9);
+    box-shadow: 0 8px 25px rgba(25, 118, 210, 0.4);
+}
+
+/* Gonggong - Reddish surface */
+.planet-gonggong {
+    background: linear-gradient(135deg, #ff5722, #ff7043);
+    color: #fff3e0;
+    border-color: #e64a19;
+}
+
+.planet-gonggong:hover {
+    background: linear-gradient(135deg, #ff7043, #ffab91);
+    box-shadow: 0 8px 25px rgba(230, 74, 25, 0.4);
+}
+
+/* Quaoar - Rocky surface */
+.planet-quaoar {
+    background: linear-gradient(135deg, #8d6e63, #a1887f);
+    color: #efebe9;
+    border-color: #5d4037;
+}
+
+.planet-quaoar:hover {
+    background: linear-gradient(135deg, #a1887f, #bcaaa4);
+    box-shadow: 0 8px 25px rgba(93, 64, 55, 0.4);
+}
+
+/* Sedna - Deep red surface */
+.planet-sedna {
+    background: linear-gradient(135deg, #d32f2f, #f44336);
+    color: #ffebee;
+    border-color: #b71c1c;
+}
+
+.planet-sedna:hover {
+    background: linear-gradient(135deg, #f44336, #ff5722);
+    box-shadow: 0 8px 25px rgba(183, 28, 28, 0.4);
+}
+
+/* Orcus - Dark, mysterious surface */
+.planet-orcus {
+    background: linear-gradient(135deg, #424242, #616161);
+    color: #fafafa;
+    border-color: #212121;
+}
+
+.planet-orcus:hover {
+    background: linear-gradient(135deg, #616161, #757575);
+    box-shadow: 0 8px 25px rgba(33, 33, 33, 0.4);
+}
+
+/* Salacia - Ocean-like surface */
+.planet-salacia {
+    background: linear-gradient(135deg, #2196f3, #64b5f6);
+    color: #e3f2fd;
+    border-color: #1976d2;
+}
+
+.planet-salacia:hover {
+    background: linear-gradient(135deg, #64b5f6, #90caf9);
+    box-shadow: 0 8px 25px rgba(25, 118, 210, 0.4);
+}
+
+/* Moon - Gray with crater effect */
+.planet-moon {
+    background: linear-gradient(135deg, #9e9e9e, #bdbdbd);
+    color: #2c1810;
+    border-color: #757575;
+}
+
+.planet-moon:hover {
+    background: linear-gradient(135deg, #bdbdbd, #e0e0e0);
+    box-shadow: 0 8px 25px rgba(117, 117, 117, 0.4);
+}
+
+/* Sun - Bright yellow with orange corona */
+.planet-sun {
+    background: linear-gradient(135deg, #ffeb3b, #ff9800);
+    color: #8b4513;
+    border-color: #ff6f00;
+    animation: sunGlow 2s ease-in-out infinite alternate;
+}
+
+.planet-sun:hover {
+    background: linear-gradient(135deg, #fff59d, #ffb74d);
+    box-shadow: 0 8px 25px rgba(255, 111, 0, 0.6);
+}
+
+@keyframes sunGlow {
+    0% { box-shadow: 0 0 20px rgba(255, 193, 7, 0.5); }
+    100% { box-shadow: 0 0 30px rgba(255, 152, 0, 0.8); }
+}
+
+/* Planet icons */
+.planet-icon {
+    font-size: 1.2em;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Special effects for gas giants */
+.planet-jupiter::before,
+.planet-saturn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: bandShimmer 3s infinite;
+}
+
+@keyframes bandShimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Ring effect for Saturn */
+.planet-saturn {
+    position: relative;
+}
+
+.planet-saturn::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 2px solid rgba(255, 193, 7, 0.3);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* Custom scrollbar styling */
+.scrollbar-thin {
+    scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: #374151;
+    border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #6b7280;
+    border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .planet-button {
+        padding: 10px 12px;
+        font-size: 0.9em;
+    }
+    
+    .planet-icon {
+        font-size: 1em;
+    }
+}

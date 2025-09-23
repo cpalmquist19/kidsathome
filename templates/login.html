@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Kids at Home</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_file('css/auth.css') }}">
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cosmic-purple': '#7C3AED',
+                        'space-blue': '#2563EB',
+                        'star-gold': '#D97706',
+                        'nebula-pink': '#BE185D',
+                        'galaxy-indigo': '#4F46E5'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- Starfield Background -->
+    <div class="starfield">
+        <!-- Floating planets will be added by JavaScript -->
+    </div>
+
+    <!-- Main Content -->
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- Header -->
+            <div class="auth-header">
+                <span class="auth-icon">🚀</span>
+                <h1 class="auth-title">Welcome Back, Space Explorer!</h1>
+                <p class="auth-subtitle">Sign in to continue your cosmic journey</p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Login Form -->
+            <form class="auth-form" method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user mr-2"></i>Username
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        class="form-input" 
+                        placeholder="Enter your username"
+                        required
+                        autocomplete="username"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock mr-2"></i>Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input" 
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+
+                <div class="checkbox-group">
+                    <input 
+                        type="checkbox" 
+                        id="remember" 
+                        name="remember" 
+                        class="checkbox-input"
+                    >
+                    <label for="remember" class="checkbox-label">
+                        Remember me for 30 days
+                    </label>
+                </div>
+
+                <button type="submit" class="auth-button">
+                    <i class="fas fa-rocket mr-2"></i>
+                    Launch Into Space
+                </button>
+            </form>
+
+            <!-- Footer Links -->
+            <div class="auth-footer">
+                <p>
+                    <a href="{{ url_for('forgot_password') }}" class="auth-link">
+                        <i class="fas fa-key mr-1"></i>
+                        Forgot your password?
+                    </a>
+                </p>
+                <p>
+                    Don't have an account? 
+                    <a href="{{ url_for('register') }}" class="auth-link">
+                        <i class="fas fa-user-plus mr-1"></i>
+                        Join the mission
+                    </a>
+                </p>
+                <p>
+                    <a href="{{ url_for('index') }}" class="auth-link">
+                        <i class="fas fa-home mr-1"></i>
+                        Back to Home
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ static_file('js/auth.js') }}"></script>
+</body>
+</html>

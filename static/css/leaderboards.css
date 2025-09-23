@@ -1,0 +1,280 @@
+/* Leaderboards Page Specific Styles */
+
+/* Leaderboard Card Styles */
+.leaderboard-card {
+    @apply relative bg-gray-900 rounded-3xl p-8 border border-gray-800 transition-all duration-300 transform hover:scale-105 hover:-translate-y-2;
+    background: linear-gradient(135deg, rgba(17, 24, 39, 0.8) 0%, rgba(31, 41, 55, 0.6) 100%);
+    backdrop-filter: blur(10px);
+}
+
+.leaderboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 1.5rem;
+    padding: 2px;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.leaderboard-card:hover::before {
+    opacity: 1;
+}
+
+/* Space Explorer Card */
+.leaderboard-card.space-explorer {
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.leaderboard-card.space-explorer:hover {
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 20px 40px rgba(139, 92, 246, 0.2);
+}
+
+.leaderboard-card.space-explorer::before {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));
+}
+
+/* Gravity Lab Card */
+.leaderboard-card.gravity-lab {
+    border-color: rgba(34, 211, 238, 0.3);
+}
+
+.leaderboard-card.gravity-lab:hover {
+    border-color: rgba(34, 211, 238, 0.6);
+    box-shadow: 0 20px 40px rgba(34, 211, 238, 0.2);
+}
+
+.leaderboard-card.gravity-lab::before {
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.3), rgba(59, 130, 246, 0.3), rgba(34, 211, 238, 0.3));
+}
+
+/* Stellar Evolution Card */
+.leaderboard-card.stellar-evolution {
+    border-color: rgba(251, 146, 60, 0.3);
+}
+
+.leaderboard-card.stellar-evolution:hover {
+    border-color: rgba(251, 146, 60, 0.6);
+    box-shadow: 0 20px 40px rgba(251, 146, 60, 0.2);
+}
+
+.leaderboard-card.stellar-evolution::before {
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.3), rgba(239, 68, 68, 0.3), rgba(251, 146, 60, 0.3));
+}
+
+/* Leaderboard Header */
+.leaderboard-header {
+    @apply text-center mb-8;
+}
+
+.leaderboard-icon {
+    @apply mb-4;
+    animation: float 6s ease-in-out infinite;
+}
+
+.leaderboard-title {
+    @apply text-2xl font-bold text-white mb-2;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.leaderboard-subtitle {
+    @apply text-gray-400 text-sm;
+}
+
+/* Leaderboard Content */
+.leaderboard-content {
+    @apply relative;
+}
+
+.leaderboard-list {
+    @apply space-y-3;
+}
+
+/* Leaderboard Entry */
+.leaderboard-entry {
+    @apply flex items-center p-4 rounded-xl bg-gray-800/50 border border-gray-700/50 transition-all duration-300 hover:bg-gray-700/50 hover:border-gray-600/50;
+    backdrop-filter: blur(5px);
+}
+
+.leaderboard-entry.rank-1 {
+    @apply bg-gradient-to-r from-yellow-900/30 to-yellow-800/20 border-yellow-600/40;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+.leaderboard-entry.rank-2 {
+    @apply bg-gradient-to-r from-gray-700/50 to-gray-600/30 border-gray-500/40;
+}
+
+.leaderboard-entry.rank-3 {
+    @apply bg-gradient-to-r from-orange-900/30 to-orange-800/20 border-orange-600/40;
+}
+
+.leaderboard-entry:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Rank Styling */
+.rank {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mr-4 flex-shrink-0;
+    background: linear-gradient(135deg, #374151, #4b5563);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-entry.rank-1 .rank {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #1f2937;
+    border-color: #f59e0b;
+}
+
+.leaderboard-entry.rank-2 .rank {
+    background: linear-gradient(135deg, #9ca3af, #6b7280);
+    color: #1f2937;
+    border-color: #6b7280;
+}
+
+.leaderboard-entry.rank-3 .rank {
+    background: linear-gradient(135deg, #fb923c, #ea580c);
+    color: #1f2937;
+    border-color: #ea580c;
+}
+
+/* Player Info */
+.player-info {
+    @apply flex-1;
+}
+
+.player-name {
+    @apply text-white font-medium text-sm;
+}
+
+.player-score {
+    @apply text-gray-400 text-xs mt-1;
+}
+
+/* Rank Icons */
+.rank-icon {
+    @apply text-xl flex-shrink-0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .leaderboard-card {
+        @apply p-6;
+    }
+    
+    .leaderboard-title {
+        @apply text-xl;
+    }
+}
+
+@media (max-width: 768px) {
+    .leaderboard-card {
+        @apply p-4;
+    }
+    
+    .leaderboard-entry {
+        @apply p-3;
+    }
+    
+    .rank {
+        @apply w-6 h-6 text-xs;
+    }
+    
+    .player-name {
+        @apply text-xs;
+    }
+    
+    .player-score {
+        @apply text-xs;
+    }
+}
+
+/* Loading Animation */
+.leaderboard-loading {
+    @apply animate-pulse;
+}
+
+.leaderboard-loading .leaderboard-entry {
+    @apply bg-gray-800/30;
+}
+
+.leaderboard-loading .player-name,
+.leaderboard-loading .player-score {
+    @apply bg-gray-700 rounded;
+    height: 1rem;
+    width: 60%;
+}
+
+.leaderboard-loading .rank {
+    @apply bg-gray-700;
+}
+
+/* Trophy Animation */
+@keyframes trophy-bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+.leaderboard-entry.rank-1 .rank-icon {
+    animation: trophy-bounce 2s infinite;
+}
+
+/* Glow Effect for Top 3 */
+.leaderboard-entry.rank-1::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #fbbf24, #f59e0b, #fbbf24);
+    border-radius: 0.75rem;
+    z-index: -1;
+    opacity: 0.3;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+.leaderboard-entry.rank-2::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #9ca3af, #6b7280, #9ca3af);
+    border-radius: 0.75rem;
+    z-index: -1;
+    opacity: 0.2;
+}
+
+.leaderboard-entry.rank-3::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #fb923c, #ea580c, #fb923c);
+    border-radius: 0.75rem;
+    z-index: -1;
+    opacity: 0.2;
+}

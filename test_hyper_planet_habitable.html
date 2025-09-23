@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hyper Planet Habitable Test</title>
+    <script src="static/js/celestial_names_data.js"></script>
+    <script src="static/js/system_core.js"></script>
+</head>
+<body>
+    <h1>Hyper Planet Habitable World Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testHyperPlanetHabitable() {
+            const results = document.getElementById('results');
+            let testCount = 0;
+            let hyperPlanetCount = 0;
+            let destroyedHabitableCount = 0;
+            
+            results.innerHTML = '<p>Testing for Hyper Planets with destroyed habitable worlds...</p>';
+            
+            // Test many systems to find Hyper Planets
+            for (let i = 0; i < 1000; i++) {
+                testCount++;
+                
+                try {
+                    const system = await SystemGen.generateSystem();
+                    const hasHyperPlanet = system.planets.some(p => p.isHyperPlanet);
+                    
+                    if (hasHyperPlanet) {
+                        hyperPlanetCount++;
+                        const destroyedPlanets = system.planets.filter(p => p.destroyedByHyperPlanet);
+                        const habitablePlanets = system.planets.filter(p => p.habitable);
+                        
+                        results.innerHTML += `
+                            <div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">
+                                <h3>System ${hyperPlanetCount}: ${system.star.name}</h3>
+                                <p><strong>Star Type:</strong> ${system.star.type}</p>
+                                <p><strong>Total Planets:</strong> ${system.planets.length}</p>
+                                <p><strong>Hyper Planet:</strong> ${system.planets.find(p => p.isHyperPlanet)?.name || 'None'}</p>
+                                <p><strong>Destroyed Habitable Planets:</strong> ${destroyedPlanets.length}</p>
+                                <p><strong>Remaining Habitable Planets:</strong> ${habitablePlanets.length}</p>
+                                
+                                <h4>Planet Details:</h4>
+                                ${system.planets.map(planet => `
+                                    <div style="margin-left: 20px; border-left: 3px solid ${planet.isHyperPlanet ? 'red' : planet.destroyedByHyperPlanet ? 'orange' : 'green'}; padding-left: 10px;">
+                                        <strong>${planet.name}</strong> (${planet.type})
+                                        ${planet.isHyperPlanet ? '<br/>🔥 HYPER PLANET' : ''}
+                                        ${planet.destroyedByHyperPlanet ? '<br/>💀 DESTROYED BY HYPER PLANET' : ''}
+                                        ${planet.habitable ? '<br/>✨ HABITABLE' : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                        
+                        if (destroyedPlanets.length > 0) {
+                            destroyedHabitableCount++;
+                        }
+                        
+                        // Stop after finding 5 Hyper Planet systems
+                        if (hyperPlanetCount >= 5) break;
+                    }
+                } catch (error) {
+                    console.error('Error generating system:', error);
+                }
+            }
+            
+            results.innerHTML += `
+                <div style="background: #f0f0f0; padding: 20px; margin: 20px 0;">
+                    <h2>Test Summary</h2>
+                    <p><strong>Total Systems Tested:</strong> ${testCount}</p>
+                    <p><strong>Hyper Planet Systems Found:</strong> ${hyperPlanetCount}</p>
+                    <p><strong>Systems with Destroyed Habitable Worlds:</strong> ${destroyedHabitableCount}</p>
+                    <p><strong>Success Rate:</strong> ${hyperPlanetCount > 0 ? (destroyedHabitableCount / hyperPlanetCount * 100).toFixed(1) : 0}%</p>
+                </div>
+            `;
+        }
+        
+        // Run the test when page loads
+        window.addEventListener('load', testHyperPlanetHabitable);
+    </script>
+</body>
+</html>

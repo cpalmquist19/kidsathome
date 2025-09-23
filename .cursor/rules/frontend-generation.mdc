@@ -1,0 +1,9 @@
+---
+description: Clarify generation takes place on the frontend
+globs:
+alwaysApply: true
+---
+
+The backend generation for systems, names, planets, stars, etc. in the /generator folder are deprecated. They are no longer used.
+
+All generation code is located in the statis/js folder as .js files. When adding or maintaining generation code, the javascript files are the ones that should be created / maintained.

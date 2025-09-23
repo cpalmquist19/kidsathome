@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids at Home</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cosmic-purple': '#7C3AED',
+                        'space-blue': '#2563EB',
+                        'star-gold': '#D97706',
+                        'nebula-pink': '#BE185D',
+                        'galaxy-indigo': '#4F46E5'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="relative bg-gradient-to-b from-blue-900/95 to-blue-800/95 backdrop-blur-sm sticky top-0 z-50">
+        <!-- Enhanced starfield background -->
+        <div class="absolute inset-0 opacity-30">
+            <!-- Row 1 -->
+            <div class="absolute top-1 left-1/6 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-1 left-1/3 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-1 left-1/2 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            <div class="absolute top-1 left-2/3 w-0.5 h-0.5 bg-cyan-200 rounded-full"></div>
+            <div class="absolute top-1 left-5/6 w-0.5 h-0.5 bg-white rounded-full"></div>
+            
+            <!-- Row 2 -->
+            <div class="absolute top-3 left-1/8 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute top-3 left-2/5 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            <div class="absolute top-3 left-3/5 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-3 left-7/8 w-0.5 h-0.5 bg-white rounded-full"></div>
+            
+            <!-- Row 3 -->
+            <div class="absolute top-5 left-1/4 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-5 left-1/2 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-5 left-3/4 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            
+            <!-- Row 4 -->
+            <div class="absolute top-7 left-1/6 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-7 left-2/5 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-7 left-3/5 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute top-7 left-5/6 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            
+            <!-- Random scattered stars -->
+            <div class="absolute top-2 left-1/12 w-0.5 h-0.5 bg-cyan-200 rounded-full"></div>
+            <div class="absolute top-4 left-1/10 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-6 left-1/15 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            <div class="absolute top-2 right-1/12 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-4 right-1/10 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-6 right-1/15 w-0.5 h-0.5 bg-white rounded-full"></div>
+        </div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo Section -->
+                <a href="#" class="group flex items-center space-x-3 hover:scale-105 transition-transform duration-300">
+                    <div class="relative">
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <span class="text-2xl font-bold text-white group-hover:text-gray-200 transition-colors duration-300">
+                        Kids at Home
+                    </span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="#games" class="group flex items-center space-x-2 text-gray-300 hover:text-blue-400 transition-colors duration-300 relative">
+                        <i class="fas fa-gamepad text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Games</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/leaderboards" class="group flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors duration-300 relative">
+                        <i class="fas fa-trophy text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Leaderboards</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="#about" class="group flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-colors duration-300 relative">
+                        <i class="fas fa-info-circle text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">About</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    {% if current_user.is_authenticated %}
+                        <button onclick="showLogoutModal()" class="group flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors duration-300 relative">
+                            <i class="fas fa-sign-out-alt text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                            <span class="font-medium">Logout</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-red-400 group-hover:w-full transition-all duration-300"></div>
+                        </button>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="group flex items-center space-x-2 text-gray-300 hover:text-green-400 transition-colors duration-300 relative">
+                            <i class="fas fa-sign-in-alt text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                            <span class="font-medium">Login</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-400 group-hover:w-full transition-all duration-300"></div>
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button class="text-gray-300 hover:text-white transition-colors duration-300 p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="relative bg-gradient-to-b from-gray-900 to-black min-h-screen flex items-center justify-center overflow-hidden">
+        <!-- Background Stars -->
+        <div class="absolute inset-0 opacity-60">
+            <div class="absolute top-1/5 left-1/5 w-1 h-1 bg-white rounded-full"></div>
+            <div class="absolute top-1/3 right-1/4 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute bottom-1/3 left-1/6 w-1.5 h-1.5 bg-purple-300 rounded-full"></div>
+            <div class="absolute bottom-1/5 right-1/5 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-1/2 left-1/8 w-1 h-1 bg-white rounded-full"></div>
+            <div class="absolute top-2/3 right-1/8 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute top-1/6 left-1/3 w-1 h-1 bg-purple-300 rounded-full"></div>
+            <div class="absolute bottom-1/4 left-1/2 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-3/4 right-1/3 w-1.5 h-1.5 bg-white rounded-full"></div>
+            <div class="absolute bottom-1/6 right-1/2 w-1 h-1 bg-blue-300 rounded-full"></div>
+        </div>
+        
+        <!-- Main Hero Content -->
+        <div class="relative z-10 text-center px-4 max-w-4xl mx-auto">
+            <!-- Hero Card with Subtle Glow Effect -->
+            <div class="group relative mb-8">
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-purple-600/30 via-blue-600/30 to-indigo-600/30 rounded-xl blur-sm group-hover:blur-md transition-all duration-500"></div>
+                <div class="relative bg-gray-900/80 backdrop-blur-sm rounded-xl p-7 border border-gray-700/50">
+                    <!-- Header with Rocket and Title -->
+                    <div class="flex flex-col items-center mb-7">
+                        <span class="text-3xl md:text-4xl mb-3 block">🚀</span>
+                        <h1 class="text-2xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                            {% if current_user.is_authenticated %}
+                                Welcome back, {{ current_user.username }}!
+                            {% else %}
+                                Welcome to Kids at Home
+                            {% endif %}
+                        </h1>
+                        <p class="text-base md:text-lg text-gray-300 font-medium">
+                            {% if current_user.is_authenticated %}
+                                Ready to continue your cosmic adventure?
+                            {% else %}
+                                Discover amazing games and explore new worlds
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <!-- Jupiter Image -->
+                    <div class="flex justify-center">
+                        <img src="{{ static_file('images/Kids-At-Home-Jupiter-Animation.gif') }}" 
+                             alt="Jupiter Pixel Art" 
+                             class="max-w-72 md:max-w-88 h-auto rounded-lg shadow-xl hover:scale-105 transition-transform duration-300">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scroll Indicator -->
+            <a href="#games" class="inline-block hover:scale-110 transition-transform duration-300 group">
+                <div class="relative">
+                    <i class="fas fa-chevron-down text-2xl text-yellow-400 group-hover:text-yellow-300 transition-colors duration-300"></i>
+                    <div class="absolute inset-0 bg-yellow-400/20 rounded-full blur-sm group-hover:bg-yellow-300/30 transition-colors duration-300"></div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Games Section -->
+    <section id="games" class="py-20 bg-gradient-to-b from-gray-900 to-black">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-4">
+                    Featured Games
+                </h2>
+                <p class="text-xl text-gray-300">Choose your adventure and start exploring</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12 max-w-6xl mx-auto">
+                <!-- Space Explorer Card -->
+                <a href="/system_generator" class="group relative block">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
+                    <div class="relative bg-gray-900 rounded-3xl p-8 border border-gray-800 hover:border-purple-500 transition-all duration-300 transform group-hover:scale-105 group-hover:-translate-y-2">
+                        <div class="text-center">
+                            <div class="mb-6">
+                                <span class="text-5xl md:text-6xl mb-4 block">🚀</span>
+                                <div class="flex justify-center space-x-3 mb-4">
+                                    <i class="fas fa-star text-blue-300"></i>
+                                    <i class="fas fa-moon text-indigo-300"></i>
+                                    <i class="fas fa-globe text-cyan-300"></i>
+                                </div>
+                            </div>
+                            <h3 class="text-3xl font-bold text-white mb-4 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+                                Space Explorer
+                            </h3>
+                            <p class="text-gray-300 text-lg mb-8 leading-relaxed">
+                                Create and discover unique star systems. Generate main sequence stars, white dwarfs, pulsars, and even rare magnetars. Explore planetary systems and find potentially habitable worlds.
+                            </p>
+                            <div class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-full group-hover:from-purple-700 group-hover:to-blue-700 transition-all duration-300 shadow-lg group-hover:shadow-purple-500/25">
+                                <i class="fas fa-play mr-3 text-xl"></i>
+                                Explore Now
+                                <i class="fas fa-arrow-right ml-3"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                
+                <!-- Gravity Lab Card -->
+                <a href="/gravity_lab" class="group relative block">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
+                    <div class="relative bg-gray-900 rounded-3xl p-8 border border-gray-800 hover:border-cyan-500 transition-all duration-300 transform group-hover:scale-105 group-hover:-translate-y-2">
+                        <div class="text-center">
+                            <div class="mb-6">
+                                <i class="fas fa-flask text-5xl md:text-6xl text-cyan-400 group-hover:scale-110 transition-transform duration-300 mb-4"></i>
+                                <div class="flex justify-center space-x-3 mb-4">
+                                    <i class="fas fa-weight text-blue-300"></i>
+                                    <i class="fas fa-balance-scale text-cyan-300"></i>
+                                    <i class="fas fa-globe text-indigo-300"></i>
+                                </div>
+                            </div>
+                            <h3 class="text-3xl font-bold text-white mb-4 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                                Gravity Lab
+                            </h3>
+                            <p class="text-gray-300 text-lg mb-8 leading-relaxed">
+                                Discover how gravity affects your weight across the universe! Enter your weight and height, then see how much you'd weigh on different planets, moons, stars, and other astronomical bodies.
+                            </p>
+                            <div class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-full group-hover:from-cyan-700 group-hover:to-blue-700 transition-all duration-300 shadow-lg group-hover:shadow-cyan-500/25">
+                                <i class="fas fa-play mr-3 text-xl"></i>
+                                Experiment Now
+                                <i class="fas fa-arrow-right ml-3"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                
+                <!-- Stellar Evolution Card -->
+                <a href="/stellar_evolution" class="group relative block">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
+                    <div class="relative bg-gray-900 rounded-3xl p-8 border border-gray-800 hover:border-orange-500 transition-all duration-300 transform group-hover:scale-105 group-hover:-translate-y-2">
+                        <div class="text-center">
+                            <div class="mb-6">
+                                <i class="fas fa-star text-5xl md:text-6xl text-orange-400 group-hover:scale-110 transition-transform duration-300 mb-4"></i>
+                                <div class="flex justify-center space-x-3 mb-4">
+                                    <i class="fas fa-sun text-yellow-300"></i>
+                                    <i class="fas fa-circle text-red-300"></i>
+                                    <i class="fas fa-moon text-gray-300"></i>
+                                </div>
+                            </div>
+                            <h3 class="text-3xl font-bold text-white mb-4 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                                Stellar Evolution
+                            </h3>
+                            <p class="text-gray-300 text-lg mb-8 leading-relaxed">
+                                Watch stars evolve through their lifecycles! From protostars to red giants, white dwarfs to supernovae, explore the incredible journey of stellar evolution and discover what happens to stars over billions of years.
+                            </p>
+                            <div class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-full group-hover:from-orange-700 group-hover:to-red-700 transition-all duration-300 shadow-lg group-hover:shadow-orange-500/25">
+                                <i class="fas fa-play mr-3 text-xl"></i>
+                                Evolve Now
+                                <i class="fas fa-arrow-right ml-3"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            
+            <!-- Matter Eater Card (Commented Out - Preserved for Future Use) -->
+            <!--
+            <a href="/unieat" class="group relative block">
+                <div class="absolute -inset-1 bg-gradient-to-r from-green-600 via-emerald-600 to-cyan-600 rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
+                <div class="relative bg-gray-900 rounded-3xl p-8 border border-gray-800 hover:border-green-500 transition-all duration-300 transform group-hover:scale-105 group-hover:-translate-y-2">
+                    <div class="text-center">
+                        <div class="mb-6">
+                            <i class="fas fa-circle text-5xl md:text-6xl text-emerald-400 group-hover:scale-110 transition-transform duration-300 mb-4"></i>
+                            <div class="flex justify-center space-x-3 mb-4">
+                                <i class="fas fa-circle text-red-400"></i>
+                                <i class="fas fa-circle text-yellow-400"></i>
+                                <i class="fas fa-circle text-green-400"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-3xl font-bold text-white mb-4 bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
+                            Eat The Entire Universe
+                        </h3>
+                        <p class="text-gray-300 text-lg mb-8 leading-relaxed">
+                            Navigate through space, consume matter to grow, and avoid obstacles. Test your skills in this physics-based survival game.
+                        </p>
+                        <div class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-full group-hover:from-green-700 group-hover:to-emerald-700 transition-all duration-300 shadow-lg group-hover:shadow-green-500/25">
+                            <i class="fas fa-play mr-3 text-xl"></i>
+                            Play Now
+                            <i class="fas fa-arrow-right ml-3"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            -->
+            
+            <!-- Coming Soon Section -->
+            <div class="mt-16 text-center">
+                <div class="inline-block bg-gradient-to-r from-indigo-600 to-purple-700 p-1 rounded-2xl">
+                    <div class="bg-gray-900 rounded-xl px-8 py-6">
+                        <i class="fas fa-plus text-3xl text-indigo-400 mb-4"></i>
+                        <h3 class="text-2xl font-bold text-white mb-2">More Games Coming Soon</h3>
+                        <p class="text-gray-400">New adventures are in development</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gradient-to-b from-gray-900 to-black border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="text-center">
+                <!-- Footer Card with Glow Effect -->
+                <div class="group relative mb-8">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
+                    <div class="relative bg-gray-900 rounded-3xl p-8 border border-gray-800">
+                        <div class="mb-6">
+                            <span class="text-3xl mb-4 block">🚀</span>
+                            <h3 class="text-2xl font-bold text-white mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Kids at Home</h3>
+                            <p class="text-gray-300">Where Learning Meets Adventure!</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-700 pt-6">
+                    <p class="text-gray-400">
+                        © {{ current_year }} Kids at Home - Where Learning Meets Adventure
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Custom Animations -->
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes wiggle {
+            0%, 7% { transform: rotateZ(0); }
+            15% { transform: rotateZ(-15deg); }
+            20% { transform: rotateZ(10deg); }
+            25% { transform: rotateZ(-10deg); }
+            30% { transform: rotateZ(6deg); }
+            35% { transform: rotateZ(-4deg); }
+            40%, 100% { transform: rotateZ(0); }
+        }
+    </style>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <!-- Modal Header -->
+            <div class="text-center mb-6">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-sign-out-alt text-2xl text-red-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Confirm Logout</h3>
+                <p class="text-gray-300">Are you sure you want to log out? You'll need to sign in again to access your account.</p>
+            </div>
+            
+            <!-- Modal Actions -->
+            <div class="flex space-x-4">
+                <button onclick="hideLogoutModal()" class="flex-1 px-6 py-3 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                    Cancel
+                </button>
+                <a href="{{ url_for('logout') }}" class="flex-1 px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-center">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ static_file('js/system_generator.js') }}"></script>
+    
+    <!-- Logout Modal JavaScript -->
+    <script>
+        function showLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modal.classList.remove('hidden');
+            // Trigger animation after a small delay to ensure the modal is visible
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        
+        function hideLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            // Hide modal after animation completes
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('logoutModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideLogoutModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideLogoutModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Boss - Space Explorer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cosmic-purple': '#7C3AED',
+                        'space-blue': '#2563EB',
+                        'star-gold': '#D97706',
+                        'nebula-pink': '#BE185D',
+                        'galaxy-indigo': '#4F46E5',
+                        'boss-red': '#DC2626',
+                        'boss-dark': '#1F2937',
+                        'boss-orange': '#EA580C'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'boss-pulse': 'boss-pulse 2s ease-in-out infinite',
+                        'boss-shake': 'boss-shake 0.5s ease-in-out infinite',
+                        'energy-flow': 'energy-flow 3s linear infinite'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body{% if current_user.is_authenticated %} class="logged-in" data-user-id="{{ current_user.id }}"{% endif %}>
+    <!-- Navigation -->
+    <nav class="relative bg-gradient-to-b from-red-900/95 to-red-800/95 backdrop-blur-sm sticky top-0 z-50">
+        <!-- Enhanced starfield background -->
+        <div class="absolute inset-0 opacity-30">
+            <!-- Row 1 -->
+            <div class="absolute top-1 left-1/6 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-1 left-1/3 w-0.5 h-0.5 bg-red-200 rounded-full"></div>
+            <div class="absolute top-1 left-1/2 w-0.5 h-0.5 bg-orange-200 rounded-full"></div>
+            <div class="absolute top-1 left-2/3 w-0.5 h-0.5 bg-yellow-200 rounded-full"></div>
+            <div class="absolute top-1 left-5/6 w-0.5 h-0.5 bg-white rounded-full"></div>
+            
+            <!-- Row 2 -->
+            <div class="absolute top-3 left-1/8 w-0.5 h-0.5 bg-red-300 rounded-full"></div>
+            <div class="absolute top-3 left-2/5 w-0.5 h-0.5 bg-orange-300 rounded-full"></div>
+            <div class="absolute top-3 left-3/5 w-0.5 h-0.5 bg-yellow-300 rounded-full"></div>
+            <div class="absolute top-3 left-7/8 w-0.5 h-0.5 bg-white rounded-full"></div>
+            
+            <!-- Row 3 -->
+            <div class="absolute top-5 left-1/4 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-5 left-1/2 w-0.5 h-0.5 bg-red-200 rounded-full"></div>
+            <div class="absolute top-5 left-3/4 w-0.5 h-0.5 bg-orange-200 rounded-full"></div>
+            
+            <!-- Row 4 -->
+            <div class="absolute top-7 left-1/6 w-0.5 h-0.5 bg-yellow-300 rounded-full"></div>
+            <div class="absolute top-7 left-2/5 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-7 left-3/5 w-0.5 h-0.5 bg-red-300 rounded-full"></div>
+            <div class="absolute top-7 left-5/6 w-0.5 h-0.5 bg-orange-300 rounded-full"></div>
+            
+            <!-- Random scattered stars -->
+            <div class="absolute top-2 left-1/12 w-0.5 h-0.5 bg-yellow-200 rounded-full"></div>
+            <div class="absolute top-4 left-1/10 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-6 left-1/15 w-0.5 h-0.5 bg-red-200 rounded-full"></div>
+            <div class="absolute top-2 right-1/12 w-0.5 h-0.5 bg-orange-200 rounded-full"></div>
+            <div class="absolute top-4 right-1/10 w-0.5 h-0.5 bg-yellow-300 rounded-full"></div>
+            <div class="absolute top-6 right-1/15 w-0.5 h-0.5 bg-white rounded-full"></div>
+        </div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo Section -->
+                <a href="/" class="group flex items-center space-x-3 hover:scale-105 transition-transform duration-300">
+                    <div class="relative">
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <span class="text-2xl font-bold text-white group-hover:text-gray-200 transition-colors duration-300">
+                        Kids at Home
+                    </span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="/#games" class="group flex items-center space-x-2 text-gray-300 hover:text-blue-400 transition-colors duration-300 relative">
+                        <i class="fas fa-gamepad text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Games</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/leaderboards" class="group flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors duration-300 relative">
+                        <i class="fas fa-trophy text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Leaderboards</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/world-boss" class="group flex items-center space-x-2 text-red-300 hover:text-red-400 transition-colors duration-300 relative bg-red-900/30 px-3 py-1 rounded-lg">
+                        <i class="fas fa-skull text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">World Boss</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-red-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/#about" class="group flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-colors duration-300 relative">
+                        <i class="fas fa-info-circle text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">About</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    {% if current_user.is_authenticated %}
+                        <button onclick="showLogoutModal()" class="group flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors duration-300 relative">
+                            <i class="fas fa-sign-out-alt text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                            <span class="font-medium">Logout</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-red-400 group-hover:w-full transition-all duration-300"></div>
+                        </button>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="group flex items-center space-x-2 text-gray-300 hover:text-green-400 transition-colors duration-300 relative">
+                            <i class="fas fa-sign-in-alt text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                            <span class="font-medium">Login</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-400 group-hover:w-full transition-all duration-300"></div>
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button class="text-gray-300 hover:text-white transition-colors duration-300 p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Game Navigation Bar -->
+    <nav class="bg-gradient-to-r from-gray-800/95 to-gray-700/95 backdrop-blur-sm border-b border-gray-600/30 sticky top-16 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-center items-center py-3">
+                <!-- Space Explorer Link -->
+                <a href="{{ url_for('system_generator') }}" class="group flex items-center space-x-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 hover:from-blue-500/30 hover:to-purple-500/30 px-6 py-3 rounded-xl border border-blue-500/30 hover:border-blue-400/50 transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-arrow-left text-blue-400 text-sm group-hover:translate-x-1 transition-transform duration-300"></i>
+                    <span class="text-white font-semibold text-lg group-hover:text-blue-100 transition-colors duration-300">
+                        Return to Space Explorer
+                    </span>
+                    <i class="fas fa-rocket text-blue-400 text-xl group-hover:text-blue-300 transition-colors duration-300"></i>                    
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="min-h-screen bg-gradient-to-br from-gray-900 via-red-900/20 to-gray-900 relative overflow-hidden">
+        <!-- Animated background elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <!-- Floating energy orbs -->
+            <div class="absolute top-20 left-10 w-4 h-4 bg-red-500/30 rounded-full animate-boss-pulse"></div>
+            <div class="absolute top-40 right-20 w-6 h-6 bg-orange-500/20 rounded-full animate-float"></div>
+            <div class="absolute bottom-32 left-1/4 w-3 h-3 bg-yellow-500/25 rounded-full animate-boss-pulse"></div>
+            <div class="absolute top-1/2 right-1/3 w-5 h-5 bg-red-400/15 rounded-full animate-float"></div>
+            
+            <!-- Energy streams -->
+            <div class="absolute top-0 left-1/4 w-1 h-full bg-gradient-to-b from-transparent via-red-500/10 to-transparent animate-energy-flow"></div>
+            <div class="absolute top-0 right-1/3 w-1 h-full bg-gradient-to-b from-transparent via-orange-500/10 to-transparent animate-energy-flow" style="animation-delay: 1s;"></div>
+        </div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-6xl font-bold text-white mb-4 animate-glow">
+                    <i class="fas fa-skull text-red-500 mr-4"></i>
+                    WORLD BOSS
+                    <i class="fas fa-skull text-red-500 ml-4"></i>
+                </h1>
+                <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+                    The Cosmic Leviathan awaits your challenge. Gather Hyper Planets and strike down this ancient evil!
+                </p>
+            </div>
+
+            <!-- Boss Display Area -->
+            <div class="max-w-4xl mx-auto">
+                <!-- Boss Image and Stats Container -->
+                <div class="bg-gradient-to-br from-gray-800/90 to-red-900/90 backdrop-blur-sm rounded-3xl p-8 border-2 border-red-500/50 shadow-2xl relative overflow-hidden">
+                    <!-- Boss Energy Field Effect -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/5 to-transparent animate-energy-flow"></div>
+                    
+                    <div class="relative z-10">
+                        <!-- Boss Layout: Avatar Left, Stats Right -->
+                        <div class="flex flex-col lg:flex-row gap-8 items-center lg:items-start">
+                            <!-- Boss Avatar Section (Left) -->
+                            <div class="flex-shrink-0">
+                                <div class="text-center">
+                                    <div class="relative inline-block">
+                                        <!-- Cosmic Leviathan Image -->
+                                        <div class="w-64 h-64 bg-gradient-to-br from-red-600 to-red-900 rounded-full flex items-center justify-center animate-boss-pulse shadow-2xl border-4 border-red-400 overflow-hidden">
+                                            <img src="/static/images/MJ-Cosmic-Leviathan.png" alt="Cosmic Leviathan" class="w-full h-full object-cover rounded-full animate-boss-shake">
+                                        </div>
+                                        
+                                        <!-- Energy rings -->
+                                        <div class="absolute inset-0 w-64 h-64 border-4 border-red-400/30 rounded-full animate-pulse" style="animation-delay: 0.5s;"></div>
+                                        <div class="absolute inset-0 w-64 h-64 border-2 border-orange-400/20 rounded-full animate-pulse" style="animation-delay: 1s;"></div>
+                                    </div>
+                                    
+                                    <!-- Boss Name and Title -->
+                                    <div class="mt-6">
+                                        <h2 class="text-4xl font-bold text-white mb-2">
+                                            The Cosmic Leviathan
+                                        </h2>
+                                        <p class="text-xl text-red-300 font-semibold">
+                                            Ancient Destroyer of Worlds
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stats Section (Right) -->
+                            <div class="flex-1 w-full">
+                                <!-- Boss Stats - 4 Card Grid -->
+                                <div class="grid grid-cols-2 gap-4 mb-6">
+                                    <!-- Health -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-red-500/30">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <i class="fas fa-heart text-red-500 text-xl"></i>
+                                            <span class="text-white font-bold text-sm">Health</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-red-400 mb-1" id="boss-health">1,000,000</div>
+                                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                                <div class="bg-gradient-to-r from-red-600 to-red-400 h-2 rounded-full transition-all duration-500" id="health-bar" style="width: 100%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Damage Dealt -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-orange-500/30">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <i class="fas fa-fire text-orange-500 text-xl"></i>
+                                            <span class="text-white font-bold text-sm">Damage Taken</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-orange-400 mb-1" id="total-damage">0</div>
+                                            <div class="text-xs text-gray-400">
+                                                <span id="damage-this-round">0</span> this round
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Hyper Planets Used -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-yellow-500/30">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <i class="fas fa-rocket text-yellow-500 text-xl"></i>
+                                            <span class="text-white font-bold text-sm">Hyper Planets</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-yellow-400 mb-1" id="hyper-planets-used">0</div>
+                                            <div class="text-xs text-gray-400">Used in battle</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Global Participants -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-blue-500/30">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <i class="fas fa-users text-blue-400 text-xl"></i>
+                                            <span class="text-white font-bold text-sm">Participants</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-blue-400 mb-1" id="total-participants">0</div>
+                                            <div class="text-xs text-gray-400">Fighting the boss</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Global Battle Stats - 4 Card Grid -->
+                                <div class="grid grid-cols-2 gap-4 mb-6">
+                                    <!-- Total Damage -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-red-500/30">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <i class="fas fa-bolt text-red-400 text-xl"></i>
+                                            <span class="text-white font-bold text-sm">Total Damage</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-red-400 mb-1" id="global-damage">0</div>
+                                            <div class="text-xs text-gray-400">All players</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Rounds Fought -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-orange-500/30">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <i class="fas fa-fist-raised text-orange-400 text-xl"></i>
+                                            <span class="text-white font-bold text-sm">Rounds Fought</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-orange-400 mb-1" id="rounds-fought">0</div>
+                                            <div class="text-xs text-gray-400">Battle rounds</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Personal Attacks -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-purple-500/30">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <i class="fas fa-sword text-purple-400 text-xl"></i>
+                                            <span class="text-white font-bold text-sm">My Attacks</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-purple-400 mb-1" id="personal-attacks">0</div>
+                                            <div class="text-xs text-gray-400">Your contributions</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Personal Damage -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-green-500/30">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <i class="fas fa-crosshairs text-green-400 text-xl"></i>
+                                            <span class="text-white font-bold text-sm">My Damage</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-green-400 mb-1" id="personal-damage">0</div>
+                                            <div class="text-xs text-gray-400">Damage dealt</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Battle Status -->
+                        <div class="bg-gray-800/60 rounded-xl p-6 border border-gray-600/30 mb-8">
+                            <div class="text-center">
+                                <h3 class="text-2xl font-bold text-white mb-4">Battle Status</h3>
+                                <div class="text-lg text-gray-300" id="battle-status">
+                                    The Cosmic Leviathan awaits your attack...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button id="attack-boss-btn" class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2">
+                                <i class="fas fa-sword text-xl"></i>
+                                <span>Attack with Hyper Planets</span>
+                            </button>
+                            <button id="view-history-btn" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2">
+                                <i class="fas fa-history text-xl"></i>
+                                <span>Battle History</span>
+                            </button>
+                            <button id="music-toggle-btn" class="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2">
+                                <i class="fas fa-music text-xl"></i>
+                                <span id="music-btn-text">Play Music</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Boss Reveal Overlay -->
+    <div id="bossRevealOverlay" class="fixed inset-0 bg-black z-50 flex items-center justify-center">
+        <div class="text-center max-w-4xl mx-auto px-8">
+            <!-- Epic Title -->
+            <h1 class="text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 mb-8 animate-pulse">
+                THE COSMIC LEVIATHAN
+            </h1>
+            
+            <!-- Subtitle -->
+            <p class="text-2xl text-gray-300 mb-12 font-semibold">
+                Ancient Destroyer of Worlds
+            </p>
+            
+            <!-- Dramatic Description -->
+            <div class="bg-gradient-to-r from-red-900/20 to-orange-900/20 backdrop-blur-sm rounded-2xl p-8 mb-12 border border-red-500/30">
+                <p class="text-lg text-gray-200 leading-relaxed">
+                    In the depths of space, an ancient evil stirs. The Cosmic Leviathan, 
+                    a being of unimaginable power, has awakened from its eons-long slumber. 
+                    Its massive form pulses with dark energy, and its eyes burn with the 
+                    fire of dying stars. Will you dare to challenge this primordial terror?
+                </p>
+            </div>
+            
+            <!-- Reveal Button -->
+            <button id="revealBossBtn" class="bg-gradient-to-r from-red-600 via-red-700 to-red-800 hover:from-red-500 hover:via-red-600 hover:to-red-700 text-white font-bold text-2xl py-6 px-12 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl border-2 border-red-400 hover:border-red-300 animate-pulse">
+                <i class="fas fa-skull text-3xl mr-4"></i>
+                REVEAL THE BOSS
+                <i class="fas fa-skull text-3xl ml-4"></i>
+            </button>
+            
+            <!-- Warning Text -->
+            <p class="text-sm text-red-400 mt-6 animate-pulse">
+                ⚠️ Prepare for battle - Epic music will play automatically
+            </p>
+        </div>
+    </div>
+
+    <!-- Audio Element for Boss Battle Music -->
+    <audio id="boss-battle-music" preload="none" loop volume="0.7">
+        <source src="{{ static_file('sound/music/space-boss-battle-1.mp3') }}" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Custom Animations -->
+    <style>
+        @keyframes boss-pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 40px rgba(220, 38, 38, 0.8);
+            }
+        }
+
+        @keyframes boss-shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-2deg); }
+            75% { transform: rotate(2deg); }
+        }
+
+        @keyframes energy-flow {
+            0% { transform: translateY(-100%); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes glow {
+            0% { text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+            100% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 30px rgba(220, 38, 38, 0.6); }
+        }
+    </style>
+
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <!-- Modal Header -->
+            <div class="text-center mb-6">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-sign-out-alt text-2xl text-red-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Confirm Logout</h3>
+                <p class="text-gray-300">Are you sure you want to log out? You'll need to sign in again to access your account.</p>
+            </div>
+            
+            <!-- Modal Actions -->
+            <div class="flex space-x-4">
+                <button onclick="hideLogoutModal()" class="flex-1 px-6 py-3 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                    Cancel
+                </button>
+                <a href="{{ url_for('logout') }}" class="flex-1 px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-center">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Logout Modal Functions
+        function showLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        
+        function hideLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('logoutModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideLogoutModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideLogoutModal();
+            }
+        });
+
+        // Audio Management
+        const bossMusic = document.getElementById('boss-battle-music');
+        let musicLoaded = false;
+        let musicPlaying = false;
+
+        // Lazy load the audio when page loads
+        function loadBossMusic() {
+            if (!musicLoaded) {
+                console.log('Loading boss battle music...');
+                bossMusic.load(); // This triggers the actual download
+                musicLoaded = true;
+            }
+        }
+
+        // Start music automatically
+        function startBossMusic() {
+            if (!musicLoaded) {
+                loadBossMusic();
+            }
+
+            bossMusic.play().then(() => {
+                musicPlaying = true;
+                document.getElementById('music-btn-text').textContent = 'Pause Music';
+                console.log('Boss music started successfully');
+            }).catch(e => {
+                console.log('Could not start music:', e);
+                // If autoplay fails, show the play button as available
+                document.getElementById('music-btn-text').textContent = 'Play Music';
+            });
+        }
+
+        // Toggle music play/pause
+        function toggleBossMusic() {
+            if (!musicLoaded) {
+                loadBossMusic();
+                return;
+            }
+
+            if (musicPlaying) {
+                bossMusic.pause();
+                musicPlaying = false;
+                document.getElementById('music-btn-text').textContent = 'Play Music';
+                console.log('Boss music paused');
+            } else {
+                bossMusic.play().then(() => {
+                    musicPlaying = true;
+                    document.getElementById('music-btn-text').textContent = 'Pause Music';
+                    console.log('Boss music playing');
+                }).catch(e => {
+                    console.log('Could not play music:', e);
+                });
+            }
+        }
+
+        // Boss reveal functionality
+        document.getElementById('revealBossBtn').addEventListener('click', function() {
+            console.log('Revealing the boss!');
+            
+            // Hide the overlay with a dramatic effect
+            const overlay = document.getElementById('bossRevealOverlay');
+            overlay.style.transition = 'opacity 1s ease-out, transform 1s ease-out';
+            overlay.style.opacity = '0';
+            overlay.style.transform = 'scale(1.1)';
+            
+            // Start the music when revealing
+            startBossMusic();
+            
+            // Remove overlay after animation
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 1000);
+        });
+
+        // Boss data management
+        let bossData = null;
+        let globalStats = null;
+
+        // Fetch boss data from API
+        async function fetchBossData() {
+            try {
+                console.log('Fetching boss data...');
+                const response = await fetch('/api/boss/status');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    bossData = data.boss;
+                    updateBossDisplay();
+                    console.log('Boss data loaded:', bossData);
+                } else {
+                    console.error('Failed to fetch boss data:', data.error);
+                }
+            } catch (error) {
+                console.error('Error fetching boss data:', error);
+            }
+        }
+
+        // Fetch global stats
+        async function fetchGlobalStats() {
+            try {
+                console.log('Fetching global stats...');
+                const response = await fetch('/api/boss/stats');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    globalStats = data.stats;
+                    updateGlobalStats();
+                    console.log('Global stats loaded:', globalStats);
+                } else {
+                    console.error('Failed to fetch global stats:', data.error);
+                }
+            } catch (error) {
+                console.error('Error fetching global stats:', error);
+            }
+        }
+
+        // Update boss display with real data
+        function updateBossDisplay() {
+            if (!bossData) return;
+
+            // Update boss health
+            document.getElementById('boss-health').textContent = bossData.current_health.toLocaleString();
+            document.getElementById('total-damage').textContent = bossData.total_damage_taken.toLocaleString();
+            
+            // Update health bar
+            const healthPercentage = bossData.health_percentage;
+            const healthBar = document.getElementById('health-bar');
+            healthBar.style.width = `${healthPercentage}%`;
+            
+            // Update health bar color based on percentage
+            if (healthPercentage > 50) {
+                healthBar.className = 'bg-gradient-to-r from-red-600 to-red-400 h-3 rounded-full transition-all duration-500';
+            } else if (healthPercentage > 25) {
+                healthBar.className = 'bg-gradient-to-r from-orange-600 to-orange-400 h-3 rounded-full transition-all duration-500';
+            } else {
+                healthBar.className = 'bg-gradient-to-r from-yellow-600 to-yellow-400 h-3 rounded-full transition-all duration-500';
+            }
+
+            // Update battle status
+            const battleStatus = document.getElementById('battle-status');
+            if (bossData.current_health <= 0) {
+                battleStatus.textContent = 'The Cosmic Leviathan has been defeated! 🎉';
+                battleStatus.className = 'text-lg text-green-400 font-bold';
+            } else if (healthPercentage < 25) {
+                battleStatus.textContent = 'The Cosmic Leviathan is critically wounded! Finish it!';
+                battleStatus.className = 'text-lg text-yellow-400 font-bold';
+            } else if (healthPercentage < 50) {
+                battleStatus.textContent = 'The Cosmic Leviathan is weakening! Keep attacking!';
+                battleStatus.className = 'text-lg text-orange-400 font-bold';
+            } else {
+                battleStatus.textContent = 'The Cosmic Leviathan awaits your attack...';
+                battleStatus.className = 'text-lg text-gray-300';
+            }
+        }
+
+        // Update global stats display
+        function updateGlobalStats() {
+            if (!globalStats) return;
+
+            document.getElementById('total-participants').textContent = globalStats.total_participants.toLocaleString();
+            document.getElementById('global-damage').textContent = globalStats.global_damage.toLocaleString();
+            document.getElementById('rounds-fought').textContent = globalStats.rounds_fought.toLocaleString();
+        }
+
+        // Load music when page loads (but don't start it yet)
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, setting up boss reveal...');
+            loadBossMusic();
+            
+            // Fetch initial data
+            fetchBossData();
+            fetchGlobalStats();
+            
+            // Additional debugging
+            bossMusic.addEventListener('loadstart', () => console.log('Music load started'));
+            bossMusic.addEventListener('loadeddata', () => console.log('Music data loaded'));
+            bossMusic.addEventListener('error', (e) => console.log('Music load error:', e));
+            bossMusic.addEventListener('canplay', () => console.log('Music can play'));
+            
+            // Add Enter key listener for boss reveal modal
+            document.addEventListener('keydown', function(e) {
+                // Only trigger if the boss reveal overlay is visible and Enter is pressed
+                const bossOverlay = document.getElementById('bossRevealOverlay');
+                if (bossOverlay && bossOverlay.style.display !== 'none' && e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('revealBossBtn').click();
+                }
+            });
+        });
+
+        // Update personal stats display
+        function updatePersonalStats(damage) {
+            // Update personal attacks count
+            const personalAttacksElement = document.getElementById('personal-attacks');
+            if (personalAttacksElement) {
+                const currentAttacks = parseInt(personalAttacksElement.textContent.replace(/,/g, '')) || 0;
+                personalAttacksElement.textContent = (currentAttacks + 1).toLocaleString();
+            }
+            
+            // Update personal damage total
+            const personalDamageElement = document.getElementById('personal-damage');
+            if (personalDamageElement) {
+                const currentDamage = parseInt(personalDamageElement.textContent.replace(/,/g, '')) || 0;
+                personalDamageElement.textContent = (currentDamage + damage).toLocaleString();
+            }
+        }
+
+        // Attack boss functionality
+        async function attackBoss() {
+            try {
+                console.log('Attacking the boss!');
+                
+                // Check if user is logged in
+                const userId = document.body.getAttribute('data-user-id');
+                if (!userId) {
+                    alert('Please log in to attack the boss!');
+                    return;
+                }
+                
+                // Disable attack button during attack
+                const attackBtn = document.getElementById('attack-boss-btn');
+                attackBtn.disabled = true;
+                attackBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xl"></i><span>Attacking...</span>';
+                
+                // Calculate damage (random between 1000-5000)
+                const damage = Math.floor(Math.random() * 4000) + 1000;
+                const hyperPlanetsUsed = Math.floor(Math.random() * 3) + 1;
+                
+                // Send attack request
+                const response = await fetch('/api/boss/attack', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        damage: damage,
+                        hyper_planets_used: hyperPlanetsUsed
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update display with new data
+                    bossData.current_health = result.boss_health;
+                    bossData.health_percentage = result.boss_health_percentage;
+                    bossData.total_damage_taken += damage;
+                    
+                    updateBossDisplay();
+                    
+                    // Show attack result
+                    const damageThisRound = document.getElementById('damage-this-round');
+                    damageThisRound.textContent = damage.toLocaleString();
+                    
+                    // Update hyper planets used
+                    const hyperPlanetsElement = document.getElementById('hyper-planets-used');
+                    const currentUsed = parseInt(hyperPlanetsElement.textContent.replace(/,/g, '')) || 0;
+                    hyperPlanetsElement.textContent = (currentUsed + hyperPlanetsUsed).toLocaleString();
+                    
+                    // Update personal stats
+                    updatePersonalStats(damage);
+                    
+                    // Show success message
+                    if (result.boss_defeated) {
+                        alert('🎉 VICTORY! The Cosmic Leviathan has been defeated!');
+                    } else {
+                        alert(`⚔️ Attack successful! Dealt ${damage.toLocaleString()} damage!`);
+                    }
+                    
+                    // Refresh global stats
+                    fetchGlobalStats();
+                    
+                } else {
+                    alert(`❌ Attack failed: ${result.error}`);
+                }
+                
+            } catch (error) {
+                console.error('Error attacking boss:', error);
+                alert('❌ Failed to attack boss. Please try again.');
+            } finally {
+                // Re-enable attack button
+                const attackBtn = document.getElementById('attack-boss-btn');
+                attackBtn.disabled = false;
+                attackBtn.innerHTML = '<i class="fas fa-sword text-xl"></i><span>Attack with Hyper Planets</span>';
+            }
+        }
+
+        // Boss interaction functions
+        document.getElementById('attack-boss-btn').addEventListener('click', function() {
+            attackBoss();
+            
+            // Start music when attacking if not already playing
+            if (!musicPlaying) {
+                startBossMusic();
+            }
+        });
+
+        document.getElementById('view-history-btn').addEventListener('click', function() {
+            // Refresh boss data and stats
+            console.log('Refreshing battle data...');
+            fetchBossData();
+            fetchGlobalStats();
+        });
+
+        // Music toggle button
+        document.getElementById('music-toggle-btn').addEventListener('click', function() {
+            toggleBossMusic();
+        });
+    </script>
+</body>
+</html>

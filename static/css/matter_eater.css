@@ -1,0 +1,20 @@
+/* Asset versioned via Flask static_file helper (?v=mtime). Change triggers cache bust. */
+body {
+    margin: 0;
+    overflow: hidden;
+}
+
+#game-container {
+    width: 100vw;
+    height: 100vh;
+}
+
+#score {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 24px;
+    z-index: 100;
+}
