@@ -169,7 +169,56 @@ def leaderboards():
 
 @app.route('/world-boss')
 def world_boss():
-    return render_template('world_boss.html', current_user=current_user)
+    # Get user's hyper planets count if logged in
+    hyper_planets_count = 0
+    if current_user.is_authenticated:
+        from models.user_space_stats import UserSpaceStats
+        user_stats = UserSpaceStats.get_or_create(current_user.id)
+        hyper_planets_count = user_stats.hyper_planets_found
+    
+    return render_template('world_boss.html', current_user=current_user, hyper_planets_count=hyper_planets_count)
+
+@app.route('/world-boss/attack', methods=['POST'])
+@login_required
+def attack_world_boss():
+    """Handle world boss attack - reduce boss HP by 1 and player hyper planets by 1"""
+    try:
+        from models.user_space_stats import UserSpaceStats
+        
+        # Get user stats
+        user_stats = UserSpaceStats.get_or_create(current_user.id)
+        
+        # Check if user has hyper planets
+        if user_stats.hyper_planets_found <= 0:
+            return jsonify({'error': 'No hyper planets available'}), 400
+        
+        # Update stats: reduce hyper planets by 1
+        user_stats.hyper_planets_found -= 1
+        user_stats.updated_at = datetime.utcnow()
+        
+        # For now, we'll simulate boss HP reduction
+        # In a real implementation, you'd have a boss model/table
+        # For this demo, we'll just return success with damage info
+        
+        try:
+            db.session.commit()
+        except Exception as db_error:
+            print(f"Database commit error: {db_error}")
+            db.session.rollback()
+            return jsonify({'error': 'Database update failed'}), 500
+        
+        return jsonify({
+            'success': True,
+            'damage': 1,
+            'hyper_planets_remaining': user_stats.hyper_planets_found,
+            'message': f'Dealt 1 damage! {user_stats.hyper_planets_found} hyper planets remaining.'
+        })
+        
+    except Exception as e:
+        print(f"Attack error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Attack failed: {str(e)}'}), 500
 
 @app.route('/explore/<object_name>')
 def explore_object(object_name):

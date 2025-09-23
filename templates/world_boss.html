@@ -181,9 +181,12 @@
             </div>
 
             <!-- Boss Display Area -->
-            <div class="max-w-4xl mx-auto">
-                <!-- Boss Image and Stats Container -->
-                <div class="bg-gradient-to-br from-gray-800/90 to-red-900/90 backdrop-blur-sm rounded-3xl p-8 border-2 border-red-500/50 shadow-2xl relative overflow-hidden">
+            <div class="max-w-7xl mx-auto">
+                <!-- Main Content Container -->
+                <div class="w-full">
+                    <!-- Boss Image and Stats Container -->
+                    <div class="w-full">
+                        <div class="bg-gradient-to-br from-gray-800/90 to-red-900/90 backdrop-blur-sm rounded-3xl p-8 border-2 border-red-500/50 shadow-2xl relative overflow-hidden">
                     <!-- Boss Energy Field Effect -->
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/5 to-transparent animate-energy-flow"></div>
                     
@@ -213,96 +216,114 @@
                                             Ancient Destroyer of Worlds
                                         </p>
                                     </div>
+                                    
+                                    <!-- Boss Health and Damage Cards -->
+                                    <div class="mt-6 flex gap-4 justify-center">
+                                        <!-- Health Card -->
+                                        <div class="bg-gray-800/80 rounded-xl p-4 border border-red-500/30 min-w-[140px]">
+                                            <div class="flex items-center mb-2">
+                                                <i class="fas fa-heart text-red-500 text-xl mr-2"></i>
+                                                <span class="text-white font-bold text-sm">Health</span>
+                                            </div>
+                                            <div class="text-center">
+                                                <div class="text-xl font-bold text-red-400 mb-1" id="boss-health">1,000,000</div>
+                                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                                    <div class="bg-gradient-to-r from-red-600 to-red-400 h-2 rounded-full transition-all duration-500" id="health-bar" style="width: 100%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Damage Taken Card -->
+                                        <div class="bg-gray-800/80 rounded-xl p-4 border border-orange-500/30 min-w-[140px]">
+                                            <div class="flex items-center mb-2">
+                                                <i class="fas fa-fire text-orange-500 text-xl mr-2"></i>
+                                                <span class="text-white font-bold text-sm">Damage Taken</span>
+                                            </div>
+                                            <div class="text-center">
+                                                <div class="text-xl font-bold text-orange-400 mb-1" id="total-damage">0</div>
+                                                <div class="text-xs text-gray-400">
+                                                    <span id="damage-this-round">0</span> this round
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                                        <button id="attack-boss-btn" class="relative bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 hover:from-yellow-400 hover:via-orange-400 hover:to-red-500 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl border-2 border-yellow-300 hover:border-yellow-200 flex items-center justify-center space-x-2 overflow-hidden group min-w-[280px] max-w-[320px] h-16">
+                                            <!-- Hyper Planet Background Image -->
+                                            <div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 group-hover:opacity-30 transition-opacity duration-300" style="background-image: url('/static/images/Gemini-HyperPlanet.png');"></div>
+                                            
+                                            <!-- Glowing effect -->
+                                            <div class="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-orange-400/20 to-red-500/20 rounded-2xl animate-pulse"></div>
+                                            
+                                            <!-- Button content with fixed layout -->
+                                            <div class="relative z-10 flex items-center space-x-2 w-full justify-center">
+                                                <img src="/static/images/Gemini-HyperPlanet.png" alt="Hyper Planet" class="w-6 h-6 object-contain animate-bounce rounded-full flex-shrink-0">
+                                                <span class="text-lg font-extrabold tracking-wide whitespace-nowrap">ATTACK</span>
+                                                <img src="/static/images/Gemini-HyperPlanet.png" alt="Hyper Planet" class="w-6 h-6 object-contain animate-bounce rounded-full flex-shrink-0" style="animation-delay: 0.2s;">
+                                            </div>
+                                            
+                                            <!-- Energy particles effect -->
+                                            <div class="absolute inset-0 pointer-events-none">
+                                                <div class="absolute top-2 left-4 w-1 h-1 bg-yellow-300 rounded-full animate-ping"></div>
+                                                <div class="absolute top-4 right-6 w-1 h-1 bg-orange-300 rounded-full animate-ping" style="animation-delay: 0.5s;"></div>
+                                                <div class="absolute bottom-3 left-8 w-1 h-1 bg-red-300 rounded-full animate-ping" style="animation-delay: 1s;"></div>
+                                                <div class="absolute bottom-2 right-4 w-1 h-1 bg-yellow-400 rounded-full animate-ping" style="animation-delay: 1.5s;"></div>
+                                            </div>
+                                        </button>
+                                        
+                                        <!-- Hyper Planet Count Display -->
+                                        <div class="relative bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 text-white font-bold py-4 px-6 rounded-2xl shadow-2xl border-2 border-yellow-300 flex items-center justify-center space-x-2 min-w-[200px] h-16">
+                                            <!-- Hyper Planet Background Image -->
+                                            <div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 transition-opacity duration-300" style="background-image: url('/static/images/Gemini-HyperPlanet.png');"></div>
+                                            
+                                            <!-- Glowing effect -->
+                                            <div class="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-orange-400/20 to-red-500/20 rounded-2xl animate-pulse"></div>
+                                            
+                                            <!-- Content -->
+                                            <div class="relative z-10 flex items-center space-x-2">
+                                                <span class="text-lg font-extrabold tracking-wide">YOUR HYPER PLANETS</span>
+                                            </div>
+                                            
+                                            <!-- Count display -->
+                                            <div class="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-red-500 text-white font-bold text-xl px-3 py-1 rounded-full border-2 border-yellow-300 shadow-lg">
+                                                <span id="hyper-planets-used">{{ hyper_planets_count }}</span>
+                                            </div>
+                                            
+                                            <!-- Energy particles effect -->
+                                            <div class="absolute inset-0 pointer-events-none">
+                                                <div class="absolute top-2 left-4 w-1 h-1 bg-yellow-300 rounded-full animate-ping"></div>
+                                                <div class="absolute top-4 right-6 w-1 h-1 bg-orange-300 rounded-full animate-ping" style="animation-delay: 0.5s;"></div>
+                                                <div class="absolute bottom-3 left-8 w-1 h-1 bg-red-300 rounded-full animate-ping" style="animation-delay: 1s;"></div>
+                                                <div class="absolute bottom-2 right-4 w-1 h-1 bg-yellow-400 rounded-full animate-ping" style="animation-delay: 1.5s;"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <button id="music-toggle-btn" class="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2">
+                                            <i class="fas fa-music text-xl"></i>
+                                            <span id="music-btn-text">Play Music</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Stats Section (Right) -->
                             <div class="flex-1 w-full">
-                                <!-- Boss Stats - 4 Card Grid -->
-                                <div class="grid grid-cols-2 gap-4 mb-6">
-                                    <!-- Health -->
-                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-red-500/30">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <i class="fas fa-heart text-red-500 text-xl"></i>
-                                            <span class="text-white font-bold text-sm">Health</span>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-xl font-bold text-red-400 mb-1" id="boss-health">1,000,000</div>
-                                            <div class="w-full bg-gray-700 rounded-full h-2">
-                                                <div class="bg-gradient-to-r from-red-600 to-red-400 h-2 rounded-full transition-all duration-500" id="health-bar" style="width: 100%"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Damage Dealt -->
-                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-orange-500/30">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <i class="fas fa-fire text-orange-500 text-xl"></i>
-                                            <span class="text-white font-bold text-sm">Damage Taken</span>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-xl font-bold text-orange-400 mb-1" id="total-damage">0</div>
-                                            <div class="text-xs text-gray-400">
-                                                <span id="damage-this-round">0</span> this round
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Hyper Planets Used -->
-                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-yellow-500/30">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <i class="fas fa-rocket text-yellow-500 text-xl"></i>
-                                            <span class="text-white font-bold text-sm">Hyper Planets</span>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-xl font-bold text-yellow-400 mb-1" id="hyper-planets-used">0</div>
-                                            <div class="text-xs text-gray-400">Used in battle</div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Global Participants -->
-                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-blue-500/30">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <i class="fas fa-users text-blue-400 text-xl"></i>
-                                            <span class="text-white font-bold text-sm">Participants</span>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-xl font-bold text-blue-400 mb-1" id="total-participants">0</div>
-                                            <div class="text-xs text-gray-400">Fighting the boss</div>
-                                        </div>
+                                <!-- Battle Status Header -->
+                                <div class="mb-6">
+                                    <h3 class="text-2xl font-bold text-white mb-2">Battle Status</h3>
+                                    <div class="text-lg text-gray-300" id="battle-status">
+                                        The Cosmic Leviathan awaits your attack...
                                     </div>
                                 </div>
 
-                                <!-- Global Battle Stats - 4 Card Grid -->
-                                <div class="grid grid-cols-2 gap-4 mb-6">
-                                    <!-- Total Damage -->
-                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-red-500/30">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <i class="fas fa-bolt text-red-400 text-xl"></i>
-                                            <span class="text-white font-bold text-sm">Total Damage</span>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-xl font-bold text-red-400 mb-1" id="global-damage">0</div>
-                                            <div class="text-xs text-gray-400">All players</div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Rounds Fought -->
-                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-orange-500/30">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <i class="fas fa-fist-raised text-orange-400 text-xl"></i>
-                                            <span class="text-white font-bold text-sm">Rounds Fought</span>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-xl font-bold text-orange-400 mb-1" id="rounds-fought">0</div>
-                                            <div class="text-xs text-gray-400">Battle rounds</div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Personal Attacks -->
+                                <!-- Stats Grid - 2x3 Layout -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <!-- My Attacks -->
                                     <div class="bg-gray-800/80 rounded-xl p-4 border border-purple-500/30">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <i class="fas fa-sword text-purple-400 text-xl"></i>
+                                        <div class="flex items-center mb-2">
+                                            <i class="fas fa-sword text-purple-400 text-xl mr-2"></i>
                                             <span class="text-white font-bold text-sm">My Attacks</span>
                                         </div>
                                         <div class="text-center">
@@ -311,10 +332,22 @@
                                         </div>
                                     </div>
 
-                                    <!-- Personal Damage -->
+                                    <!-- Total Damage -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-red-500/30">
+                                        <div class="flex items-center mb-2">
+                                            <i class="fas fa-bolt text-red-400 text-xl mr-2"></i>
+                                            <span class="text-white font-bold text-sm">Total Damage</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-red-400 mb-1" id="global-damage">0</div>
+                                            <div class="text-xs text-gray-400">All players</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- My Damage -->
                                     <div class="bg-gray-800/80 rounded-xl p-4 border border-green-500/30">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <i class="fas fa-crosshairs text-green-400 text-xl"></i>
+                                        <div class="flex items-center mb-2">
+                                            <i class="fas fa-crosshairs text-green-400 text-xl mr-2"></i>
                                             <span class="text-white font-bold text-sm">My Damage</span>
                                         </div>
                                         <div class="text-center">
@@ -322,35 +355,36 @@
                                             <div class="text-xs text-gray-400">Damage dealt</div>
                                         </div>
                                     </div>
+
+
+                                    <!-- Participants -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-blue-500/30">
+                                        <div class="flex items-center mb-2">
+                                            <i class="fas fa-users text-blue-400 text-xl mr-2"></i>
+                                            <span class="text-white font-bold text-sm">Participants</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-blue-400 mb-1" id="total-participants">0</div>
+                                            <div class="text-xs text-gray-400">Fighting the boss</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Rounds Fought -->
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-orange-500/30">
+                                        <div class="flex items-center mb-2">
+                                            <i class="fas fa-fist-raised text-orange-400 text-xl mr-2"></i>
+                                            <span class="text-white font-bold text-sm">Rounds Fought</span>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-xl font-bold text-orange-400 mb-1" id="rounds-fought">0</div>
+                                            <div class="text-xs text-gray-400">Battle rounds</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Battle Status -->
-                        <div class="bg-gray-800/60 rounded-xl p-6 border border-gray-600/30 mb-8">
-                            <div class="text-center">
-                                <h3 class="text-2xl font-bold text-white mb-4">Battle Status</h3>
-                                <div class="text-lg text-gray-300" id="battle-status">
-                                    The Cosmic Leviathan awaits your attack...
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                            <button id="attack-boss-btn" class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2">
-                                <i class="fas fa-sword text-xl"></i>
-                                <span>Attack with Hyper Planets</span>
-                            </button>
-                            <button id="view-history-btn" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2">
-                                <i class="fas fa-history text-xl"></i>
-                                <span>Battle History</span>
-                            </button>
-                            <button id="music-toggle-btn" class="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2">
-                                <i class="fas fa-music text-xl"></i>
-                                <span id="music-btn-text">Play Music</span>
-                            </button>
-                        </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -434,6 +468,40 @@
         @keyframes glow {
             0% { text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
             100% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 30px rgba(220, 38, 38, 0.6); }
+        }
+
+        @keyframes fade-in {
+            0% { 
+                opacity: 0; 
+                transform: translateY(-10px); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
+        }
+
+        @keyframes toast-float {
+            0% { 
+                opacity: 0; 
+                transform: translate(-50%, -50%) scale(0.5); 
+            }
+            20% { 
+                opacity: 1; 
+                transform: translate(-50%, -50%) scale(1.1); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: translate(-50%, -50%) translateY(-100px) scale(0.8); 
+            }
+        }
+
+        .animate-toast-float {
+            animation: toast-float 2s ease-out forwards;
         }
     </style>
 
@@ -707,7 +775,124 @@
             }
         }
 
-        // Attack boss functionality
+
+        // Boss interaction functions will be defined after the attack function
+
+        // Music toggle button
+        const musicToggleBtn = document.getElementById('music-toggle-btn');
+        if (musicToggleBtn) {
+            musicToggleBtn.addEventListener('click', function() {
+                toggleBossMusic();
+            });
+        }
+
+        // Battle History functionality
+        function addBattleHistoryEntry(type, message, timeAgo = 'Just now') {
+            const historyLog = document.getElementById('battle-history-log');
+            
+            // If history log doesn't exist, just return (battle history was removed)
+            if (!historyLog) {
+                console.log(`Battle history entry: ${type} - ${message}`);
+                return;
+            }
+            
+            // Create new history entry
+            const entry = document.createElement('div');
+            entry.className = 'bg-gray-700/50 rounded-lg p-3 border-l-4 border-blue-400 animate-fade-in';
+            
+            // Color mapping for different entry types
+            const colorMap = {
+                'attack': 'border-green-400',
+                'critical': 'border-purple-400', 
+                'hyperplanet': 'border-yellow-400',
+                'boss': 'border-red-400',
+                'battle': 'border-blue-400',
+                'victory': 'border-green-500',
+                'defeat': 'border-red-500'
+            };
+            
+            const typeColors = {
+                'attack': 'text-green-400',
+                'critical': 'text-purple-400',
+                'hyperplanet': 'text-yellow-400', 
+                'boss': 'text-red-400',
+                'battle': 'text-blue-400',
+                'victory': 'text-green-500',
+                'defeat': 'text-red-500'
+            };
+            
+            const borderClass = colorMap[type] || 'border-blue-400';
+            const textClass = typeColors[type] || 'text-blue-400';
+            
+            entry.className = `bg-gray-700/50 rounded-lg p-3 border-l-4 ${borderClass} animate-fade-in`;
+            
+            entry.innerHTML = `
+                <div class="flex items-center justify-between mb-1">
+                    <span class="${textClass} font-semibold text-sm">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                    <span class="text-gray-400 text-xs">${timeAgo}</span>
+                </div>
+                <p class="text-gray-300 text-xs">${message}</p>
+            `;
+            
+            // Add to top of history
+            historyLog.insertBefore(entry, historyLog.firstChild);
+            
+            // Keep only last 10 entries
+            const entries = historyLog.children;
+            if (entries.length > 10) {
+                historyLog.removeChild(entries[entries.length - 1]);
+            }
+        }
+
+        // Refresh history button
+        const refreshHistoryBtn = document.getElementById('refresh-history-btn');
+        if (refreshHistoryBtn) {
+            refreshHistoryBtn.addEventListener('click', function() {
+                console.log('Refreshing battle history...');
+                // Add a refresh entry
+                addBattleHistoryEntry('battle', 'Battle history refreshed');
+            });
+        }
+
+        // Toast notification system with multiple toast support
+        let toastCounter = 0;
+        
+        function createDamageToast(damage) {
+            const bossAvatar = document.querySelector('.w-64.h-64'); // Boss avatar container
+            if (!bossAvatar) return;
+            
+            const toast = document.createElement('div');
+            toast.className = 'fixed z-50 pointer-events-none';
+            toast.innerHTML = `
+                <div class="bg-gradient-to-r from-yellow-400 to-red-500 text-white font-bold text-2xl px-4 py-2 rounded-full shadow-2xl border-2 border-yellow-300 animate-toast-float">
+                    +${damage} Damage
+                </div>
+            `;
+            
+            // Position relative to boss avatar with slight randomization for multiple toasts
+            const rect = bossAvatar.getBoundingClientRect();
+            const randomOffsetX = (Math.random() - 0.5) * 40; // ±20px random offset
+            const randomOffsetY = (Math.random() - 0.5) * 20; // ±10px random offset
+            
+            toast.style.left = (rect.left + rect.width / 2 + randomOffsetX) + 'px';
+            toast.style.top = (rect.top + rect.height / 2 + randomOffsetY) + 'px';
+            toast.style.transform = 'translate(-50%, -50%)';
+            
+            // Add a slight delay for multiple toasts to appear staggered
+            toast.style.animationDelay = (toastCounter * 0.1) + 's';
+            toastCounter++;
+            
+            document.body.appendChild(toast);
+            
+            // Remove toast after animation
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 2000);
+        }
+        
+        // Attack function with new backend integration
         async function attackBoss() {
             try {
                 console.log('Attacking the boss!');
@@ -722,55 +907,62 @@
                 // Disable attack button during attack
                 const attackBtn = document.getElementById('attack-boss-btn');
                 attackBtn.disabled = true;
-                attackBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xl"></i><span>Attacking...</span>';
+                attackBtn.innerHTML = `
+                    <div class="relative z-10 flex items-center space-x-2 w-full justify-center">
+                        <i class="fas fa-spinner fa-spin text-lg"></i>
+                        <span class="text-lg font-extrabold tracking-wide whitespace-nowrap">ATTACKING</span>
+                        <i class="fas fa-spinner fa-spin text-lg" style="animation-delay: 0.2s;"></i>
+                    </div>
+                `;
                 
-                // Calculate damage (random between 1000-5000)
-                const damage = Math.floor(Math.random() * 4000) + 1000;
-                const hyperPlanetsUsed = Math.floor(Math.random() * 3) + 1;
-                
-                // Send attack request
-                const response = await fetch('/api/boss/attack', {
+                // Send attack request to new endpoint
+                const response = await fetch('/world-boss/attack', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        damage: damage,
-                        hyper_planets_used: hyperPlanetsUsed
-                    })
+                    }
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Update display with new data
-                    bossData.current_health = result.boss_health;
-                    bossData.health_percentage = result.boss_health_percentage;
-                    bossData.total_damage_taken += damage;
+                    // Update boss health (reduce by 1)
+                    const bossHealthElement = document.getElementById('boss-health');
+                    const currentHealth = parseInt(bossHealthElement.textContent.replace(/,/g, '')) || 1000000;
+                    console.log(`Current health: ${currentHealth}, Damage: ${result.damage}`);
+                    const newHealth = Math.max(0, currentHealth - result.damage);
+                    console.log(`New health: ${newHealth}`);
+                    bossHealthElement.textContent = newHealth.toLocaleString();
                     
-                    updateBossDisplay();
+                    // Update health bar
+                    const healthBar = document.getElementById('health-bar');
+                    const healthPercentage = (newHealth / 1000000) * 100;
+                    healthBar.style.width = healthPercentage + '%';
                     
-                    // Show attack result
+                    // Update total damage taken
+                    const totalDamageElement = document.getElementById('total-damage');
+                    const currentDamage = parseInt(totalDamageElement.textContent.replace(/,/g, '')) || 0;
+                    totalDamageElement.textContent = (currentDamage + result.damage).toLocaleString();
+                    
+                    // Update damage this round
                     const damageThisRound = document.getElementById('damage-this-round');
-                    damageThisRound.textContent = damage.toLocaleString();
+                    damageThisRound.textContent = result.damage.toLocaleString();
                     
-                    // Update hyper planets used
+                    // Update hyper planets count
                     const hyperPlanetsElement = document.getElementById('hyper-planets-used');
-                    const currentUsed = parseInt(hyperPlanetsElement.textContent.replace(/,/g, '')) || 0;
-                    hyperPlanetsElement.textContent = (currentUsed + hyperPlanetsUsed).toLocaleString();
+                    hyperPlanetsElement.textContent = result.hyper_planets_remaining.toLocaleString();
                     
-                    // Update personal stats
-                    updatePersonalStats(damage);
+                    // Show damage toast notification
+                    createDamageToast(result.damage);
                     
-                    // Show success message
-                    if (result.boss_defeated) {
+                    // Add battle history entry
+                    addBattleHistoryEntry('attack', result.message);
+                    
+                    // Check if boss is defeated
+                    if (newHealth <= 0) {
+                        addBattleHistoryEntry('victory', '🎉 The Cosmic Leviathan has been DEFEATED!');
                         alert('🎉 VICTORY! The Cosmic Leviathan has been defeated!');
-                    } else {
-                        alert(`⚔️ Attack successful! Dealt ${damage.toLocaleString()} damage!`);
                     }
-                    
-                    // Refresh global stats
-                    fetchGlobalStats();
                     
                 } else {
                     alert(`❌ Attack failed: ${result.error}`);
@@ -783,31 +975,28 @@
                 // Re-enable attack button
                 const attackBtn = document.getElementById('attack-boss-btn');
                 attackBtn.disabled = false;
-                attackBtn.innerHTML = '<i class="fas fa-sword text-xl"></i><span>Attack with Hyper Planets</span>';
+                attackBtn.innerHTML = `
+                    <div class="relative z-10 flex items-center space-x-2 w-full justify-center">
+                        <img src="/static/images/Gemini-HyperPlanet.png" alt="Hyper Planet" class="w-6 h-6 object-contain animate-bounce rounded-full flex-shrink-0">
+                        <span class="text-lg font-extrabold tracking-wide whitespace-nowrap">ATTACK</span>
+                        <img src="/static/images/Gemini-HyperPlanet.png" alt="Hyper Planet" class="w-6 h-6 object-contain animate-bounce rounded-full flex-shrink-0" style="animation-delay: 0.2s;">
+                    </div>
+                `;
             }
-        }
+        };
 
         // Boss interaction functions
-        document.getElementById('attack-boss-btn').addEventListener('click', function() {
-            attackBoss();
-            
-            // Start music when attacking if not already playing
-            if (!musicPlaying) {
-                startBossMusic();
-            }
-        });
-
-        document.getElementById('view-history-btn').addEventListener('click', function() {
-            // Refresh boss data and stats
-            console.log('Refreshing battle data...');
-            fetchBossData();
-            fetchGlobalStats();
-        });
-
-        // Music toggle button
-        document.getElementById('music-toggle-btn').addEventListener('click', function() {
-            toggleBossMusic();
-        });
+        const attackBtn = document.getElementById('attack-boss-btn');
+        if (attackBtn) {
+            attackBtn.addEventListener('click', function() {
+                attackBoss();
+                
+                // Start music when attacking if not already playing
+                if (!musicPlaying) {
+                    startBossMusic();
+                }
+            });
+        }
     </script>
 </body>
 </html>
