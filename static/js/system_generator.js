@@ -70,6 +70,546 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // =============================================
+    // PLANET GRID HELPER FUNCTIONS
+    // =============================================
+    
+    // Generate planet HTML with empty placeholder for odd numbers
+    function generatePlanetGrid(planets) {
+        if (!planets || planets.length === 0) return '';
+        
+        const planetHTML = planets.map(planet => {
+            const [earthMass, jupiterMass] = planet.mass.split('\n');
+            const [earthRadius, jupiterRadius] = planet.radius.split('\n');
+
+            return `
+                <div class="planet-orbit">
+                    <div class="planet-visual ${planet.type.toLowerCase().replace(/\s+/g, '-')}${planet.isEggShapedPlanet ? ' egg-shaped-planet' : ''}" 
+                         ${planet.isEggShapedPlanet ? 'data-egg-planet="true" data-explosion-timer="' + planet.explosionTimer + '"' : ''}></div>
+                    <div class="celestial-info">
+                        <h4>${planet.name.split('(')[1].split(')')[0]} (${planet.name.split('(')[0].trim()} ${planet.name.split(')')[1].trim()})</h4>
+                        <p>Type: ${planet.type} ${planet.isHyperPlanet ? '<span class="rarity-indicator" style="background: linear-gradient(45deg, #FF00FF, #8B008B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><span class="rarity-emoji">🪐</span> Epic</span>' : ''} ${planet.isEggShapedPlanet ? '<span class="rarity-indicator" style="background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><span class="rarity-emoji">🥚</span> Unstable</span>' : ''}</p>
+                        <p><span class="label">Earth Mass:</span> <span class="measurement">${earthMass}</span></p>
+                        <p><span class="label">Jupiter Mass:</span> <span class="measurement">${jupiterMass}</span></p>
+                        <p><span class="label">Earth Radius:</span> <span class="measurement">${earthRadius}</span></p>
+                        <p><span class="label">Jupiter Radius:</span> <span class="measurement">${jupiterRadius}</span></p>
+                        <p><span class="label">Distance:</span> <span class="measurement">${planet.distance}</span></p>
+                        ${planet.isHyperPlanet ? `
+                            <p><span class="label">Temperature:</span> <span class="measurement">${planet.temperature}</span></p>
+                            <p><span class="label">Luminosity:</span> <span class="measurement">${planet.luminosity}</span></p>
+                        ` : ''}
+                        ${planet.isEggShapedPlanet ? `
+                            <p class="egg-warning-tag">⚠️ Unstable - Will explode in 5 seconds!</p>
+                        ` : ''}
+                        ${planet.habitable ? '<p class="habitable-tag">✨ Potentially Habitable!</p>' : ''}
+                        ${planet.destroyedByHyperPlanet ? '<p class="destroyed-habitable-tag">💀 Life Destroyed by Hyper Planet</p>' : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // If odd number of planets, add empty placeholder
+        if (planets.length % 2 !== 0) {
+            return planetHTML + `
+                <div class="planet-orbit planet-placeholder">
+                    <div class="planet-visual"></div>
+                    <div class="celestial-info">
+                        <h4>Empty Space</h4>
+                        <p>Type: No planet in this orbit</p>
+                        <p><span class="label">Mass:</span> <span class="measurement">N/A</span></p>
+                        <p><span class="label">Radius:</span> <span class="measurement">N/A</span></p>
+                        <p><span class="label">Distance:</span> <span class="measurement">N/A</span></p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        return planetHTML;
+    }
+    
+    // Generate destroyed planet HTML for post-supernova display
+    function generateDestroyedPlanetGrid(planets) {
+        if (!planets || planets.length === 0) return '';
+        
+        const planetHTML = planets.map(planet => {
+            const [earthMass, jupiterMass] = planet.mass.split('\n');
+            const [earthRadius, jupiterRadius] = planet.radius.split('\n');
+
+            return `
+                <div class="planet-orbit">
+                    <div class="planet-visual destroyed-planet"
+                        ${planet.isHyperPlanet ? 'data-hyper-planet="true"' : ''}
+                        ${planet.isEggShapedPlanet ? 'data-egg-planet="true"' : ''}>💀</div>
+                    <div class="celestial-info">
+                        <h4>${planet.name.split('(')[1].split(')')[0]} (${planet.name.split('(')[0].trim()} ${planet.name.split(')')[1].trim()}) 💀</h4>
+                        <p>Type: ${planet.type} <span class="destroyed-status">(Destroyed by Supernova)</span></p>
+                        <p><span class="label">Earth Mass:</span> <span class="measurement">${earthMass}</span></p>
+                        <p><span class="label">Jupiter Mass:</span> <span class="measurement">${jupiterMass}</span></p>
+                        <p><span class="label">Earth Radius:</span> <span class="measurement">${earthRadius}</span></p>
+                        <p><span class="label">Jupiter Radius:</span> <span class="measurement">${jupiterRadius}</span></p>
+                        <p><span class="label">Distance:</span> <span class="measurement">${planet.distance}</span></p>
+                        <p><span class="label">Status:</span> <span class="destroyed-status">💀 Destroyed by Supernova</span></p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // If odd number of planets, add empty placeholder
+        if (planets.length % 2 !== 0) {
+            return planetHTML + `
+                <div class="planet-orbit planet-placeholder">
+                    <div class="planet-visual destroyed-planet">🌌</div>
+                    <div class="celestial-info">
+                        <h4>Empty Space</h4>
+                        <p>Type: No planet in this orbit</p>
+                        <p><span class="label">Status:</span> <span class="destroyed-status">Already empty before supernova</span></p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        return planetHTML;
+    }
+
+    // =============================================
+    // SUPERNOVA TRACKING SYSTEM
+    // =============================================
+    
+    // Global variables for supernova tracking
+    let currentSystemData = null;
+    let supernovaTimer = null;
+    let supernovaStartTime = null;
+    let cumulativeViewTime = {}; // Store cumulative time per star (key: star name)
+    
+    // Constants
+    const SUPERNOVA_TRIGGER_TIME = 30 * 1000; // 30 seconds in milliseconds
+    const SUPERNOVA_CHECK_INTERVAL = 100; // Check every 100ms
+    
+    // Physical constants for calculations
+    const STEFAN_BOLTZMANN = 5.67e-8; // W/m^2/K^4
+    const GRAVITATIONAL_CONSTANT = 6.674e-11; // m^3/kg/s^2
+    const SPEED_OF_LIGHT = 2.998e8; // m/s
+    const SOLAR_MASS_KG = 1.989e30; // kg
+    
+    // Initialize supernova tracking from localStorage
+    function initializeSupernovaTracking() {
+        const stored = localStorage.getItem('supernovaTracking');
+        if (stored) {
+            cumulativeViewTime = JSON.parse(stored);
+        }
+    }
+    
+    // Save supernova tracking to localStorage
+    function saveSupernovaTracking() {
+        localStorage.setItem('supernovaTracking', JSON.stringify(cumulativeViewTime));
+    }
+    
+    // Start tracking viewing time for current system
+    function startSupernovaTimer(systemData) {
+        // Stop any existing timer
+        stopSupernovaTimer();
+        
+        // Check if star is O or B-type
+        if (systemData.star.type !== 'O' && systemData.star.type !== 'B') {
+            return; // Only track O and B-type stars
+        }
+        
+        // Store current system data
+        currentSystemData = systemData;
+        supernovaStartTime = Date.now();
+        
+        // Start timer to track cumulative time
+        supernovaTimer = setInterval(() => {
+            updateSupernovaProgress();
+        }, SUPERNOVA_CHECK_INTERVAL);
+        
+        console.log(`Started supernova timer for ${systemData.star.name} (${systemData.star.type}-type)`);
+        
+        // Show supernova progress UI
+        showSupernovaProgressUI();
+    }
+    
+    // Stop supernova timer and save progress
+    function stopSupernovaTimer() {
+        if (supernovaTimer) {
+            // Save accumulated time
+            if (currentSystemData && supernovaStartTime) {
+                const sessionTime = Date.now() - supernovaStartTime;
+                const starKey = `${currentSystemData.star.name}_${currentSystemData.star.type}`;
+                
+                if (!cumulativeViewTime[starKey]) {
+                    cumulativeViewTime[starKey] = 0;
+                }
+                
+                cumulativeViewTime[starKey] += sessionTime;
+                saveSupernovaTracking();
+                
+                console.log(`Stopped supernova timer. Total time for ${starKey}: ${cumulativeViewTime[starKey]}ms`);
+            }
+            
+            clearInterval(supernovaTimer);
+            supernovaTimer = null;
+            supernovaStartTime = null;
+        }
+        
+        // Clean up alert panel and layout class
+        cleanupSupernovaAlert();
+    }
+    
+    // Clean up supernova alert panel and layout
+    function cleanupSupernovaAlert() {
+        const alertPanel = document.getElementById('supernova-progress');
+        if (alertPanel) {
+            // Hide the panel instead of removing it to maintain grid layout
+            alertPanel.classList.add('hidden');
+            // Reset progress
+            const progressFill = alertPanel.querySelector('#supernova-progress-fill');
+            const progressText = alertPanel.querySelector('#supernova-progress-text');
+            const timeRemaining = alertPanel.querySelector('#supernova-time-remaining');
+            if (progressFill) progressFill.style.width = '0%';
+            if (progressText) progressText.textContent = '0%';
+            if (timeRemaining) timeRemaining.textContent = 'Time until supernova: 0:30';
+        }
+    }
+    
+    // Update supernova progress and check for trigger
+    function updateSupernovaProgress() {
+        if (!currentSystemData || !supernovaStartTime) return;
+        
+        const starKey = `${currentSystemData.star.name}_${currentSystemData.star.type}`;
+        const sessionTime = Date.now() - supernovaStartTime;
+        const previousTime = cumulativeViewTime[starKey] || 0;
+        const totalTime = previousTime + sessionTime;
+        
+        // Update progress bar
+        updateSupernovaProgressUI(totalTime);
+        
+        // Check if supernova should trigger
+        if (totalTime >= SUPERNOVA_TRIGGER_TIME) {
+            triggerSupernova();
+        }
+    }
+    
+    // Create alert panel space to maintain grid layout
+    function createAlertPanelSpace(systemData) {
+        const resultDiv = document.getElementById('result');
+        if (!resultDiv) return;
+        
+        const starKey = `${systemData.star.name}_${systemData.star.type}`;
+        
+        // Check if UI already exists
+        let progressDiv = document.getElementById('supernova-progress');
+        if (!progressDiv) {
+            progressDiv = document.createElement('div');
+            progressDiv.id = 'supernova-progress';
+            progressDiv.className = 'supernova-alert-panel hidden'; // Start hidden
+            progressDiv.innerHTML = `
+                <div class="supernova-warning">
+                    <span class="warning-icon">⚠️</span>
+                    <span class="warning-text">${systemData.star.type}-type star will go supernova after 30 seconds of viewing!</span>
+                </div>
+                <div class="supernova-progress-bar">
+                    <div class="supernova-progress-fill" id="supernova-progress-fill"></div>
+                    <div class="supernova-progress-text" id="supernova-progress-text">0%</div>
+                </div>
+                <div class="supernova-time-remaining" id="supernova-time-remaining">Time until supernova: 0:30</div>
+            `;
+            
+            // Find the star system visual container and insert the alert panel in the right column
+            const starSystemVisual = resultDiv.querySelector('.star-system-visual');
+            if (starSystemVisual) {
+                // Insert the alert panel as the second child (right column) in the grid
+                if (starSystemVisual.children.length >= 1) {
+                    // Insert after the first child (star) to position it in the right column
+                    starSystemVisual.insertBefore(progressDiv, starSystemVisual.children[1]);
+                } else {
+                    // Fallback: append to end if no children
+                    starSystemVisual.appendChild(progressDiv);
+                }
+            } else {
+                // Fallback: insert at the top of the result div if star-system-visual not found
+                resultDiv.insertBefore(progressDiv, resultDiv.firstChild);
+            }
+        }
+    }
+
+    // Show supernova progress UI
+    function showSupernovaProgressUI() {
+        const progressDiv = document.getElementById('supernova-progress');
+        if (progressDiv && currentSystemData) {
+            // Show the existing panel
+            progressDiv.classList.remove('hidden');
+            
+            // Update the warning text for the current star
+            const warningText = progressDiv.querySelector('.warning-text');
+            if (warningText) {
+                warningText.textContent = `${currentSystemData.star.type}-type star will go supernova after 30 seconds of viewing!`;
+            }
+            
+            // Update initial progress
+            const starKey = `${currentSystemData.star.name}_${currentSystemData.star.type}`;
+            const previousTime = cumulativeViewTime[starKey] || 0;
+            updateSupernovaProgressUI(previousTime);
+        }
+    }
+    
+    // Update supernova progress UI
+    function updateSupernovaProgressUI(totalTime) {
+        const progressFill = document.getElementById('supernova-progress-fill');
+        const progressText = document.getElementById('supernova-progress-text');
+        const timeRemaining = document.getElementById('supernova-time-remaining');
+        
+        if (!progressFill || !progressText || !timeRemaining) return;
+        
+        const percentage = Math.min((totalTime / SUPERNOVA_TRIGGER_TIME) * 100, 100);
+        const remainingTime = Math.max(SUPERNOVA_TRIGGER_TIME - totalTime, 0);
+        const minutes = Math.floor(remainingTime / 60000);
+        const seconds = Math.floor((remainingTime % 60000) / 1000);
+        
+        progressFill.style.width = `${percentage}%`;
+        progressText.textContent = `${percentage.toFixed(1)}%`;
+        timeRemaining.textContent = `Time until supernova: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Add warning colors as time progresses
+        if (percentage >= 90) {
+            progressFill.style.background = 'linear-gradient(90deg, #ff0000, #ff4500)';
+        } else if (percentage >= 75) {
+            progressFill.style.background = 'linear-gradient(90deg, #ff4500, #ff6347)';
+        } else if (percentage >= 50) {
+            progressFill.style.background = 'linear-gradient(90deg, #ff6347, #ffa500)';
+        }
+    }
+    
+    // Trigger supernova and transform star
+    function triggerSupernova() {
+        if (!currentSystemData) return;
+        
+        // Stop timer
+        stopSupernovaTimer();
+        
+        // Show supernova animation
+        showSupernovaAnimation();
+        
+        // Transform star after animation
+        setTimeout(() => {
+            transformStarToRemnant();
+        }, 3000); // Wait for animation to complete
+    }
+    
+    // Show supernova animation
+    function showSupernovaAnimation() {
+        const resultDiv = document.getElementById('result');
+        if (!resultDiv) return;
+        
+        // Find the star element to center animation on it
+        const starElement = resultDiv.querySelector('.star');
+        if (!starElement) return;
+        
+        // Get star position relative to viewport
+        const starRect = starElement.getBoundingClientRect();
+        const starCenterX = starRect.left + starRect.width / 2;
+        const starCenterY = starRect.top + starRect.height / 2;
+        
+        const animationDiv = document.createElement('div');
+        animationDiv.className = 'supernova-animation';
+        animationDiv.style.position = 'fixed';
+        animationDiv.style.left = '0';
+        animationDiv.style.top = '0';
+        animationDiv.style.width = '100vw';
+        animationDiv.style.height = '100vh';
+        animationDiv.style.pointerEvents = 'none';
+        animationDiv.style.zIndex = '9999';
+        
+        animationDiv.innerHTML = `
+            <div class="supernova-flash"></div>
+            <div class="supernova-explosion" style="left: ${starCenterX}px; top: ${starCenterY}px;">
+                <div class="explosion-ring ring-1"></div>
+                <div class="explosion-ring ring-2"></div>
+                <div class="explosion-ring ring-3"></div>
+            </div>
+            <div class="supernova-message" style="left: ${starCenterX}px; top: ${starCenterY}px;">
+                <h2>💥 SUPERNOVA! 💥</h2>
+                <p>${currentSystemData.star.name} has exploded!</p>
+            </div>
+        `;
+        
+        document.body.appendChild(animationDiv);
+        
+        // Remove animation after 3 seconds
+        setTimeout(() => {
+            animationDiv.remove();
+        }, 3000);
+    }
+    
+    // Transform star to remnant based on type
+    function transformStarToRemnant() {
+        if (!currentSystemData) return;
+        
+        const starType = currentSystemData.star.type;
+        let remnantType;
+        
+        // Determine remnant type based on progenitor
+        if (starType === 'O') {
+            // O-type stars always become black holes
+            remnantType = 'BH';
+        } else if (starType === 'B') {
+            // B-type stars: 70% N, 15% P, 10% MGTR, 5% QK
+            const rand = Math.random();
+            if (rand < 0.70) {
+                remnantType = 'N'; // Neutron Star
+            } else if (rand < 0.85) {
+                remnantType = 'P'; // Pulsar
+            } else if (rand < 0.95) {
+                remnantType = 'MGTR'; // Magnetar
+            } else {
+                remnantType = 'QK'; // Quark Star
+            }
+        }
+        
+        // Calculate remnant properties
+        const progenitorMass = parseFloat(currentSystemData.star.mass.split(' ')[0]);
+        const remnantMass = progenitorMass * 0.15; // 15% of original mass
+        
+        // Create remnant data
+        const remnantData = createRemnantData(remnantType, remnantMass, currentSystemData);
+        
+        // Update current system data
+        currentSystemData.star = remnantData.star;
+        
+        // Clear supernova tracking for this star
+        const starKey = `${currentSystemData.star.name}_${starType}`;
+        delete cumulativeViewTime[starKey];
+        saveSupernovaTracking();
+        
+        // Re-display system with new remnant
+        displaySystemAfterSupernova(currentSystemData, remnantType);
+    }
+    
+    // Create remnant data based on type
+    function createRemnantData(remnantType, remnantMass, originalSystem) {
+        let temperature, luminosity, radius, massDisplay;
+        
+        if (remnantType === 'BH') {
+            // Black hole: temperature and luminosity = 0
+            temperature = '0 K';
+            luminosity = 0;
+            
+            // Calculate Schwarzschild radius: Rs = 2GM/c^2
+            const massKg = remnantMass * SOLAR_MASS_KG;
+            const schwarzschildMeters = (2 * GRAVITATIONAL_CONSTANT * massKg) / (SPEED_OF_LIGHT * SPEED_OF_LIGHT);
+            const schwarzschildKm = schwarzschildMeters / 1000;
+            const schwarzschildSolarRadii = schwarzschildKm / 695700.0;
+            
+            radius = schwarzschildSolarRadii;
+            massDisplay = `${remnantMass.toFixed(3)} M☉`;
+        } else {
+            // Neutron Star, Pulsar, Magnetar, or Quark Star
+            // Temperature: 10^6 K
+            temperature = '1000000 K'; // Will be formatted in display
+            
+            // Fixed radius: 15 km
+            const radiusKm = 15;
+            const radiusMeters = radiusKm * 1000;
+            radius = radiusKm / 695700.0; // Convert to solar radii
+            
+            // Calculate luminosity using Stefan-Boltzmann: L = 4πR^2σT^4
+            const tempKelvin = 1000000;
+            const surfaceArea = 4 * Math.PI * radiusMeters * radiusMeters;
+            const luminosityWatts = surfaceArea * STEFAN_BOLTZMANN * Math.pow(tempKelvin, 4);
+            
+            // Convert to solar luminosities (1 L☉ = 3.828 × 10^26 W)
+            const solarLuminosity = 3.828e26;
+            luminosity = luminosityWatts / solarLuminosity;
+            
+            massDisplay = `${remnantMass.toFixed(3)} M☉`;
+        }
+        
+        return {
+            star: {
+                name: originalSystem.star.name,
+                type: remnantType,
+                temperature: temperature,
+                mass: massDisplay,
+                radius: radius,
+                luminosity: luminosity,
+                customColor: null
+            },
+            planets: originalSystem.planets,
+            giantType: 'main'
+        };
+    }
+    
+    // Display system after supernova
+    function displaySystemAfterSupernova(systemData, remnantType) {
+        const resultDiv = document.getElementById('result');
+        if (!resultDiv) return;
+        
+        // Create remnant type name
+        const remnantName = {
+            'BH': 'Black Hole',
+            'N': 'Neutron Star',
+            'P': 'Pulsar',
+            'MGTR': 'Magnetar',
+            'QK': 'Quark Star'
+        }[remnantType];
+        
+        // Get rarity level
+        const rarityLevel = RARITY_LEVELS[remnantType] || RARITY_LEVELS['M'];
+        
+        resultDiv.innerHTML = `
+            <div class="system-name">
+                <span class="star-emoji">💀</span> The ${systemData.star.name} System
+                <span class="supernova-remnant-badge">💥 POST-SUPERNOVA ${remnantName.toUpperCase()}</span>
+            </div>
+            <div class="system-summary">
+                <div class="summary-card">
+                    <h4>Star</h4>
+                    <p>${systemData.star.name} (${systemData.star.type}-class ${remnantName})</p>
+                </div>
+                <div class="summary-card">
+                    <h4>Planets</h4>
+                    <p>${systemData.planets.length}</p>
+                </div>
+                <div class="summary-card">
+                    <h4>Habitable Worlds</h4>
+                    <p>${systemData.planets.filter(p => p.habitable).length}</p>
+                </div>
+            </div>
+            <div class="star-system-visual">
+                <div class="star-header">
+                    <span class="star-emoji">💀</span>
+                    <div class="star-classification">${remnantName}</div>
+                </div>
+                <div class="celestial-object">
+                    <div class="star type-${systemData.star.type.replace('MGTR', 'magnetar')}"></div>
+                    <div class="celestial-info">
+                        <h4>${systemData.star.name}</h4>
+                        <p>${remnantName}
+                        <span class="rarity-indicator" 
+                             style="background: ${rarityLevel.color}; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                            ${rarityLevel.emoji} ${rarityLevel.name}
+                        </span></p>
+                        <ul class="property-list">
+                            <li><strong>Type:</strong> ${systemData.star.type}-class ${remnantName}</li>
+                            <li><strong>Temperature:</strong> ${systemData.star.temperature === '0 K' ? '0 K (No surface)' : '1,000,000 K'}</li>
+                            <li><strong>Mass:</strong> ${systemData.star.mass} (15% of progenitor)</li>
+                            <li><strong>Radius:</strong> ${systemData.star.type === 'BH' ? `${(systemData.star.radius * 695700).toFixed(2)} km (Schwarzschild Radius)` : '15 km'}</li>
+                            <li><strong>Luminosity:</strong> ${systemData.star.luminosity === 0 ? '0 L☉' : `${systemData.star.luminosity.toExponential(2)} L☉`}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            ${systemData.planets.length > 0 ? `
+                <div class="planets-container">
+                    <h3>Planets in this System</h3>
+                    ${generateDestroyedPlanetGrid(systemData.planets)}
+                </div>
+            ` : ''}
+        `;
+        
+        console.log(`System transformed to ${remnantName} remnant`);
+    }
+
     // Stats tracking system for server synchronization
     let statsBatch = {
         systems_generated: 0,
@@ -632,35 +1172,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="planets-header">
                     <span class="planet-emoji">🪐</span> Planets
                 </div>
-                ${systemData.planets.map(planet => {
-                    const [earthMass, jupiterMass] = planet.mass.split('\n');
-                    const [earthRadius, jupiterRadius] = planet.radius.split('\n');
-
-                    return `
-                        <div class="planet-orbit">
-                            <div class="planet-visual ${planet.type.toLowerCase().replace(/\s+/g, '-')}${planet.isEggShapedPlanet ? ' egg-shaped-planet' : ''}" 
-                                 ${planet.isEggShapedPlanet ? 'data-egg-planet="true" data-explosion-timer="' + planet.explosionTimer + '"' : ''}></div>
-                            <div class="celestial-info">
-                                <h4>${planet.name.split('(')[1].split(')')[0]} (${planet.name.split('(')[0].trim()} ${planet.name.split(')')[1].trim()})</h4>
-                                <p>Type: ${planet.type} ${planet.isHyperPlanet ? '<span class="rarity-indicator" style="background: linear-gradient(45deg, #FF00FF, #8B008B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><span class="rarity-emoji">🪐</span> Epic</span>' : ''} ${planet.isEggShapedPlanet ? '<span class="rarity-indicator" style="background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><span class="rarity-emoji">🥚</span> Unstable</span>' : ''}</p>
-                                <p><span class="label">Earth Mass:</span> <span class="measurement">${earthMass}</span></p>
-                                <p><span class="label">Jupiter Mass:</span> <span class="measurement">${jupiterMass}</span></p>
-                                <p><span class="label">Earth Radius:</span> <span class="measurement">${earthRadius}</span></p>
-                                <p><span class="label">Jupiter Radius:</span> <span class="measurement">${jupiterRadius}</span></p>
-                                <p><span class="label">Distance:</span> <span class="measurement">${planet.distance}</span></p>
-                                ${planet.isHyperPlanet ? `
-                                    <p><span class="label">Temperature:</span> <span class="measurement">${planet.temperature}</span></p>
-                                    <p><span class="label">Luminosity:</span> <span class="measurement">${planet.luminosity}</span></p>
-                                ` : ''}
-                                ${planet.habitable ? '<p class="habitable-tag">✨ Potentially Habitable!</p>' : ''}
-                                ${planet.destroyedByHyperPlanet ? '<p class="destroyed-habitable-tag">💀 Life Destroyed by Hyper Planet</p>' : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
+                ${generatePlanetGrid(systemData.planets)}
             </div>
         `;
         resultDiv.innerHTML = html;
+        
+        // Start supernova timer for O and B-type stars
+        startSupernovaTimer(rarityData.rarestObject);
         
         // Check for Egg Shaped Planets and handle special behavior
         const eggPlanets = document.querySelectorAll('[data-egg-planet="true"]');
@@ -771,31 +1289,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="planets-header">
                     <span class="planet-emoji">🪐</span> Planets
                 </div>
-                ${systemData.completeSystemData.planets.map(planet => {
-                    const [earthMass, jupiterMass] = planet.mass.split('\n');
-                    const [earthRadius, jupiterRadius] = planet.radius.split('\n');
-
-                    return `
-                        <div class="planet-orbit">
-                            <div class="planet-visual ${planet.type.toLowerCase().replace(/\s+/g, '-')}${planet.isEggShapedPlanet ? ' egg-shaped-planet' : ''}" 
-                                 ${planet.isEggShapedPlanet ? 'data-egg-planet="true" data-explosion-timer="' + planet.explosionTimer + '"' : ''}></div>
-                            <div class="celestial-info">
-                                <h4>${planet.name.split('(')[1].split(')')[0]} (${planet.name.split('(')[0].trim()} ${planet.name.split(')')[1].trim()})</h4>
-                                <p>Type: ${planet.type} ${planet.isEggShapedPlanet ? '<span class="rarity-indicator" style="background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><span class="rarity-emoji">🥚</span> Unstable</span>' : ''}</p>
-                                <p><span class="label">Earth Mass:</span> <span class="measurement">${earthMass}</span></p>
-                                <p><span class="label">Jupiter Mass:</span> <span class="measurement">${jupiterMass}</span></p>
-                                <p><span class="label">Earth Radius:</span> <span class="measurement">${earthRadius}</span></p>
-                                <p><span class="label">Jupiter Radius:</span> <span class="measurement">${jupiterRadius}</span></p>
-                                <p><span class="label">Distance:</span> <span class="measurement">${planet.distance}</span></p>
-                                ${planet.habitable ? '<p class="habitable-tag">✨ Potentially Habitable!</p>' : ''}
-                                ${planet.destroyedByHyperPlanet ? '<p class="destroyed-habitable-tag">💀 Life Destroyed by Hyper Planet</p>' : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
+                ${generatePlanetGrid(systemData.completeSystemData.planets)}
             </div>
         `;
         resultDiv.innerHTML = html;
+        
+        // Always create the alert panel space to maintain grid layout
+        createAlertPanelSpace(systemData);
+        
+        // Start supernova timer for O and B-type stars
+        startSupernovaTimer(systemData);
         
         // Check for Egg Shaped Planets and handle special behavior
         const eggPlanets = document.querySelectorAll('[data-egg-planet="true"]');
@@ -940,6 +1443,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize rarity tracking on page load
     initializeRarityTracking();
     displayRarityInfo();
+    
+    // Initialize supernova tracking
+    initializeSupernovaTracking();
     
     // Initialize stats tracking for logged-in users
     initializeStatsTracking();
@@ -1507,38 +2013,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="planets-header">
                     <span class="planet-emoji">🪐</span> Planets
                 </div>
-                ${data.planets.map(planet => {
-                    const [earthMass, jupiterMass] = planet.mass.split('\n');
-                    const [earthRadius, jupiterRadius] = planet.radius.split('\n');
-
-                    return `
-                        <div class="planet-orbit">
-                            <div class="planet-visual ${planet.type.toLowerCase().replace(/\s+/g, '-')}${planet.isEggShapedPlanet ? ' egg-shaped-planet' : ''}" 
-                                 ${planet.isEggShapedPlanet ? 'data-egg-planet="true" data-explosion-timer="' + planet.explosionTimer + '"' : ''}></div>
-                            <div class="celestial-info">
-                                <h4>${planet.name.split('(')[1].split(')')[0]} (${planet.name.split('(')[0].trim()} ${planet.name.split(')')[1].trim()})</h4>
-                                <p>Type: ${planet.type} ${planet.isHyperPlanet ? '<span class="rarity-indicator" style="background: linear-gradient(45deg, #FF00FF, #8B008B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><span class="rarity-emoji">🪐</span> Epic</span>' : ''} ${planet.isEggShapedPlanet ? '<span class="rarity-indicator" style="background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><span class="rarity-emoji">🥚</span> Unstable</span>' : ''}</p>
-                                <p><span class="label">Earth Mass:</span> <span class="measurement">${earthMass}</span></p>
-                                <p><span class="label">Jupiter Mass:</span> <span class="measurement">${jupiterMass}</span></p>
-                                <p><span class="label">Earth Radius:</span> <span class="measurement">${earthRadius}</span></p>
-                                <p><span class="label">Jupiter Radius:</span> <span class="measurement">${jupiterRadius}</span></p>
-                                <p><span class="label">Distance:</span> <span class="measurement">${planet.distance}</span></p>
-                                ${planet.isHyperPlanet ? `
-                                    <p><span class="label">Temperature:</span> <span class="measurement">${planet.temperature}</span></p>
-                                    <p><span class="label">Luminosity:</span> <span class="measurement">${planet.luminosity}</span></p>
-                                ` : ''}
-                                ${planet.isEggShapedPlanet ? `
-                                    <p class="egg-warning-tag">⚠️ Unstable - Will explode in 5 seconds!</p>
-                                ` : ''}
-                                ${planet.habitable ? '<p class="habitable-tag">✨ Potentially Habitable!</p>' : ''}
-                                ${planet.destroyedByHyperPlanet ? '<p class="destroyed-habitable-tag">💀 Life Destroyed by Hyper Planet</p>' : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
+                ${generatePlanetGrid(data.planets)}
             </div>
         `;
         resultDiv.innerHTML = html;
+        
+        // Always create the alert panel space to maintain grid layout
+        createAlertPanelSpace(data);
+        
+        // Start supernova timer for O and B-type stars
+        startSupernovaTimer(data);
         
         // Check for Egg Shaped Planets and handle special behavior
         const eggPlanets = document.querySelectorAll('[data-egg-planet="true"]');
@@ -1836,9 +2320,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial update
     updateAFKCheckboxState();
 
-    // Stop AFK mode when page is about to unload
+    // Stop AFK mode and supernova timer when page is about to unload
     window.addEventListener('beforeunload', function() {
         stopAFKMode();
+        stopSupernovaTimer();
     });
 
     // Get the color select and custom color picker elements
@@ -2065,35 +2550,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="planets-header">
                             <span class="planet-emoji">🪐</span> Planets
                         </div>
-                        ${data.planets.map(planet => {
-                            const [earthMass, jupiterMass] = planet.mass.split('\n');
-                            const [earthRadius, jupiterRadius] = planet.radius.split('\n');
-
-                            return `
-                                <div class="planet-orbit">
-                                    <div class="planet-visual ${planet.type.toLowerCase().replace(/\s+/g, '-')}${planet.isEggShapedPlanet ? ' egg-shaped-planet' : ''}" 
-                                 ${planet.isEggShapedPlanet ? 'data-egg-planet="true" data-explosion-timer="' + planet.explosionTimer + '"' : ''}></div>
-                                    <div class="celestial-info">
-                                        <h4>${planet.name.split('(')[1].split(')')[0]} (${planet.name.split('(')[0].trim()} ${planet.name.split(')')[1].trim()})</h4>
-                                        <p>Type: ${planet.type} ${planet.isHyperPlanet ? '<span class="rarity-indicator" style="background: linear-gradient(45deg, #FF00FF, #8B008B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><span class="rarity-emoji">🪐</span> Epic</span>' : ''} ${planet.isEggShapedPlanet ? '<span class="rarity-indicator" style="background: linear-gradient(45deg, #FFD700, #FFA500); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><span class="rarity-emoji">🥚</span> Unstable</span>' : ''}</p>
-                                        <p><span class="label">Earth Mass:</span> <span class="measurement">${earthMass}</span></p>
-                                        <p><span class="label">Jupiter Mass:</span> <span class="measurement">${jupiterMass}</span></p>
-                                        <p><span class="label">Earth Radius:</span> <span class="measurement">${earthRadius}</span></p>
-                                        <p><span class="label">Jupiter Radius:</span> <span class="measurement">${jupiterRadius}</span></p>
-                                        <p><span class="label">Distance:</span> <span class="measurement">${planet.distance}</span></p>
-                                        ${planet.isHyperPlanet ? `
-                                            <p><span class="label">Temperature:</span> <span class="measurement">${planet.temperature}</span></p>
-                                            <p><span class="label">Luminosity:</span> <span class="measurement">${planet.luminosity}</span></p>
-                                        ` : ''}
-                                        ${planet.habitable ? '<p class="habitable-tag">✨ Potentially Habitable!</p>' : ''}
-                                ${planet.destroyedByHyperPlanet ? '<p class="destroyed-habitable-tag">💀 Life Destroyed by Hyper Planet</p>' : ''}
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
+                        ${generatePlanetGrid(data.planets)}
                     </div>
                 `;
                 resultDiv.innerHTML = html;
+                
+                // Always create the alert panel space to maintain grid layout
+                createAlertPanelSpace(data);
+                
+                // Start supernova timer for O and B-type stars
+                startSupernovaTimer(data);
                 
                 // Check for Egg Shaped Planets and handle special behavior
                 const eggPlanets = document.querySelectorAll('[data-egg-planet="true"]');

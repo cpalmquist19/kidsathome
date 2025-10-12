@@ -233,18 +233,37 @@ h1 {
 .star-system-visual {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: 1fr 1fr; /* Two-column layout */
     gap: 2rem;
     padding: 2rem;
     align-items: start;
     grid-auto-flow: row;
 }
 
-/* Make the star take full width in first row */
+/* Make the star take the left column */
 .celestial-object {
-    grid-column: 1 / -1;
+    grid-column: 1;
     max-width: 800px;
     margin: 0 auto;
+}
+
+/* Reserve space for supernova alert in right column */
+.supernova-alert-panel {
+    grid-column: 2;
+    background: linear-gradient(135deg, rgba(255, 69, 0, 0.15), rgba(255, 140, 0, 0.15));
+    border: 2px solid #ff4500;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    box-shadow: 0 0 20px rgba(255, 69, 0, 0.3);
+    animation: supernovaPulse 2s ease-in-out infinite;
+    max-width: 400px;
+}
+
+/* Hide the alert when not needed but keep the space */
+.supernova-alert-panel.hidden {
+    visibility: hidden;
+    opacity: 0;
 }
 
 /* Adjust planet cards */
@@ -266,8 +285,7 @@ h1 {
     overflow: hidden;
 }
 
-/* Ensure each planet card starts on a new grid row when it can’t fit */
-.planet-orbit { grid-column: auto; }
+/* Planet positioning is now handled by nth-child selectors above */
 
 /* Optional: Add some visual hierarchy */
 .celestial-object {
@@ -1520,6 +1538,28 @@ div.planet-visual.hyper-planet {
     justify-content: center;
 }
 
+/* Planet cards should be in 1x1 grid (each taking full width) */
+.planet-orbit {
+    grid-column: 1 / -1; /* Each planet takes full width */
+}
+
+/* Styling for empty planet placeholder */
+.planet-placeholder {
+    opacity: 0.5;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+}
+
+.planet-placeholder .planet-name {
+    color: #666;
+}
+
+.planet-placeholder .planet-type,
+.planet-placeholder .planet-mass,
+.planet-placeholder .planet-radius,
+.planet-placeholder .planet-distance {
+    color: #888;
+}
+
 .planet-emoji {
     font-size: 2.2rem;
 }
@@ -2317,7 +2357,7 @@ div.planet-visual.hyper-planet {
 /* Medium screens (tablets) */
 @media (max-width: 1024px) and (min-width: 769px) {
     .star-system-visual {
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-template-columns: 1fr 1fr; /* Maintain two-column layout */
         gap: 1.5rem;
         padding: 1.5rem;
         grid-auto-flow: row;
@@ -3603,4 +3643,303 @@ div.star.type-SV {
             0 0 30px rgba(160, 82, 45, 0.6),
             0 0 45px rgba(101, 67, 33, 0.4);
     }
+}
+
+/* =============================================
+   SUPERNOVA SYSTEM STYLES
+   ============================================= */
+
+/* Supernova progress container */
+.supernova-progress-container {
+    background: linear-gradient(135deg, rgba(255, 69, 0, 0.1), rgba(255, 140, 0, 0.1));
+    border: 2px solid #ff4500;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 0 20px rgba(255, 69, 0, 0.3);
+    animation: supernovaPulse 2s ease-in-out infinite;
+}
+
+/* Removed duplicate styling - now handled above */
+
+/* Layout is now handled by grid positioning above */
+
+@keyframes supernovaPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 69, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(255, 69, 0, 0.6);
+    }
+}
+
+/* Supernova warning */
+.supernova-warning {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: #ff4500;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.warning-icon {
+    font-size: 1.5rem;
+    animation: warningBlink 1s ease-in-out infinite;
+}
+
+@keyframes warningBlink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* Supernova progress bar */
+.supernova-progress-bar {
+    position: relative;
+    width: 100%;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.supernova-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffa500, #ff6347);
+    border-radius: 15px;
+    transition: width 0.1s linear, background 0.5s ease;
+    box-shadow: 0 0 10px rgba(255, 165, 0, 0.8);
+}
+
+.supernova-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+/* Time remaining */
+.supernova-time-remaining {
+    text-align: center;
+    color: #ff6347;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+/* Supernova animation overlay */
+.supernova-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+/* Flash effect */
+.supernova-flash {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: white;
+    animation: supernovaFlash 3s ease-out forwards;
+}
+
+@keyframes supernovaFlash {
+    0% {
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Explosion rings */
+.supernova-explosion {
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+.explosion-ring {
+    position: absolute;
+    border: 5px solid #ff6347;
+    border-radius: 50%;
+    /* Center each ring on the explosion origin so it expands evenly */
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    animation: expandRing 3s ease-out forwards;
+}
+
+.ring-1 {
+    animation-delay: 0s;
+}
+
+.ring-2 {
+    animation-delay: 0.3s;
+}
+
+.ring-3 {
+    animation-delay: 0.6s;
+}
+
+@keyframes expandRing {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 1;
+        border-width: 10px;
+    }
+    100% {
+        width: 150vmax;
+        height: 150vmax;
+        opacity: 0;
+        border-width: 2px;
+    }
+}
+
+/* Supernova message */
+.supernova-message {
+    position: absolute;
+    z-index: 10000;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 2rem 3rem;
+    border-radius: 20px;
+    border: 3px solid #ff4500;
+    box-shadow: 0 0 50px rgba(255, 69, 0, 0.8);
+    animation: messageAppear 3s ease-out forwards;
+    transform: translate(-50%, -50%);
+}
+
+.supernova-message h2 {
+    color: #ff4500;
+    font-size: 3rem;
+    margin: 0 0 1rem 0;
+    text-shadow: 0 0 20px rgba(255, 69, 0, 0.8);
+    animation: messageShake 0.5s ease-in-out infinite;
+}
+
+.supernova-message p {
+    color: #ffffff;
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+@keyframes messageAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    40% {
+        transform: scale(0.95);
+    }
+    60% {
+        transform: scale(1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes messageShake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+/* Supernova remnant badge */
+.supernova-remnant-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff0000, #ff4500);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-left: 1rem;
+    box-shadow: 0 0 15px rgba(255, 69, 0, 0.6);
+    animation: remnantBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes remnantBadgePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 15px rgba(255, 69, 0, 0.6);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 25px rgba(255, 69, 0, 0.9);
+    }
+}
+
+/* Planets grid layout for post-supernova */
+.planets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+/* Destroyed planet styling */
+.planet-visual.destroyed-planet {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(135deg, #2c2c2c, #1a1a1a) !important;
+    border: 3px solid #666 !important;
+    box-shadow: 0 0 20px rgba(102, 102, 102, 0.5) !important;
+    color: #999 !important;
+    font-size: 2rem !important;
+    opacity: 0.7 !important;
+    animation: destroyedPlanetFade 3s ease-out forwards;
+}
+
+@keyframes destroyedPlanetFade {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+}
+
+.destroyed-status {
+    color: #ff6666;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 102, 102, 0.5);
 }

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Space Auto Clicker - Game</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Game Libraries -->
+    <!-- Phaser.js for 2D game development -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/game.css') }}">
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'space-blue': '#0f172a',
+                        'star-gold': '#fbbf24',
+                        'nebula-purple': '#8b5cf6',
+                        'cosmic-pink': '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-space-blue text-white overflow-hidden">
+    <!-- Navigation -->
+    <nav class="relative bg-gradient-to-b from-blue-900/95 to-blue-800/95 backdrop-blur-sm sticky top-0 z-50">
+        <!-- Enhanced starfield background -->
+        <div class="absolute inset-0 opacity-30">
+            <!-- Row 1 -->
+            <div class="absolute top-1 left-1/6 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-1 left-1/3 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-1 left-1/2 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            <div class="absolute top-1 left-2/3 w-0.5 h-0.5 bg-cyan-200 rounded-full"></div>
+            <div class="absolute top-1 left-5/6 w-0.5 h-0.5 bg-white rounded-full"></div>
+            
+            <!-- Row 2 -->
+            <div class="absolute top-3 left-1/8 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute top-3 left-2/5 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            <div class="absolute top-3 left-3/5 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-3 left-7/8 w-0.5 h-0.5 bg-white rounded-full"></div>
+            
+            <!-- Row 3 -->
+            <div class="absolute top-5 left-1/4 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-5 left-1/2 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-5 left-3/4 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            
+            <!-- Row 4 -->
+            <div class="absolute top-7 left-1/6 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-7 left-2/5 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-7 left-3/5 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute top-7 left-5/6 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            
+            <!-- Random scattered stars -->
+            <div class="absolute top-2 left-1/12 w-0.5 h-0.5 bg-cyan-200 rounded-full"></div>
+            <div class="absolute top-4 left-1/10 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-6 left-1/15 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            <div class="absolute top-2 right-1/12 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-4 right-1/10 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-6 right-1/15 w-0.5 h-0.5 bg-white rounded-full"></div>
+        </div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo Section -->
+                <a href="/" class="group flex items-center space-x-3 hover:scale-105 transition-transform duration-300">
+                    <div class="relative">
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <span class="text-2xl font-bold text-white group-hover:text-gray-200 transition-colors duration-300">
+                        Kids at Home
+                    </span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="/#games" class="group flex items-center space-x-2 text-gray-300 hover:text-blue-400 transition-colors duration-300 relative">
+                        <i class="fas fa-gamepad text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Games</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/leaderboards" class="group flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors duration-300 relative">
+                        <i class="fas fa-trophy text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Leaderboards</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/#about" class="group flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-colors duration-300 relative">
+                        <i class="fas fa-info-circle text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">About</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    {% if current_user.is_authenticated %}
+                        <button onclick="showLogoutModal()" class="group flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors duration-300 relative">
+                            <i class="fas fa-sign-out-alt text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                            <span class="font-medium">Logout</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-red-400 group-hover:w-full transition-all duration-300"></div>
+                        </button>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="group flex items-center space-x-2 text-gray-300 hover:text-green-400 transition-colors duration-300 relative">
+                            <i class="fas fa-sign-in-alt text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                            <span class="font-medium">Login</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-400 group-hover:w-full transition-all duration-300"></div>
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button class="text-gray-300 hover:text-white transition-colors duration-300 p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Game Container -->
+    <div class="game-container">
+        <!-- Game Canvas Container -->
+        <div id="gameContainer" class="game-canvas-container">
+            <!-- Phaser game will be initialized here -->
+            
+            <!-- Central Star Display -->
+            <div id="centralStar" class="central-star-display">
+                <div class="star-container">
+                    <img id="starImage" src="/static/images/NASA-BrownDwarf.jpg" alt="Current Star" class="star-image-central">
+                    <div class="star-glow"></div>
+                </div>
+                <div class="star-info-central">
+                    <h2 id="starNameCentral" class="star-name-central">Nmininix</h2>
+                    <p id="starTypeCentral" class="star-type-central">Brown Dwarf</p>
+                    <p id="starProductionCentral" class="star-production-central">1 stardust per click</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game UI Overlay -->
+        <div class="game-ui-overlay">
+            <!-- Left Panel - Star Collection -->
+            <div class="ui-panel left-panel">
+                <div class="panel-header">
+                    <h3 class="text-lg font-bold text-star-gold">
+                        <i class="fas fa-star mr-2"></i>
+                        Current System
+                    </h3>
+                </div>
+                <div class="panel-content" id="starCollection">
+                    <!-- Stars will be dynamically added here -->
+                </div>
+            </div>
+            
+            <!-- Left Middle Panel - Stardust Display -->
+            <div class="ui-panel left-middle-panel">
+                <div class="panel-header">
+                    <h3 class="text-lg font-bold text-star-gold">
+                        <i class="fas fa-sparkles mr-2"></i>
+                        Stardust
+                    </h3>
+                </div>
+                <div class="panel-content">
+                    <div class="stardust-display">
+                        <div class="stardust-amount" id="stardustAmount">
+                            <i class="fas fa-spinner fa-spin stardust-spinner"></i>
+                        </div>
+                        <div class="stardust-label">Available</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel - System Objects (Planets, Moons, etc.) -->
+            <div class="ui-panel right-panel">
+                <div class="panel-header">
+                    <h3 class="text-lg font-bold text-star-gold">
+                        <i class="fas fa-globe mr-2"></i>
+                        System Objects
+                    </h3>
+                </div>
+                <div class="panel-content" id="systemObjectsPanel">
+                    <!-- Dynamic list will be injected here -->
+                </div>
+            </div>
+            
+            {% if is_local_dev %}
+            <!-- Auto-Clicker Panel (Local Dev Only) -->
+            <div class="ui-panel auto-clicker-panel">
+                <div class="panel-header">
+                    <h3 class="text-lg font-bold text-star-gold">
+                        <i class="fas fa-robot mr-2"></i>
+                        Auto-Clicker
+                    </h3>
+                </div>
+                <div class="panel-content">
+                    <div class="auto-clicker-controls">
+                        <div class="auto-clicker-status">
+                            <div class="status-indicator" id="autoClickerStatus">
+                                <i class="fas fa-circle text-red-500"></i>
+                                <span>Inactive</span>
+                            </div>
+                        </div>
+                        
+                        <div class="auto-clicker-toggle">
+                            <button id="toggleAutoClicker" class="btn-auto-clicker">
+                                <i class="fas fa-play mr-2"></i>
+                                <span id="autoClickerToggleText">Start Auto-Clicker</span>
+                            </button>
+                        </div>
+                        
+                        <div class="auto-clicker-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Clicks/min:</span>
+                                <span class="stat-value" id="clicksPerMinute">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Auto:</span>
+                                <span class="stat-value" id="totalAutoClicks">0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="auto-clicker-settings">
+                            <div class="setting-item">
+                                <label class="setting-label">Click Rate:</label>
+                                <select id="clickRate" class="setting-select">
+                                    <option value="slow">Slow (30/min)</option>
+                                    <option value="normal">Normal (60/min)</option>
+                                    <option value="fast">Fast (90/min)</option>
+                                    <option value="ultra" selected>Ultra Fast (300/min)</option>
+                                    <option value="insane">Insane (600/min)</option>
+                                    <option value="ludicrous">Ludicrous (1200/min)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="text-xl font-bold">Settings</h2>
+                <button class="modal-close" id="closeSettings">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label class="setting-label">Sound Effects</label>
+                    <input type="checkbox" id="soundEnabled" checked class="setting-checkbox">
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">Particle Effects</label>
+                    <input type="checkbox" id="particlesEnabled" checked class="setting-checkbox">
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">Auto Save</label>
+                    <input type="checkbox" id="autoSaveEnabled" checked class="setting-checkbox">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Game Modal -->
+    <div id="saveModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="text-xl font-bold">Save Game</h2>
+                <button class="modal-close" id="closeSave">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-gray-300 mb-4">Your game progress has been saved successfully!</p>
+                <div class="save-info">
+                    <div class="info-item">
+                        <span class="info-label">Stardust:</span>
+                        <span class="info-value" id="saveStardust">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Stars Unlocked:</span>
+                        <span class="info-value" id="saveStars">1</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Clicks:</span>
+                        <span class="info-value" id="saveClicks">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-star">
+                <i class="fas fa-star text-6xl text-star-gold animate-spin"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-4">Loading Space Auto Clicker...</h2>
+            <div class="loading-bar">
+                <div class="loading-progress" id="loadingProgress"></div>
+            </div>
+            <p class="text-gray-400 mt-4" id="loadingText">Initializing game engine...</p>
+        </div>
+    </div>
+
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-xl font-bold text-star-gold">Upgrade Available</h3>
+                <button id="closeUpgrade" class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="upgrade-purchase-info">
+                    <div class="upgrade-icon-large">
+                        <i id="upgradeIcon" class="fas fa-star text-4xl text-star-gold"></i>
+                    </div>
+                    <h4 id="upgradeName" class="text-2xl font-bold mb-2">Upgrade Name</h4>
+                    <p id="upgradeDescription" class="text-gray-300 mb-4">Upgrade description goes here</p>
+                    
+                    <div class="stardust-progress">
+                        <div class="progress-text" id="stardustProgress">0/1000 stardust collected</div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button id="confirmPurchase" class="btn-primary">
+                            <i class="fas fa-check"></i>
+                            Purchase Upgrade
+                        </button>
+                        <button id="cancelPurchase" class="btn-secondary">
+                            <i class="fas fa-times"></i>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <!-- Modal Header -->
+            <div class="text-center mb-6">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-sign-out-alt text-2xl text-red-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Confirm Logout</h3>
+                <p class="text-gray-300">Are you sure you want to log out? You'll need to sign in again to access your account.</p>
+            </div>
+            
+            <!-- Modal Actions -->
+            <div class="flex space-x-4">
+                <button onclick="hideLogoutModal()" class="flex-1 px-6 py-3 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                    Cancel
+                </button>
+                <a href="{{ url_for('logout') }}" class="flex-1 px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-center">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+    
+    <!-- Logout Modal JavaScript -->
+    <script>
+        function showLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modal.classList.remove('hidden');
+            // Trigger animation after a small delay to ensure the modal is visible
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        
+        function hideLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            // Hide modal after animation completes
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('logoutModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideLogoutModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideLogoutModal();
+            }
+        });
+    </script>
+</body>
+</html>

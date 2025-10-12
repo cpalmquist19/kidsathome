@@ -1,0 +1,270 @@
+{
+  "systemName": "Sol System",
+  "systemType": "single_star",
+  "description": "Our home solar system",
+  "centralObject": {
+    "name": "Sun",
+    "type": "star",
+    "spectralType": "G",
+    "mass": 1.989e30,
+    "radius": 696340,
+    "temperature": 5778,
+    "color": "#FFFF00",
+    "luminosity": 1.0,
+    "age": 4.6e9
+  },
+  "objects": [
+    {
+      "name": "Mercury",
+      "type": "planet",
+      "subtype": "terrestrial",
+      "mass": 3.301e23,
+      "radius": 2439.7,
+      "distance": 57900000,
+      "orbitalPeriod": 87.97,
+      "rotationPeriod": 58.65,
+      "color": "#8C7853",
+      "atmosphere": false,
+      "moons": []
+    },
+    {
+      "name": "Venus",
+      "type": "planet",
+      "subtype": "terrestrial",
+      "mass": 4.867e24,
+      "radius": 6051.8,
+      "distance": 108200000,
+      "orbitalPeriod": 224.7,
+      "rotationPeriod": 243.0,
+      "color": "#FFC649",
+      "atmosphere": true,
+      "atmosphereColor": "#FFA500",
+      "moons": []
+    },
+    {
+      "name": "Earth",
+      "type": "planet",
+      "subtype": "terrestrial",
+      "mass": 5.972e24,
+      "radius": 6371,
+      "distance": 149600000,
+      "orbitalPeriod": 365.25,
+      "rotationPeriod": 1.0,
+      "color": "#4A90E2",
+      "atmosphere": true,
+      "atmosphereColor": "#87CEEB",
+      "moons": [
+        {
+          "name": "Moon",
+          "type": "moon",
+          "mass": 7.342e22,
+          "radius": 1737.4,
+          "distance": 384400,
+          "orbitalPeriod": 27.32,
+          "color": "#C0C0C0"
+        }
+      ]
+    },
+    {
+      "name": "Mars",
+      "type": "planet",
+      "subtype": "terrestrial",
+      "mass": 6.39e23,
+      "radius": 3389.5,
+      "distance": 227900000,
+      "orbitalPeriod": 687.0,
+      "rotationPeriod": 1.03,
+      "color": "#CD5C5C",
+      "atmosphere": true,
+      "atmosphereColor": "#FF6347",
+      "moons": [
+        {
+          "name": "Phobos",
+          "type": "moon",
+          "mass": 1.065e16,
+          "radius": 11.1,
+          "distance": 9376,
+          "orbitalPeriod": 0.32,
+          "color": "#8B7355"
+        },
+        {
+          "name": "Deimos",
+          "type": "moon",
+          "mass": 1.476e15,
+          "radius": 6.2,
+          "distance": 23463,
+          "orbitalPeriod": 1.26,
+          "color": "#8B7355"
+        }
+      ]
+    },
+    {
+      "name": "Jupiter",
+      "type": "planet",
+      "subtype": "gas_giant",
+      "mass": 1.898e27,
+      "radius": 69911,
+      "distance": 778500000,
+      "orbitalPeriod": 4332.59,
+      "rotationPeriod": 0.41,
+      "color": "#D8CA9D",
+      "atmosphere": true,
+      "atmosphereColor": "#F4A460",
+      "rings": true,
+      "ringColor": "#DAA520",
+      "moons": [
+        {
+          "name": "Io",
+          "type": "moon",
+          "mass": 8.931e22,
+          "radius": 1821.6,
+          "distance": 421700,
+          "orbitalPeriod": 1.77,
+          "color": "#FFD700"
+        },
+        {
+          "name": "Europa",
+          "type": "moon",
+          "mass": 4.799e22,
+          "radius": 1560.8,
+          "distance": 671034,
+          "orbitalPeriod": 3.55,
+          "color": "#F0F8FF"
+        },
+        {
+          "name": "Ganymede",
+          "type": "moon",
+          "mass": 1.481e23,
+          "radius": 2634.1,
+          "distance": 1070412,
+          "orbitalPeriod": 7.15,
+          "color": "#C0C0C0"
+        },
+        {
+          "name": "Callisto",
+          "type": "moon",
+          "mass": 1.075e23,
+          "radius": 2410.3,
+          "distance": 1882709,
+          "orbitalPeriod": 16.69,
+          "color": "#8B7355"
+        }
+      ]
+    },
+    {
+      "name": "Saturn",
+      "type": "planet",
+      "subtype": "gas_giant",
+      "mass": 5.683e26,
+      "radius": 58232,
+      "distance": 1432000000,
+      "orbitalPeriod": 10759.22,
+      "rotationPeriod": 0.45,
+      "color": "#FAD5A5",
+      "atmosphere": true,
+      "atmosphereColor": "#FFE4B5",
+      "rings": true,
+      "ringColor": "#DAA520",
+      "moons": [
+        {
+          "name": "Titan",
+          "type": "moon",
+          "mass": 1.345e23,
+          "radius": 2574.7,
+          "distance": 1221870,
+          "orbitalPeriod": 15.95,
+          "color": "#FFA500"
+        },
+        {
+          "name": "Enceladus",
+          "type": "moon",
+          "mass": 1.08e20,
+          "radius": 252.1,
+          "distance": 238020,
+          "orbitalPeriod": 1.37,
+          "color": "#F0F8FF"
+        }
+      ]
+    },
+    {
+      "name": "Uranus",
+      "type": "planet",
+      "subtype": "ice_giant",
+      "mass": 8.681e25,
+      "radius": 25362,
+      "distance": 2867000000,
+      "orbitalPeriod": 30688.5,
+      "rotationPeriod": 0.72,
+      "color": "#4FD0E7",
+      "atmosphere": true,
+      "atmosphereColor": "#87CEEB",
+      "rings": true,
+      "ringColor": "#B0C4DE",
+      "moons": [
+        {
+          "name": "Miranda",
+          "type": "moon",
+          "mass": 6.59e19,
+          "radius": 235.8,
+          "distance": 129390,
+          "orbitalPeriod": 1.41,
+          "color": "#C0C0C0"
+        },
+        {
+          "name": "Ariel",
+          "type": "moon",
+          "mass": 1.35e21,
+          "radius": 578.9,
+          "distance": 191020,
+          "orbitalPeriod": 2.52,
+          "color": "#F0F8FF"
+        }
+      ]
+    },
+    {
+      "name": "Neptune",
+      "type": "planet",
+      "subtype": "ice_giant",
+      "mass": 1.024e26,
+      "radius": 24622,
+      "distance": 4515000000,
+      "orbitalPeriod": 60182,
+      "rotationPeriod": 0.67,
+      "color": "#4B70DD",
+      "atmosphere": true,
+      "atmosphereColor": "#4169E1",
+      "rings": true,
+      "ringColor": "#B0C4DE",
+      "moons": [
+        {
+          "name": "Triton",
+          "type": "moon",
+          "mass": 2.14e22,
+          "radius": 1353.4,
+          "distance": 354759,
+          "orbitalPeriod": 5.88,
+          "color": "#F0F8FF"
+        }
+      ]
+    }
+  ],
+  "asteroidBelts": [
+    {
+      "name": "Asteroid Belt",
+      "innerRadius": 200000000,
+      "outerRadius": 320000000,
+      "particleCount": 1000,
+      "color": "#8B7355"
+    }
+  ],
+  "settings": {
+    "timeAcceleration": 1.0,
+    "defaultZoom": "compressed",
+    "maxObjects": 50
+  },
+  "background": {
+    "type": "image",
+    "url": "/static/images/Space_Explorer_3D_Background.png",
+    "tint": "#0f0f23"
+  }
+}

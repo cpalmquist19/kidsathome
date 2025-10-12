@@ -28,6 +28,145 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 #######################################################
+# FUTURE IDEAS
+#######################################################
+# 1. Collect Hyper Stars like we do Hyper Planets
+# 2. Add a Launch All Hyper Stars button
+# 3. and a launch 1 hyper star button
+# 4. Add a Suck the Life out of the boss button (requires a IGVPO)
+# 5. Make the boss drop items
+# 6. The first item is the anti-matter core
+# 7. We need a new materials box for the anti-matter core
+# 8. If you don't kill the boss, you don't get the anti-matter core
+# 9. But if you do 10 or more damage, you get a Hyper Particle
+# 10. Hyper Particles and the Anti-Matter Core are connected to the Gravity Lab game
+
+
+#######################################################
+# ENVIRONMENT DETECTION AND CONFIGURATION
+#######################################################
+
+class DevelopmentConfig:
+    """Development configuration with flexible settings"""
+    DEBUG = True
+    SQLALCHEMY_ECHO = False
+    
+    @staticmethod
+    def get_database_uri():
+        """Get development database URI with fallback defaults"""
+        mysql_config = {
+            'host': os.environ.get('LOCAL_MYSQL_HOST', 'localhost'),
+            'port': int(os.environ.get('LOCAL_MYSQL_PORT', 3306)),
+            'user': os.environ.get('LOCAL_MYSQL_USER', 'root'),
+            'password': os.environ.get('LOCAL_MYSQL_PASSWORD', ''),
+            'database': os.environ.get('LOCAL_MYSQL_DATABASE', 'kidsathome')
+        }
+        return f"mysql+pymysql://{mysql_config['user']}:{mysql_config['password']}@{mysql_config['host']}:{mysql_config['port']}/{mysql_config['database']}"
+
+class ProductionConfig:
+    """Production configuration with strict validation"""
+    DEBUG = False
+    SQLALCHEMY_ECHO = False
+    
+    @staticmethod
+    def validate_production_config():
+        """Validate that all required production environment variables are set"""
+        required_vars = [
+            'SECRET_KEY',
+            'PRODUCTION_DB_HOST',
+            'PRODUCTION_DB_USER',
+            'PRODUCTION_DB_PASSWORD',
+            'PRODUCTION_DB_NAME'
+        ]
+        
+        missing_vars = []
+        for var in required_vars:
+            if not os.environ.get(var):
+                missing_vars.append(var)
+        
+        if missing_vars:
+            raise ValueError(f"Missing required environment variables for production: {', '.join(missing_vars)}")
+    
+    @staticmethod
+    def get_database_uri():
+        """Get production database URI with validation"""
+        ProductionConfig.validate_production_config()
+        mysql_config = {
+            'host': os.environ.get('PRODUCTION_DB_HOST'),
+            'port': int(os.environ.get('PRODUCTION_DB_PORT', 3306)),
+            'user': os.environ.get('PRODUCTION_DB_USER'),
+            'password': os.environ.get('PRODUCTION_DB_PASSWORD'),
+            'database': os.environ.get('PRODUCTION_DB_NAME')
+        }
+        return f"mysql+pymysql://{mysql_config['user']}:{mysql_config['password']}@{mysql_config['host']}:{mysql_config['port']}/{mysql_config['database']}"
+
+def get_environment():
+    """
+    Multi-layered environment detection with priority-based decision tree.
+    
+    Priority Order:
+    1. FLASK_ENV variable (explicit)
+    2. FLASK_DEBUG variable analysis
+    3. Production environment variables detection
+    4. Default fallback to development
+    """
+    # Layer 1: Explicit FLASK_ENV variable (highest priority)
+    flask_env = os.environ.get('FLASK_ENV')
+    if flask_env in ['production', 'development']:
+        return flask_env
+    
+    # Layer 2: FLASK_DEBUG variable analysis
+    flask_debug = os.environ.get('FLASK_DEBUG')
+    if flask_debug is not None:
+        return 'production' if flask_debug.lower() in ['false', '0', 'no'] else 'development'
+    
+    # Layer 3: Production environment variables detection
+    production_indicators = [
+        'SECRET_KEY', 
+        'PRODUCTION_DB_HOST', 
+        'PRODUCTION_DB_USER', 
+        'PRODUCTION_DB_PASSWORD', 
+        'PRODUCTION_DB_NAME'
+    ]
+    has_prod_vars = all(os.environ.get(var) for var in production_indicators)
+    
+    if has_prod_vars:
+        return 'production'
+    
+    # Layer 4: Default fallback (lowest priority)
+    return 'development'
+
+def get_database_uri():
+    """Get database URI based on detected environment"""
+    environment = get_environment()
+    
+    if environment == 'production':
+        return ProductionConfig.get_database_uri()
+    else:
+        return DevelopmentConfig.get_database_uri()
+
+def log_startup_info():
+    """Log comprehensive startup information for diagnostics"""
+    environment = get_environment()
+    
+    # Get database info for logging
+    if environment == 'production':
+        mysql_host = os.environ.get('PRODUCTION_DB_HOST', 'unknown')
+        mysql_database = os.environ.get('PRODUCTION_DB_NAME', 'unknown')
+    else:
+        mysql_host = os.environ.get('LOCAL_MYSQL_HOST', 'localhost')
+        mysql_database = os.environ.get('LOCAL_MYSQL_DATABASE', 'kidsathome')
+    
+    print("=" * 60)
+    print("🚀 KidsAtHome.io - Starting Up")
+    print("=" * 60)
+    print(f"Environment: {environment.upper()}")
+    print(f"Debug Mode: {app.config.get('DEBUG', False)}")
+    print(f"Database Host: {mysql_host}")
+    print(f"Database: {mysql_database}")
+    print("=" * 60)
+
+#######################################################
 # MAIN APP LOGIC
 #######################################################
 app = Flask(__name__, static_url_path='/static', static_folder='static')
@@ -35,11 +174,32 @@ app = Flask(__name__, static_url_path='/static', static_folder='static')
 APP_NAME = "KidsAtHome.io"
 
 load_dotenv()
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+
+# Environment detection and configuration loading
+config_name = get_environment()
+config = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig
+}
+
+# Load configuration
+app.config.from_object(config[config_name])
+
+# Set secret key with validation
+secret_key = os.environ.get('SECRET_KEY')
+if not secret_key and config_name == 'production':
+    print("❌ ERROR: SECRET_KEY is required for production environment!")
+    exit(1)
+elif not secret_key:
+    secret_key = 'dev-secret-key-change-in-production'
+    print("⚠️  WARNING: Using default secret key. Set SECRET_KEY environment variable for production!")
+
+app.config['SECRET_KEY'] = secret_key
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # Cache static files aggressively; versioned URLs will bust cache
 
-# Database configuration for SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{os.environ.get('LOCAL_MYSQL_USER', 'root')}:{os.environ.get('LOCAL_MYSQL_PASSWORD', '')}@{os.environ.get('LOCAL_MYSQL_HOST', 'localhost')}:{os.environ.get('LOCAL_MYSQL_PORT', 3306)}/{os.environ.get('LOCAL_MYSQL_DATABASE', 'kidsathome')}"
+# Set database URI based on detected environment
+app.config['SQLALCHEMY_DATABASE_URI'] = get_database_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Import models and initialize database
@@ -128,6 +288,21 @@ def static_file(filename):
 def inject_static_file_helper():
     return {'static_file': static_file}
 
+@app.context_processor
+def inject_env_flags():
+    """Inject environment flags based on the request host.
+    Local dev is true when URL contains 127.0.0.1, otherwise production.
+    """
+    try:
+        host = request.host or ''
+    except Exception:
+        host = ''
+    is_local_dev = '127.0.0.1' in host
+    return {
+        'is_local_dev': is_local_dev,
+        'is_production': not is_local_dev,
+    }
+
 #######################################################
 # ROUTES
 #######################################################
@@ -142,6 +317,12 @@ def robots():
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/game')
+def game():
+    # game page
+    current_year = datetime.now().year
+    return render_template('game.html', current_year=current_year)
 
 @app.route('/system_generator')
 def system_generator():
@@ -162,6 +343,10 @@ def gravity_lab():
 @app.route('/stellar_evolution')
 def stellar_evolution():
     return render_template('stellar_evolution.html')
+
+@app.route('/space_explorer_3d')
+def space_explorer_3d():
+    return render_template('space_explorer_3d.html', current_user=current_user)
 
 @app.route('/leaderboards')
 def leaderboards():
@@ -598,13 +783,9 @@ def submit_hyper_planets():
         
         # Log the activity
         UserActivity.log_activity(
+            page_visited='hyper_planets_submitted',
             user_id=user_id,
-            activity_type='hyper_planets_submitted',
-            description=f'Submitted {hyper_planets_count} Hyper Planets',
-            metadata={
-                'hyper_planets_count': hyper_planets_count,
-                'total_hyper_planets': stats.hyper_planets_found
-            }
+            ip_address=request.remote_addr
         )
         
         return jsonify({
@@ -703,51 +884,170 @@ def get_boss_status():
 def attack_boss():
     """Attack the boss with Hyper Planets"""
     try:
+        print("=== BOSS ATTACK DEBUG ===")
+        print(f"User authenticated: {current_user.is_authenticated}")
+        
         if not current_user.is_authenticated:
             return jsonify({'error': 'Authentication required'}), 401
         
         # Ensure boss exists
+        print("Ensuring boss exists...")
         boss = ensure_boss_exists()
         if not boss:
+            print("Failed to ensure boss exists")
             return jsonify({'error': 'Failed to initialize boss'}), 500
+        
+        print(f"Boss found: {boss.name}, Health: {boss.current_health}")
         
         # Get attack data from request
         data = request.get_json()
-        damage = data.get('damage', 1000)  # Default damage
+        print(f"Request data: {data}")
+        damage = data.get('damage', 1)  # Default damage
         hyper_planets_used = data.get('hyper_planets_used', 1)
+        print(f"Damage: {damage}, Hyper planets used: {hyper_planets_used}")
+        
+        # Check if user has hyper planets
+        print("Getting user stats...")
+        user_stats = UserSpaceStats.get_or_create(current_user.id)
+        print(f"User hyper planets: {user_stats.hyper_planets_found}")
+        if user_stats.hyper_planets_found < hyper_planets_used:
+            print("Not enough hyper planets")
+            return jsonify({'error': 'Not enough hyper planets available'}), 400
+        
+        # Deduct hyper planets
+        print("Deducting hyper planets...")
+        user_stats.hyper_planets_found -= hyper_planets_used
+        user_stats.updated_at = datetime.utcnow()
         
         # Apply damage to boss
+        print("Applying damage to boss...")
         boss_defeated = boss.take_damage(damage)
-        boss.add_participant()
-        boss.increment_rounds()
+        # Note: participant count and rounds fought are managed separately as global stats
+        print(f"Boss health after damage: {boss.current_health}")
         
         # Commit changes
+        print("Committing to database...")
         db.session.commit()
+        print("Database commit successful")
         
         # Log the attack
         UserActivity.log_activity(
+            page_visited='boss_attack',
             user_id=current_user.id,
-            activity_type='boss_attack',
-            description=f'Attacked Cosmic Leviathan for {damage} damage',
-            metadata={
-                'damage_dealt': damage,
-                'hyper_planets_used': hyper_planets_used,
-                'boss_health_remaining': boss.current_health
-            }
+            ip_address=request.remote_addr
         )
         
         return jsonify({
             'success': True,
-            'damage_dealt': damage,
+            'damage': damage,
+            'hyper_planets_remaining': user_stats.hyper_planets_found,
             'boss_health': boss.current_health,
             'boss_health_percentage': boss.get_health_percentage(),
             'boss_defeated': boss_defeated,
-            'message': 'Boss defeated!' if boss_defeated else 'Attack successful!'
+            'message': f'Dealt {damage} damage! {user_stats.hyper_planets_found} hyper planets remaining.'
         })
         
     except Exception as e:
+        print(f"=== BOSS ATTACK ERROR ===")
         print(f"Error attacking boss: {e}")
-        return jsonify({'error': 'Failed to attack boss'}), 500
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'error': f'Failed to attack boss: {str(e)}'}), 500
+
+@app.route('/api/boss/launch-all', methods=['POST'])
+@login_required
+def launch_all_hyper_planets():
+    """Launch all Hyper Planets at once for massive damage."""
+    try:
+        data = request.get_json()
+        hyper_planets_used = data.get('hyper_planets_used', 0)
+        
+        if hyper_planets_used <= 0:
+            return jsonify({
+                'success': False,
+                'error': 'No Hyper Planets to launch'
+            })
+        
+        # Get user stats
+        user_stats = UserSpaceStats.get_or_create(current_user.id)
+        
+        # Check if user has enough Hyper Planets
+        if user_stats.hyper_planets_found < hyper_planets_used:
+            return jsonify({
+                'success': False,
+                'error': 'Not enough Hyper Planets'
+            })
+        
+        # Get active boss
+        boss = Boss.get_active_boss()
+        if not boss:
+            return jsonify({
+                'success': False,
+                'error': 'No active boss found'
+            })
+        
+        # Calculate total damage (1 damage per Hyper Planet)
+        total_damage = hyper_planets_used
+        
+        print(f"Launching all {hyper_planets_used} Hyper Planets for {total_damage} total damage")
+        
+        # Deduct all Hyper Planets
+        print("Deducting all Hyper Planets...")
+        user_stats.hyper_planets_found -= hyper_planets_used
+        user_stats.updated_at = datetime.utcnow()
+        
+        # Apply damage to boss
+        print("Applying massive damage to boss...")
+        boss_defeated = boss.take_damage(total_damage)
+        print(f"Boss health after massive damage: {boss.current_health}")
+        
+        # Commit changes
+        print("Committing to database...")
+        db.session.commit()
+        print("Database commit successful")
+        
+        # Log the massive attack
+        UserActivity.log_activity(
+            page_visited='boss_launch_all',
+            user_id=current_user.id,
+            ip_address=request.remote_addr
+        )
+        
+        return jsonify({
+            'success': True,
+            'total_damage': total_damage,
+            'hyper_planets_remaining': user_stats.hyper_planets_found,
+            'boss_health': boss.current_health,
+            'boss_health_percentage': boss.get_health_percentage(),
+            'boss_defeated': boss_defeated,
+            'message': f'🚀 LAUNCHED ALL {hyper_planets_used} HYPER PLANETS! Dealt {total_damage} massive damage!'
+        })
+        
+    except Exception as e:
+        print(f"Error in launch all attack: {e}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Failed to launch all Hyper Planets: {str(e)}'
+        }), 500
+
+@app.route('/api/user/hyper-planets', methods=['GET'])
+@login_required
+def get_user_hyper_planets():
+    """Get user's current Hyper Planet count"""
+    try:
+        user_stats = UserSpaceStats.get_or_create(current_user.id)
+        return jsonify({
+            'success': True,
+            'hyper_planets_count': user_stats.hyper_planets_found
+        })
+    except Exception as e:
+        print(f"Error fetching user Hyper Planets: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to fetch Hyper Planet count: {str(e)}'
+        }), 500
 
 @app.route('/api/boss/stats', methods=['GET'])
 def get_boss_stats():
@@ -767,6 +1067,53 @@ def get_boss_stats():
     except Exception as e:
         print(f"Error fetching boss stats: {e}")
         return jsonify({'error': 'Failed to fetch boss stats'}), 500
+
+@app.route('/api/boss/debug', methods=['GET'])
+def debug_boss_system():
+    """Debug endpoint to check boss system status"""
+    try:
+        print("=== BOSS DEBUG ENDPOINT ===")
+        
+        # Test database connection
+        print("Testing database connection...")
+        db.session.execute('SELECT 1')
+        print("Database connection: OK")
+        
+        # Test Boss model
+        print("Testing Boss model...")
+        boss_count = Boss.query.count()
+        print(f"Total bosses in database: {boss_count}")
+        
+        # Test UserSpaceStats model
+        print("Testing UserSpaceStats model...")
+        if current_user.is_authenticated:
+            user_stats = UserSpaceStats.get_or_create(current_user.id)
+            print(f"User stats found: {user_stats.hyper_planets_found} hyper planets")
+        else:
+            print("User not authenticated")
+        
+        # Test ensure_boss_exists
+        print("Testing ensure_boss_exists...")
+        boss = ensure_boss_exists()
+        if boss:
+            print(f"Boss exists: {boss.name}, Health: {boss.current_health}")
+        else:
+            print("Failed to ensure boss exists")
+        
+        return jsonify({
+            'status': 'success',
+            'database_connection': 'OK',
+            'boss_count': boss_count,
+            'user_authenticated': current_user.is_authenticated,
+            'boss_exists': boss is not None
+        })
+        
+    except Exception as e:
+        print(f"=== BOSS DEBUG ERROR ===")
+        print(f"Debug error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Debug failed: {str(e)}'}), 500
 
 @app.route('/api/boss/reset', methods=['POST'])
 def reset_boss():
@@ -804,7 +1151,25 @@ def is_production():
 
 
 if __name__ == '__main__':
-    # Initialize database tables on startup
-    print("Initializing database...")
-    init_database()
-    app.run(debug=True)
+    try:
+        # Validate production configuration if needed
+        if config_name == 'production':
+            ProductionConfig.validate_production_config()
+        
+        # Log startup information
+        log_startup_info()
+        
+        # Initialize database tables on startup
+        print("Initializing database...")
+        init_database()
+        
+        # Run the application
+        app.run(debug=app.config.get('DEBUG', False))
+        
+    except ValueError as e:
+        print(f"❌ Configuration Error: {e}")
+        print("Please check your environment variables and try again.")
+        exit(1)
+    except Exception as e:
+        print(f"❌ Startup Error: {e}")
+        exit(1)

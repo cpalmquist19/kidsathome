@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Explorer 3D - Kids at Home</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- D3.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
+    <!-- Custom JavaScript -->
+    <!-- Space Explorer 3D JavaScript -->
+    <script src="{{ static_file('js/space_explorer_3d/controls.js') }}"></script>
+    <script src="{{ static_file('js/space_explorer_3d/system_loader.js') }}"></script>
+    <script src="{{ static_file('js/space_explorer_3d/scaling_system.js') }}"></script>
+    <script src="{{ static_file('js/space_explorer_3d/object_renderer.js') }}"></script>
+    <script src="{{ static_file('js/space_explorer_3d/background_system.js') }}"></script>
+    <script src="{{ static_file('js/space_explorer_3d/time_control.js') }}"></script>
+    <script src="{{ static_file('js/space_explorer_3d/core.js') }}"></script>
+    <script src="{{ static_file('js/space_explorer_3d/main.js') }}"></script>
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cosmic-purple': '#7C3AED',
+                        'space-blue': '#2563EB',
+                        'star-gold': '#D97706',
+                        'nebula-pink': '#BE185D',
+                        'galaxy-indigo': '#4F46E5',
+                        'cyber-cyan': '#06B6D4',
+                        'neon-teal': '#14B8A6',
+                        'electric-green': '#10B981',
+                        'plasma-blue': '#3B82F6',
+                        'quantum-purple': '#8B5CF6'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-b from-gray-900 to-black min-h-screen">
+    <!-- Navigation -->
+    <nav class="relative bg-gradient-to-b from-blue-900/95 to-blue-800/95 backdrop-blur-sm sticky top-0 z-50">
+        <!-- Enhanced starfield background -->
+        <div class="absolute inset-0 opacity-30">
+            <!-- Row 1 -->
+            <div class="absolute top-1 left-1/6 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-1 left-1/3 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-1 left-1/2 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            <div class="absolute top-1 left-2/3 w-0.5 h-0.5 bg-cyan-200 rounded-full"></div>
+            <div class="absolute top-1 left-5/6 w-0.5 h-0.5 bg-white rounded-full"></div>
+            
+            <!-- Row 2 -->
+            <div class="absolute top-3 left-1/8 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute top-3 left-2/5 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            <div class="absolute top-3 left-3/5 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-3 left-7/8 w-0.5 h-0.5 bg-white rounded-full"></div>
+            
+            <!-- Row 3 -->
+            <div class="absolute top-5 left-1/4 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-5 left-1/2 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-5 left-3/4 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            
+            <!-- Row 4 -->
+            <div class="absolute top-7 left-1/6 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-7 left-2/5 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-7 left-3/5 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute top-7 left-5/6 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            
+            <!-- Random scattered stars -->
+            <div class="absolute top-2 left-1/12 w-0.5 h-0.5 bg-cyan-200 rounded-full"></div>
+            <div class="absolute top-4 left-1/10 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-6 left-1/15 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            <div class="absolute top-2 right-1/12 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-4 right-1/10 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-6 right-1/15 w-0.5 h-0.5 bg-white rounded-full"></div>
+        </div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo Section -->
+                <a href="/" class="group flex items-center space-x-3 hover:scale-105 transition-transform duration-300">
+                    <div class="relative">
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <span class="text-2xl font-bold text-white group-hover:text-gray-200 transition-colors duration-300">
+                        Kids at Home
+                    </span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="/" class="group flex items-center space-x-2 text-gray-300 hover:text-blue-400 transition-colors duration-300 relative">
+                        <i class="fas fa-home text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Home</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/leaderboards" class="group flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors duration-300 relative">
+                        <i class="fas fa-trophy text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Leaderboards</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    {% if current_user.is_authenticated %}
+                        <button onclick="showLogoutModal()" class="group flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors duration-300 relative">
+                            <i class="fas fa-sign-out-alt text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                            <span class="font-medium">Logout</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-red-400 group-hover:w-full transition-all duration-300"></div>
+                        </button>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="group flex items-center space-x-2 text-gray-300 hover:text-green-400 transition-colors duration-300 relative">
+                            <i class="fas fa-sign-in-alt text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                            <span class="font-medium">Login</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-400 group-hover:w-full transition-all duration-300"></div>
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button class="text-gray-300 hover:text-white transition-colors duration-300 p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Star Field Background -->
+    <div class="star-field" id="starField"></div>
+    
+    <!-- Main Content -->
+    <div class="h-screen flex items-center justify-center px-2 py-2">
+        <!-- Main Space Explorer 3D Card -->
+        <div class="relative z-10 max-w-7xl mx-auto w-full px-2 h-full">
+            <div class="relative h-full">
+                <div class="absolute -inset-1 bg-gradient-to-r from-cyan-600/30 via-teal-600/30 to-emerald-600/30 rounded-xl blur-sm group-hover:blur-md transition-all duration-500"></div>
+                <div class="relative bg-gray-900/90 backdrop-blur-sm rounded-xl p-2 h-full flex flex-col border border-cyan-500/30">
+                    <!-- Header -->
+                    <div class="text-center mb-2 flex-shrink-0">
+                        <div class="flex justify-center mb-1">
+                            <i class="fas fa-cube text-2xl text-cyan-400 animate-pulse"></i>
+                        </div>
+                        <h1 class="text-lg md:text-xl font-bold mb-1 bg-gradient-to-r from-cyan-400 to-teal-500 bg-clip-text text-transparent">
+                            Space Explorer 3D
+                        </h1>
+                        <p class="text-xs text-gray-400">
+                            Teleport instantly to different star systems in stunning 3D!
+                        </p>
+                    </div>
+                    
+                    <!-- Three.js Simulation Area - Full Screen -->
+                    <div class="relative w-full flex-1" style="min-height: 0;">
+                        <!-- Simulation Container - Full Size -->
+                        <div id="simulation-container" class="w-full h-full bg-black rounded-lg border border-gray-700 overflow-hidden relative">
+                            <!-- Three.js will render here -->
+                            
+                            <!-- Overlay UI System -->
+                            <div class="absolute inset-0 pointer-events-none">
+                                <!-- Top Left - System Selection and Teleport Controls -->
+                                <div class="absolute top-4 left-4 pointer-events-auto">
+                                    <div class="bg-black/90 backdrop-blur-sm rounded-lg border border-cyan-500/30 p-3">
+                                        <div class="mb-3">
+                                            <div class="text-xs text-cyan-300 mb-2">Current System</div>
+                                            <div id="current-system" class="text-sm font-bold text-cyan-100">None Selected</div>
+                                        </div>
+                                        <div class="relative mb-3">
+                                            <select id="systemSelect" class="w-full bg-gray-800 text-white text-xs px-3 py-2 rounded border border-cyan-500/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400">
+                                                <option value="">Choose a star system...</option>
+                                                <option value="test_system">Test System (Simple)</option>
+                                                <option value="sol_system">Sol System (Our Solar System)</option>
+                                                <option value="alpha_centauri" disabled>Alpha Centauri System (Coming Soon)</option>
+                                                <option value="trappist" disabled>TRAPPIST-1 System (Coming Soon)</option>
+                                                <option value="kepler" disabled>Kepler-442 System (Coming Soon)</option>
+                                                <option value="proxima" disabled>Proxima Centauri System (Coming Soon)</option>
+                                                <option value="wolf" disabled>Wolf 1061 System (Coming Soon)</option>
+                                                <option value="gliese" disabled>Gliese 667 System (Coming Soon)</option>
+                                                <option value="hd" disabled>HD 40307 System (Coming Soon)</option>
+                                            </select>
+                                        </div>
+                                        <!-- Teleport Controls -->
+                                        <div class="flex flex-col gap-2">
+                                            <button id="teleportBtn" class="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition-all duration-300 shadow-lg hover:shadow-cyan-500/25 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                                <i class="fas fa-rocket mr-2"></i>
+                                                Teleport to System
+                                            </button>
+                                            <div class="text-xs text-teal-300 text-center">
+                                                Select a system to begin
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                
+                                <!-- Top Center - Zoom Level Controls -->
+                                <div class="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-auto">
+                                    <div class="bg-black/90 backdrop-blur-sm rounded-lg border border-teal-500/30 p-3">
+                                        <div class="text-xs text-teal-300 mb-2 text-center">Zoom Level</div>
+                                        <div class="flex items-center space-x-2">
+                                            <button id="zoomClose" class="bg-teal-600 hover:bg-teal-700 text-white px-2 py-1 rounded text-xs transition-colors duration-200">Close</button>
+                                            <button id="zoomMedium" class="bg-teal-800 text-white px-2 py-1 rounded text-xs transition-colors duration-200">Medium</button>
+                                            <button id="zoomFar" class="bg-teal-600 hover:bg-teal-700 text-white px-2 py-1 rounded text-xs transition-colors duration-200">Far</button>
+                                            <button id="zoomSystem" class="bg-teal-600 hover:bg-teal-700 text-white px-2 py-1 rounded text-xs transition-colors duration-200">System</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Top Right - System Information -->
+                                <div class="absolute top-4 right-4 pointer-events-auto">
+                                    <div class="bg-gradient-to-br from-purple-900/95 to-indigo-900/95 backdrop-blur-sm rounded-xl border border-purple-500/40 p-4 max-w-sm shadow-2xl">
+                                        <div class="flex items-center mb-3">
+                                            <i class="fas fa-info-circle text-purple-400 mr-2"></i>
+                                            <div class="text-sm font-bold text-purple-200">System Information</div>
+                                        </div>
+                                        <div id="system-info" class="text-xs text-purple-100 space-y-1">
+                                            <div class="text-gray-400 italic">No system selected. Choose a destination to explore in 3D.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Bottom Left - Time Controls -->
+                                <div class="absolute bottom-4 left-4 pointer-events-auto">
+                                    <div class="bg-gradient-to-br from-cyan-900/95 to-teal-900/95 backdrop-blur-sm rounded-xl border border-cyan-500/40 p-4 shadow-2xl">
+                                        <div class="flex items-center mb-3">
+                                            <i class="fas fa-clock text-cyan-400 mr-2"></i>
+                                            <div class="text-sm font-bold text-cyan-200">Time Controls</div>
+                                        </div>
+                                        
+                                        <!-- Time Speed Display -->
+                                        <div class="mb-3 text-center">
+                                            <div id="time-speed-display" class="text-lg font-bold text-cyan-100">1x</div>
+                                            <div class="text-xs text-cyan-300">Time Speed</div>
+                                        </div>
+                                        
+                                        <!-- Time Control Buttons -->
+                                        <div class="flex flex-col gap-2">
+                                            <!-- Pause/Play Button -->
+                                            <button id="time-pause-play" class="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-bold text-sm px-3 py-2 rounded-lg transition-all duration-300 shadow-lg hover:shadow-cyan-500/25">
+                                                <i class="fas fa-pause mr-2"></i>
+                                                Pause
+                                            </button>
+                                            
+                                            <!-- Speed Controls -->
+                                            <div class="flex gap-1">
+                                                <button id="time-slow-down" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded transition-colors duration-200">
+                                                    <i class="fas fa-minus mr-1"></i>
+                                                    Slower
+                                                </button>
+                                                <button id="time-speed-up" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded transition-colors duration-200">
+                                                    <i class="fas fa-plus mr-1"></i>
+                                                    Faster
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Reset to Normal -->
+                                            <button id="time-reset" class="bg-gray-600 hover:bg-gray-500 text-white text-xs px-3 py-1 rounded transition-colors duration-200">
+                                                <i class="fas fa-undo mr-1"></i>
+                                                Reset to 1x
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Bottom Right - Scale Mode Controls -->
+                                <div class="absolute bottom-4 right-4 pointer-events-auto">
+                                    <div class="bg-gradient-to-br from-purple-900/95 to-indigo-900/95 backdrop-blur-sm rounded-xl border border-purple-500/40 p-4 shadow-2xl">
+                                        <div class="flex items-center mb-3">
+                                            <i class="fas fa-expand-arrows-alt text-purple-400 mr-2"></i>
+                                            <div class="text-sm font-bold text-purple-200">Scale Mode</div>
+                                        </div>
+                                        
+                                        <!-- Scale Mode Buttons -->
+                                        <div class="flex flex-col gap-2">
+                                            <button id="realisticScale" class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-2 rounded-lg transition-colors duration-200">
+                                                Realistic
+                                            </button>
+                                            <button id="compressedScale" class="bg-purple-800 text-white text-sm px-3 py-2 rounded-lg transition-colors duration-200">
+                                                Compressed
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Current Scale Display -->
+                                        <div class="mt-3 text-center">
+                                            <div class="text-xs text-purple-300">Current: <span id="current-scale-mode">Compressed</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Center - Instructions (when no system) -->
+                                <div id="instructions" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div class="text-center bg-black/90 backdrop-blur-sm rounded-lg border border-cyan-500/30 p-6">
+                                        <i class="fas fa-cube text-4xl text-cyan-400 mb-4"></i>
+                                        <h3 class="text-xl font-bold text-cyan-100 mb-2">Ready to Explore 3D Space!</h3>
+                                        <p class="text-cyan-200">Select a star system from the dropdown to begin your 3D journey</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <!-- Modal Header -->
+            <div class="text-center mb-6">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-sign-out-alt text-2xl text-red-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Confirm Logout</h3>
+                <p class="text-gray-300">Are you sure you want to log out? You'll need to sign in again to access your account.</p>
+            </div>
+            
+            <!-- Modal Actions -->
+            <div class="flex space-x-4">
+                <button onclick="hideLogoutModal()" class="flex-1 px-6 py-3 bg-gray-700 text-white font-medium rounded-lg hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                    Cancel
+                </button>
+                <a href="{{ url_for('logout') }}" class="flex-1 px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-center">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Animations -->
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes wiggle {
+            0%, 7% { transform: rotateZ(0); }
+            15% { transform: rotateZ(-15deg); }
+            20% { transform: rotateZ(10deg); }
+            25% { transform: rotateZ(-10deg); }
+            30% { transform: rotateZ(6deg); }
+            35% { transform: rotateZ(-4deg); }
+            40%, 100% { transform: rotateZ(0); }
+        }
+    </style>
+
+    <!-- JavaScript -->
+    <script>
+        // Space Explorer 3D is now handled by the main.js module
+
+        // Logout Modal Functions
+        function showLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        
+        function hideLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('logoutModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideLogoutModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideLogoutModal();
+            }
+        });
+    </script>
+</body>
+</html>

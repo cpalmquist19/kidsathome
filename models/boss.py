@@ -93,7 +93,7 @@ class Boss(db.Model):
             bool: True if boss is defeated, False otherwise
         """
         self.current_health = max(0, self.current_health - damage)
-        self.total_damage_taken += damage
+        # Note: total_damage_taken is managed separately as a global stat
         self.last_battle = datetime.utcnow()
         
         # Check if boss is defeated
@@ -115,6 +115,10 @@ class Boss(db.Model):
     def increment_rounds(self):
         """Increment rounds fought count."""
         self.rounds_fought += 1
+    
+    def add_total_damage(self, damage):
+        """Add damage to total damage taken (for global stat management)."""
+        self.total_damage_taken += damage
     
     @classmethod
     def get_active_boss(cls):

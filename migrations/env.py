@@ -1,4 +1,5 @@
 import logging
+import os
 from logging.config import fileConfig
 
 from flask import current_app
@@ -13,6 +14,39 @@ config = context.config
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
 logger = logging.getLogger('alembic.env')
+
+def get_environment():
+    """
+    Environment detection for migrations - simplified version of main app detection.
+    Uses FLASK_ENV variable or defaults to development.
+    """
+    flask_env = os.environ.get('FLASK_ENV', 'development')
+    return flask_env if flask_env in ['production', 'development'] else 'development'
+
+def get_database_url():
+    """Get database URL based on detected environment for migrations"""
+    flask_env = get_environment()
+    
+    if flask_env == 'production':
+        # Production database configuration
+        mysql_config = {
+            'host': os.environ.get('PRODUCTION_DB_HOST'),
+            'port': int(os.environ.get('PRODUCTION_DB_PORT', 3306)),
+            'user': os.environ.get('PRODUCTION_DB_USER'),
+            'password': os.environ.get('PRODUCTION_DB_PASSWORD'),
+            'database': os.environ.get('PRODUCTION_DB_NAME')
+        }
+        return f"mysql+pymysql://{mysql_config['user']}:{mysql_config['password']}@{mysql_config['host']}:{mysql_config['port']}/{mysql_config['database']}"
+    else:
+        # Development database configuration
+        mysql_config = {
+            'host': os.environ.get('LOCAL_MYSQL_HOST', 'localhost'),
+            'port': int(os.environ.get('LOCAL_MYSQL_PORT', 3306)),
+            'user': os.environ.get('LOCAL_MYSQL_USER', 'root'),
+            'password': os.environ.get('LOCAL_MYSQL_PASSWORD', ''),
+            'database': os.environ.get('LOCAL_MYSQL_DATABASE', 'kidsathome')
+        }
+        return f"mysql+pymysql://{mysql_config['user']}:{mysql_config['password']}@{mysql_config['host']}:{mysql_config['port']}/{mysql_config['database']}"
 
 
 def get_engine():
@@ -37,7 +71,16 @@ def get_engine_url():
 # Import all models to ensure they are registered with SQLAlchemy
 from models import UserModel, PasswordResetToken, GeneratedSystem, UserActivity, UserSpaceStats
 
-config.set_main_option('sqlalchemy.url', get_engine_url())
+# Set database URL based on environment detection
+try:
+    # Try to get URL from environment detection first
+    database_url = get_database_url()
+    config.set_main_option('sqlalchemy.url', database_url)
+    logger.info(f"Using database URL from environment detection: {database_url.split('@')[0]}@***")
+except Exception as e:
+    # Fallback to engine URL if environment detection fails
+    logger.warning(f"Environment detection failed, using engine URL: {e}")
+    config.set_main_option('sqlalchemy.url', get_engine_url())
 target_db = current_app.extensions['migrate'].db
 
 # other values from the config, defined by the needs of env.py,

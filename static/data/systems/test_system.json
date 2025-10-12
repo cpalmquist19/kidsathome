@@ -1,0 +1,58 @@
+{
+  "systemName": "Test System",
+  "systemType": "single_star",
+  "description": "A simple test system for development",
+  "centralObject": {
+    "name": "Test Star",
+    "type": "star",
+    "spectralType": "G",
+    "mass": 1.989e30,
+    "radius": 1000,
+    "temperature": 5778,
+    "color": "#FFFF00",
+    "luminosity": 1.0,
+    "age": 4.6e9
+  },
+  "objects": [
+    {
+      "name": "Test Planet 1",
+      "type": "planet",
+      "subtype": "terrestrial",
+      "mass": 5.972e24,
+      "radius": 100,
+      "distance": 10000,
+      "orbitalPeriod": 365.25,
+      "rotationPeriod": 1.0,
+      "color": "#4A90E2",
+      "atmosphere": true,
+      "atmosphereColor": "#87CEEB",
+      "moons": []
+    },
+    {
+      "name": "Test Planet 2",
+      "type": "planet",
+      "subtype": "gas_giant",
+      "mass": 1.898e27,
+      "radius": 200,
+      "distance": 20000,
+      "orbitalPeriod": 4332.59,
+      "rotationPeriod": 0.41,
+      "color": "#D8CA9D",
+      "atmosphere": true,
+      "atmosphereColor": "#F4A460",
+      "rings": true,
+      "ringColor": "#DAA520",
+      "moons": []
+    }
+  ],
+  "settings": {
+    "timeAcceleration": 1.0,
+    "defaultZoom": "compressed",
+    "maxObjects": 10
+  },
+  "background": {
+    "type": "image",
+    "url": "/static/images/Space_Explorer_3D_Background.png",
+    "tint": "#1a1a2e"
+  }
+}
