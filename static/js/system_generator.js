@@ -1,5 +1,20 @@
 // Asset versioned via Flask static_file helper (?v=mtime). Change triggers cache bust.
 document.addEventListener('DOMContentLoaded', function() {
+    // Helper function to format luminosity values
+    function formatLuminosity(value) {
+        if (value === Infinity || value === '∞ L☉') return '∞';
+        const num = Number(value);
+        if (isNaN(num)) return value;
+        
+        // Use exponential notation for very large (>= 1e6) or very small (<= 1e-3) values
+        if (Math.abs(num) >= 1e6 || (Math.abs(num) <= 1e-3 && num !== 0)) {
+            return num.toExponential(2);
+        }
+        
+        // Use regular formatting for normal range values
+        return num.toLocaleString(undefined, {maximumFractionDigits: 5});
+    }
+    
     // Rarity tracking system
     const RARITY_WEIGHTS = {
         'O': 1,          // 0.001%
@@ -10,9 +25,9 @@ document.addEventListener('DOMContentLoaded', function() {
         'K': 1200,       // 12%
         'M': 7600,       // 76%
         'D': 120,        // 1.2%
-        'N': 3,          // 0.03%
-        'P': 2,          // 0.02%
-        'MGTR': 1,       // 0.01%
+        'N': 30,          // 0.03%
+        'P': 20,          // 0.02%
+        'MGTR': 10,      // 0.01%
         'QS': 0.1,       // 0.001% - Extremely rare Quasi Stars
         'QK': 0.0001,    // 0.00001% - 1 in a million Quark Stars
         'BH': 0.05,      // 0.0005% - Extremely rare Black Holes
@@ -23,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'GAL': 0.000004, // 0.0000004% - 1 in 25 million Galaxies
         'GF': 0.000000001, // 0.000000001% - 1 in 1 billion Galactic Filaments
         'SV': 0.000000001, // 0.000000001% - 1 in 1 billion Supervoids
-        'BD': 9000, // 9% - Brown Dwarfs
+        'BD': 900, // 9% - Brown Dwarfs
         'HP': 0.1, // 0.001% - Hyper Planet (1% of planets, but planets are rare)
         'HS': 0.0001, // 0.00001% - 1 in a million Hyper Stars
         'IGVPO': 0.0000001 // 0.0000001% - 1 in 10 million Infinite Galactic Voided Plasma Orbs
@@ -49,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'N': { name: 'Epic', color: 'linear-gradient(45deg, #FF00FF, #8B008B)', emoji: '💫' },
         'HP': { name: 'Epic', color: 'linear-gradient(45deg, #FF00FF, #8B008B)', emoji: '🪐' },
         'A': { name: 'Rare', color: 'linear-gradient(45deg, #87CEEB, #000080)', emoji: '⭐' },
-        'B': { name: 'Rare', color: 'linear-gradient(45deg, #87CEEB, #000080)', emoji: '⭐' },
+        'B': { name: 'Epic', color: 'linear-gradient(45deg, #FF00FF, #8B008B)', emoji: '💫' },
         'D': { name: 'Uncommon', color: 'linear-gradient(45deg, #32CD32, #006400)', emoji: '⭐' },
         'F': { name: 'Uncommon', color: 'linear-gradient(45deg, #32CD32, #006400)', emoji: '⭐' },
         'K': { name: 'Common', color: '#808080', emoji: '⭐' },
@@ -127,488 +142,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return planetHTML;
     }
     
-    // Generate destroyed planet HTML for post-supernova display
-    function generateDestroyedPlanetGrid(planets) {
-        if (!planets || planets.length === 0) return '';
-        
-        const planetHTML = planets.map(planet => {
-            const [earthMass, jupiterMass] = planet.mass.split('\n');
-            const [earthRadius, jupiterRadius] = planet.radius.split('\n');
 
-            return `
-                <div class="planet-orbit">
-                    <div class="planet-visual destroyed-planet"
-                        ${planet.isHyperPlanet ? 'data-hyper-planet="true"' : ''}
-                        ${planet.isEggShapedPlanet ? 'data-egg-planet="true"' : ''}>💀</div>
-                    <div class="celestial-info">
-                        <h4>${planet.name.split('(')[1].split(')')[0]} (${planet.name.split('(')[0].trim()} ${planet.name.split(')')[1].trim()}) 💀</h4>
-                        <p>Type: ${planet.type} <span class="destroyed-status">(Destroyed by Supernova)</span></p>
-                        <p><span class="label">Earth Mass:</span> <span class="measurement">${earthMass}</span></p>
-                        <p><span class="label">Jupiter Mass:</span> <span class="measurement">${jupiterMass}</span></p>
-                        <p><span class="label">Earth Radius:</span> <span class="measurement">${earthRadius}</span></p>
-                        <p><span class="label">Jupiter Radius:</span> <span class="measurement">${jupiterRadius}</span></p>
-                        <p><span class="label">Distance:</span> <span class="measurement">${planet.distance}</span></p>
-                        <p><span class="label">Status:</span> <span class="destroyed-status">💀 Destroyed by Supernova</span></p>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        // If odd number of planets, add empty placeholder
-        if (planets.length % 2 !== 0) {
-            return planetHTML + `
-                <div class="planet-orbit planet-placeholder">
-                    <div class="planet-visual destroyed-planet">🌌</div>
-                    <div class="celestial-info">
-                        <h4>Empty Space</h4>
-                        <p>Type: No planet in this orbit</p>
-                        <p><span class="label">Status:</span> <span class="destroyed-status">Already empty before supernova</span></p>
-                    </div>
-                </div>
-            `;
-        }
-        
-        return planetHTML;
-    }
-
-    // =============================================
-    // SUPERNOVA TRACKING SYSTEM
-    // =============================================
-    
-    // Global variables for supernova tracking
-    let currentSystemData = null;
-    let supernovaTimer = null;
-    let supernovaStartTime = null;
-    let cumulativeViewTime = {}; // Store cumulative time per star (key: star name)
-    
-    // Constants
-    const SUPERNOVA_TRIGGER_TIME = 30 * 1000; // 30 seconds in milliseconds
-    const SUPERNOVA_CHECK_INTERVAL = 100; // Check every 100ms
-    
     // Physical constants for calculations
     const STEFAN_BOLTZMANN = 5.67e-8; // W/m^2/K^4
     const GRAVITATIONAL_CONSTANT = 6.674e-11; // m^3/kg/s^2
     const SPEED_OF_LIGHT = 2.998e8; // m/s
     const SOLAR_MASS_KG = 1.989e30; // kg
     
-    // Initialize supernova tracking from localStorage
-    function initializeSupernovaTracking() {
-        const stored = localStorage.getItem('supernovaTracking');
-        if (stored) {
-            cumulativeViewTime = JSON.parse(stored);
-        }
-    }
-    
-    // Save supernova tracking to localStorage
-    function saveSupernovaTracking() {
-        localStorage.setItem('supernovaTracking', JSON.stringify(cumulativeViewTime));
-    }
-    
-    // Start tracking viewing time for current system
-    function startSupernovaTimer(systemData) {
-        // Stop any existing timer
-        stopSupernovaTimer();
-        
-        // Check if star is O or B-type
-        if (systemData.star.type !== 'O' && systemData.star.type !== 'B') {
-            return; // Only track O and B-type stars
-        }
-        
-        // Store current system data
-        currentSystemData = systemData;
-        supernovaStartTime = Date.now();
-        
-        // Start timer to track cumulative time
-        supernovaTimer = setInterval(() => {
-            updateSupernovaProgress();
-        }, SUPERNOVA_CHECK_INTERVAL);
-        
-        console.log(`Started supernova timer for ${systemData.star.name} (${systemData.star.type}-type)`);
-        
-        // Show supernova progress UI
-        showSupernovaProgressUI();
-    }
-    
-    // Stop supernova timer and save progress
-    function stopSupernovaTimer() {
-        if (supernovaTimer) {
-            // Save accumulated time
-            if (currentSystemData && supernovaStartTime) {
-                const sessionTime = Date.now() - supernovaStartTime;
-                const starKey = `${currentSystemData.star.name}_${currentSystemData.star.type}`;
-                
-                if (!cumulativeViewTime[starKey]) {
-                    cumulativeViewTime[starKey] = 0;
-                }
-                
-                cumulativeViewTime[starKey] += sessionTime;
-                saveSupernovaTracking();
-                
-                console.log(`Stopped supernova timer. Total time for ${starKey}: ${cumulativeViewTime[starKey]}ms`);
-            }
-            
-            clearInterval(supernovaTimer);
-            supernovaTimer = null;
-            supernovaStartTime = null;
-        }
-        
-        // Clean up alert panel and layout class
-        cleanupSupernovaAlert();
-    }
-    
-    // Clean up supernova alert panel and layout
-    function cleanupSupernovaAlert() {
-        const alertPanel = document.getElementById('supernova-progress');
-        if (alertPanel) {
-            // Hide the panel instead of removing it to maintain grid layout
-            alertPanel.classList.add('hidden');
-            // Reset progress
-            const progressFill = alertPanel.querySelector('#supernova-progress-fill');
-            const progressText = alertPanel.querySelector('#supernova-progress-text');
-            const timeRemaining = alertPanel.querySelector('#supernova-time-remaining');
-            if (progressFill) progressFill.style.width = '0%';
-            if (progressText) progressText.textContent = '0%';
-            if (timeRemaining) timeRemaining.textContent = 'Time until supernova: 0:30';
-        }
-    }
-    
-    // Update supernova progress and check for trigger
-    function updateSupernovaProgress() {
-        if (!currentSystemData || !supernovaStartTime) return;
-        
-        const starKey = `${currentSystemData.star.name}_${currentSystemData.star.type}`;
-        const sessionTime = Date.now() - supernovaStartTime;
-        const previousTime = cumulativeViewTime[starKey] || 0;
-        const totalTime = previousTime + sessionTime;
-        
-        // Update progress bar
-        updateSupernovaProgressUI(totalTime);
-        
-        // Check if supernova should trigger
-        if (totalTime >= SUPERNOVA_TRIGGER_TIME) {
-            triggerSupernova();
-        }
-    }
-    
-    // Create alert panel space to maintain grid layout
-    function createAlertPanelSpace(systemData) {
-        const resultDiv = document.getElementById('result');
-        if (!resultDiv) return;
-        
-        const starKey = `${systemData.star.name}_${systemData.star.type}`;
-        
-        // Check if UI already exists
-        let progressDiv = document.getElementById('supernova-progress');
-        if (!progressDiv) {
-            progressDiv = document.createElement('div');
-            progressDiv.id = 'supernova-progress';
-            progressDiv.className = 'supernova-alert-panel hidden'; // Start hidden
-            progressDiv.innerHTML = `
-                <div class="supernova-warning">
-                    <span class="warning-icon">⚠️</span>
-                    <span class="warning-text">${systemData.star.type}-type star will go supernova after 30 seconds of viewing!</span>
-                </div>
-                <div class="supernova-progress-bar">
-                    <div class="supernova-progress-fill" id="supernova-progress-fill"></div>
-                    <div class="supernova-progress-text" id="supernova-progress-text">0%</div>
-                </div>
-                <div class="supernova-time-remaining" id="supernova-time-remaining">Time until supernova: 0:30</div>
-            `;
-            
-            // Find the star system visual container and insert the alert panel in the right column
-            const starSystemVisual = resultDiv.querySelector('.star-system-visual');
-            if (starSystemVisual) {
-                // Insert the alert panel as the second child (right column) in the grid
-                if (starSystemVisual.children.length >= 1) {
-                    // Insert after the first child (star) to position it in the right column
-                    starSystemVisual.insertBefore(progressDiv, starSystemVisual.children[1]);
-                } else {
-                    // Fallback: append to end if no children
-                    starSystemVisual.appendChild(progressDiv);
-                }
-            } else {
-                // Fallback: insert at the top of the result div if star-system-visual not found
-                resultDiv.insertBefore(progressDiv, resultDiv.firstChild);
-            }
-        }
-    }
-
-    // Show supernova progress UI
-    function showSupernovaProgressUI() {
-        const progressDiv = document.getElementById('supernova-progress');
-        if (progressDiv && currentSystemData) {
-            // Show the existing panel
-            progressDiv.classList.remove('hidden');
-            
-            // Update the warning text for the current star
-            const warningText = progressDiv.querySelector('.warning-text');
-            if (warningText) {
-                warningText.textContent = `${currentSystemData.star.type}-type star will go supernova after 30 seconds of viewing!`;
-            }
-            
-            // Update initial progress
-            const starKey = `${currentSystemData.star.name}_${currentSystemData.star.type}`;
-            const previousTime = cumulativeViewTime[starKey] || 0;
-            updateSupernovaProgressUI(previousTime);
-        }
-    }
-    
-    // Update supernova progress UI
-    function updateSupernovaProgressUI(totalTime) {
-        const progressFill = document.getElementById('supernova-progress-fill');
-        const progressText = document.getElementById('supernova-progress-text');
-        const timeRemaining = document.getElementById('supernova-time-remaining');
-        
-        if (!progressFill || !progressText || !timeRemaining) return;
-        
-        const percentage = Math.min((totalTime / SUPERNOVA_TRIGGER_TIME) * 100, 100);
-        const remainingTime = Math.max(SUPERNOVA_TRIGGER_TIME - totalTime, 0);
-        const minutes = Math.floor(remainingTime / 60000);
-        const seconds = Math.floor((remainingTime % 60000) / 1000);
-        
-        progressFill.style.width = `${percentage}%`;
-        progressText.textContent = `${percentage.toFixed(1)}%`;
-        timeRemaining.textContent = `Time until supernova: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-        
-        // Add warning colors as time progresses
-        if (percentage >= 90) {
-            progressFill.style.background = 'linear-gradient(90deg, #ff0000, #ff4500)';
-        } else if (percentage >= 75) {
-            progressFill.style.background = 'linear-gradient(90deg, #ff4500, #ff6347)';
-        } else if (percentage >= 50) {
-            progressFill.style.background = 'linear-gradient(90deg, #ff6347, #ffa500)';
-        }
-    }
-    
-    // Trigger supernova and transform star
-    function triggerSupernova() {
-        if (!currentSystemData) return;
-        
-        // Stop timer
-        stopSupernovaTimer();
-        
-        // Show supernova animation
-        showSupernovaAnimation();
-        
-        // Transform star after animation
-        setTimeout(() => {
-            transformStarToRemnant();
-        }, 3000); // Wait for animation to complete
-    }
-    
-    // Show supernova animation
-    function showSupernovaAnimation() {
-        const resultDiv = document.getElementById('result');
-        if (!resultDiv) return;
-        
-        // Find the star element to center animation on it
-        const starElement = resultDiv.querySelector('.star');
-        if (!starElement) return;
-        
-        // Get star position relative to viewport
-        const starRect = starElement.getBoundingClientRect();
-        const starCenterX = starRect.left + starRect.width / 2;
-        const starCenterY = starRect.top + starRect.height / 2;
-        
-        const animationDiv = document.createElement('div');
-        animationDiv.className = 'supernova-animation';
-        animationDiv.style.position = 'fixed';
-        animationDiv.style.left = '0';
-        animationDiv.style.top = '0';
-        animationDiv.style.width = '100vw';
-        animationDiv.style.height = '100vh';
-        animationDiv.style.pointerEvents = 'none';
-        animationDiv.style.zIndex = '9999';
-        
-        animationDiv.innerHTML = `
-            <div class="supernova-flash"></div>
-            <div class="supernova-explosion" style="left: ${starCenterX}px; top: ${starCenterY}px;">
-                <div class="explosion-ring ring-1"></div>
-                <div class="explosion-ring ring-2"></div>
-                <div class="explosion-ring ring-3"></div>
-            </div>
-            <div class="supernova-message" style="left: ${starCenterX}px; top: ${starCenterY}px;">
-                <h2>💥 SUPERNOVA! 💥</h2>
-                <p>${currentSystemData.star.name} has exploded!</p>
-            </div>
-        `;
-        
-        document.body.appendChild(animationDiv);
-        
-        // Remove animation after 3 seconds
-        setTimeout(() => {
-            animationDiv.remove();
-        }, 3000);
-    }
-    
-    // Transform star to remnant based on type
-    function transformStarToRemnant() {
-        if (!currentSystemData) return;
-        
-        const starType = currentSystemData.star.type;
-        let remnantType;
-        
-        // Determine remnant type based on progenitor
-        if (starType === 'O') {
-            // O-type stars always become black holes
-            remnantType = 'BH';
-        } else if (starType === 'B') {
-            // B-type stars: 70% N, 15% P, 10% MGTR, 5% QK
-            const rand = Math.random();
-            if (rand < 0.70) {
-                remnantType = 'N'; // Neutron Star
-            } else if (rand < 0.85) {
-                remnantType = 'P'; // Pulsar
-            } else if (rand < 0.95) {
-                remnantType = 'MGTR'; // Magnetar
-            } else {
-                remnantType = 'QK'; // Quark Star
-            }
-        }
-        
-        // Calculate remnant properties
-        const progenitorMass = parseFloat(currentSystemData.star.mass.split(' ')[0]);
-        const remnantMass = progenitorMass * 0.15; // 15% of original mass
-        
-        // Create remnant data
-        const remnantData = createRemnantData(remnantType, remnantMass, currentSystemData);
-        
-        // Update current system data
-        currentSystemData.star = remnantData.star;
-        
-        // Clear supernova tracking for this star
-        const starKey = `${currentSystemData.star.name}_${starType}`;
-        delete cumulativeViewTime[starKey];
-        saveSupernovaTracking();
-        
-        // Re-display system with new remnant
-        displaySystemAfterSupernova(currentSystemData, remnantType);
-    }
-    
-    // Create remnant data based on type
-    function createRemnantData(remnantType, remnantMass, originalSystem) {
-        let temperature, luminosity, radius, massDisplay;
-        
-        if (remnantType === 'BH') {
-            // Black hole: temperature and luminosity = 0
-            temperature = '0 K';
-            luminosity = 0;
-            
-            // Calculate Schwarzschild radius: Rs = 2GM/c^2
-            const massKg = remnantMass * SOLAR_MASS_KG;
-            const schwarzschildMeters = (2 * GRAVITATIONAL_CONSTANT * massKg) / (SPEED_OF_LIGHT * SPEED_OF_LIGHT);
-            const schwarzschildKm = schwarzschildMeters / 1000;
-            const schwarzschildSolarRadii = schwarzschildKm / 695700.0;
-            
-            radius = schwarzschildSolarRadii;
-            massDisplay = `${remnantMass.toFixed(3)} M☉`;
-        } else {
-            // Neutron Star, Pulsar, Magnetar, or Quark Star
-            // Temperature: 10^6 K
-            temperature = '1000000 K'; // Will be formatted in display
-            
-            // Fixed radius: 15 km
-            const radiusKm = 15;
-            const radiusMeters = radiusKm * 1000;
-            radius = radiusKm / 695700.0; // Convert to solar radii
-            
-            // Calculate luminosity using Stefan-Boltzmann: L = 4πR^2σT^4
-            const tempKelvin = 1000000;
-            const surfaceArea = 4 * Math.PI * radiusMeters * radiusMeters;
-            const luminosityWatts = surfaceArea * STEFAN_BOLTZMANN * Math.pow(tempKelvin, 4);
-            
-            // Convert to solar luminosities (1 L☉ = 3.828 × 10^26 W)
-            const solarLuminosity = 3.828e26;
-            luminosity = luminosityWatts / solarLuminosity;
-            
-            massDisplay = `${remnantMass.toFixed(3)} M☉`;
-        }
-        
-        return {
-            star: {
-                name: originalSystem.star.name,
-                type: remnantType,
-                temperature: temperature,
-                mass: massDisplay,
-                radius: radius,
-                luminosity: luminosity,
-                customColor: null
-            },
-            planets: originalSystem.planets,
-            giantType: 'main'
-        };
-    }
-    
-    // Display system after supernova
-    function displaySystemAfterSupernova(systemData, remnantType) {
-        const resultDiv = document.getElementById('result');
-        if (!resultDiv) return;
-        
-        // Create remnant type name
-        const remnantName = {
-            'BH': 'Black Hole',
-            'N': 'Neutron Star',
-            'P': 'Pulsar',
-            'MGTR': 'Magnetar',
-            'QK': 'Quark Star'
-        }[remnantType];
-        
-        // Get rarity level
-        const rarityLevel = RARITY_LEVELS[remnantType] || RARITY_LEVELS['M'];
-        
-        resultDiv.innerHTML = `
-            <div class="system-name">
-                <span class="star-emoji">💀</span> The ${systemData.star.name} System
-                <span class="supernova-remnant-badge">💥 POST-SUPERNOVA ${remnantName.toUpperCase()}</span>
-            </div>
-            <div class="system-summary">
-                <div class="summary-card">
-                    <h4>Star</h4>
-                    <p>${systemData.star.name} (${systemData.star.type}-class ${remnantName})</p>
-                </div>
-                <div class="summary-card">
-                    <h4>Planets</h4>
-                    <p>${systemData.planets.length}</p>
-                </div>
-                <div class="summary-card">
-                    <h4>Habitable Worlds</h4>
-                    <p>${systemData.planets.filter(p => p.habitable).length}</p>
-                </div>
-            </div>
-            <div class="star-system-visual">
-                <div class="star-header">
-                    <span class="star-emoji">💀</span>
-                    <div class="star-classification">${remnantName}</div>
-                </div>
-                <div class="celestial-object">
-                    <div class="star type-${systemData.star.type.replace('MGTR', 'magnetar')}"></div>
-                    <div class="celestial-info">
-                        <h4>${systemData.star.name}</h4>
-                        <p>${remnantName}
-                        <span class="rarity-indicator" 
-                             style="background: ${rarityLevel.color}; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                            ${rarityLevel.emoji} ${rarityLevel.name}
-                        </span></p>
-                        <ul class="property-list">
-                            <li><strong>Type:</strong> ${systemData.star.type}-class ${remnantName}</li>
-                            <li><strong>Temperature:</strong> ${systemData.star.temperature === '0 K' ? '0 K (No surface)' : '1,000,000 K'}</li>
-                            <li><strong>Mass:</strong> ${systemData.star.mass} (15% of progenitor)</li>
-                            <li><strong>Radius:</strong> ${systemData.star.type === 'BH' ? `${(systemData.star.radius * 695700).toFixed(2)} km (Schwarzschild Radius)` : '15 km'}</li>
-                            <li><strong>Luminosity:</strong> ${systemData.star.luminosity === 0 ? '0 L☉' : `${systemData.star.luminosity.toExponential(2)} L☉`}</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            ${systemData.planets.length > 0 ? `
-                <div class="planets-container">
-                    <h3>Planets in this System</h3>
-                    ${generateDestroyedPlanetGrid(systemData.planets)}
-                </div>
-            ` : ''}
-        `;
-        
-        console.log(`System transformed to ${remnantName} remnant`);
-    }
 
     // Stats tracking system for server synchronization
     let statsBatch = {
@@ -675,13 +215,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update stats display in UI
     function updateStatsDisplay(stats) {
-        // Update hyper planets display from server data
-        const hyperPlanetsElement = document.getElementById('hyper-planets-total');
-        if (hyperPlanetsElement && stats.hyper_planets_found !== undefined) {
-            hyperPlanetsElement.textContent = stats.hyper_planets_found;
+        // Update hyper stars display from server data
+        const hyperStarsElement = document.getElementById('hyper-stars-total');
+        if (hyperStarsElement && stats.hyper_stars_found !== undefined) {
+            hyperStarsElement.textContent = stats.hyper_stars_found;
         }
         
-        console.log('Updated hyper planets from server:', stats.hyper_planets_found);
+        console.log('Updated hyper stars from server:', stats.hyper_stars_found);
     }
     
     // Update local stats display (for immediate feedback)
@@ -902,14 +442,51 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Check if new discovery is rarer than current rarest
-    function checkRarity(starData) {
+    function checkRarity(starData, isRandomGeneration = true) {
         const rarityData = JSON.parse(localStorage.getItem('spaceExplorerRarity'));
         let newRarityScore = calculateRarityScore(starData.star.type, starData.giantType);
         let isNewRarest = false;
         let rarityLevel = RARITY_LEVELS[starData.star.type] || RARITY_LEVELS['M'];
         
-        // Check if this is a new rarest discovery
-        if (!rarityData.rarestObject || newRarityScore < rarityData.rarestObject.rarityScore) {
+        // Debug logging for rarity tracking
+        console.log('Rarity Check Debug:', {
+            currentStar: {
+                name: starData.star.name,
+                type: starData.star.type,
+                rarityScore: newRarityScore,
+                rarityLevel: rarityLevel.name
+            },
+            currentRarest: rarityData.rarestObject ? {
+                name: rarityData.rarestObject.name,
+                type: rarityData.rarestObject.type,
+                rarityScore: rarityData.rarestObject.rarityScore,
+                rarityLevel: rarityData.rarestObject.rarityLevel.name
+            } : null,
+            isNewRarest: !rarityData.rarestObject || newRarityScore < rarityData.rarestObject.rarityScore,
+            isRandomGeneration: isRandomGeneration
+        });
+        
+        // Additional debugging: log rarity weights for comparison
+        console.log('Rarity Weights for debugging:', {
+            'M-class': RARITY_WEIGHTS['M'],
+            'G-class': RARITY_WEIGHTS['G'], 
+            'F-class': RARITY_WEIGHTS['F'],
+            'A-class': RARITY_WEIGHTS['A'],
+            'B-class': RARITY_WEIGHTS['B'],
+            'O-class': RARITY_WEIGHTS['O']
+        });
+        
+        // Debug: Test the calculateRarityScore function directly
+        const testScore = calculateRarityScore(starData.star.type, starData.giantType);
+        console.log('Direct calculateRarityScore test:', {
+            starType: starData.star.type,
+            giantType: starData.giantType,
+            calculatedScore: testScore,
+            matchesNewRarityScore: testScore === newRarityScore
+        });
+        
+        // Check if this is a new rarest discovery (only for random generations)
+        if (isRandomGeneration && (!rarityData.rarestObject || newRarityScore < rarityData.rarestObject.rarityScore)) {
             isNewRarest = true;
             rarityData.rarestObject = {
                 name: starData.star.name,
@@ -948,6 +525,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }))
                 }
             };
+        } else if (!isRandomGeneration && (!rarityData.rarestObject || newRarityScore < rarityData.rarestObject.rarityScore)) {
+            console.log('Rarer system detected, but NOT updating rarest discovery (manually selected):', starData.star.name, starData.star.type, 'Score:', newRarityScore);
         }
         
         // Add to discoveries
@@ -962,34 +541,34 @@ document.addEventListener('DOMContentLoaded', function() {
         
         rarityData.totalGenerated++;
         
-        // Count Hyper Planets in this system
-        const hyperPlanetsInSystem = starData.planets ? starData.planets.filter(planet => planet.type === 'Hyper Planet').length : 0;
-        console.log('Hyper Planets found in system:', hyperPlanetsInSystem);
+        // Count Hyper Stars in this system
+        const hyperStarsInSystem = starData.star && starData.star.type === 'HS' ? 1 : 0;
+        console.log('Hyper Stars found in system:', hyperStarsInSystem);
         
-        if (hyperPlanetsInSystem > 0) {
-            console.log('Hyper Planet detected! Checking for first discovery...');
-            rarityData.hyperPlanetsFound = (rarityData.hyperPlanetsFound || 0) + hyperPlanetsInSystem;
+        if (hyperStarsInSystem > 0) {
+            console.log('Hyper Star detected! Checking for first discovery...');
+            rarityData.hyperStarsFound = (rarityData.hyperStarsFound || 0) + hyperStarsInSystem;
             
-            // Check if this is the user's first Hyper Planet discovery and show achievement modal
-            console.log('checkFirstHyperPlanetDiscovery function exists:', typeof checkFirstHyperPlanetDiscovery === 'function');
-            if (typeof checkFirstHyperPlanetDiscovery === 'function' && checkFirstHyperPlanetDiscovery()) {
-                console.log('First Hyper Planet discovery confirmed! Showing modal...');
+            // Check if this is the user's first Hyper Star discovery and show achievement modal
+            console.log('checkFirstHyperStarDiscovery function exists:', typeof checkFirstHyperStarDiscovery === 'function');
+            if (typeof checkFirstHyperStarDiscovery === 'function' && checkFirstHyperStarDiscovery()) {
+                console.log('First Hyper Star discovery confirmed! Showing modal...');
                 // Mark achievement as seen immediately to prevent multiple modals
-                markHyperPlanetAchievementSeen();
+                markHyperStarAchievementSeen();
                 
                 // Stop AFK mode if it's running so player can read the achievement modal
                 if (typeof afkModeActive !== 'undefined' && afkModeActive) {
-                    console.log('Stopping AFK mode for Hyper Planet modal...');
+                    console.log('Stopping AFK mode for Hyper Star modal...');
                     stopAFKMode(false); // Don't clear session time, just pause for the modal
                 }
                 
                 // Show the achievement modal after a short delay to let the system display first
                 setTimeout(() => {
-                    console.log('Showing Hyper Planet modal...');
-                    showHyperPlanetModal();
+                    console.log('Showing Hyper Star modal...');
+                    showHyperStarModal();
                 }, 1500);
             } else {
-                console.log('Not first Hyper Planet discovery or function not available');
+                console.log('Not first Hyper Star discovery or function not available');
             }
         }
         
@@ -999,7 +578,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Auto-save legendary+ systems (Legendary, Mythical, Secret, Godly)
+        // Only auto-save if this was a random generation (not manually selected)
         if (shouldSaveSystem(starData.star.type, starData.giantType)) {
+            if (!isRandomGeneration) {
+                console.log('Legendary+ system detected, but NOT auto-saving (manually selected):', starData.star.name, starData.star.type);
+            } else {
+                console.log('Legendary+ system detected, auto-saving:', starData.star.name, starData.star.type);
+            }
+        }
+        
+        if (isRandomGeneration && shouldSaveSystem(starData.star.type, starData.giantType)) {
             const systemToSave = {
                 name: starData.star.name,
                 type: starData.star.type,
@@ -1166,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     ? `${(Number(systemData.star.radius) * 695700).toLocaleString(undefined, {maximumFractionDigits: 2})} km`
                                     : `${Number(systemData.star.radius).toLocaleString(undefined, {maximumFractionDigits: 2})} R☉`}
                         </span></p>
-                        <p><span class="label">Luminosity:</span> <span class="measurement">${Number(systemData.star.luminosity).toLocaleString(undefined, {maximumFractionDigits: 5})} L☉</span></p>
+                        <p><span class="label">Luminosity:</span> <span class="measurement">${formatLuminosity(systemData.star.luminosity)} L☉</span></p>
                     </div>
                 </div>
                 <div class="planets-header">
@@ -1177,8 +765,6 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         resultDiv.innerHTML = html;
         
-        // Start supernova timer for O and B-type stars
-        startSupernovaTimer(rarityData.rarestObject);
         
         // Check for Egg Shaped Planets and handle special behavior
         const eggPlanets = document.querySelectorAll('[data-egg-planet="true"]');
@@ -1283,7 +869,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     ? `${(Number(systemData.completeSystemData.star.radius) * 695700).toLocaleString(undefined, {maximumFractionDigits: 2})} km`
                                     : `${Number(systemData.completeSystemData.star.radius).toLocaleString(undefined, {maximumFractionDigits: 2})} R☉`}
                         </span></p>
-                        <p><span class="label">Luminosity:</span> <span class="measurement">${Number(systemData.completeSystemData.star.luminosity).toLocaleString(undefined, {maximumFractionDigits: 5})} L☉</span></p>
+                        <p><span class="label">Luminosity:</span> <span class="measurement">${formatLuminosity(systemData.completeSystemData.star.luminosity)} L☉</span></p>
                     </div>
                 </div>
                 <div class="planets-header">
@@ -1294,11 +880,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         resultDiv.innerHTML = html;
         
-        // Always create the alert panel space to maintain grid layout
-        createAlertPanelSpace(systemData);
         
-        // Start supernova timer for O and B-type stars
-        startSupernovaTimer(systemData);
         
         // Check for Egg Shaped Planets and handle special behavior
         const eggPlanets = document.querySelectorAll('[data-egg-planet="true"]');
@@ -1314,6 +896,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function displayRarityInfo() {
         const rarityData = JSON.parse(localStorage.getItem('spaceExplorerRarity'));
         const rarityDisplay = document.getElementById('rarity-display');
+        
+        // Debug logging for display
+        console.log('Display Rarity Debug:', {
+            rarestObject: rarityData.rarestObject,
+            totalGenerated: rarityData.totalGenerated,
+            discoveries: rarityData.discoveries.length
+        });
         
         let savedSystemsHtml = '';
         if (rarityData.savedSystems && rarityData.savedSystems.length > 0) {
@@ -1349,18 +938,18 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
         
-        // Hyper Planet indicator section
-        const hyperPlanetCount = rarityData.hyperPlanetsFound || 0;
-        const hyperPlanetIndicatorHtml = hyperPlanetCount > 0 ? `
-            <div class="hyper-planet-indicator" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(247, 147, 30, 0.2)); border: 2px solid #FF6B35; border-radius: 10px; text-align: center;">
+        // Hyper Star indicator section
+        const hyperStarCount = rarityData.hyperStarsFound || 0;
+        const hyperStarIndicatorHtml = hyperStarCount > 0 ? `
+            <div class="hyper-star-indicator" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2)); border: 2px solid #A855F7; border-radius: 10px; text-align: center;">
                 <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
-                    <img src="/static/images/Gemini-HyperPlanet.png" alt="Hyper Planet" style="width: 32px; height: 32px; margin-right: 0.5rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 12px rgba(255, 107, 53, 0.8);">
-                    <span style="color: #FF6B35; font-weight: bold; font-size: 1.1rem;">Hyper Planets Found</span>
+                    <img src="/static/images/ChatGPT-Hyper-Star.png" alt="Hyper Star" style="width: 32px; height: 32px; margin-right: 0.5rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 12px rgba(168, 85, 247, 0.8);">
+                    <span style="color: #A855F7; font-weight: bold; font-size: 1.1rem;">Hyper Stars Found</span>
                 </div>
-                <div style="color: #FFD700; font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">${hyperPlanetCount}</div>
-                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 1rem;">Each Hyper Planet does 1 HP damage to the Global Boss</div>
-                <button id="submit-hyper-planets-btn" class="cosmic-btn" style="background: linear-gradient(45deg, #FF6B35, #F7931E); font-size: 0.9rem; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: center; margin: 0 auto; margin-bottom: 0.5rem;" title="Each Hyper Planet does 1 HP damage to the world boss">
-                    <img src="/static/images/Gemini-HyperPlanet.png" alt="Hyper Planet" style="width: 20px; height: 20px; margin-right: 0.5rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 6px rgba(255, 107, 53, 0.6);"> Submit Hyper Planets to Global Boss
+                <div style="color: #FFD700; font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">${hyperStarCount}</div>
+                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 1rem;">Each Hyper Star does 1 HP damage to the Global Boss</div>
+                <button id="submit-hyper-stars-btn" class="cosmic-btn" style="background: linear-gradient(45deg, #A855F7, #EC4899); font-size: 0.9rem; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: center; margin: 0 auto; margin-bottom: 0.5rem;" title="Each Hyper Star does 1 HP damage to the world boss">
+                    <img src="/static/images/ChatGPT-Hyper-Star.png" alt="Hyper Star" style="width: 20px; height: 20px; margin-right: 0.5rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);"> Submit Hyper Stars to Global Boss
                 </button>
                 <button id="view-global-boss-btn" class="cosmic-btn" style="background: linear-gradient(45deg, #8E44AD, #9B59B6); font-size: 0.9rem; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: center; margin: 0 auto;" title="View the Global Boss status and health">
                     <i class="fas fa-skull" style="margin-right: 0.5rem; color: #E74C3C;"></i> View the Global Boss
@@ -1408,7 +997,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         ` : ''}
                         ${savedSystemsHtml}
-                        ${hyperPlanetIndicatorHtml}
+                        ${hyperStarIndicatorHtml}
                         ${resetButtonHtml}
                     </div>
                 </div>
@@ -1423,7 +1012,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="rarity-content">
                         <div class="rarity-level">Generate your first RANDOM star system to begin tracking discoveries!</div>
                         ${savedSystemsHtml}
-                        ${hyperPlanetIndicatorHtml}
+                        ${hyperStarIndicatorHtml}
                         ${resetButtonHtml}
                     </div>
                 </div>
@@ -1444,8 +1033,61 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeRarityTracking();
     displayRarityInfo();
     
-    // Initialize supernova tracking
-    initializeSupernovaTracking();
+    // Debug helper function - can be called from browser console
+    window.debugRarityTracking = function() {
+        const rarityData = JSON.parse(localStorage.getItem('spaceExplorerRarity'));
+        console.log('Current Rarity Data:', rarityData);
+        console.log('Rarity Weights:', RARITY_WEIGHTS);
+        console.log('Rarity Levels:', RARITY_LEVELS);
+        return rarityData;
+    };
+    
+    // Debug helper function to reset rarity tracking
+    window.resetRarityTracking = function() {
+        localStorage.removeItem('spaceExplorerRarity');
+        initializeRarityTracking();
+        displayRarityInfo();
+        console.log('Rarity tracking reset!');
+    };
+    
+    // Debug helper function to fix corrupted rarity scores
+    window.fixRarityScores = function() {
+        const rarityData = JSON.parse(localStorage.getItem('spaceExplorerRarity'));
+        let fixed = false;
+        
+        // Fix rarestObject if it has incorrect score
+        if (rarityData.rarestObject) {
+            const correctScore = calculateRarityScore(rarityData.rarestObject.type, rarityData.rarestObject.giantType);
+            if (rarityData.rarestObject.rarityScore !== correctScore) {
+                console.log(`Fixing rarestObject score: ${rarityData.rarestObject.rarityScore} -> ${correctScore}`);
+                rarityData.rarestObject.rarityScore = correctScore;
+                fixed = true;
+            }
+        }
+        
+        // Fix all discoveries
+        if (rarityData.discoveries) {
+            rarityData.discoveries.forEach((discovery, index) => {
+                const correctScore = calculateRarityScore(discovery.type, discovery.giantType);
+                if (discovery.rarityScore !== correctScore) {
+                    console.log(`Fixing discovery ${index} score: ${discovery.rarityScore} -> ${correctScore}`);
+                    discovery.rarityScore = correctScore;
+                    fixed = true;
+                }
+            });
+        }
+        
+        if (fixed) {
+            localStorage.setItem('spaceExplorerRarity', JSON.stringify(rarityData));
+            displayRarityInfo();
+            console.log('Rarity scores fixed!');
+        } else {
+            console.log('No corrupted scores found.');
+        }
+        
+        return rarityData;
+    };
+    
     
     // Initialize stats tracking for logged-in users
     initializeStatsTracking();
@@ -1746,7 +1388,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 data = await SystemGen.generateSystem({ starType: 'IGVPO', seed: useSeed && manualSeed ? manualSeed : undefined });
             }
             
-            const rarityResult = checkRarity(data);
+            // AFK mode generates random systems, so pass true for isRandomGeneration
+            const rarityResult = checkRarity(data, true);
             
             // Track system generation for stats in AFK mode
             trackSystemGeneration(data, true);
@@ -2007,7 +1650,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 ? `${(Number(data.star.radius) * 695700).toLocaleString(undefined, {maximumFractionDigits: 2})} km`
                                                 : `${Number(data.star.radius).toLocaleString(undefined, {maximumFractionDigits: 2})} R☉`}
                         </span></p>
-                        <p><span class="label">Luminosity:</span> <span class="measurement">${data.star.type === 'IGVPO' ? '∞ L☉' : Number(data.star.luminosity).toLocaleString(undefined, {maximumFractionDigits: 5}) + ' L☉'}</span></p>
+                        <p><span class="label">Luminosity:</span> <span class="measurement">${data.star.type === 'IGVPO' ? '∞ L☉' : formatLuminosity(data.star.luminosity) + ' L☉'}</span></p>
                     </div>
                 </div>
                 <div class="planets-header">
@@ -2018,11 +1661,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         resultDiv.innerHTML = html;
         
-        // Always create the alert panel space to maintain grid layout
-        createAlertPanelSpace(data);
         
-        // Start supernova timer for O and B-type stars
-        startSupernovaTimer(data);
         
         // Check for Egg Shaped Planets and handle special behavior
         const eggPlanets = document.querySelectorAll('[data-egg-planet="true"]');
@@ -2039,8 +1678,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to handle Egg Shaped Planet spawn
     function handleEggPlanetSpawn(eggPlanetElement) {
-        console.log('Egg Shaped Planet detected!');
-        
         // Explosion timers are now handled in the display functions
     }
 
@@ -2048,7 +1685,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to start explosion timers for Egg Shaped Planets
     function startEggPlanetExplosionTimers() {
         const eggPlanets = document.querySelectorAll('[data-egg-planet="true"]');
-        console.log('Found egg planets:', eggPlanets.length);
         
         eggPlanets.forEach((planetElement, index) => {
             const explosionTimer = parseInt(planetElement.getAttribute('data-explosion-timer'));
@@ -2056,16 +1692,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const planetInfo = planetOrbit.querySelector('.celestial-info');
             const startTime = Date.now();
             
-            console.log(`Starting timer for egg planet ${index + 1}, explosion timer: ${explosionTimer}ms`);
-            
             // Start countdown
             const countdownInterval = setInterval(() => {
                 const elapsed = Date.now() - startTime;
                 const remainingTime = explosionTimer - elapsed;
-                console.log(`Egg planet ${index + 1} - elapsed: ${elapsed}ms, remaining: ${remainingTime}ms`);
                 
                 if (remainingTime <= 0) {
-                    console.log(`Exploding egg planet ${index + 1}!`);
                     clearInterval(countdownInterval);
                     explodeEggPlanet(planetElement, planetOrbit, planetInfo);
                 } else {
@@ -2092,7 +1724,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to explode the Egg Shaped Planet
     function explodeEggPlanet(planetElement, planetOrbit, planetInfo) {
-        console.log('Exploding egg planet!');
         
         // Add explosion animation
         planetElement.style.animation = 'eggShapedPlanetExplosion 2s ease-out forwards';
@@ -2107,7 +1738,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // After explosion animation, transform to Destroyed Planet
         setTimeout(() => {
-            console.log('Transforming egg planet to destroyed planet...');
             
             // Change the planet type to Destroyed Planet
             planetElement.className = 'planet-visual destroyed-planet';
@@ -2320,10 +1950,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial update
     updateAFKCheckboxState();
 
-    // Stop AFK mode and supernova timer when page is about to unload
+    // Stop AFK mode when page is about to unload
     window.addEventListener('beforeunload', function() {
         stopAFKMode();
-        stopSupernovaTimer();
     });
 
     // Get the color select and custom color picker elements
@@ -2400,8 +2029,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             {
-                // Check rarity and update tracking only for random generation
-                const rarityResult = isRandomGeneration ? checkRarity(data) : { isNewRarest: false, rarityLevel: RARITY_LEVELS[data.star.type] || RARITY_LEVELS['M'] };
+                // Check rarity for all generations; only show 'new rarest' badge for random generations
+                const rarityResult = checkRarity(data, isRandomGeneration);
                 
                 // Track system generation for stats (only for random generation)
                 if (isRandomGeneration) {
@@ -2417,7 +2046,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let html = `
                     <div class="system-name">
                         <span class="star-emoji">🌟</span> The ${data.star.name} System
-                        ${rarityResult.isNewRarest ? `<span class="new-discovery-badge">${rarityResult.rarityLevel.emoji} NEW RAREST DISCOVERY!</span>` : ''}
+                        ${(isRandomGeneration && rarityResult.isNewRarest) ? `<span class="new-discovery-badge">${rarityResult.rarityLevel.emoji} NEW RAREST DISCOVERY!</span>` : ''}
                         ${data.star.type === 'HS' && data.planets.length > 0 ? `<span class="hyper-star-planets-badge">⚛️ HYPER STAR WITH PLANETS!</span>` : ''}
                         ${isRandomGeneration ? `<span class="random-discovery-badge">🎲 Random Discovery</span>` : (isAdvancedView ? `<span class="advanced-selection-badge">⚙️ Advanced Selection</span>` : `<span class="manual-selection-badge">🎯 Manual Selection</span>`)}
                     </div>
@@ -2544,7 +2173,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                         ? `${(Number(data.star.radius) * 695700).toLocaleString(undefined, {maximumFractionDigits: 2})} km`
                                                         : `${Number(data.star.radius).toLocaleString(undefined, {maximumFractionDigits: 2})} R☉`}
                                 </span></p>
-                                <p><span class="label">Luminosity:</span> <span class="measurement">${data.star.type === 'IGVPO' ? '∞ L☉' : Number(data.star.luminosity).toLocaleString(undefined, {maximumFractionDigits: 5}) + ' L☉'}</span></p>
+                                <p><span class="label">Luminosity:</span> <span class="measurement">${data.star.type === 'IGVPO' ? '∞ L☉' : formatLuminosity(data.star.luminosity) + ' L☉'}</span></p>
                             </div>
                         </div>
                         <div class="planets-header">
@@ -2555,11 +2184,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
                 resultDiv.innerHTML = html;
                 
-                // Always create the alert panel space to maintain grid layout
-                createAlertPanelSpace(data);
                 
-                // Start supernova timer for O and B-type stars
-                startSupernovaTimer(data);
                 
                 // Check for Egg Shaped Planets and handle special behavior
                 const eggPlanets = document.querySelectorAll('[data-egg-planet="true"]');
@@ -2570,10 +2195,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 100);
                 }
                 
-                // Update rarity display only for random generation
+                // Always update rarity display, but keep cooldown reset for random generations only
+                displayRarityInfo();
+                
                 if (isRandomGeneration) {
-                    displayRarityInfo();
-                    
                     // Check if this is an Epic or better system and reset AFK cooldown
                     if (isEpicOrBetter(data.star.type) && isAFKOnCooldown()) {
                         clearAFKCooldown();
@@ -2673,9 +2298,9 @@ document.addEventListener('DOMContentLoaded', function() {
             rarityDisplay.setAttribute('data-show-all', (!currentShowAll).toString());
             displayRarityInfo();
         }
-        // Submit Hyper Planets button
-        else if (e.target && e.target.id === 'submit-hyper-planets-btn') {
-            submitHyperPlanets();
+        // Submit Hyper Stars button
+        else if (e.target && e.target.id === 'submit-hyper-stars-btn') {
+            submitHyperStars();
         }
         // View Global Boss button
         else if (e.target && e.target.id === 'view-global-boss-btn') {
@@ -2684,47 +2309,47 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Function to handle submitting Hyper Planets to Global Boss
-async function submitHyperPlanets() {
+// Function to handle submitting Hyper Stars to Global Boss
+async function submitHyperStars() {
     const rarityData = JSON.parse(localStorage.getItem('spaceExplorerRarity') || '{}');
-    const hyperPlanetCount = rarityData.hyperPlanetsFound || 0;
-    if (hyperPlanetCount === 0) {
-        alert('You need to find Hyper Planets first! Generate more systems to discover them.');
+    const hyperStarCount = rarityData.hyperStarsFound || 0;
+    if (hyperStarCount === 0) {
+        alert('You need to find Hyper Stars first! Generate more systems to discover them.');
         return;
     }
     
     try {
-        console.log(`Submitting ${hyperPlanetCount} Hyper Planets to database!`);
+        console.log(`Submitting ${hyperStarCount} Hyper Stars to database!`);
         
-        const response = await fetch('/api/hyper-planets/submit', {
+        const response = await fetch('/api/hyper-stars/submit', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                hyper_planets_count: hyperPlanetCount
+                hyper_stars_count: hyperStarCount
             })
         });
         
         if (response.ok) {
             const result = await response.json();
-            console.log('Hyper planets submitted successfully:', result);
+            console.log('Hyper stars submitted successfully:', result);
             
             // Reset the local count since they've been submitted
-            rarityData.hyperPlanetsFound = 0;
+            rarityData.hyperStarsFound = 0;
             localStorage.setItem('spaceExplorerRarity', JSON.stringify(rarityData));
             
             // Update the display
             updateLocalStatsDisplay();
             
-            alert(`Successfully submitted ${hyperPlanetCount} Hyper Planets to your stats! Total: ${result.total_hyper_planets}`);
+            alert(`Successfully submitted ${hyperStarCount} Hyper Stars to your stats! Total: ${result.total_hyper_stars}`);
         } else {
             const error = await response.json();
-            console.error('Failed to submit hyper planets:', error);
-            alert(`Failed to submit hyper planets: ${error.error}`);
+            console.error('Failed to submit hyper stars:', error);
+            alert(`Failed to submit hyper stars: ${error.error}`);
         }
     } catch (error) {
-        console.error('Error submitting hyper planets:', error);
-        alert('Failed to submit hyper planets. Please try again.');
+        console.error('Error submitting hyper stars:', error);
+        alert('Failed to submit hyper stars. Please try again.');
     }
 }

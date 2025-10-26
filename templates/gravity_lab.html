@@ -104,7 +104,7 @@
                         <!-- Left Sidebar - 40% width on large screens, full width on mobile -->
                         <div class="w-full lg:w-2/5 space-y-6">
                         <!-- Space Objects Panel -->
-                        <div class="bg-gray-800/50 rounded-lg p-6 border border-gray-600/50 h-[500px] overflow-hidden">
+                        <div class="bg-gray-800/50 rounded-lg p-6 border border-gray-600/50 h-[600px] overflow-hidden">
                             <h2 class="text-xl font-bold text-white mb-6 flex items-center justify-between cursor-pointer" onclick="toggleSection('space-objects-panel')">
                                 <div class="flex items-center">
                                     <i class="fas fa-rocket text-purple-400 mr-3"></i>
@@ -113,7 +113,15 @@
                                 <i id="space-objects-panel-icon" class="fas fa-chevron-down text-gray-400 collapsible-icon"></i>
                             </h2>
                             
-                            <div id="space-objects-panel-content" class="collapsible-content overflow-y-auto h-[400px] scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-700 space-objects-scrollable">
+                            <!-- Add New Object Button -->
+                            <div class="mb-4">
+                                <button onclick="openAddObjectModal()" class="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2">
+                                    <i class="fas fa-plus"></i>
+                                    Add New Object
+                                </button>
+                            </div>
+                            
+                            <div id="space-objects-panel-content" class="collapsible-content overflow-y-auto h-[500px] scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-700 space-objects-scrollable">
                                 <!-- Search Bar -->
                                 <div class="mb-4">
                                     <div class="relative">
@@ -164,12 +172,12 @@
                                         <button onclick="filterObjects('dso')" class="category-filter" data-category="dso">
                                             <i class="fas fa-star-of-life mr-2"></i>DSO
                                         </button>
-                                        <button onclick="filterObjects('fictional')" class="category-filter" data-category="fictional">
-                                            <i class="fas fa-magic mr-2"></i>Fictional
-                                        </button>
-                                        <button onclick="filterObjects('fictional solar system')" class="category-filter" data-category="fictional solar system">
-                                            <i class="fas fa-solar-panel mr-2"></i>Fictional Solar Systems
-                                        </button>
+                        <button onclick="filterObjects('fictional')" class="category-filter" data-category="fictional">
+                            <i class="fas fa-magic mr-2"></i>Fictional
+                        </button>
+                        <button onclick="filterObjects('meteorite')" class="category-filter" data-category="meteorite">
+                            <i class="fas fa-meteor mr-2"></i>Meteorites
+                        </button>
                                     </div>
                                 </div>
                                 
@@ -193,7 +201,7 @@
                                 </div>
                                 
                                 <!-- Object Grid -->
-                                <div id="objects-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-2 p-1">
+                                <div id="objects-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-2 p-1 pb-16">
                                     <!-- Objects will be populated by JavaScript -->
                                 </div>
                             </div>
@@ -1250,6 +1258,13 @@
                 icon: '🏯',
                 type: 'large object'
             },
+            'hurricane_helene': { 
+                name: 'Hurricane Helene', 
+                mass: 7.57e13, // kg (75.7 trillion kg - massive hurricane system)
+                radius: 675923, // m (420 miles - radius of hurricane system)
+                icon: '🌀',
+                type: 'large object'
+            },
             'ikeya_seki': { 
                 name: 'Comet Ikeya-Seki (C/1965 S1)', 
                 mass: 1e14, // kg (100 trillion kg - great sungrazer comet)
@@ -1967,6 +1982,13 @@
                 icon: '🥔',
                 type: 'moon'
             },
+            'great_dark_spot': { 
+                name: 'Great Dark Spot', 
+                mass: 3.0e15, // kg (Neptune's atmospheric storm - estimated from volume and density)
+                radius: 1.3e7, // m (13,000 km radius)
+                icon: '🌀',
+                type: 'large object'
+            },
             // Saturn's Moons
             'mimas': { 
                 name: 'Mimas', 
@@ -2074,28 +2096,28 @@
                 mass: 1.25307e32, // kg (63 solar masses - O-class star)
                 radius: 2.2272e10, // m (32 solar radii - massive blue star)
                 icon: '💙',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'ruburus': { 
                 name: 'Ruburus', 
                 mass: 1.648e24, // kg (0.276 Earth masses - rocky planet in Oganix system)
                 radius: 4.415e6, // m (0.693 Earth radii)
                 icon: '🔴',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'orreka': { 
                 name: 'Orreka', 
                 mass: 2.0306e25, // kg (3.4 Earth masses - super-Earth in Oganix system)
                 radius: 8.983e6, // m (1.41 Earth radii)
                 icon: '🔴',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'visdion': { 
                 name: 'Visdion', 
                 mass: 1.636e24, // kg (0.274 Earth masses - cratered world in Oganix system)
                 radius: 4.415e6, // m (0.693 Earth radii)
                 icon: '🟤',
-                type: 'fictional solar system',
+                type: 'fictional',
                 hasCrater: true // Special flag for custom rendering
             },
             'vela': { 
@@ -2103,28 +2125,28 @@
                 mass: 8.68e17, // kg (asteroid in Oganix system)
                 radius: 3.76e4, // m (37.6 km)
                 icon: '🪨',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'ceiloath': { 
                 name: 'Ceiloath', 
                 mass: 5.1538e24, // kg (0.863 Earth masses - green world in Oganix system)
                 radius: 5.9186e6, // m (0.929 Earth radii)
                 icon: '🟢',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'sulack': { 
                 name: 'Sulack', 
                 mass: 2.777e23, // kg (0.0465 Earth masses - small tan/magenta world in Oganix system)
                 radius: 2.160e6, // m (0.339 Earth radii)
                 icon: '🟤',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'uradia': { 
                 name: 'Uradia', 
                 mass: 4.360e23, // kg (0.073 Earth masses - small green world in Oganix system)
                 radius: 2.459e6, // m (0.386 Earth radii)
                 icon: '🟢',
-                type: 'fictional solar system',
+                type: 'fictional',
                 hasCanyon: true // Special flag for custom rendering with canyon
             },
             'gale': { 
@@ -2132,14 +2154,14 @@
                 mass: 1.505e25, // kg (2.52 Earth masses - purple super-Earth in Oganix system)
                 radius: 9.684e6, // m (1.52 Earth radii)
                 icon: '🟣',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'ubonae': { 
                 name: 'Ubonae', 
                 mass: 4.515e24, // kg (0.756 Earth masses - purple and green world in Oganix system)
                 radius: 2.077e6, // m (0.326 Earth radii)
                 icon: '🟣',
-                type: 'fictional solar system',
+                type: 'fictional',
                 hasGreenDots: true // Special flag for custom rendering with green dots
             },
             'rooth': { 
@@ -2147,134 +2169,191 @@
                 mass: 2.305e25, // kg (3.86 Earth masses - dark green habitable super-Earth in Oganix system)
                 radius: 1.326e7, // m (2.08 Earth radii)
                 icon: '🟢',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'jorrosinta': { 
                 name: 'Jorrosinta', 
                 mass: 8.488e25, // kg (14.2 Earth masses - massive ringed world in Oganix system)
                 radius: 2.244e7, // m (3.52 Earth radii)
                 icon: '🪐',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'fulatun': { 
                 name: 'Fulatun', 
                 mass: 1.389e27, // kg (0.734 Jupiter masses - gas giant with rings in Oganix system)
                 radius: 7.014e7, // m (11 Earth radii)
                 icon: '🪐',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'glacius': { 
                 name: 'Glacius', 
                 mass: 1.034e28, // kg (5.44 Jupiter masses - massive white ice giant in Oganix system)
                 radius: 6.378e7, // m (10 Earth radii)
                 icon: '⚪',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'heavor': { 
                 name: 'Heavor', 
                 mass: 1.586e27, // kg (0.837 Jupiter masses - ringed gas giant in Oganix system)
                 radius: 6.697e7, // m (10.5 Earth radii)
                 icon: '🪐',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'leas': { 
                 name: 'Leas', 
                 mass: 1.849e27, // kg (0.975 Jupiter masses - massive ringed gas giant in Oganix system)
                 radius: 1.073e8, // m (1.68 Jupiter radii)
                 icon: '🪐',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'hectodor': { 
                 name: 'Hectodor', 
                 mass: 1.089e28, // kg (5.73 Jupiter masses - massive ringed gas giant in Oganix system)
                 radius: 8.374e7, // m (1.31 Jupiter radii)
                 icon: '🪐',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'perchta': { 
                 name: 'Perchta', 
                 mass: 1.784e27, // kg (0.939 Jupiter masses - ringed gas giant in Oganix system)
                 radius: 6.569e7, // m (10.3 Earth radii)
                 icon: '🪐',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'eolis': { 
                 name: 'Eolis', 
                 mass: 2.819e22, // kg (0.00472 Earth masses - small purple planet in Oganix system)
                 radius: 9.238e5, // m (0.145 Earth radii)
                 icon: '🟣',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'satans_planet': { 
                 name: 'Satan\'s Planet', 
                 mass: 2.828e27, // kg (1.49 Jupiter masses - massive brown dwarf-like planet in Oganix system)
                 radius: 9.718e7, // m (1.39 Jupiter radii)
                 icon: '🔥',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'corria': { 
                 name: 'Corria', 
                 mass: 4.13e16, // kg (radioactive asteroid in Oganix system)
                 radius: 1.36e4, // m (13.6 km)
                 icon: '☢️',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'volcanius': { 
                 name: 'Volcanius', 
                 mass: 3.226e28, // kg (17 Jupiter masses - ultra-dense planet in Oganix system)
                 radius: 3.58e3, // m (3.58 km - extremely compact)
                 icon: '🌋',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'gods_planet': { 
                 name: 'God\'s Planet', 
                 mass: 1.118e29, // kg (59 Jupiter masses - massive gas giant in Oganix system)
                 radius: 2.53e7, // m (3.97 Earth radii)
                 icon: '🪐',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'thalayisia': { 
                 name: 'Thalayisia', 
                 mass: 1.374e27, // kg (0.725 Jupiter masses - large, low-density gas giant in Oganix system)
                 radius: 6.63e7, // m (10.4 Earth radii)
                 icon: '🪐',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'hofirite': { 
                 name: 'Hofirite', 
                 mass: 2.76e14, // kg (small comet in Oganix system)
                 radius: 2.54e3, // m (2.54 km)
                 icon: '☄️',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'lvoen': { 
                 name: 'Lvoen', 
                 mass: 1.057e27, // kg (0.558 Jupiter masses - gas giant in Oganix system)
                 radius: 1.008e8, // m (1.44 Jupiter radii)
                 icon: '🪐',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'leonv': { 
                 name: 'Leonv', 
                 mass: 1.639e27, // kg (0.866 Jupiter masses - gas giant in Oganix system)
                 radius: 7.35e7, // m (1.05 Jupiter radii)
                 icon: '🪐',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'fripp': { 
                 name: 'Fripp', 
                 mass: 6.87e25, // kg (11.5 Earth masses - primordial black hole in Oganix system)
                 radius: 1.02e-1, // m (10.2 cm - Schwarzschild radius)
                 icon: '⚫',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
             'the_atom': { 
                 name: 'The Atom', 
                 mass: 4.88e-25, // kg (294 amu - element 118 atom in Oganix system)
                 radius: 1.57e-10, // m (157 picometers)
                 icon: '⚛️',
-                type: 'fictional solar system'
+                type: 'fictional'
             },
+            'hawkramenshon': { 
+                name: 'Hawkramenshon', 
+                mass: 1.005e54, // kg (337 billion Milky Ways - ultra-massive hyper-giant)
+                radius: 4.04e10, // m (0.27 AU - compact for its mass)
+                luminosity: 2.02e+11, // L☉ (custom luminosity value)
+                icon: '🟣',
+                type: 'fictional'
+            },
+            'tithanmatrix': { 
+                name: 'Tithanmatrix', 
+                mass: 1.631e31, // kg (8.2 solar masses)
+                radius: 2.506e9, // m (3.6 solar radii)
+                icon: '🔮',
+                type: 'fictional'
+            },
+            'yothetiuktaliathan': { 
+                name: 'Yothetiuktaliathan', 
+                mass: 1.44e33, // kg (724 solar masses)
+                radius: 3.51e11, // m (504 solar radii)
+                icon: '🌟',
+                type: 'fictional'
+            },
+            'hoba_meteorite': { 
+                name: 'Hoba Meteorite', 
+                mass: 6e4, // kg (60 tons - largest known meteorite on Earth)
+                radius: 2.7, // m (2.7 meters radius)
+                icon: '☄️',
+                type: 'meteorite'
+            },
+            'annacrantieth': { 
+                name: 'Annacrantieth', 
+                mass: 1.83e31, // kg (9.2 solar masses - protostar)
+                radius: 1.88e9, // m (2.7 solar radii)
+                icon: '🌟',
+                type: 'fictional'
+            },
+            'saturns_hexagon': { 
+                name: "Saturn's Hexagon", 
+                mass: 4.0e16, // kg (Saturn's atmospheric hexagon - estimated from volume and density)
+                radius: 3e7, // m (30,000 km)
+                icon: '🔷',
+                type: 'large object'
+            },
+            'great_red_spot': { 
+                name: 'Great Red Spot', 
+                mass: 1.6e16, // kg (Jupiter's atmospheric storm - estimated from volume and density)
+                radius: 1.635e7, // m (16,350 km)
+                icon: '🔴',
+                type: 'large object'
+            },
+            // 'hurricane_creator_shuriken': { 
+            //     name: 'Hurricane Creator Shuriken', 
+            //     mass: 0.0671, // kg (0.148 lbs)
+            //     radius: 0.1524, // m (6 inches)
+            //     icon: '🥷',
+            //     type: 'small object'
+            // },
         };
 
         // Universal gravitational constant
@@ -2474,9 +2553,14 @@
         }
         
         // Calculate habitable zone for stars
-        function calculateHabitableZone(mass, radius) {
-            // Get luminosity relative to Sun
-            const luminosity = calculateLuminosity(mass, radius);
+        function calculateHabitableZone(celestialObject) {
+            // Use custom luminosity if available, otherwise calculate it
+            let luminosity;
+            if (celestialObject.luminosity !== undefined) {
+                luminosity = celestialObject.luminosity;
+            } else {
+                luminosity = calculateLuminosity(celestialObject.mass, celestialObject.radius);
+            }
             
             // Habitable zone boundaries (conservative estimates)
             // Inner edge: where water would boil (recent Venus)
@@ -2771,6 +2855,34 @@
                 ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
                 : celestialObject.name === 'Fripp'
                 ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Cygnus X-1'
+                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Sagittarius A*'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'TON 618'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Phoenix A*'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hawkramenshon'
+                ? `<img src="{{ static_file('images/Purple-Hyper-Giant.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Tithanmatrix'
+                ? `<img src="{{ static_file('images/Tithanmatrix.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Yothetiuktaliathan'
+                ? `<img src="{{ static_file('images/Yothetiuktaliathan.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hoba Meteorite'
+                ? `<img src="{{ static_file('images/hoba.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === "Saturn's Hexagon"
+                ? `<img src="{{ static_file('images/Saturn_Hexagon.webp') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Great Red Spot'
+                ? `<img src="{{ static_file('images/Jupiter-Great-Red-Spot.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hurricane Creator Shuriken'
+                ? `<img src="{{ static_file('images/Shuriken.jpeg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Annacrantieth'
+                ? `<img src="{{ static_file('images/Protostar.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hurricane Helene'
+                ? `<img src="{{ static_file('images/helene.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Great Dark Spot'
+                ? `<img src="{{ static_file("images/Neptune's_Great_Dark_Spot.jpg") }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
                 : `<div class="text-2xl mb-2">${celestialObject.icon}</div>`;
             
             const resultsHTML = `
@@ -2809,17 +2921,17 @@
                                 <span class="text-gray-300">Density:</span>
                                 <span class="text-cyan-400 font-bold">${formatDensity(calculateDensity(celestialObject.mass, celestialObject.radius))}</span>
                             </div>
-                            ${(celestialObject.type === 'star' || celestialObject.type === 'fictional solar system') ? `
+                            ${(celestialObject.type === 'star' || celestialObject.type === 'fictional') ? `
                             <div class="flex justify-between items-center border-t border-gray-600/50 pt-2 mt-2">
                                 <span class="text-gray-300">Luminosity:</span>
-                                <span class="text-yellow-400 font-bold">${formatLuminosity(calculateHabitableZone(celestialObject.mass, celestialObject.radius).luminosity)}</span>
+                                <span class="text-yellow-400 font-bold">${formatLuminosity(calculateHabitableZone(celestialObject).luminosity)}</span>
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-300">Habitable Zone:</span>
-                                <span class="text-green-400 font-bold">${formatHabitableZone(calculateHabitableZone(celestialObject.mass, celestialObject.radius))}</span>
+                                <span class="text-green-400 font-bold">${formatHabitableZone(calculateHabitableZone(celestialObject))}</span>
                             </div>
                             ` : ''}
-                            <div class="flex justify-between items-center ${(celestialObject.type === 'star' || celestialObject.type === 'fictional solar system') ? 'border-t border-gray-600/50 pt-2 mt-2' : ''}">
+                            <div class="flex justify-between items-center ${(celestialObject.type === 'star' || celestialObject.type === 'fictional') ? 'border-t border-gray-600/50 pt-2 mt-2' : ''}">
                                 <span class="text-gray-300">Your Height:</span>
                                 <span class="text-gray-400 font-bold">${feet}'${inches}"</span>
                             </div>
@@ -2941,6 +3053,8 @@
                 'Tsunami': 'bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 shadow-blue-600/25 hover:shadow-blue-600/40',
                 'Pyramid of Giza': 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 shadow-amber-500/25 hover:shadow-amber-500/40',
                 'The Great Wall of China': 'bg-gradient-to-r from-red-600 to-orange-700 hover:from-red-700 hover:to-orange-800 shadow-red-600/25 hover:shadow-red-600/40',
+                'Hurricane Helene': 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-blue-500/25 hover:shadow-blue-500/40',
+                'Great Dark Spot': 'bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 shadow-indigo-600/25 hover:shadow-indigo-600/40',
                 'Comet Ikeya-Seki (C/1965 S1)': 'bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 shadow-cyan-400/25 hover:shadow-cyan-400/40',
                 'Comet Bennett (C/1969 Y1)': 'bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 shadow-blue-400/25 hover:shadow-blue-400/40',
                 'Comet Kohoutek (C/1973 E1)': 'bg-gradient-to-r from-purple-400 to-blue-500 hover:from-purple-500 hover:to-blue-600 shadow-purple-400/25 hover:shadow-purple-400/40',
@@ -2999,7 +3113,12 @@
                 'Lvoen': 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-indigo-500/25 hover:shadow-indigo-500/40',
                 'Leonv': 'bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 shadow-teal-500/25 hover:shadow-teal-500/40',
                 'Fripp': 'bg-gradient-to-r from-gray-900 to-black hover:from-black hover:to-gray-900 shadow-gray-900/25 hover:shadow-gray-900/40',
-                'The Atom': 'bg-gradient-to-r from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600 shadow-pink-400/25 hover:shadow-pink-400/40'
+                'The Atom': 'bg-gradient-to-r from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600 shadow-pink-400/25 hover:shadow-pink-400/40',
+                'Hawkramenshon': 'bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 shadow-purple-600/25 hover:shadow-purple-600/40',
+                'Hoba Meteorite': 'bg-gradient-to-r from-gray-700 to-slate-800 hover:from-gray-800 hover:to-slate-900 shadow-gray-700/25 hover:shadow-gray-700/40',
+                'Hurricane Creator Shuriken': 'bg-gradient-to-r from-gray-600 to-slate-700 hover:from-gray-700 hover:to-slate-800 shadow-gray-600/25 hover:shadow-gray-600/40',
+                'Annacrantieth': 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-orange-500/25 hover:shadow-orange-500/40',
+                "Saturn's Hexagon": 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 shadow-blue-500/25 hover:shadow-blue-500/40'
             };
             
             return themes[objectName] || 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-500/25 hover:shadow-purple-500/40';
@@ -3160,6 +3279,34 @@
                 ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
                 : celestialObject.name === 'Fripp'
                 ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Cygnus X-1'
+                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Sagittarius A*'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'TON 618'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Phoenix A*'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hawkramenshon'
+                ? `<img src="{{ static_file('images/Purple-Hyper-Giant.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Tithanmatrix'
+                ? `<img src="{{ static_file('images/Tithanmatrix.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Yothetiuktaliathan'
+                ? `<img src="{{ static_file('images/Yothetiuktaliathan.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hoba Meteorite'
+                ? `<img src="{{ static_file('images/hoba.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === "Saturn's Hexagon"
+                ? `<img src="{{ static_file('images/Saturn_Hexagon.webp') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Great Red Spot'
+                ? `<img src="{{ static_file('images/Jupiter-Great-Red-Spot.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hurricane Creator Shuriken'
+                ? `<img src="{{ static_file('images/Shuriken.jpeg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Annacrantieth'
+                ? `<img src="{{ static_file('images/Protostar.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Hurricane Helene'
+                ? `<img src="{{ static_file('images/helene.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Great Dark Spot'
+                ? `<img src="{{ static_file("images/Neptune's_Great_Dark_Spot.jpg") }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
                 : `<div class="text-2xl mb-2">${celestialObject.icon}</div>`;
             
             const simulatorHTML = `
@@ -3169,7 +3316,7 @@
                         <h3 class="text-lg font-bold text-white mb-2">${celestialObject.name}</h3>
                         <p class="text-xs text-gray-400 mb-4 capitalize">Jumping Simulator</p>
                         
-                        <div class="grid ${(celestialObject.type === 'star' || celestialObject.type === 'fictional solar system') ? 'grid-cols-2' : 'grid-cols-2'} gap-4 text-sm mb-4">
+                        <div class="grid ${(celestialObject.type === 'star' || celestialObject.type === 'fictional') ? 'grid-cols-2' : 'grid-cols-2'} gap-4 text-sm mb-4">
                             <div class="text-center p-3 bg-gray-800/50 rounded">
                                 <div class="text-gray-300 text-xs">Surface Gravity</div>
                                 <div class="text-blue-400 font-bold">${formatSurfaceGravity(calculatedGravity)}</div>
@@ -3178,14 +3325,14 @@
                                 <div class="text-gray-300 text-xs">vs Earth</div>
                                 <div class="text-purple-400 font-bold">${gravityRatio < 0.001 ? gravityRatio.toExponential(3) + '×' : gravityRatio.toFixed(3) + '×'}</div>
                             </div>
-                            ${(celestialObject.type === 'star' || celestialObject.type === 'fictional solar system') ? `
+                            ${(celestialObject.type === 'star' || celestialObject.type === 'fictional') ? `
                             <div class="text-center p-3 bg-gray-800/50 rounded col-span-2">
                                 <div class="text-gray-300 text-xs">Habitable Zone</div>
-                                <div class="text-green-400 font-bold">${formatHabitableZone(calculateHabitableZone(celestialObject.mass, celestialObject.radius))}</div>
+                                <div class="text-green-400 font-bold">${formatHabitableZone(calculateHabitableZone(celestialObject))}</div>
                             </div>
                             <div class="text-center p-3 bg-gray-800/50 rounded col-span-2">
                                 <div class="text-gray-300 text-xs">Luminosity</div>
-                                <div class="text-yellow-400 font-bold">${formatLuminosity(calculateHabitableZone(celestialObject.mass, celestialObject.radius).luminosity)}</div>
+                                <div class="text-yellow-400 font-bold">${formatLuminosity(calculateHabitableZone(celestialObject).luminosity)}</div>
                             </div>
                             ` : ''}
                         </div>
@@ -3518,6 +3665,34 @@
                 ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Fripp'
                 ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Cygnus X-1'
+                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Sagittarius A*'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'TON 618'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Phoenix A*'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Hawkramenshon'
+                ? `<img src="{{ static_file('images/Purple-Hyper-Giant.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Tithanmatrix'
+                ? `<img src="{{ static_file('images/Tithanmatrix.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Yothetiuktaliathan'
+                ? `<img src="{{ static_file('images/Yothetiuktaliathan.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Hoba Meteorite'
+                ? `<img src="{{ static_file('images/hoba.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === "Saturn's Hexagon"
+                ? `<img src="{{ static_file('images/Saturn_Hexagon.webp') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Great Red Spot'
+                ? `<img src="{{ static_file('images/Jupiter-Great-Red-Spot.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Hurricane Creator Shuriken'
+                ? `<img src="{{ static_file('images/Shuriken.jpeg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Annacrantieth'
+                ? `<img src="{{ static_file('images/Protostar.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Hurricane Helene'
+                ? `<img src="{{ static_file('images/helene.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Great Dark Spot'
+                ? `<img src="{{ static_file("images/Neptune's_Great_Dark_Spot.jpg") }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : `<div class="object-icon">${obj.icon}</div>`;
             
             card.innerHTML = `
@@ -3686,6 +3861,34 @@
                 ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Fripp'
                 ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Cygnus X-1'
+                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Sagittarius A*'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'TON 618'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Phoenix A*'
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Hawkramenshon'
+                ? `<img src="{{ static_file('images/Purple-Hyper-Giant.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Tithanmatrix'
+                ? `<img src="{{ static_file('images/Tithanmatrix.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Yothetiuktaliathan'
+                ? `<img src="{{ static_file('images/Yothetiuktaliathan.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Hoba Meteorite'
+                ? `<img src="{{ static_file('images/hoba.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === "Saturn's Hexagon"
+                ? `<img src="{{ static_file('images/Saturn_Hexagon.webp') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Great Red Spot'
+                ? `<img src="{{ static_file('images/Jupiter-Great-Red-Spot.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Hurricane Creator Shuriken'
+                ? `<img src="{{ static_file('images/Shuriken.jpeg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Annacrantieth'
+                ? `<img src="{{ static_file('images/Protostar.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Hurricane Helene'
+                ? `<img src="{{ static_file('images/helene.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Great Dark Spot'
+                ? `<img src="{{ static_file("images/Neptune's_Great_Dark_Spot.jpg") }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : `<div class="object-icon">${obj.icon}</div>`;
             
             card.innerHTML = `
@@ -3736,6 +3939,201 @@
             // Add search event listener
             document.getElementById('object-search').addEventListener('input', searchObjects);
         });
+
+        // Modal Functions
+        function openAddObjectModal() {
+            document.getElementById('addObjectModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        function closeAddObjectModal() {
+            document.getElementById('addObjectModal').classList.add('hidden');
+            document.body.style.overflow = 'auto'; // Restore scrolling
+            // Clear form
+            document.getElementById('addObjectForm').reset();
+        }
+
+        function submitNewObject() {
+            const form = document.getElementById('addObjectForm');
+            const formData = new FormData(form);
+            
+            // Get form values
+            const name = formData.get('name').trim();
+            const mass = parseFloat(formData.get('mass'));
+            const radius = parseFloat(formData.get('radius'));
+            const emoji = formData.get('emoji').trim();
+            const image = formData.get('image').trim();
+            
+            // Validation
+            if (!name) {
+                alert('Please enter a name for the object.');
+                return;
+            }
+            
+            if (isNaN(mass) || mass <= 0) {
+                alert('Please enter a valid mass greater than 0.');
+                return;
+            }
+            
+            if (isNaN(radius) || radius <= 0) {
+                alert('Please enter a valid radius greater than 0.');
+                return;
+            }
+            
+            if (!emoji) {
+                alert('Please enter an emoji for the object.');
+                return;
+            }
+            
+            // Create new object data
+            const newObject = {
+                name: name,
+                mass: mass,
+                radius: radius,
+                icon: emoji,
+                type: 'custom', // Custom type for user-added objects
+                image: image || null
+            };
+            
+            // Generate a unique key for the object
+            const objectKey = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            
+            // Add to the spaceObjects data structure
+            if (typeof spaceObjects !== 'undefined') {
+                spaceObjects[objectKey] = newObject;
+                
+                // Refresh the object grid to show the new object
+                if (typeof initializeObjectGrid === 'function') {
+                    initializeObjectGrid();
+                }
+                
+                // Show success message
+                alert(`Successfully added "${name}" to the space objects!`);
+                
+                // Close modal
+                closeAddObjectModal();
+            } else {
+                alert('Error: Unable to add object. Please refresh the page and try again.');
+            }
+        }
+
+        // Close modal when clicking outside of it
+        document.getElementById('addObjectModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAddObjectModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !document.getElementById('addObjectModal').classList.contains('hidden')) {
+                closeAddObjectModal();
+            }
+        });
     </script>
+
+    <!-- Add New Object Modal -->
+    <div id="addObjectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg border border-gray-600 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-600">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-plus-circle text-purple-400 mr-3"></i>
+                    Add New Space Object
+                </h3>
+                <button onclick="closeAddObjectModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6">
+                <form id="addObjectForm" class="space-y-4">
+                    <!-- Name Field -->
+                    <div>
+                        <label for="objectName" class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-tag text-purple-400 mr-2"></i>Name
+                        </label>
+                        <input type="text" 
+                               id="objectName" 
+                               name="name"
+                               required
+                               placeholder="Enter object name..."
+                               class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                    </div>
+                    
+                    <!-- Mass Field -->
+                    <div>
+                        <label for="objectMass" class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-weight text-purple-400 mr-2"></i>Mass (kg)
+                        </label>
+                        <input type="number" 
+                               id="objectMass" 
+                               name="mass"
+                               required
+                               step="any"
+                               placeholder="e.g., 5.97e24"
+                               class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                        <p class="text-xs text-gray-400 mt-1">Use scientific notation (e.g., 5.97e24 for Earth's mass)</p>
+                    </div>
+                    
+                    <!-- Radius Field -->
+                    <div>
+                        <label for="objectRadius" class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-circle text-purple-400 mr-2"></i>Radius (meters)
+                        </label>
+                        <input type="number" 
+                               id="objectRadius" 
+                               name="radius"
+                               required
+                               step="any"
+                               placeholder="e.g., 6371000"
+                               class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                        <p class="text-xs text-gray-400 mt-1">Enter radius in meters (e.g., 6371000 for Earth)</p>
+                    </div>
+                    
+                    <!-- Emoji Field -->
+                    <div>
+                        <label for="objectEmoji" class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-smile text-purple-400 mr-2"></i>Emoji
+                        </label>
+                        <input type="text" 
+                               id="objectEmoji" 
+                               name="emoji"
+                               maxlength="2"
+                               placeholder="🌍"
+                               class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-center text-2xl">
+                        <p class="text-xs text-gray-400 mt-1">Choose an emoji to represent this object</p>
+                    </div>
+                    
+                    <!-- Image Field -->
+                    <div>
+                        <label for="objectImage" class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-image text-purple-400 mr-2"></i>Image URL
+                        </label>
+                        <input type="url" 
+                               id="objectImage" 
+                               name="image"
+                               placeholder="https://example.com/image.jpg"
+                               class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all">
+                        <p class="text-xs text-gray-400 mt-1">Optional: URL to an image of the object</p>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-600">
+                <button onclick="closeAddObjectModal()" 
+                        class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button onclick="submitNewObject()" 
+                        class="px-6 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white rounded-lg transition-all transform hover:scale-105">
+                    <i class="fas fa-plus mr-2"></i>Add Object
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

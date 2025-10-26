@@ -22,6 +22,7 @@ class UserSpaceStats(db.Model):
         discovery_chance (int): Probability of finding the rarest object (1 in X format)
         habitable_worlds_found (int): Total number of habitable planets discovered
         legendary_systems_saved (int): Number of legendary+ systems auto-saved
+        hyper_stars_found (int): Total number of Hyper Stars collected
         last_discovery_date (datetime): Timestamp of most recent discovery
         created_at (datetime): Record creation timestamp
         updated_at (datetime): Last update timestamp
@@ -41,7 +42,7 @@ class UserSpaceStats(db.Model):
     discovery_chance = db.Column(db.Integer, nullable=True)
     habitable_worlds_found = db.Column(db.Integer, default=0, nullable=False)
     legendary_systems_saved = db.Column(db.Integer, default=0, nullable=False)
-    hyper_planets_found = db.Column(db.Integer, default=0, nullable=False)
+    hyper_stars_found = db.Column(db.Integer, default=0, nullable=False)
     
     # Timestamps
     last_discovery_date = db.Column(db.DateTime, nullable=True)
@@ -124,14 +125,14 @@ class UserSpaceStats(db.Model):
         if rarity_class in ['Legendary', 'Mythical', 'Secret', 'Godly']:
             self.legendary_systems_saved += 1
     
-    def update_hyper_planets(self, hyper_planets_count):
+    def update_hyper_stars(self, hyper_stars_count):
         """
-        Update hyper planets found count.
+        Update hyper stars found count.
         
         Args:
-            hyper_planets_count (int): Number of hyper planets to add
+            hyper_stars_count (int): Number of hyper stars to add
         """
-        self.hyper_planets_found += hyper_planets_count
+        self.hyper_stars_found += hyper_stars_count
         self.updated_at = datetime.utcnow()
         db.session.commit()
     
@@ -191,7 +192,7 @@ class UserSpaceStats(db.Model):
             'discovery_chance': self.discovery_chance,
             'habitable_worlds_found': self.habitable_worlds_found,
             'legendary_systems_saved': self.legendary_systems_saved,
-            'hyper_planets_found': self.hyper_planets_found,
+            'hyper_stars_found': self.hyper_stars_found,
             'last_discovery_date': self.last_discovery_date.isoformat() if self.last_discovery_date else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None

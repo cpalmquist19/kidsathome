@@ -158,9 +158,9 @@
                 'K': 1200,
                 'M': 7600,
                 'D': 120,
-                'N': 3,
-                'P': 2,
-                'MGTR': 1,
+                'N': 30,
+                'P': 20,
+                'MGTR': 10,
                 'QS': 0.1,
                 'QK': 0.0001,
                 'BH': 0.05,
@@ -171,7 +171,7 @@
                 'GAL': 0.000004,  // 1 in 25 million = 0.000004% = Secret rarity
                 'GF': 0.000000001,  // 1 in 1 billion = 0.000000001% = Godly rarity
                 'SV': 0.000000001,  // 1 in 1 billion = 0.000000001% = Godly rarity
-                'BD': 9000,  // 9% = 9000 weight = Common rarity
+                'BD': 900,  // 9% = 900 weight = Common rarity
                 'HS': 0.0001,  // 1 in a million = 0.0001% = Mythical rarity
                 'IGVPO': 0.0000001  // 1 in 10 million = 0.0000001% = Secret rarity
             };

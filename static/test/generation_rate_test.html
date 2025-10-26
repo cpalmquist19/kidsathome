@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Generation Rate Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        
+        .container {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        label {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        input[type="number"] {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: none;
+            font-size: 1rem;
+            width: 150px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #000;
+            transition: transform 0.2s, box-shadow 0.2s;
+            align-self: flex-end;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.5);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .progress {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #000;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        th {
+            background: rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        tr:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-value {
+            font-weight: bold;
+        }
+        
+        .expected {
+            color: #60a5fa;
+        }
+        
+        .actual {
+            color: #4ade80;
+        }
+        
+        .difference {
+            font-weight: bold;
+        }
+        
+        .difference.good {
+            color: #4ade80;
+        }
+        
+        .difference.warning {
+            color: #fbbf24;
+        }
+        
+        .difference.bad {
+            color: #f87171;
+        }
+        
+        .summary {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .summary-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+        
+        .summary-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .rarity-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        
+        .rarity-godly { background: linear-gradient(45deg, #FFD700, #FFA500, #FF8C00, #FF4500); }
+        .rarity-secret { background: linear-gradient(45deg, #FF1493, #8B008B); }
+        .rarity-mythical { background: linear-gradient(45deg, #FF0000, #9400D3); }
+        .rarity-legendary { background: linear-gradient(45deg, #FFD700, #FFA500); }
+        .rarity-epic { background: linear-gradient(45deg, #FF00FF, #8B008B); }
+        .rarity-rare { background: linear-gradient(45deg, #87CEEB, #000080); }
+        .rarity-uncommon { background: linear-gradient(45deg, #32CD32, #006400); }
+        .rarity-common { background: #808080; }
+        .rarity-very-common { background: #000000; color: #fff; }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid #ef4444;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⭐ Star Generation Rate Test</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="sample-size">Sample Size:</label>
+                <input type="number" id="sample-size" value="100000" min="1000" max="10000000" step="1000">
+            </div>
+            <div class="control-group">
+                <label for="batch-size">Batch Size:</label>
+                <input type="number" id="batch-size" value="1000" min="100" max="10000" step="100">
+            </div>
+            <button id="run-test-btn" onclick="runTest()">🚀 Run Test</button>
+            <button id="stop-test-btn" onclick="stopTest()" class="hidden" style="background: linear-gradient(45deg, #ef4444, #dc2626);">⛔ Stop Test</button>
+        </div>
+        
+        <div id="progress" class="progress hidden">
+            <div>Testing generation rates... <span id="progress-text">0 / 0</span></div>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill">0%</div>
+            </div>
+            <div style="margin-top: 10px; font-size: 0.9rem;">
+                <span id="rate-text">0 systems/sec</span> • 
+                <span id="time-text">Elapsed: 0s</span> • 
+                <span id="eta-text">ETA: --</span>
+            </div>
+        </div>
+        
+        <div id="error" class="error hidden"></div>
+        
+        <div id="results" class="results hidden">
+            <div class="summary">
+                <div class="summary-item">
+                    <div class="summary-label">Total Systems Generated</div>
+                    <div class="summary-value" id="total-systems">0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Time Taken</div>
+                    <div class="summary-value" id="time-taken">0s</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Generation Rate</div>
+                    <div class="summary-value" id="generation-rate">0/sec</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Average Variance</div>
+                    <div class="summary-value" id="average-variance">0%</div>
+                </div>
+            </div>
+            
+            <h2 style="margin-top: 30px;">📊 Generation Rate Comparison</h2>
+            <table id="results-table">
+                <thead>
+                    <tr>
+                        <th>Star Type</th>
+                        <th>Rarity</th>
+                        <th>Weight</th>
+                        <th>Expected %</th>
+                        <th>Actual Count</th>
+                        <th>Actual %</th>
+                        <th>Difference</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Include dependencies -->
+    <script src="../js/celestial_names_data.js"></script>
+    <script src="../js/system_core.js"></script>
+    
+    <script>
+        // Test state
+        let testRunning = false;
+        let testStopped = false;
+        let startTime = 0;
+        
+        // Rarity weights from system_generator.js
+        const RARITY_WEIGHTS = {
+            'O': 1,
+            'B': 13,
+            'A': 60,
+            'F': 300,
+            'G': 700,
+            'K': 1200,
+            'M': 7600,
+            'D': 120,
+            'N': 30,
+            'P': 20,
+            'MGTR': 10,
+            'QS': 0.1,
+            'QK': 0.0001,
+            'BH': 0.05,
+            'WH': 0.0001,
+            'WORM': 0.0001,
+            'SC': 0.00002,
+            'NEB': 0.00002,
+            'GAL': 0.000004,
+            'GF': 0.000000001,
+            'SV': 0.000000001,
+            'BD': 900,
+            'HS': 0.0001,
+            'IGVPO': 0.0000001
+        };
+        
+        // Rarity levels for display
+        const RARITY_LEVELS = {
+            'GF': { name: 'Godly', class: 'rarity-godly' },
+            'SV': { name: 'Godly', class: 'rarity-godly' },
+            'GAL': { name: 'Secret', class: 'rarity-secret' },
+            'NEB': { name: 'Secret', class: 'rarity-secret' },
+            'SC': { name: 'Secret', class: 'rarity-secret' },
+            'IGVPO': { name: 'Secret', class: 'rarity-secret' },
+            'QK': { name: 'Mythical', class: 'rarity-mythical' },
+            'WH': { name: 'Mythical', class: 'rarity-mythical' },
+            'WORM': { name: 'Mythical', class: 'rarity-mythical' },
+            'HS': { name: 'Mythical', class: 'rarity-mythical' },
+            'QS': { name: 'Legendary', class: 'rarity-legendary' },
+            'BH': { name: 'Legendary', class: 'rarity-legendary' },
+            'O': { name: 'Legendary', class: 'rarity-legendary' },
+            'MGTR': { name: 'Epic', class: 'rarity-epic' },
+            'P': { name: 'Epic', class: 'rarity-epic' },
+            'N': { name: 'Epic', class: 'rarity-epic' },
+            'A': { name: 'Rare', class: 'rarity-rare' },
+            'B': { name: 'Epic', class: 'rarity-epic' },
+            'D': { name: 'Uncommon', class: 'rarity-uncommon' },
+            'F': { name: 'Uncommon', class: 'rarity-uncommon' },
+            'K': { name: 'Common', class: 'rarity-common' },
+            'G': { name: 'Common', class: 'rarity-common' },
+            'BD': { name: 'Common', class: 'rarity-common' },
+            'M': { name: 'Very Common', class: 'rarity-very-common' }
+        };
+        
+        // Calculate expected percentages
+        function calculateExpectedPercentages() {
+            const totalWeight = Object.values(RARITY_WEIGHTS).reduce((sum, weight) => sum + weight, 0);
+            const expected = {};
+            
+            for (const [type, weight] of Object.entries(RARITY_WEIGHTS)) {
+                expected[type] = (weight / totalWeight) * 100;
+            }
+            
+            return expected;
+        }
+        
+        // Format number with commas
+        function formatNumber(num) {
+            return num.toLocaleString('en-US');
+        }
+        
+        // Format percentage
+        function formatPercent(num, decimals = 6) {
+            return num.toFixed(decimals) + '%';
+        }
+        
+        // Format time
+        function formatTime(seconds) {
+            if (seconds < 60) return `${seconds.toFixed(1)}s`;
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes}m ${secs.toFixed(0)}s`;
+        }
+        
+        // Update progress display
+        function updateProgress(current, total, startTime) {
+            const percent = (current / total) * 100;
+            const elapsed = (Date.now() - startTime) / 1000;
+            const rate = current / elapsed;
+            const remaining = (total - current) / rate;
+            
+            document.getElementById('progress-text').textContent = `${formatNumber(current)} / ${formatNumber(total)}`;
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-fill').textContent = percent.toFixed(2) + '%';
+            document.getElementById('rate-text').textContent = `${formatNumber(Math.round(rate))} systems/sec`;
+            document.getElementById('time-text').textContent = `Elapsed: ${formatTime(elapsed)}`;
+            document.getElementById('eta-text').textContent = `ETA: ${formatTime(remaining)}`;
+        }
+        
+        // Run the test
+        async function runTest() {
+            if (testRunning) return;
+            
+            // Reset state
+            testRunning = true;
+            testStopped = false;
+            startTime = Date.now();
+            
+            // Get parameters
+            const sampleSize = parseInt(document.getElementById('sample-size').value);
+            const batchSize = parseInt(document.getElementById('batch-size').value);
+            
+            // Validate parameters
+            if (sampleSize < 1000) {
+                showError('Sample size must be at least 1,000');
+                testRunning = false;
+                return;
+            }
+            
+            if (batchSize < 100 || batchSize > sampleSize) {
+                showError('Batch size must be between 100 and sample size');
+                testRunning = false;
+                return;
+            }
+            
+            // Hide error and results
+            document.getElementById('error').classList.add('hidden');
+            document.getElementById('results').classList.add('hidden');
+            
+            // Show progress
+            document.getElementById('progress').classList.remove('hidden');
+            document.getElementById('run-test-btn').classList.add('hidden');
+            document.getElementById('stop-test-btn').classList.remove('hidden');
+            
+            // Initialize counters
+            const starCounts = {};
+            for (const type of Object.keys(RARITY_WEIGHTS)) {
+                starCounts[type] = 0;
+            }
+            
+            let generated = 0;
+            
+            try {
+                // Generate systems in batches
+                while (generated < sampleSize && !testStopped) {
+                    const batchEnd = Math.min(generated + batchSize, sampleSize);
+                    const currentBatchSize = batchEnd - generated;
+                    
+                    // Generate batch
+                    for (let i = 0; i < currentBatchSize; i++) {
+                        const system = await SystemGen.generateSystem({ starType: '' });
+                        const starType = system.star.type;
+                        
+                        if (starCounts.hasOwnProperty(starType)) {
+                            starCounts[starType]++;
+                        } else {
+                            console.warn(`Unknown star type: ${starType}`);
+                        }
+                    }
+                    
+                    generated = batchEnd;
+                    
+                    // Update progress
+                    updateProgress(generated, sampleSize, startTime);
+                    
+                    // Yield to UI
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+                
+                // Check if test was stopped
+                if (testStopped) {
+                    showError('Test stopped by user');
+                    testRunning = false;
+                    document.getElementById('run-test-btn').classList.remove('hidden');
+                    document.getElementById('stop-test-btn').classList.add('hidden');
+                    document.getElementById('progress').classList.add('hidden');
+                    return;
+                }
+                
+                // Calculate results
+                const endTime = Date.now();
+                const timeTaken = (endTime - startTime) / 1000;
+                const expectedPercentages = calculateExpectedPercentages();
+                
+                // Display results
+                displayResults(starCounts, generated, timeTaken, expectedPercentages);
+                
+            } catch (error) {
+                console.error('Test error:', error);
+                showError(`Test failed: ${error.message}`);
+            } finally {
+                testRunning = false;
+                document.getElementById('run-test-btn').classList.remove('hidden');
+                document.getElementById('stop-test-btn').classList.add('hidden');
+                document.getElementById('progress').classList.add('hidden');
+            }
+        }
+        
+        // Stop the test
+        function stopTest() {
+            testStopped = true;
+        }
+        
+        // Display results
+        function displayResults(starCounts, total, timeTaken, expectedPercentages) {
+            // Calculate actual percentages
+            const actualPercentages = {};
+            for (const [type, count] of Object.entries(starCounts)) {
+                actualPercentages[type] = (count / total) * 100;
+            }
+            
+            // Calculate average variance
+            let totalVariance = 0;
+            let variances = 0;
+            for (const type of Object.keys(starCounts)) {
+                const expected = expectedPercentages[type];
+                const actual = actualPercentages[type];
+                const variance = Math.abs(expected - actual);
+                totalVariance += variance;
+                variances++;
+            }
+            const averageVariance = totalVariance / variances;
+            
+            // Update summary
+            document.getElementById('total-systems').textContent = formatNumber(total);
+            document.getElementById('time-taken').textContent = formatTime(timeTaken);
+            document.getElementById('generation-rate').textContent = `${formatNumber(Math.round(total / timeTaken))}/sec`;
+            document.getElementById('average-variance').textContent = formatPercent(averageVariance, 4);
+            
+            // Build results table
+            const tbody = document.getElementById('results-body');
+            tbody.innerHTML = '';
+            
+            // Sort by weight (rarest first)
+            const sortedTypes = Object.keys(starCounts).sort((a, b) => RARITY_WEIGHTS[a] - RARITY_WEIGHTS[b]);
+            
+            for (const type of sortedTypes) {
+                const count = starCounts[type];
+                const expected = expectedPercentages[type];
+                const actual = actualPercentages[type];
+                const difference = actual - expected;
+                const relativeError = Math.abs(difference / expected) * 100;
+                
+                const rarity = RARITY_LEVELS[type];
+                
+                // Determine status
+                let statusClass = 'good';
+                let statusText = '✓ Good';
+                if (relativeError > 10) {
+                    statusClass = 'warning';
+                    statusText = '⚠ Warning';
+                }
+                if (relativeError > 20) {
+                    statusClass = 'bad';
+                    statusText = '✗ Poor';
+                }
+                
+                // Special handling for very rare items
+                if (expected < 0.001 && count > 0) {
+                    statusClass = 'good';
+                    statusText = '✓ Found';
+                }
+                if (expected < 0.001 && count === 0) {
+                    statusClass = 'warning';
+                    statusText = '⚠ Not Found';
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${type}</strong></td>
+                    <td><span class="rarity-badge ${rarity.class}">${rarity.name}</span></td>
+                    <td class="stat-value">${RARITY_WEIGHTS[type]}</td>
+                    <td class="stat-value expected">${formatPercent(expected)}</td>
+                    <td class="stat-value">${formatNumber(count)}</td>
+                    <td class="stat-value actual">${formatPercent(actual)}</td>
+                    <td class="stat-value difference ${statusClass}">${difference >= 0 ? '+' : ''}${formatPercent(difference)}</td>
+                    <td class="difference ${statusClass}">${statusText}</td>
+                `;
+                tbody.appendChild(row);
+            }
+            
+            // Show results
+            document.getElementById('results').classList.remove('hidden');
+        }
+        
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+        
+        // Check if dependencies are loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof SystemGen === 'undefined') {
+                showError('SystemGen not loaded. Make sure system_core.js is included.');
+                document.getElementById('run-test-btn').disabled = true;
+            }
+            if (typeof CELESTIAL_NAMES === 'undefined') {
+                showError('CELESTIAL_NAMES not loaded. Make sure celestial_names_data.js is included.');
+                document.getElementById('run-test-btn').disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>
+

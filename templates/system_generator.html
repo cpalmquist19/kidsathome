@@ -217,7 +217,7 @@
                         <div class="stats-info" style="margin-bottom: 0.5rem; color: #ccc; font-size: 0.9rem;">
                             <span>Systems Generated: <span id="systems-count" data-stat="total_systems_generated">0</span></span>
                             <span style="margin-left: 1rem;">Habitable Worlds: <span id="habitable-count" data-stat="habitable_worlds_found">0</span></span>
-                            <span style="margin-left: 1rem;">Total Hyper Planets: <span id="hyper-planets-total" data-stat="hyper_planets_found">0</span></span>
+                            <span style="margin-left: 1rem;">Total Hyper Stars: <span id="hyper-stars-total" data-stat="hyper_stars_found">0</span></span>
                         </div>
                         <button id="save-stats-btn" class="cosmic-btn" style="background: linear-gradient(45deg, #4CAF50, #45a049); font-size: 0.9rem; padding: 0.5rem 1rem;">
                             💾 Save Stats to Leaderboard
@@ -475,9 +475,9 @@
         </div>
     </div>
 
-    <!-- Hyper Planet Achievement Modal -->
-    <div id="hyperPlanetModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl p-8 max-w-4xl w-full mx-4 border-2 border-purple-400 shadow-2xl transform transition-all duration-500 scale-95 opacity-0 relative" id="hyperPlanetModalContent">
+    <!-- Hyper Star Achievement Modal -->
+    <div id="hyperStarModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 rounded-2xl p-8 max-w-4xl w-full mx-4 border-2 border-purple-400 shadow-2xl transform transition-all duration-500 scale-95 opacity-0 relative" id="hyperStarModalContent">
             <!-- Animated background stars -->
             <div class="absolute inset-0 opacity-30">
                 <div class="absolute top-4 left-4 w-1 h-1 bg-white rounded-full animate-pulse"></div>
@@ -491,13 +491,13 @@
             <!-- Achievement Badge -->
             <div class="text-center mb-6 relative">
                 <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 mb-3 animate-bounce shadow-2xl">
-                    <img src="/static/images/Gemini-HyperPlanet.png" alt="Hyper Planet" class="w-12 h-12 rounded-full object-cover animate-spin" style="animation-duration: 3s;">
+                    <img src="/static/images/ChatGPT-Hyper-Star.png" alt="Hyper Star" class="w-12 h-12 rounded-full object-cover animate-spin" style="animation-duration: 3s;">
                 </div>
                 <h2 class="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-1 animate-pulse">
                     🎉 ACHIEVEMENT UNLOCKED! 🎉
                 </h2>
                 <h3 class="text-lg font-bold text-white mb-4">
-                    First Hyper Planet Discovery!
+                    First Hyper Star Discovery!
                 </h3>
             </div>
             
@@ -506,15 +506,15 @@
                 <!-- Epic Discovery Info -->
                 <div class="bg-black bg-opacity-30 rounded-lg p-4 border border-purple-300">
                     <div class="flex items-center space-x-2 mb-3">
-                        <img src="/static/images/Gemini-HyperPlanet.png" alt="Hyper Planet" class="w-6 h-6 rounded-full object-cover">
-                        <span class="text-lg font-bold text-purple-300">Epic Rarity Discovery</span>
+                        <img src="/static/images/ChatGPT-Hyper-Star.png" alt="Hyper Star" class="w-6 h-6 rounded-full object-cover">
+                        <span class="text-lg font-bold text-purple-300">Mythical Rarity Discovery</span>
                         <span class="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full">
-                            EPIC
+                            MYTHICAL
                         </span>
                     </div>
                     <p class="text-gray-200 text-sm leading-relaxed">
-                        Congratulations! You've discovered your first <strong class="text-purple-300">Hyper Planet</strong> - 
-                        an extremely rare planetary mutation with incredible power!
+                        Congratulations! You've discovered your first <strong class="text-purple-300">Hyper Star</strong> - 
+                        an ultra-dense stellar object with 1 in a million rarity!
                     </p>
                 </div>
                 
@@ -525,37 +525,37 @@
                         World Boss Combat Power
                     </h4>
                     <p class="text-gray-200 text-sm leading-relaxed mb-3">
-                        <strong class="text-orange-300">Hyper Planets are your weapons against the Global Boss!</strong> 
-                        Each Hyper Planet does <span class="text-red-400 font-bold">1 HP damage</span> to the world boss. 
+                        <strong class="text-orange-300">Hyper Stars are your weapons against the Global Boss!</strong> 
+                        Each Hyper Star does <span class="text-red-400 font-bold">1 HP damage</span> to the world boss. 
                         Collect as many as you can to earn amazing rewards!
                     </p>
                     <div class="bg-red-900/50 rounded p-2 border border-red-500/30">
                         <p class="text-red-200 text-xs">
                             <i class="fas fa-exclamation-triangle mr-1"></i>
-                            <strong>Important:</strong> Hyper Planets destroy all life in their system - habitable planets show "Life Destroyed by Hyper Planet"
+                            <strong>Important:</strong> Hyper Stars are ultra-dense stellar objects that rarely have planetary systems due to extreme conditions
                         </p>
                     </div>
                 </div>
                 
-                <!-- Hyper Planet Stats -->
+                <!-- Hyper Star Stats -->
                 <div class="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-4 border border-blue-400">
                     <h4 class="text-lg font-bold text-blue-300 mb-3 flex items-center">
                         <i class="fas fa-info-circle mr-2"></i>
-                        Hyper Planet Specifications
+                        Hyper Star Specifications
                     </h4>
                     <div class="grid grid-cols-2 gap-3 text-gray-200 text-sm">
-                        <div><strong class="text-blue-300">Mass:</strong> 0.5-10 M♃</div>
-                        <div><strong class="text-blue-300">Size:</strong> 0.5-10 R♃</div>
-                        <div><strong class="text-blue-300">Luminosity:</strong> 0.3-8 L☉</div>
-                        <div><strong class="text-blue-300">Temperature:</strong> 3,000-4,500 K</div>
-                        <div class="col-span-2"><strong class="text-blue-300">Rarity:</strong> Only 1% chance to replace any planet</div>
+                        <div><strong class="text-blue-300">Mass:</strong> 1M-1T M☉</div>
+                        <div><strong class="text-blue-300">Size:</strong> 1cm-1m</div>
+                        <div><strong class="text-blue-300">Luminosity:</strong> 1Q-1O L☉</div>
+                        <div><strong class="text-blue-300">Temperature:</strong> 1Q-1O K</div>
+                        <div class="col-span-2"><strong class="text-blue-300">Rarity:</strong> 1 in a million chance (Mythical)</div>
                     </div>
                 </div>
             </div>
             
             <!-- Action Buttons -->
             <div class="flex space-x-4 relative">
-                <button onclick="hideHyperPlanetModal()" class="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
+                <button onclick="hideHyperStarModal()" class="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
                     <i class="fas fa-rocket mr-2"></i>
                     Continue Exploring
                 </button>
@@ -566,7 +566,7 @@
             </div>
             
             <!-- Close button -->
-            <button onclick="hideHyperPlanetModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors duration-200">
+            <button onclick="hideHyperStarModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors duration-200">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
@@ -592,7 +592,7 @@
             100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.6); }
         }
         
-        /* Hyper Planet Achievement Modal Animations */
+        /* Hyper Star Achievement Modal Animations */
         @keyframes achievementPulse {
             0%, 100% { 
                 transform: scale(1);
@@ -657,7 +657,7 @@
         }
         
         /* Apply animations to modal elements */
-        #hyperPlanetModalContent {
+        #hyperStarModalContent {
             animation: slideInUp 0.6s ease-out;
             background: linear-gradient(135deg, rgba(147, 51, 234, 0.95), rgba(59, 130, 246, 0.95), rgba(79, 70, 229, 0.95));
             animation: cosmicGlow 4s ease-in-out infinite;
@@ -665,30 +665,30 @@
             overflow-y: auto;
         }
         
-        #hyperPlanetModalContent .animate-bounce {
+        #hyperStarModalContent .animate-bounce {
             animation: achievementPulse 2s ease-in-out infinite;
         }
         
         /* Sparkle effect for stars */
-        #hyperPlanetModal .absolute.animate-pulse {
+        #hyperStarModal .absolute.animate-pulse {
             animation: sparkle 2s ease-in-out infinite;
         }
         
-        #hyperPlanetModal .absolute.animate-pulse:nth-child(2) { animation-delay: 0.2s; }
-        #hyperPlanetModal .absolute.animate-pulse:nth-child(3) { animation-delay: 0.4s; }
-        #hyperPlanetModal .absolute.animate-pulse:nth-child(4) { animation-delay: 0.6s; }
-        #hyperPlanetModal .absolute.animate-pulse:nth-child(5) { animation-delay: 0.8s; }
-        #hyperPlanetModal .absolute.animate-pulse:nth-child(6) { animation-delay: 1s; }
+        #hyperStarModal .absolute.animate-pulse:nth-child(2) { animation-delay: 0.2s; }
+        #hyperStarModal .absolute.animate-pulse:nth-child(3) { animation-delay: 0.4s; }
+        #hyperStarModal .absolute.animate-pulse:nth-child(4) { animation-delay: 0.6s; }
+        #hyperStarModal .absolute.animate-pulse:nth-child(5) { animation-delay: 0.8s; }
+        #hyperStarModal .absolute.animate-pulse:nth-child(6) { animation-delay: 1s; }
         
         /* Enhanced button hover effects */
-        #hyperPlanetModal button:hover,
-        #hyperPlanetModal a:hover {
+        #hyperStarModal button:hover,
+        #hyperStarModal a:hover {
             transform: scale(1.05) translateY(-2px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
         
         /* Gradient text animation */
-        #hyperPlanetModal .bg-clip-text {
+        #hyperStarModal .bg-clip-text {
             background-size: 200% 200%;
             animation: gradientShift 3s ease infinite;
         }
@@ -711,12 +711,12 @@
         }
         
         /* Modal backdrop blur effect */
-        #hyperPlanetModal {
+        #hyperStarModal {
             backdrop-filter: blur(5px);
         }
         
         /* Enhanced border glow */
-        #hyperPlanetModalContent {
+        #hyperStarModalContent {
             border: 2px solid;
             border-image: linear-gradient(45deg, #a855f7, #ec4899, #3b82f6, #8b5cf6) 1;
             box-shadow: 
@@ -794,14 +794,14 @@
             }
         });
         
-        // Hyper Planet Achievement Modal Functions
-        window.showHyperPlanetModal = function() {
-            console.log('showHyperPlanetModal called');
-            const modal = document.getElementById('hyperPlanetModal');
-            const modalContent = document.getElementById('hyperPlanetModalContent');
+        // Hyper Star Achievement Modal Functions
+        window.showHyperStarModal = function() {
+            console.log('showHyperStarModal called');
+            const modal = document.getElementById('hyperStarModal');
+            const modalContent = document.getElementById('hyperStarModalContent');
             
             if (!modal) {
-                console.error('Hyper Planet modal element not found!');
+                console.error('Hyper Star modal element not found!');
                 return;
             }
             
@@ -818,7 +818,7 @@
                 
                 // Create confetti effect
                 createConfettiEffect();
-                console.log('Hyper Planet modal displayed successfully!');
+                console.log('Hyper Star modal displayed successfully!');
             }, 10);
             
             // Play achievement sound effect (if available)
@@ -864,9 +864,9 @@
             }
         }
         
-        function hideHyperPlanetModal() {
-            const modal = document.getElementById('hyperPlanetModal');
-            const modalContent = document.getElementById('hyperPlanetModalContent');
+        function hideHyperStarModal() {
+            const modal = document.getElementById('hyperStarModal');
+            const modalContent = document.getElementById('hyperStarModalContent');
             
             modalContent.classList.remove('scale-100', 'opacity-100');
             modalContent.classList.add('scale-95', 'opacity-0');
@@ -879,23 +879,23 @@
             }, 500);
         }
         
-        // Close Hyper Planet modal when clicking outside
-        document.getElementById('hyperPlanetModal').addEventListener('click', function(e) {
+        // Close Hyper Star modal when clicking outside
+        document.getElementById('hyperStarModal').addEventListener('click', function(e) {
             if (e.target === this) {
-                hideHyperPlanetModal();
+                hideHyperStarModal();
             }
         });
         
-        // Close Hyper Planet modal with Escape key
+        // Close Hyper Star modal with Escape key
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && !document.getElementById('hyperPlanetModal').classList.contains('hidden')) {
-                hideHyperPlanetModal();
+            if (e.key === 'Escape' && !document.getElementById('hyperStarModal').classList.contains('hidden')) {
+                hideHyperStarModal();
             }
         });
         
-        // Function to check if this is the user's first Hyper Planet discovery
-        window.checkFirstHyperPlanetDiscovery = function() {
-            console.log('Checking first Hyper Planet discovery...');
+        // Function to check if this is the user's first Hyper Star discovery
+        window.checkFirstHyperStarDiscovery = function() {
+            console.log('Checking first Hyper Star discovery...');
             // Only show for logged-in users
             const isLoggedIn = document.body.classList.contains('logged-in') || 
                               document.querySelector('[data-user-id]') !== null;
@@ -908,7 +908,7 @@
             }
             
             // Check if user has already seen the achievement
-            const hasSeenAchievement = localStorage.getItem('hyperPlanetAchievementSeen');
+            const hasSeenAchievement = localStorage.getItem('hyperStarAchievementSeen');
             console.log('Has seen achievement:', hasSeenAchievement);
             
             if (hasSeenAchievement) {
@@ -916,14 +916,14 @@
                 return false;
             }
             
-            console.log('First Hyper Planet discovery confirmed!');
+            console.log('First Hyper Star discovery confirmed!');
             return true;
         }
         
         // Function to mark achievement as seen
-        window.markHyperPlanetAchievementSeen = function() {
-            console.log('Marking Hyper Planet achievement as seen');
-            localStorage.setItem('hyperPlanetAchievementSeen', 'true');
+        window.markHyperStarAchievementSeen = function() {
+            console.log('Marking Hyper Star achievement as seen');
+            localStorage.setItem('hyperStarAchievementSeen', 'true');
         }
     </script>
 </body>

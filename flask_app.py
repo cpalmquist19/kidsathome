@@ -102,38 +102,36 @@ class ProductionConfig:
 
 def get_environment():
     """
-    Multi-layered environment detection with priority-based decision tree.
-    
-    Priority Order:
-    1. FLASK_ENV variable (explicit)
-    2. FLASK_DEBUG variable analysis
-    3. Production environment variables detection
-    4. Default fallback to development
+    Environment detection with multiple fallback methods.
+    Priority: FLASK_ENV > LOCAL_MYSQL_* vars > production vars > default
     """
-    # Layer 1: Explicit FLASK_ENV variable (highest priority)
+    # Method 1: Explicit FLASK_ENV variable (highest priority)
     flask_env = os.environ.get('FLASK_ENV')
     if flask_env in ['production', 'development']:
         return flask_env
     
-    # Layer 2: FLASK_DEBUG variable analysis
-    flask_debug = os.environ.get('FLASK_DEBUG')
-    if flask_debug is not None:
-        return 'production' if flask_debug.lower() in ['false', '0', 'no'] else 'development'
+    # Method 2: Check for local development indicators
+    # If LOCAL_MYSQL_* variables are set, we're likely in development
+    local_mysql_vars = [
+        'LOCAL_MYSQL_HOST', 'LOCAL_MYSQL_USER', 'LOCAL_MYSQL_PASSWORD', 
+        'LOCAL_MYSQL_DATABASE', 'LOCAL_MYSQL_PORT'
+    ]
+    has_local_vars = any(os.environ.get(var) for var in local_mysql_vars)
     
-    # Layer 3: Production environment variables detection
-    production_indicators = [
-        'SECRET_KEY', 
-        'PRODUCTION_DB_HOST', 
-        'PRODUCTION_DB_USER', 
-        'PRODUCTION_DB_PASSWORD', 
+    if has_local_vars:
+        return 'development'
+    
+    # Method 3: Check for production indicators
+    production_vars = [
+        'PRODUCTION_DB_HOST', 'PRODUCTION_DB_USER', 'PRODUCTION_DB_PASSWORD', 
         'PRODUCTION_DB_NAME'
     ]
-    has_prod_vars = all(os.environ.get(var) for var in production_indicators)
+    has_production_vars = all(os.environ.get(var) for var in production_vars)
     
-    if has_prod_vars:
+    if has_production_vars:
         return 'production'
     
-    # Layer 4: Default fallback (lowest priority)
+    # Method 4: Default to development for safety
     return 'development'
 
 def get_database_uri():
@@ -223,14 +221,39 @@ def load_user(user_id):
     return UserModel.query.get(int(user_id))
 
 def get_db_connection():
-    """Get MySQL database connection using environment variables with proper error handling"""
+    """Get MySQL database connection using environment-aware credentials with proper error handling"""
     try:
+        # Determine environment - use runtime detection if available, otherwise startup detection
+        environment = get_runtime_environment()
+        print(f"🔍 Environment detected: {environment}")
+        
+        if environment == 'development':
+            # Use local database credentials
+            db_config = {
+                'host': os.environ.get('LOCAL_MYSQL_HOST', 'localhost'),
+                'user': os.environ.get('LOCAL_MYSQL_USER', 'root'),
+                'password': os.environ.get('LOCAL_MYSQL_PASSWORD', ''),
+                'database': os.environ.get('LOCAL_MYSQL_DATABASE', 'kidsathome'),
+                'port': int(os.environ.get('LOCAL_MYSQL_PORT', 3306))
+            }
+            print(f"🏠 Using LOCAL database: {db_config['host']}:{db_config['port']}/{db_config['database']}")
+        else:
+            # Use production database credentials
+            db_config = {
+                'host': os.environ.get('PRODUCTION_DB_HOST'),
+                'user': os.environ.get('PRODUCTION_DB_USER'),
+                'password': os.environ.get('PRODUCTION_DB_PASSWORD'),
+                'database': os.environ.get('PRODUCTION_DB_NAME'),
+                'port': int(os.environ.get('PRODUCTION_DB_PORT', 3306))
+            }
+            print(f"🚀 Using PRODUCTION database: {db_config['host']}:{db_config['port']}/{db_config['database']}")
+        
         connection = mysql.connector.connect(
-            host=os.environ.get('DB_HOST', 'localhost'),
-            user=os.environ.get('DB_USER', 'root'),
-            password=os.environ.get('DB_PASSWORD', ''),
-            database=os.environ.get('DB_NAME', 'kidsathome'),
-            port=int(os.environ.get('DB_PORT', 3306)),
+            host=db_config['host'],
+            user=db_config['user'],
+            password=db_config['password'],
+            database=db_config['database'],
+            port=db_config['port'],
             autocommit=True,
             charset='utf8mb4',
             use_unicode=True,
@@ -287,6 +310,20 @@ def static_file(filename):
 @app.context_processor
 def inject_static_file_helper():
     return {'static_file': static_file}
+
+def get_runtime_environment():
+    """
+    Get environment based on current request context.
+    This can be used during request handling to detect actual URL.
+    """
+    try:
+        if request and hasattr(request, 'url'):
+            if '127.0.0.1' in request.url or 'localhost' in request.url:
+                return 'development'
+        return 'production'
+    except (RuntimeError, AttributeError):
+        # No request context available
+        return get_environment()  # Fall back to startup detection
 
 @app.context_processor
 def inject_env_flags():
@@ -348,20 +385,24 @@ def stellar_evolution():
 def space_explorer_3d():
     return render_template('space_explorer_3d.html', current_user=current_user)
 
+@app.route('/game_monster_generator')
+def game_monster_generator():
+    return render_template('game_monster_generator.html', current_user=current_user)
+
 @app.route('/leaderboards')
 def leaderboards():
     return render_template('leaderboards.html')
 
 @app.route('/world-boss')
 def world_boss():
-    # Get user's hyper planets count if logged in
-    hyper_planets_count = 0
+    # Get user's hyper stars count if logged in
+    hyper_stars_count = 0
     if current_user.is_authenticated:
         from models.user_space_stats import UserSpaceStats
         user_stats = UserSpaceStats.get_or_create(current_user.id)
-        hyper_planets_count = user_stats.hyper_planets_found
+        hyper_stars_count = user_stats.hyper_stars_found
     
-    return render_template('world_boss.html', current_user=current_user, hyper_planets_count=hyper_planets_count)
+    return render_template('world_boss.html', current_user=current_user, hyper_stars_count=hyper_stars_count)
 
 @app.route('/world-boss/attack', methods=['POST'])
 @login_required
@@ -701,6 +742,9 @@ def update_space_stats():
         if 'legendary_systems' in data:
             stats.legendary_systems_saved += data['legendary_systems']
         
+        if 'hyper_stars' in data:
+            stats.hyper_stars_found += data['hyper_stars']
+        
         # Update last discovery date
         stats.last_discovery_date = datetime.utcnow()
         
@@ -882,7 +926,7 @@ def get_boss_status():
 
 @app.route('/api/boss/attack', methods=['POST'])
 def attack_boss():
-    """Attack the boss with Hyper Planets"""
+    """Attack the boss with Hyper Stars"""
     try:
         print("=== BOSS ATTACK DEBUG ===")
         print(f"User authenticated: {current_user.is_authenticated}")
@@ -903,20 +947,20 @@ def attack_boss():
         data = request.get_json()
         print(f"Request data: {data}")
         damage = data.get('damage', 1)  # Default damage
-        hyper_planets_used = data.get('hyper_planets_used', 1)
-        print(f"Damage: {damage}, Hyper planets used: {hyper_planets_used}")
+        hyper_stars_used = data.get('hyper_stars_used', 1)
+        print(f"Damage: {damage}, Hyper stars used: {hyper_stars_used}")
         
-        # Check if user has hyper planets
+        # Check if user has hyper stars
         print("Getting user stats...")
         user_stats = UserSpaceStats.get_or_create(current_user.id)
-        print(f"User hyper planets: {user_stats.hyper_planets_found}")
-        if user_stats.hyper_planets_found < hyper_planets_used:
-            print("Not enough hyper planets")
-            return jsonify({'error': 'Not enough hyper planets available'}), 400
+        print(f"User hyper stars: {user_stats.hyper_stars_found}")
+        if user_stats.hyper_stars_found < hyper_stars_used:
+            print("Not enough hyper stars")
+            return jsonify({'error': 'Not enough hyper stars available'}), 400
         
-        # Deduct hyper planets
-        print("Deducting hyper planets...")
-        user_stats.hyper_planets_found -= hyper_planets_used
+        # Deduct hyper stars
+        print("Deducting hyper stars...")
+        user_stats.hyper_stars_found -= hyper_stars_used
         user_stats.updated_at = datetime.utcnow()
         
         # Apply damage to boss
@@ -940,11 +984,11 @@ def attack_boss():
         return jsonify({
             'success': True,
             'damage': damage,
-            'hyper_planets_remaining': user_stats.hyper_planets_found,
+            'hyper_stars_remaining': user_stats.hyper_stars_found,
             'boss_health': boss.current_health,
             'boss_health_percentage': boss.get_health_percentage(),
             'boss_defeated': boss_defeated,
-            'message': f'Dealt {damage} damage! {user_stats.hyper_planets_found} hyper planets remaining.'
+            'message': f'Dealt {damage} damage! {user_stats.hyper_stars_found} hyper stars remaining.'
         })
         
     except Exception as e:
@@ -957,26 +1001,26 @@ def attack_boss():
 
 @app.route('/api/boss/launch-all', methods=['POST'])
 @login_required
-def launch_all_hyper_planets():
-    """Launch all Hyper Planets at once for massive damage."""
+def launch_all_hyper_stars():
+    """Launch all Hyper Stars at once for massive damage."""
     try:
         data = request.get_json()
-        hyper_planets_used = data.get('hyper_planets_used', 0)
+        hyper_stars_used = data.get('hyper_stars_used', 0)
         
-        if hyper_planets_used <= 0:
+        if hyper_stars_used <= 0:
             return jsonify({
                 'success': False,
-                'error': 'No Hyper Planets to launch'
+                'error': 'No Hyper Stars to launch'
             })
         
         # Get user stats
         user_stats = UserSpaceStats.get_or_create(current_user.id)
         
-        # Check if user has enough Hyper Planets
-        if user_stats.hyper_planets_found < hyper_planets_used:
+        # Check if user has enough Hyper Stars
+        if user_stats.hyper_stars_found < hyper_stars_used:
             return jsonify({
                 'success': False,
-                'error': 'Not enough Hyper Planets'
+                'error': 'Not enough Hyper Stars'
             })
         
         # Get active boss
@@ -987,14 +1031,14 @@ def launch_all_hyper_planets():
                 'error': 'No active boss found'
             })
         
-        # Calculate total damage (1 damage per Hyper Planet)
-        total_damage = hyper_planets_used
+        # Calculate total damage (1 damage per Hyper Star)
+        total_damage = hyper_stars_used
         
-        print(f"Launching all {hyper_planets_used} Hyper Planets for {total_damage} total damage")
+        print(f"Launching all {hyper_stars_used} Hyper Stars for {total_damage} total damage")
         
-        # Deduct all Hyper Planets
-        print("Deducting all Hyper Planets...")
-        user_stats.hyper_planets_found -= hyper_planets_used
+        # Deduct all Hyper Stars
+        print("Deducting all Hyper Stars...")
+        user_stats.hyper_stars_found -= hyper_stars_used
         user_stats.updated_at = datetime.utcnow()
         
         # Apply damage to boss
@@ -1017,11 +1061,11 @@ def launch_all_hyper_planets():
         return jsonify({
             'success': True,
             'total_damage': total_damage,
-            'hyper_planets_remaining': user_stats.hyper_planets_found,
+            'hyper_stars_remaining': user_stats.hyper_stars_found,
             'boss_health': boss.current_health,
             'boss_health_percentage': boss.get_health_percentage(),
             'boss_defeated': boss_defeated,
-            'message': f'🚀 LAUNCHED ALL {hyper_planets_used} HYPER PLANETS! Dealt {total_damage} massive damage!'
+            'message': f'🚀 LAUNCHED ALL {hyper_stars_used} HYPER STARS! Dealt {total_damage} massive damage!'
         })
         
     except Exception as e:
@@ -1029,24 +1073,58 @@ def launch_all_hyper_planets():
         db.session.rollback()
         return jsonify({
             'success': False,
-            'error': f'Failed to launch all Hyper Planets: {str(e)}'
+            'error': f'Failed to launch all Hyper Stars: {str(e)}'
         }), 500
 
-@app.route('/api/user/hyper-planets', methods=['GET'])
+@app.route('/api/user/hyper-stars', methods=['GET'])
 @login_required
-def get_user_hyper_planets():
-    """Get user's current Hyper Planet count"""
+def get_user_hyper_stars():
+    """Get user's current Hyper Star count"""
     try:
         user_stats = UserSpaceStats.get_or_create(current_user.id)
         return jsonify({
             'success': True,
-            'hyper_planets_count': user_stats.hyper_planets_found
+            'hyper_stars_count': user_stats.hyper_stars_found
         })
     except Exception as e:
-        print(f"Error fetching user Hyper Planets: {e}")
+        print(f"Error fetching user Hyper Stars: {e}")
         return jsonify({
             'success': False,
-            'error': f'Failed to fetch Hyper Planet count: {str(e)}'
+            'error': f'Failed to fetch Hyper Star count: {str(e)}'
+        }), 500
+
+@app.route('/api/hyper-stars/submit', methods=['POST'])
+@login_required
+def submit_hyper_stars():
+    """Submit Hyper Stars to user's stats"""
+    try:
+        data = request.get_json()
+        hyper_stars_count = data.get('hyper_stars_count', 0)
+        
+        if hyper_stars_count <= 0:
+            return jsonify({
+                'success': False,
+                'error': 'No Hyper Stars to submit'
+            }), 400
+        
+        user_stats = UserSpaceStats.get_or_create(current_user.id)
+        user_stats.hyper_stars_found += hyper_stars_count
+        user_stats.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'total_hyper_stars': user_stats.hyper_stars_found,
+            'message': f'Successfully added {hyper_stars_count} Hyper Stars to your collection!'
+        })
+        
+    except Exception as e:
+        print(f"Error submitting Hyper Stars: {e}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Failed to submit Hyper Stars: {str(e)}'
         }), 500
 
 @app.route('/api/boss/stats', methods=['GET'])
