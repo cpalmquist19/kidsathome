@@ -215,13 +215,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update stats display in UI
     function updateStatsDisplay(stats) {
+        // HYPER STAR STATS UPDATE (COMMENTED OUT - Using Hyper Planets instead)
         // Update hyper stars display from server data
-        const hyperStarsElement = document.getElementById('hyper-stars-total');
-        if (hyperStarsElement && stats.hyper_stars_found !== undefined) {
-            hyperStarsElement.textContent = stats.hyper_stars_found;
+        // const hyperStarsElement = document.getElementById('hyper-stars-total');
+        // if (hyperStarsElement && stats.hyper_stars_found !== undefined) {
+        //     hyperStarsElement.textContent = stats.hyper_stars_found;
+        // }
+        // 
+        // console.log('Updated hyper stars from server:', stats.hyper_stars_found);
+        
+        // Update hyper planets display from server data
+        const hyperPlanetsElement = document.getElementById('hyper-planets-total');
+        if (hyperPlanetsElement && stats.hyper_planets_found !== undefined) {
+            hyperPlanetsElement.textContent = stats.hyper_planets_found;
         }
         
-        console.log('Updated hyper stars from server:', stats.hyper_stars_found);
+        console.log('Updated hyper planets from server:', stats.hyper_planets_found);
     }
     
     // Update local stats display (for immediate feedback)
@@ -541,35 +550,45 @@ document.addEventListener('DOMContentLoaded', function() {
         
         rarityData.totalGenerated++;
         
+        // HYPER STAR TRACKING (COMMENTED OUT - Using Hyper Planets instead for world boss)
         // Count Hyper Stars in this system
-        const hyperStarsInSystem = starData.star && starData.star.type === 'HS' ? 1 : 0;
-        console.log('Hyper Stars found in system:', hyperStarsInSystem);
+        // const hyperStarsInSystem = starData.star && starData.star.type === 'HS' ? 1 : 0;
+        // console.log('Hyper Stars found in system:', hyperStarsInSystem);
+        // 
+        // if (hyperStarsInSystem > 0) {
+        //     console.log('Hyper Star detected! Checking for first discovery...');
+        //     rarityData.hyperStarsFound = (rarityData.hyperStarsFound || 0) + hyperStarsInSystem;
+        //     
+        //     // Check if this is the user's first Hyper Star discovery and show achievement modal
+        //     console.log('checkFirstHyperStarDiscovery function exists:', typeof checkFirstHyperStarDiscovery === 'function');
+        //     if (typeof checkFirstHyperStarDiscovery === 'function' && checkFirstHyperStarDiscovery()) {
+        //         console.log('First Hyper Star discovery confirmed! Showing modal...');
+        //         // Mark achievement as seen immediately to prevent multiple modals
+        //         markHyperStarAchievementSeen();
+        //         
+        //         // Stop AFK mode if it's running so player can read the achievement modal
+        //         if (typeof afkModeActive !== 'undefined' && afkModeActive) {
+        //             console.log('Stopping AFK mode for Hyper Star modal...');
+        //             stopAFKMode(false); // Don't clear session time, just pause for the modal
+        //         }
+        //         
+        //         // Show the achievement modal after a short delay to let the system display first
+        //         setTimeout(() => {
+        //             console.log('Showing Hyper Star modal...');
+        //             showHyperStarModal();
+        //         }, 1500);
+        //     } else {
+        //         console.log('Not first Hyper Star discovery or function not available');
+        //     }
+        // }
         
-        if (hyperStarsInSystem > 0) {
-            console.log('Hyper Star detected! Checking for first discovery...');
-            rarityData.hyperStarsFound = (rarityData.hyperStarsFound || 0) + hyperStarsInSystem;
-            
-            // Check if this is the user's first Hyper Star discovery and show achievement modal
-            console.log('checkFirstHyperStarDiscovery function exists:', typeof checkFirstHyperStarDiscovery === 'function');
-            if (typeof checkFirstHyperStarDiscovery === 'function' && checkFirstHyperStarDiscovery()) {
-                console.log('First Hyper Star discovery confirmed! Showing modal...');
-                // Mark achievement as seen immediately to prevent multiple modals
-                markHyperStarAchievementSeen();
-                
-                // Stop AFK mode if it's running so player can read the achievement modal
-                if (typeof afkModeActive !== 'undefined' && afkModeActive) {
-                    console.log('Stopping AFK mode for Hyper Star modal...');
-                    stopAFKMode(false); // Don't clear session time, just pause for the modal
-                }
-                
-                // Show the achievement modal after a short delay to let the system display first
-                setTimeout(() => {
-                    console.log('Showing Hyper Star modal...');
-                    showHyperStarModal();
-                }, 1500);
-            } else {
-                console.log('Not first Hyper Star discovery or function not available');
-            }
+        // Count Hyper Planets in this system (for world boss combat)
+        const hyperPlanetsInSystem = starData.planets ? starData.planets.filter(planet => planet.type === 'Hyper Planet' || planet.isHyperPlanet).length : 0;
+        console.log('Hyper Planets found in system:', hyperPlanetsInSystem);
+        
+        if (hyperPlanetsInSystem > 0) {
+            console.log('Hyper Planet detected! Adding to world boss combat count...');
+            rarityData.hyperPlanetsFound = (rarityData.hyperPlanetsFound || 0) + hyperPlanetsInSystem;
         }
         
         // Keep only last 100 discoveries to prevent localStorage bloat
@@ -938,24 +957,46 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
         
-        // Hyper Star indicator section
-        const hyperStarCount = rarityData.hyperStarsFound || 0;
-        const hyperStarIndicatorHtml = hyperStarCount > 0 ? `
-            <div class="hyper-star-indicator" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2)); border: 2px solid #A855F7; border-radius: 10px; text-align: center;">
+        // HYPER STAR INDICATOR SECTION (COMMENTED OUT - Using Hyper Planets instead for world boss)
+        // const hyperStarCount = rarityData.hyperStarsFound || 0;
+        // const hyperStarIndicatorHtml = hyperStarCount > 0 ? `
+        //     <div class="hyper-star-indicator" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2)); border: 2px solid #A855F7; border-radius: 10px; text-align: center;">
+        //         <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+        //             <img src="/static/images/ChatGPT-Hyper-Star.png" alt="Hyper Star" style="width: 32px; height: 32px; margin-right: 0.5rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 12px rgba(168, 85, 247, 0.8);">
+        //             <span style="color: #A855F7; font-weight: bold; font-size: 1.1rem;">Hyper Stars Found</span>
+        //         </div>
+        //         <div style="color: #FFD700; font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">${hyperStarCount}</div>
+        //         <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 1rem;">Each Hyper Star does 1 HP damage to the Global Boss</div>
+        //         <button id="submit-hyper-stars-btn" class="cosmic-btn" style="background: linear-gradient(45deg, #A855F7, #EC4899); font-size: 0.9rem; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: center; margin: 0 auto; margin-bottom: 0.5rem;" title="Each Hyper Star does 1 HP damage to the world boss">
+        //             <img src="/static/images/ChatGPT-Hyper-Star.png" alt="Hyper Star" style="width: 20px; height: 20px; margin-right: 0.5rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);"> Submit Hyper Stars to Global Boss
+        //         </button>
+        //         <button id="view-global-boss-btn" class="cosmic-btn" style="background: linear-gradient(45deg, #8E44AD, #9B59B6); font-size: 0.9rem; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: center; margin: 0 auto;" title="View the Global Boss status and health">
+        //             <i class="fas fa-skull" style="margin-right: 0.5rem; color: #E74C3C;"></i> View the Global Boss
+        //         </button>
+        //     </div>
+        // ` : '';
+        
+        // Hyper Planet indicator section (for world boss combat)
+        const hyperPlanetCount = rarityData.hyperPlanetsFound || 0;
+        const hyperPlanetIndicatorHtml = hyperPlanetCount > 0 ? `
+            <div class="hyper-planet-indicator" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2)); border: 2px solid #A855F7; border-radius: 10px; text-align: center;">
                 <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
-                    <img src="/static/images/ChatGPT-Hyper-Star.png" alt="Hyper Star" style="width: 32px; height: 32px; margin-right: 0.5rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 12px rgba(168, 85, 247, 0.8);">
-                    <span style="color: #A855F7; font-weight: bold; font-size: 1.1rem;">Hyper Stars Found</span>
+                    <img src="/static/images/Gemini-HyperPlanet.png" alt="Hyper Planet" style="width: 32px; height: 32px; margin-right: 0.5rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 12px rgba(168, 85, 247, 0.8);">
+                    <span style="color: #A855F7; font-weight: bold; font-size: 1.1rem;">Hyper Planets Found</span>
                 </div>
-                <div style="color: #FFD700; font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">${hyperStarCount}</div>
-                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 1rem;">Each Hyper Star does 1 HP damage to the Global Boss</div>
-                <button id="submit-hyper-stars-btn" class="cosmic-btn" style="background: linear-gradient(45deg, #A855F7, #EC4899); font-size: 0.9rem; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: center; margin: 0 auto; margin-bottom: 0.5rem;" title="Each Hyper Star does 1 HP damage to the world boss">
-                    <img src="/static/images/ChatGPT-Hyper-Star.png" alt="Hyper Star" style="width: 20px; height: 20px; margin-right: 0.5rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);"> Submit Hyper Stars to Global Boss
+                <div style="color: #FFD700; font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">${hyperPlanetCount}</div>
+                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 1rem;">Each Hyper Planet does 1 HP damage to the Global Boss</div>
+                <button id="submit-hyper-planets-btn" class="cosmic-btn" style="background: linear-gradient(45deg, #A855F7, #EC4899); font-size: 0.9rem; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: center; margin: 0 auto; margin-bottom: 0.5rem;" title="Each Hyper Planet does 1 HP damage to the world boss">
+                    <img src="/static/images/Gemini-HyperPlanet.png" alt="Hyper Planet" style="width: 20px; height: 20px; margin-right: 0.5rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 6px rgba(168, 85, 247, 0.6);"> Submit Hyper Planets to Global Boss
                 </button>
                 <button id="view-global-boss-btn" class="cosmic-btn" style="background: linear-gradient(45deg, #8E44AD, #9B59B6); font-size: 0.9rem; padding: 0.5rem 1rem; display: flex; align-items: center; justify-content: center; margin: 0 auto;" title="View the Global Boss status and health">
                     <i class="fas fa-skull" style="margin-right: 0.5rem; color: #E74C3C;"></i> View the Global Boss
                 </button>
             </div>
         ` : '';
+        
+        // Use Hyper Planet indicator (comment out to switch back to Hyper Stars)
+        const hyperStarIndicatorHtml = ''; // Placeholder for commented code above
         
         // Check if there are any discoveries to show reset button
         const hasDiscoveries = rarityData.rarestObject || (rarityData.savedSystems && rarityData.savedSystems.length > 0);
@@ -997,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         ` : ''}
                         ${savedSystemsHtml}
-                        ${hyperStarIndicatorHtml}
+                        ${hyperPlanetIndicatorHtml}
                         ${resetButtonHtml}
                     </div>
                 </div>
@@ -1012,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="rarity-content">
                         <div class="rarity-level">Generate your first RANDOM star system to begin tracking discoveries!</div>
                         ${savedSystemsHtml}
-                        ${hyperStarIndicatorHtml}
+                        ${hyperPlanetIndicatorHtml}
                         ${resetButtonHtml}
                     </div>
                 </div>
@@ -2298,9 +2339,13 @@ document.addEventListener('DOMContentLoaded', function() {
             rarityDisplay.setAttribute('data-show-all', (!currentShowAll).toString());
             displayRarityInfo();
         }
-        // Submit Hyper Stars button
-        else if (e.target && e.target.id === 'submit-hyper-stars-btn') {
-            submitHyperStars();
+        // HYPER STAR SUBMIT BUTTON (COMMENTED OUT - Using Hyper Planets instead)
+        // else if (e.target && e.target.id === 'submit-hyper-stars-btn') {
+        //     submitHyperStars();
+        // }
+        // Submit Hyper Planets button (for world boss combat)
+        else if (e.target && e.target.id === 'submit-hyper-planets-btn') {
+            submitHyperPlanets();
         }
         // View Global Boss button
         else if (e.target && e.target.id === 'view-global-boss-btn') {
@@ -2309,47 +2354,95 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// HYPER STAR SUBMIT FUNCTION (COMMENTED OUT - Using Hyper Planets instead for world boss)
 // Function to handle submitting Hyper Stars to Global Boss
-async function submitHyperStars() {
+// async function submitHyperStars() {
+//     const rarityData = JSON.parse(localStorage.getItem('spaceExplorerRarity') || '{}');
+//     const hyperStarCount = rarityData.hyperStarsFound || 0;
+//     if (hyperStarCount === 0) {
+//         alert('You need to find Hyper Stars first! Generate more systems to discover them.');
+//         return;
+//     }
+//     
+//     try {
+//         console.log(`Submitting ${hyperStarCount} Hyper Stars to database!`);
+//         
+//         const response = await fetch('/api/hyper-stars/submit', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json'
+//             },
+//             body: JSON.stringify({
+//                 hyper_stars_count: hyperStarCount
+//             })
+//         });
+//         
+//         if (response.ok) {
+//             const result = await response.json();
+//             console.log('Hyper stars submitted successfully:', result);
+//             
+//             // Reset the local count since they've been submitted
+//             rarityData.hyperStarsFound = 0;
+//             localStorage.setItem('spaceExplorerRarity', JSON.stringify(rarityData));
+//             
+//             // Update the display
+//             updateLocalStatsDisplay();
+//             
+//             alert(`Successfully submitted ${hyperStarCount} Hyper Stars to your stats! Total: ${result.total_hyper_stars}`);
+//         } else {
+//             const error = await response.json();
+//             console.error('Failed to submit hyper stars:', error);
+//             alert(`Failed to submit hyper stars: ${error.error}`);
+//         }
+//     } catch (error) {
+//         console.error('Error submitting hyper stars:', error);
+//         alert('Failed to submit hyper stars. Please try again.');
+//     }
+// }
+
+// Function to handle submitting Hyper Planets to Global Boss
+async function submitHyperPlanets() {
     const rarityData = JSON.parse(localStorage.getItem('spaceExplorerRarity') || '{}');
-    const hyperStarCount = rarityData.hyperStarsFound || 0;
-    if (hyperStarCount === 0) {
-        alert('You need to find Hyper Stars first! Generate more systems to discover them.');
+    const hyperPlanetCount = rarityData.hyperPlanetsFound || 0;
+    if (hyperPlanetCount === 0) {
+        alert('You need to find Hyper Planets first! Generate more systems to discover them.');
         return;
     }
     
     try {
-        console.log(`Submitting ${hyperStarCount} Hyper Stars to database!`);
+        console.log(`Submitting ${hyperPlanetCount} Hyper Planets to database!`);
         
-        const response = await fetch('/api/hyper-stars/submit', {
+        // Note: This endpoint may need to be updated on the backend to handle hyper_planets_count
+        // For now, using the same endpoint but with different parameter name
+        const response = await fetch('/api/hyper-planets/submit', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                hyper_stars_count: hyperStarCount
+                hyper_planets_count: hyperPlanetCount
             })
         });
         
         if (response.ok) {
             const result = await response.json();
-            console.log('Hyper stars submitted successfully:', result);
+            console.log('Hyper planets submitted successfully:', result);
             
             // Reset the local count since they've been submitted
-            rarityData.hyperStarsFound = 0;
+            rarityData.hyperPlanetsFound = 0;
             localStorage.setItem('spaceExplorerRarity', JSON.stringify(rarityData));
             
             // Update the display
-            updateLocalStatsDisplay();
+            displayRarityInfo();
             
-            alert(`Successfully submitted ${hyperStarCount} Hyper Stars to your stats! Total: ${result.total_hyper_stars}`);
+            alert(`Successfully submitted ${hyperPlanetCount} Hyper Planets to your stats! Total: ${result.total_hyper_planets || result.total}`);
         } else {
             const error = await response.json();
-            console.error('Failed to submit hyper stars:', error);
-            alert(`Failed to submit hyper stars: ${error.error}`);
+            console.error('Failed to submit hyper planets:', error);
+            alert(`Failed to submit hyper planets: ${error.error}`);
         }
     } catch (error) {
-        console.error('Error submitting hyper stars:', error);
-        alert('Failed to submit hyper stars. Please try again.');
+        console.error('Error submitting hyper planets:', error);
+        alert('Failed to submit hyper planets. Please try again.');
     }
 }

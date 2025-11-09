@@ -177,7 +177,13 @@
                         </button>
                         <button onclick="filterObjects('meteorite')" class="category-filter" data-category="meteorite">
                             <i class="fas fa-meteor mr-2"></i>Meteorites
-                        </button>
+                                        </button>
+                                        <button onclick="filterObjects('why does this even exist')" class="category-filter" data-category="why does this even exist">
+                                            <i class="fas fa-question mr-2"></i>Why Does This Even Exist?
+                                        </button>
+                                        <!-- <button onclick="filterObjects('creature')" class="category-filter" data-category="creature">
+                                            <i class="fa-solid fa-locust mr-2"></i>Creatures
+                        </button> -->
                                     </div>
                                 </div>
                                 
@@ -1917,6 +1923,14 @@
                 icon: '⭐',
                 type: 'fictional'
             },
+            'uirinax': {
+                name: 'Uirinax',
+                mass: 4.7736e30, // kg (2.4 solar masses)
+                radius: 2.91e4, // m (29.1 km radius)
+                icon: '🌀',
+                type: 'fictional',
+                luminosity: 3.9381e4
+            },
             'hyper_planet': { 
                 name: 'Hyper Planet', 
                 mass: 4.536e29, // kg (1 nonillion lbs - massive fictional world)
@@ -1937,6 +1951,50 @@
                 radius: 9.46e26, // m (100 billion light years - entire universe)
                 icon: '🌌',
                 type: 'fictional'
+            },
+            'giganaurus': {
+                name: 'Giganaurus',
+                mass: 5.431e67, // kg (1.82×10^25 Milky Way galaxies)
+                radius: 4.579e24, // m (9,676 Milky Way radii)
+                icon: '🤯',
+                type: 'why does this even exist',
+                image: "{{ static_file('images/Giganaurus.png') }}",
+                luminosity: 8.11e55 // L☉
+            },
+            'ulturuas': {
+                name: 'Ulturuas',
+                mass: 1.4658e93, // kg (4.91×10^50 Milky Way galaxies)
+                radius: 7.9118e26, // m (1,672,692 Milky Way radii)
+                icon: '🌀',
+                type: 'why does this even exist',
+                image: "{{ static_file('images/Ulturuas.png') }}",
+                luminosity: 1e51 // L☉
+            },
+            'ulturuas_b': {
+                name: 'Ulturuas B',
+                mass: 1.577e28, // kg (8.3 Jupiter masses)
+                radius: 1e-15, // m (approximate radius of a neutron)
+                icon: '🪐',
+                type: 'why does this even exist',
+                image: "{{ static_file('images/Ulturuas-B.png') }}",
+                luminosity: 2.8 // L☉
+            },
+            'unvepto': {
+                name: 'Unvepto',
+                mass: 5.967e48, // kg (3 quintillion solar masses)
+                radius: 2.154584e8, // m (3.7 Saturn radii)
+                icon: '🌀',
+                type: 'why does this even exist',
+                image: "{{ static_file('images/Unvepto.png') }}",
+                luminosity: -1e27 // L☉ (absorbs light)
+            },
+            'the_singularity': {
+                name: 'THE SINGULARITY',
+                mass: 1.5e53, // kg (approximate mass-energy of the observable universe)
+                radius: 1.616255e-35, // m (Planck length)
+                icon: '🕳️',
+                type: 'why does this even exist',
+                image: "{{ static_file('images/black_hole.jpg') }}"
             },
             // Jupiter's Galilean Moons
             'io': { 
@@ -2326,6 +2384,15 @@
                 icon: '☄️',
                 type: 'meteorite'
             },
+            // 'uragon': {
+            //     name: 'Uragon',
+            //     mass: 7.226e11, // kg (722.6 billion kilograms)
+            //     radius: 4700, // m (approx half of 9.4 km length)
+            //     length: 9400, // m (9.4 km total length)
+            //     icon: '🐉',
+            //     type: 'creature',
+            //     image: "{{ static_file('images/manta_ray.png') }}"
+            // },
             'annacrantieth': { 
                 name: 'Annacrantieth', 
                 mass: 1.83e31, // kg (9.2 solar masses - protostar)
@@ -2365,48 +2432,150 @@
             return (G * mass) / (radius * radius);
         }
 
+        const SHORT_SCALE_BASE_NAMES = {
+            1: 'thousand',
+            2: 'million',
+            3: 'billion',
+            4: 'trillion',
+            5: 'quadrillion',
+            6: 'quintillion',
+            7: 'sextillion',
+            8: 'septillion',
+            9: 'octillion',
+            10: 'nonillion',
+            11: 'decillion',
+            12: 'undecillion',
+            13: 'duodecillion',
+            14: 'tredecillion',
+            15: 'quattuordecillion',
+            16: 'quindecillion',
+            17: 'sexdecillion',
+            18: 'septendecillion',
+            19: 'octodecillion',
+            20: 'novemdecillion',
+            21: 'vigintillion'
+        };
+
+        const SHORT_SCALE_SPECIAL_PREFIXES = {
+            1: 'un',
+            2: 'duo',
+            3: 'tre',
+            4: 'quattuor',
+            5: 'quin',
+            6: 'sex',
+            7: 'septen',
+            8: 'octo',
+            9: 'novem',
+            10: 'dec',
+            11: 'undec',
+            12: 'duodec',
+            13: 'tredec',
+            14: 'quattuordec',
+            15: 'quindec',
+            16: 'sexdec',
+            17: 'septendec',
+            18: 'octodec',
+            19: 'novemdec'
+        };
+
+        const SHORT_SCALE_ONES = ['', 'un', 'duo', 'tre', 'quattuor', 'quin', 'sex', 'septen', 'octo', 'novem'];
+        const SHORT_SCALE_ONES_ALTERNATES = ['', 'un', 'duo', 'tres', 'quattuor', 'quin', 'ses', 'septen', 'octo', 'novem'];
+        const SHORT_SCALE_TENS = ['', '', 'vigint', 'trigint', 'quadragint', 'quinquagint', 'sexagint', 'septuagint', 'octogint', 'nonagint'];
+        const SHORT_SCALE_HUNDREDS = ['', 'cent', 'ducent', 'trecent', 'quadringent', 'quingent', 'sescent', 'septingent', 'octingent', 'nongent'];
+        const shortScaleNameCache = new Map();
+
+        function getShortScaleOnesPrefix(ones, nextPrefix) {
+            if (ones === 0) return '';
+            if (!nextPrefix) return SHORT_SCALE_ONES[ones];
+            if (/^(c|g|q|x)/.test(nextPrefix)) {
+                return SHORT_SCALE_ONES_ALTERNATES[ones];
+            }
+            return SHORT_SCALE_ONES[ones];
+        }
+
+        function getShortScaleUnderHundredPrefix(value) {
+            if (value === 0) return '';
+            if (value <= 19) {
+                return SHORT_SCALE_SPECIAL_PREFIXES[value];
+            }
+
+            const tens = Math.floor(value / 10);
+            const ones = value % 10;
+            const tensPrefix = SHORT_SCALE_TENS[tens];
+            const onesPrefix = getShortScaleOnesPrefix(ones, tensPrefix);
+            return onesPrefix + tensPrefix;
+        }
+
+        function getShortScaleIllionName(scaleIndex) {
+            if (scaleIndex <= 0) return '';
+
+            if (SHORT_SCALE_BASE_NAMES[scaleIndex]) {
+                return SHORT_SCALE_BASE_NAMES[scaleIndex];
+            }
+
+            if (scaleIndex === 1001) {
+                return 'millinillion';
+            }
+
+            if (scaleIndex > 1001) {
+                return '';
+            }
+
+            if (shortScaleNameCache.has(scaleIndex)) {
+                return shortScaleNameCache.get(scaleIndex);
+            }
+
+            const n = scaleIndex - 1;
+            const hundreds = Math.floor(n / 100);
+            const remainder = n % 100;
+            const parts = [];
+
+            if (remainder > 0) {
+                parts.push(getShortScaleUnderHundredPrefix(remainder));
+            }
+
+            if (hundreds > 0) {
+                parts.push(SHORT_SCALE_HUNDREDS[hundreds]);
+            }
+
+            const name = parts.join('') + 'illion';
+            shortScaleNameCache.set(scaleIndex, name);
+            return name;
+        }
+
+        function formatLargeWeight(weight) {
+            if (weight < 1000) {
+                return null;
+            }
+
+            const exponent = Math.floor(Math.log10(weight));
+            let scaleIndex = Math.floor(exponent / 3);
+            const scaled = weight / Math.pow(10, scaleIndex * 3);
+
+            if (scaled >= 1000 && Number.isFinite(scaled)) {
+                scaleIndex += 1;
+            }
+
+            const label = getShortScaleIllionName(scaleIndex);
+            if (!label) {
+                return weight.toExponential(2) + ' lbs';
+            }
+
+            const normalized = weight / Math.pow(10, scaleIndex * 3);
+            const decimals = normalized >= 100 ? 0 : normalized >= 10 ? 1 : 2;
+            const formattedValue = normalized
+                .toFixed(decimals)
+                .replace(/\.0+$/, '')
+                .replace(/(\.\d*[1-9])0+$/, '$1');
+
+            return `${formattedValue} ${label} lbs`;
+        }
+
         // Format weight with appropriate units (moved to global scope)
         function formatWeight(weight) {
-            if (weight >= 2000000000000000000000000000000000000) { // 2 undecillion lbs or more
-                return (weight / 1000000000000000000000000000000000000).toFixed(1) + ' undecillion lbs';
-            } else if (weight >= 200000000000000000000000000000000000) { // 200 decillion lbs or more
-                return (weight / 1000000000000000000000000000000000).toFixed(1) + ' decillion lbs';
-            } else if (weight >= 2000000000000000000000000000000000) { // 2 decillion lbs or more
-                return (weight / 1000000000000000000000000000000000).toFixed(1) + ' decillion lbs';
-            } else if (weight >= 200000000000000000000000000000000) { // 200 nonillion lbs or more
-                return (weight / 1000000000000000000000000000000).toFixed(1) + ' nonillion lbs';
-            } else if (weight >= 2000000000000000000000000000000) { // 2 nonillion lbs or more
-                return (weight / 1000000000000000000000000000000).toFixed(1) + ' nonillion lbs';
-            } else if (weight >= 200000000000000000000000000000) { // 200 octillion lbs or more
-                return (weight / 1000000000000000000000000000).toFixed(1) + ' octillion lbs';
-            } else if (weight >= 2000000000000000000000000000) { // 2 octillion lbs or more
-                return (weight / 1000000000000000000000000000).toFixed(1) + ' octillion lbs';
-            } else if (weight >= 200000000000000000000000000) { // 200 septillion lbs or more
-                return (weight / 1000000000000000000000000).toFixed(1) + ' septillion lbs';
-            } else if (weight >= 2000000000000000000000000) { // 2 septillion lbs or more
-                return (weight / 1000000000000000000000000).toFixed(1) + ' septillion lbs';
-            } else if (weight >= 200000000000000000000000) { // 200 sextillion lbs or more
-                return (weight / 1000000000000000000000).toFixed(1) + ' sextillion lbs';
-            } else if (weight >= 2000000000000000000000) { // 2 sextillion lbs or more
-                return (weight / 1000000000000000000000).toFixed(1) + ' sextillion lbs';
-            } else if (weight >= 200000000000000000000) { // 200 quintillion lbs or more
-                return (weight / 1000000000000000000).toFixed(1) + ' quintillion lbs';
-            } else if (weight >= 2000000000000000000) { // 2 quintillion lbs or more
-                return (weight / 1000000000000000000).toFixed(1) + ' quintillion lbs';
-            } else if (weight >= 200000000000000000) { // 200 quadrillion lbs or more
-                return (weight / 1000000000000000).toFixed(1) + ' quadrillion lbs';
-            } else if (weight >= 1000000000000000) { // 1 quadrillion lbs or more
-                return (weight / 1000000000000000).toFixed(1) + ' quadrillion lbs';
-            } else if (weight >= 200000000000000) { // 200 trillion lbs or more
-                return (weight / 1000000000000).toFixed(1) + ' trillion lbs';
-            } else if (weight >= 1000000000000) { // 1 trillion lbs or more
-                return (weight / 1000000000000).toFixed(1) + ' trillion lbs';
-            } else if (weight >= 1000000000) { // 1 billion lbs or more
-                return (weight / 1000000000).toFixed(1) + ' billion lbs';
-            } else if (weight >= 2000000) { // 2 million lbs or more
-                return (weight / 1000000).toFixed(1) + ' million lbs';
-            } else if (weight >= 2000) { // 2 thousand lbs or more
-                return (weight / 1000).toFixed(1) + ' thousand lbs';
+            const largeWeight = formatLargeWeight(weight);
+            if (largeWeight) {
+                return largeWeight;
             } else if (weight >= 1) {
                 return weight.toFixed(1) + ' lbs';
             } else if (weight >= 0.001) {
@@ -2485,6 +2654,23 @@
                 return (radius * 1000000).toFixed(3) + ' μm';
             } else {
                 return radius.toExponential(3) + ' m';
+            }
+        }
+
+        // Format length with appropriate units
+        function formatLength(length) {
+            if (length >= 1e6) {
+                return (length / 1e6).toFixed(2) + '×10⁶ m';
+            } else if (length >= 1e3) {
+                return (length / 1e3).toFixed(2) + ' km';
+            } else if (length >= 1) {
+                return length.toFixed(2) + ' m';
+            } else if (length >= 0.01) {
+                return (length * 100).toFixed(2) + ' cm';
+            } else if (length >= 0.001) {
+                return (length * 1000).toFixed(2) + ' mm';
+            } else {
+                return length.toExponential(2) + ' m';
             }
         }
 
@@ -2637,71 +2823,7 @@
 
         // Format weight difference with appropriate units (moved to global scope)
         function formatWeightDifference(weight) {
-            if (weight >= 2000000000000000000000000000000000000) { // 2 undecillion lbs or more
-                return (weight / 1000000000000000000000000000000000000).toFixed(1) + ' undecillion lbs';
-            } else if (weight >= 200000000000000000000000000000000000) { // 200 decillion lbs or more
-                return (weight / 1000000000000000000000000000000000).toFixed(1) + ' decillion lbs';
-            } else if (weight >= 2000000000000000000000000000000000) { // 2 decillion lbs or more
-                return (weight / 1000000000000000000000000000000000).toFixed(1) + ' decillion lbs';
-            } else if (weight >= 200000000000000000000000000000000) { // 200 nonillion lbs or more
-                return (weight / 1000000000000000000000000000000).toFixed(1) + ' nonillion lbs';
-            } else if (weight >= 2000000000000000000000000000000) { // 2 nonillion lbs or more
-                return (weight / 1000000000000000000000000000000).toFixed(1) + ' nonillion lbs';
-            } else if (weight >= 200000000000000000000000000000) { // 200 octillion lbs or more
-                return (weight / 1000000000000000000000000000).toFixed(1) + ' octillion lbs';
-            } else if (weight >= 2000000000000000000000000000) { // 2 octillion lbs or more
-                return (weight / 1000000000000000000000000000).toFixed(1) + ' octillion lbs';
-            } else if (weight >= 200000000000000000000000000) { // 200 septillion lbs or more
-                return (weight / 1000000000000000000000000).toFixed(1) + ' septillion lbs';
-            } else if (weight >= 2000000000000000000000000) { // 2 septillion lbs or more
-                return (weight / 1000000000000000000000000).toFixed(1) + ' septillion lbs';
-            } else if (weight >= 200000000000000000000000) { // 200 sextillion lbs or more
-                return (weight / 1000000000000000000000).toFixed(1) + ' sextillion lbs';
-            } else if (weight >= 2000000000000000000000) { // 2 sextillion lbs or more
-                return (weight / 1000000000000000000000).toFixed(1) + ' sextillion lbs';
-            } else if (weight >= 200000000000000000000) { // 200 quintillion lbs or more
-                return (weight / 1000000000000000000).toFixed(1) + ' quintillion lbs';
-            } else if (weight >= 2000000000000000000) { // 2 quintillion lbs or more
-                return (weight / 1000000000000000000).toFixed(1) + ' quintillion lbs';
-            } else if (weight >= 200000000000000000) { // 200 quadrillion lbs or more
-                return (weight / 1000000000000000).toFixed(1) + ' quadrillion lbs';
-            } else if (weight >= 1000000000000000) { // 1 quadrillion lbs or more
-                return (weight / 1000000000000000).toFixed(1) + ' quadrillion lbs';
-            } else if (weight >= 200000000000000) { // 200 trillion lbs or more
-                return (weight / 1000000000000).toFixed(1) + ' trillion lbs';
-            } else if (weight >= 1000000000000) { // 1 trillion lbs or more
-                return (weight / 1000000000000).toFixed(1) + ' trillion lbs';
-            } else if (weight >= 1000000000) { // 1 billion lbs or more
-                return (weight / 1000000000).toFixed(1) + ' billion lbs';
-            } else if (weight >= 2000000) { // 2 million lbs or more
-                return (weight / 1000000).toFixed(1) + ' million lbs';
-            } else if (weight >= 2000) { // 2 thousand lbs or more
-                return (weight / 1000).toFixed(1) + ' thousand lbs';
-            } else if (weight >= 1) {
-                return weight.toFixed(1) + ' lbs';
-            } else if (weight >= 0.001) {
-                return (weight * 16).toFixed(2) + ' oz';
-            } else if (weight >= 0.00001) {
-                return (weight * 453.592).toFixed(2) + ' g';
-            } else if (weight >= 0.0000008) {
-                return (weight * 453592).toFixed(2) + ' mg';
-            } else if (weight >= 0.00000000001) {
-                return (weight * 453592000).toFixed(2) + ' μg';
-            } else if (weight >= 0.00000000000001) {
-                return (weight * 453592000000).toFixed(2) + ' ng';
-            } else if (weight >= 0.00000000000000001) {
-                return (weight * 453592000000000).toFixed(2) + ' pg';
-            } else if (weight >= 0.00000000000000000001) {
-                return (weight * 453592000000000000).toFixed(2) + ' fg';
-            } else if (weight >= 0.00000000000000000000001) {
-                return (weight * 453592000000000000000).toFixed(2) + ' ag';
-            } else if (weight >= 0.00000000000000000000000001) {
-                return (weight * 453592000000000000000000).toFixed(2) + ' zg';
-            } else if (weight >= 0.00000000000000000000000000001) {
-                return (weight * 453592000000000000000000000).toFixed(2) + ' yg';
-            } else {
-                return weight.toExponential(2) + ' lbs';
-            }
+            return formatWeight(weight);
         }
 
         // Calculate Earth's surface gravity for reference
@@ -2827,7 +2949,9 @@
             
             
             // Update the center panel with results
-            const iconHtml = celestialObject.hasCrater
+            const iconHtml = celestialObject.image
+                ? `<img src="${celestialObject.image}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.hasCrater
                 ? `<div class="mb-2 flex justify-center">${createCraterPlanetIcon(64)}</div>`
                 : celestialObject.hasCanyon
                 ? `<div class="mb-2 flex justify-center">${createCanyonPlanetIcon(64)}</div>`
@@ -2839,6 +2963,8 @@
                 ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
                 : celestialObject.name === 'Hyper Star'
                 ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Uirinax'
+                ? `<img src="{{ static_file('images/Gravastar.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
                 : celestialObject.name === 'Hyper Planet'
                 ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
                 : celestialObject.name === 'Hyper Galaxy'
@@ -2917,11 +3043,17 @@
                                 <span class="text-gray-300">Radius:</span>
                                 <span class="text-green-400 font-bold">${formatRadius(celestialObject.radius)}</span>
                             </div>
+                            ${celestialObject.length ? `
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Length:</span>
+                                <span class="text-teal-400 font-bold">${formatLength(celestialObject.length)}</span>
+                            </div>
+                            ` : ''}
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-300">Density:</span>
                                 <span class="text-cyan-400 font-bold">${formatDensity(calculateDensity(celestialObject.mass, celestialObject.radius))}</span>
                             </div>
-                            ${(celestialObject.type === 'star' || celestialObject.type === 'fictional') ? `
+                            ${(celestialObject.type === 'star' || celestialObject.type === 'fictional' || celestialObject.luminosity !== undefined) ? `
                             <div class="flex justify-between items-center border-t border-gray-600/50 pt-2 mt-2">
                                 <span class="text-gray-300">Luminosity:</span>
                                 <span class="text-yellow-400 font-bold">${formatLuminosity(calculateHabitableZone(celestialObject).luminosity)}</span>
@@ -3082,9 +3214,15 @@
                 'Eternal Infinity Beast Egg': 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-purple-500/25 hover:shadow-purple-500/40',
                 'Kryptonite Leviathan Egg': 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-500/25 hover:shadow-green-500/40',
                 'Hyper Star': 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 shadow-yellow-500/25 hover:shadow-yellow-500/40',
+                'Uirinax': 'bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 shadow-indigo-600/25 hover:shadow-indigo-600/40',
                 'Hyper Planet': 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-blue-500/25 hover:shadow-blue-500/40',
                 'Hyper Galaxy': 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-indigo-500/25 hover:shadow-indigo-500/40',
                 'Hyper Universe': 'bg-gradient-to-r from-slate-800 to-gray-900 hover:from-slate-900 hover:to-black shadow-slate-800/25 hover:shadow-slate-800/40',
+                'Giganaurus': 'bg-gradient-to-r from-rose-700 to-purple-900 hover:from-rose-800 hover:to-purple-950 shadow-rose-700/25 hover:shadow-rose-700/40',
+                'Ulturuas': 'bg-gradient-to-r from-fuchsia-800 to-black hover:from-fuchsia-900 hover:to-black shadow-fuchsia-800/25 hover:shadow-fuchsia-800/40',
+                'Ulturuas B': 'bg-gradient-to-r from-indigo-700 to-blue-900 hover:from-indigo-800 hover:to-blue-950 shadow-indigo-700/25 hover:shadow-indigo-700/40',
+                'Unvepto': 'bg-gradient-to-r from-gray-900 via-purple-900 to-black hover:from-black hover:via-purple-950 hover:to-gray-900 shadow-purple-900/30 hover:shadow-purple-900/45',
+                'THE SINGULARITY': 'bg-gradient-to-r from-gray-900 to-black hover:from-black hover:to-gray-900 shadow-black/40 hover:shadow-black/50',
                 'Oganix': 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-blue-500/25 hover:shadow-blue-500/40',
                 'Ruburus': 'bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 shadow-red-500/25 hover:shadow-red-500/40',
                 'Orreka': 'bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 shadow-red-500/25 hover:shadow-red-500/40',
@@ -3115,6 +3253,7 @@
                 'Fripp': 'bg-gradient-to-r from-gray-900 to-black hover:from-black hover:to-gray-900 shadow-gray-900/25 hover:shadow-gray-900/40',
                 'The Atom': 'bg-gradient-to-r from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600 shadow-pink-400/25 hover:shadow-pink-400/40',
                 'Hawkramenshon': 'bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 shadow-purple-600/25 hover:shadow-purple-600/40',
+                'Uragon': 'bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 shadow-emerald-500/25 hover:shadow-emerald-500/40',
                 'Hoba Meteorite': 'bg-gradient-to-r from-gray-700 to-slate-800 hover:from-gray-800 hover:to-slate-900 shadow-gray-700/25 hover:shadow-gray-700/40',
                 'Hurricane Creator Shuriken': 'bg-gradient-to-r from-gray-600 to-slate-700 hover:from-gray-700 hover:to-slate-800 shadow-gray-600/25 hover:shadow-gray-600/40',
                 'Annacrantieth': 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-orange-500/25 hover:shadow-orange-500/40',
@@ -3251,7 +3390,9 @@
         }
         
         function displayJumpingSimulator(celestialObject, earthWeight, calculatedGravity, gravityRatio, feet, inches) {
-            const iconHtml = celestialObject.hasCrater
+            const iconHtml = celestialObject.image
+                ? `<img src="${celestialObject.image}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.hasCrater
                 ? `<div class="mb-2 flex justify-center">${createCraterPlanetIcon(64)}</div>`
                 : celestialObject.hasCanyon
                 ? `<div class="mb-2 flex justify-center">${createCanyonPlanetIcon(64)}</div>`
@@ -3263,6 +3404,8 @@
                 ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
                 : celestialObject.name === 'Hyper Star'
                 ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                : celestialObject.name === 'Uirinax'
+                ? `<img src="{{ static_file('images/Gravastar.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
                 : celestialObject.name === 'Hyper Planet'
                 ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
                 : celestialObject.name === 'Hyper Galaxy'
@@ -3325,7 +3468,13 @@
                                 <div class="text-gray-300 text-xs">vs Earth</div>
                                 <div class="text-purple-400 font-bold">${gravityRatio < 0.001 ? gravityRatio.toExponential(3) + '×' : gravityRatio.toFixed(3) + '×'}</div>
                             </div>
-                            ${(celestialObject.type === 'star' || celestialObject.type === 'fictional') ? `
+                            ${celestialObject.length ? `
+                            <div class="text-center p-3 bg-gray-800/50 rounded col-span-2">
+                                <div class="text-gray-300 text-xs">Length</div>
+                                <div class="text-teal-400 font-bold">${formatLength(celestialObject.length)}</div>
+                            </div>
+                            ` : ''}
+                            ${(celestialObject.type === 'star' || celestialObject.type === 'fictional' || celestialObject.luminosity !== undefined) ? `
                             <div class="text-center p-3 bg-gray-800/50 rounded col-span-2">
                                 <div class="text-gray-300 text-xs">Habitable Zone</div>
                                 <div class="text-green-400 font-bold">${formatHabitableZone(calculateHabitableZone(celestialObject))}</div>
@@ -3637,7 +3786,9 @@
             card.onclick = () => calculatePlanetWeight(key);
             
             // Check if this is a fictional object and use custom image or crater visual
-            const iconHtml = obj.hasCrater
+            const iconHtml = obj.image
+                ? `<img src="${obj.image}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.hasCrater
                 ? createCraterPlanetIcon(32)
                 : obj.hasCanyon
                 ? createCanyonPlanetIcon(32)
@@ -3649,6 +3800,8 @@
                 ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Hyper Star'
                 ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Uirinax'
+                ? `<img src="{{ static_file('images/Gravastar.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Hyper Planet'
                 ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Hyper Galaxy'
@@ -3833,7 +3986,9 @@
             }
             
             // Check if this is a fictional object and use custom image or crater visual
-            const iconHtml = obj.hasCrater
+            const iconHtml = obj.image
+                ? `<img src="${obj.image}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.hasCrater
                 ? createCraterPlanetIcon(32)
                 : obj.hasCanyon
                 ? createCanyonPlanetIcon(32)
@@ -3845,6 +4000,8 @@
                 ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Hyper Star'
                 ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Uirinax'
+                ? `<img src="{{ static_file('images/Gravastar.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Hyper Planet'
                 ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Hyper Galaxy'

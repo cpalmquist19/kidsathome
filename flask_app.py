@@ -389,20 +389,32 @@ def space_explorer_3d():
 def game_monster_generator():
     return render_template('game_monster_generator.html', current_user=current_user)
 
+@app.route('/life_on_exoplanet_clicker')
+def life_on_exoplanet_clicker():
+    return render_template('life_on_exoplanet_clicker.html', current_user=current_user)
+
 @app.route('/leaderboards')
 def leaderboards():
     return render_template('leaderboards.html')
 
 @app.route('/world-boss')
 def world_boss():
+    # HYPER STAR COUNT (COMMENTED OUT - Using Hyper Planets instead)
     # Get user's hyper stars count if logged in
-    hyper_stars_count = 0
+    # hyper_stars_count = 0
+    # if current_user.is_authenticated:
+    #     from models.user_space_stats import UserSpaceStats
+    #     user_stats = UserSpaceStats.get_or_create(current_user.id)
+    #     hyper_stars_count = user_stats.hyper_stars_found
+    
+    # Get user's hyper planets count if logged in (for world boss combat)
+    hyper_planets_count = 0
     if current_user.is_authenticated:
         from models.user_space_stats import UserSpaceStats
         user_stats = UserSpaceStats.get_or_create(current_user.id)
-        hyper_stars_count = user_stats.hyper_stars_found
+        hyper_planets_count = user_stats.hyper_planets_found
     
-    return render_template('world_boss.html', current_user=current_user, hyper_stars_count=hyper_stars_count)
+    return render_template('world_boss.html', current_user=current_user, hyper_planets_count=hyper_planets_count)
 
 @app.route('/world-boss/attack', methods=['POST'])
 @login_required
@@ -742,8 +754,13 @@ def update_space_stats():
         if 'legendary_systems' in data:
             stats.legendary_systems_saved += data['legendary_systems']
         
-        if 'hyper_stars' in data:
-            stats.hyper_stars_found += data['hyper_stars']
+        # HYPER STAR STATS UPDATE (COMMENTED OUT - Using Hyper Planets instead)
+        # if 'hyper_stars' in data:
+        #     stats.hyper_stars_found += data['hyper_stars']
+        
+        # Hyper Planet stats update (for world boss combat)
+        if 'hyper_planets' in data:
+            stats.hyper_planets_found += data['hyper_planets']
         
         # Update last discovery date
         stats.last_discovery_date = datetime.utcnow()
@@ -926,7 +943,7 @@ def get_boss_status():
 
 @app.route('/api/boss/attack', methods=['POST'])
 def attack_boss():
-    """Attack the boss with Hyper Stars"""
+    """Attack the boss with Hyper Planets"""
     try:
         print("=== BOSS ATTACK DEBUG ===")
         print(f"User authenticated: {current_user.is_authenticated}")
@@ -947,20 +964,30 @@ def attack_boss():
         data = request.get_json()
         print(f"Request data: {data}")
         damage = data.get('damage', 1)  # Default damage
-        hyper_stars_used = data.get('hyper_stars_used', 1)
-        print(f"Damage: {damage}, Hyper stars used: {hyper_stars_used}")
+        # HYPER STAR ATTACK (COMMENTED OUT - Using Hyper Planets instead)
+        # hyper_stars_used = data.get('hyper_stars_used', 1)
+        # print(f"Damage: {damage}, Hyper stars used: {hyper_stars_used}")
+        hyper_planets_used = data.get('hyper_planets_used', 1)
+        print(f"Damage: {damage}, Hyper planets used: {hyper_planets_used}")
         
-        # Check if user has hyper stars
+        # Check if user has hyper planets
         print("Getting user stats...")
         user_stats = UserSpaceStats.get_or_create(current_user.id)
-        print(f"User hyper stars: {user_stats.hyper_stars_found}")
-        if user_stats.hyper_stars_found < hyper_stars_used:
-            print("Not enough hyper stars")
-            return jsonify({'error': 'Not enough hyper stars available'}), 400
+        # HYPER STAR CHECK (COMMENTED OUT)
+        # print(f"User hyper stars: {user_stats.hyper_stars_found}")
+        # if user_stats.hyper_stars_found < hyper_stars_used:
+        #     print("Not enough hyper stars")
+        #     return jsonify({'error': 'Not enough hyper stars available'}), 400
+        print(f"User hyper planets: {user_stats.hyper_planets_found}")
+        if user_stats.hyper_planets_found < hyper_planets_used:
+            print("Not enough hyper planets")
+            return jsonify({'error': 'Not enough hyper planets available'}), 400
         
-        # Deduct hyper stars
-        print("Deducting hyper stars...")
-        user_stats.hyper_stars_found -= hyper_stars_used
+        # Deduct hyper planets
+        print("Deducting hyper planets...")
+        # HYPER STAR DEDUCTION (COMMENTED OUT)
+        # user_stats.hyper_stars_found -= hyper_stars_used
+        user_stats.hyper_planets_found -= hyper_planets_used
         user_stats.updated_at = datetime.utcnow()
         
         # Apply damage to boss
@@ -984,11 +1011,15 @@ def attack_boss():
         return jsonify({
             'success': True,
             'damage': damage,
-            'hyper_stars_remaining': user_stats.hyper_stars_found,
+            # HYPER STAR RESPONSE (COMMENTED OUT)
+            # 'hyper_stars_remaining': user_stats.hyper_stars_found,
+            'hyper_planets_remaining': user_stats.hyper_planets_found,
             'boss_health': boss.current_health,
             'boss_health_percentage': boss.get_health_percentage(),
             'boss_defeated': boss_defeated,
-            'message': f'Dealt {damage} damage! {user_stats.hyper_stars_found} hyper stars remaining.'
+            # HYPER STAR MESSAGE (COMMENTED OUT)
+            # 'message': f'Dealt {damage} damage! {user_stats.hyper_stars_found} hyper stars remaining.'
+            'message': f'Dealt {damage} damage! {user_stats.hyper_planets_found} hyper planets remaining.'
         })
         
     except Exception as e:
@@ -1001,26 +1032,40 @@ def attack_boss():
 
 @app.route('/api/boss/launch-all', methods=['POST'])
 @login_required
-def launch_all_hyper_stars():
-    """Launch all Hyper Stars at once for massive damage."""
+def launch_all_hyper_planets():
+    """Launch all Hyper Planets at once for massive damage."""
     try:
         data = request.get_json()
-        hyper_stars_used = data.get('hyper_stars_used', 0)
+        # HYPER STAR LAUNCH (COMMENTED OUT - Using Hyper Planets instead)
+        # hyper_stars_used = data.get('hyper_stars_used', 0)
+        # 
+        # if hyper_stars_used <= 0:
+        #     return jsonify({
+        #         'success': False,
+        #         'error': 'No Hyper Stars to launch'
+        #     })
+        hyper_planets_used = data.get('hyper_planets_used', 0)
         
-        if hyper_stars_used <= 0:
+        if hyper_planets_used <= 0:
             return jsonify({
                 'success': False,
-                'error': 'No Hyper Stars to launch'
+                'error': 'No Hyper Planets to launch'
             })
         
         # Get user stats
         user_stats = UserSpaceStats.get_or_create(current_user.id)
         
-        # Check if user has enough Hyper Stars
-        if user_stats.hyper_stars_found < hyper_stars_used:
+        # Check if user has enough Hyper Planets
+        # HYPER STAR CHECK (COMMENTED OUT)
+        # if user_stats.hyper_stars_found < hyper_stars_used:
+        #     return jsonify({
+        #         'success': False,
+        #         'error': 'Not enough Hyper Stars'
+        #     })
+        if user_stats.hyper_planets_found < hyper_planets_used:
             return jsonify({
                 'success': False,
-                'error': 'Not enough Hyper Stars'
+                'error': 'Not enough Hyper Planets'
             })
         
         # Get active boss
@@ -1031,14 +1076,16 @@ def launch_all_hyper_stars():
                 'error': 'No active boss found'
             })
         
-        # Calculate total damage (1 damage per Hyper Star)
-        total_damage = hyper_stars_used
+        # Calculate total damage (1 damage per Hyper Planet)
+        total_damage = hyper_planets_used
         
-        print(f"Launching all {hyper_stars_used} Hyper Stars for {total_damage} total damage")
+        print(f"Launching all {hyper_planets_used} Hyper Planets for {total_damage} total damage")
         
-        # Deduct all Hyper Stars
-        print("Deducting all Hyper Stars...")
-        user_stats.hyper_stars_found -= hyper_stars_used
+        # Deduct all Hyper Planets
+        print("Deducting all Hyper Planets...")
+        # HYPER STAR DEDUCTION (COMMENTED OUT)
+        # user_stats.hyper_stars_found -= hyper_stars_used
+        user_stats.hyper_planets_found -= hyper_planets_used
         user_stats.updated_at = datetime.utcnow()
         
         # Apply damage to boss
@@ -1061,11 +1108,15 @@ def launch_all_hyper_stars():
         return jsonify({
             'success': True,
             'total_damage': total_damage,
-            'hyper_stars_remaining': user_stats.hyper_stars_found,
+            # HYPER STAR RESPONSE (COMMENTED OUT)
+            # 'hyper_stars_remaining': user_stats.hyper_stars_found,
+            'hyper_planets_remaining': user_stats.hyper_planets_found,
             'boss_health': boss.current_health,
             'boss_health_percentage': boss.get_health_percentage(),
             'boss_defeated': boss_defeated,
-            'message': f'🚀 LAUNCHED ALL {hyper_stars_used} HYPER STARS! Dealt {total_damage} massive damage!'
+            # HYPER STAR MESSAGE (COMMENTED OUT)
+            # 'message': f'🚀 LAUNCHED ALL {hyper_stars_used} HYPER STARS! Dealt {total_damage} massive damage!'
+            'message': f'🚀 LAUNCHED ALL {hyper_planets_used} HYPER PLANETS! Dealt {total_damage} massive damage!'
         })
         
     except Exception as e:
@@ -1073,59 +1124,81 @@ def launch_all_hyper_stars():
         db.session.rollback()
         return jsonify({
             'success': False,
-            'error': f'Failed to launch all Hyper Stars: {str(e)}'
+            'error': f'Failed to launch all Hyper Planets: {str(e)}'
         }), 500
 
-@app.route('/api/user/hyper-stars', methods=['GET'])
+# HYPER STAR GET ENDPOINT (COMMENTED OUT - Using Hyper Planets instead)
+# @app.route('/api/user/hyper-stars', methods=['GET'])
+# @login_required
+# def get_user_hyper_stars():
+#     """Get user's current Hyper Star count"""
+#     try:
+#         user_stats = UserSpaceStats.get_or_create(current_user.id)
+#         return jsonify({
+#             'success': True,
+#             'hyper_stars_count': user_stats.hyper_stars_found
+#         })
+#     except Exception as e:
+#         print(f"Error fetching user Hyper Stars: {e}")
+#         return jsonify({
+#             'success': False,
+#             'error': f'Failed to fetch Hyper Star count: {str(e)}'
+#         }), 500
+
+@app.route('/api/user/hyper-planets', methods=['GET'])
 @login_required
-def get_user_hyper_stars():
-    """Get user's current Hyper Star count"""
+def get_user_hyper_planets():
+    """Get user's current Hyper Planet count"""
     try:
         user_stats = UserSpaceStats.get_or_create(current_user.id)
         return jsonify({
             'success': True,
-            'hyper_stars_count': user_stats.hyper_stars_found
+            'hyper_planets_count': user_stats.hyper_planets_found
         })
     except Exception as e:
-        print(f"Error fetching user Hyper Stars: {e}")
+        print(f"Error fetching user Hyper Planets: {e}")
         return jsonify({
             'success': False,
-            'error': f'Failed to fetch Hyper Star count: {str(e)}'
+            'error': f'Failed to fetch Hyper Planet count: {str(e)}'
         }), 500
 
-@app.route('/api/hyper-stars/submit', methods=['POST'])
-@login_required
-def submit_hyper_stars():
-    """Submit Hyper Stars to user's stats"""
-    try:
-        data = request.get_json()
-        hyper_stars_count = data.get('hyper_stars_count', 0)
-        
-        if hyper_stars_count <= 0:
-            return jsonify({
-                'success': False,
-                'error': 'No Hyper Stars to submit'
-            }), 400
-        
-        user_stats = UserSpaceStats.get_or_create(current_user.id)
-        user_stats.hyper_stars_found += hyper_stars_count
-        user_stats.updated_at = datetime.utcnow()
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'total_hyper_stars': user_stats.hyper_stars_found,
-            'message': f'Successfully added {hyper_stars_count} Hyper Stars to your collection!'
-        })
-        
-    except Exception as e:
-        print(f"Error submitting Hyper Stars: {e}")
-        db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': f'Failed to submit Hyper Stars: {str(e)}'
-        }), 500
+# HYPER STAR SUBMIT ENDPOINT (COMMENTED OUT - Using Hyper Planets instead)
+# @app.route('/api/hyper-stars/submit', methods=['POST'])
+# @login_required
+# def submit_hyper_stars():
+#     """Submit Hyper Stars to user's stats"""
+#     try:
+#         data = request.get_json()
+#         hyper_stars_count = data.get('hyper_stars_count', 0)
+#         
+#         if hyper_stars_count <= 0:
+#             return jsonify({
+#                 'success': False,
+#                 'error': 'No Hyper Stars to submit'
+#             }), 400
+#         
+#         user_stats = UserSpaceStats.get_or_create(current_user.id)
+#         user_stats.hyper_stars_found += hyper_stars_count
+#         user_stats.updated_at = datetime.utcnow()
+#         
+#         db.session.commit()
+#         
+#         return jsonify({
+#             'success': True,
+#             'total_hyper_stars': user_stats.hyper_stars_found,
+#             'message': f'Successfully added {hyper_stars_count} Hyper Stars to your collection!'
+#         })
+#         
+#     except Exception as e:
+#         print(f"Error submitting Hyper Stars: {e}")
+#         db.session.rollback()
+#         return jsonify({
+#             'success': False,
+#             'error': f'Failed to submit Hyper Stars: {str(e)}'
+#         }), 500
+
+# NOTE: submit_hyper_planets() is already defined earlier in the file (line ~826)
+# This duplicate definition has been removed to fix the AssertionError
 
 @app.route('/api/boss/stats', methods=['GET'])
 def get_boss_stats():

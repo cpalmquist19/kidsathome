@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Life on an Exoplanet Clicker - Kids at Home</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cosmic-purple': '#7C3AED',
+                        'space-blue': '#2563EB',
+                        'star-gold': '#D97706',
+                        'nebula-pink': '#BE185D',
+                        'galaxy-indigo': '#4F46E5',
+                        'life-green': '#10B981',
+                        'exoplanet-lime': '#84CC16',
+                        'ecosystem-yellow': '#FCD34D'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen overflow-hidden bg-black" style="background-color: #000000; margin: 0; padding: 0;">
+    <!-- Canvas container with pan functionality -->
+    <div id="canvas-container" class="w-full h-screen overflow-hidden relative cursor-grab active:cursor-grabbing" style="background-color: #000000;">
+        <canvas 
+            id="starfield-canvas" 
+            class="absolute select-none"
+            style="user-select: none; pointer-events: none; display: block; border: 2px solid red;"
+        ></canvas>
+    </div>
+    
+    <!-- Page content will go here -->
+    
+    <script>
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing canvas...');
+            
+            // Canvas setup and starfield generation
+            const canvasContainer = document.getElementById('canvas-container');
+            const canvas = document.getElementById('starfield-canvas');
+            
+            if (!canvasContainer || !canvas) {
+                console.error('Canvas elements not found', { canvasContainer, canvas });
+                document.body.innerHTML += '<div style="color: red; padding: 20px;">Error: Canvas elements not found</div>';
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('Could not get canvas context');
+                document.body.innerHTML += '<div style="color: red; padding: 20px;">Error: Could not get canvas context</div>';
+                return;
+            }
+            
+            console.log('Canvas elements found, proceeding...');
+            
+            let isDragging = false;
+            let startX = 0;
+            let startY = 0;
+            let currentX = 0;
+            let currentY = 0;
+            
+            // Zoom functionality
+            let zoomLevel = 0.05; // Default zoom (0.05x = see 20x more area, fits the 20x canvas)
+            const minZoom = 0.01; // Can zoom out to 1% (see 100x more area)
+            const maxZoom = 4.0; // Can zoom in to 400%
+            const zoomStep = 0.01; // Zoom increment/decrement amount
+            
+            // Calculate canvas size (20x screen size)
+            let canvasWidth = 0;
+            let canvasHeight = 0;
+            const stars = [];
+            
+            function initializeCanvas() {
+                try {
+                    const screenWidth = window.innerWidth;
+                    const screenHeight = window.innerHeight;
+                    
+                    // Set canvas to 20x screen size
+                    canvasWidth = screenWidth * 20;
+                    canvasHeight = screenHeight * 20;
+                    
+                    // Set canvas dimensions
+                    canvas.width = canvasWidth;
+                    canvas.height = canvasHeight;
+                    canvas.style.width = canvasWidth + 'px';
+                    canvas.style.height = canvasHeight + 'px';
+                    
+                    // Start zoomed out to show more area (0.05x = see 20x more area, fits the 20x canvas)
+                    zoomLevel = 0.05;
+                    
+                    // Center canvas initially - show the center of the 20x canvas
+                    const containerWidth = canvasContainer.clientWidth || window.innerWidth;
+                    const containerHeight = canvasContainer.clientHeight || window.innerHeight;
+                    
+                    // Position so the center of the canvas aligns with center of viewport
+                    // At 0.05x zoom, a 20x canvas becomes 1x screen size, so center it
+                    currentX = (containerWidth - canvasWidth * zoomLevel) / 2;
+                    currentY = (containerHeight - canvasHeight * zoomLevel) / 2;
+                    
+                    // Ensure we have valid numbers
+                    if (isNaN(currentX) || isNaN(currentY) || !isFinite(currentX) || !isFinite(currentY)) {
+                        currentX = 0;
+                        currentY = 0;
+                        console.warn('Invalid position calculated, using 0,0');
+                    }
+                    
+                    updateCanvasTransform();
+                    
+                    // Generate and draw stars
+                    generateStars();
+                    drawStarfield();
+                    
+                    // Check canvas visibility
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const containerRect = canvasContainer.getBoundingClientRect();
+                    
+                    console.log('Canvas initialized:', {
+                        canvasWidth,
+                        canvasHeight,
+                        zoomLevel,
+                        currentX,
+                        currentY,
+                        stars: stars.length,
+                        canvasRect: { width: canvasRect.width, height: canvasRect.height, left: canvasRect.left, top: canvasRect.top },
+                        containerRect: { width: containerRect.width, height: containerRect.height },
+                        computedTransform: window.getComputedStyle(canvas).transform,
+                        canvasDisplay: window.getComputedStyle(canvas).display,
+                        canvasVisibility: window.getComputedStyle(canvas).visibility
+                    });
+                } catch (error) {
+                    console.error('Error initializing canvas:', error);
+                }
+            }
+            
+            function generateStars() {
+                stars.length = 0; // Clear existing stars
+                
+                // Generate a good number of stars (adjust density as needed)
+                const starCount = Math.floor((canvasWidth * canvasHeight) / 10000); // ~1 star per 10k pixels
+                
+                for (let i = 0; i < starCount; i++) {
+                    stars.push({
+                        x: Math.random() * canvasWidth,
+                        y: Math.random() * canvasHeight,
+                        size: Math.random() * 3 + 1.0, // Star size between 1.0 and 4.0 (larger for visibility)
+                        brightness: Math.random() * 0.3 + 0.7 // Brightness between 0.7 and 1.0 (brighter)
+                    });
+                }
+                
+                console.log(`Generated ${stars.length} stars`);
+            }
+            
+            function drawStarfield() {
+                // Clear canvas with black background
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                
+                // Draw stars
+                ctx.fillStyle = '#FFFFFF';
+                stars.forEach(star => {
+                    ctx.globalAlpha = star.brightness;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Reset alpha
+                ctx.globalAlpha = 1.0;
+                
+                // Verify canvas was drawn by checking a pixel
+                const imageData = ctx.getImageData(0, 0, 1, 1);
+                console.log('Canvas draw verified - first pixel:', imageData.data);
+            }
+            
+            function updateCanvasTransform() {
+                // Apply both position and zoom using CSS transform
+                canvas.style.transform = `translate(${currentX}px, ${currentY}px) scale(${zoomLevel})`;
+                canvas.style.transformOrigin = '0 0';
+                
+                // Debug transform
+                console.log('Transform updated:', {
+                    transform: canvas.style.transform,
+                    currentX,
+                    currentY,
+                    zoomLevel,
+                    canvasWidth,
+                    canvasHeight
+                });
+            }
+            
+            function zoomAtPoint(clientX, clientY, zoomDelta) {
+                // Get container bounds
+                const rect = canvasContainer.getBoundingClientRect();
+                const containerX = clientX - rect.left;
+                const containerY = clientY - rect.top;
+                
+                // Calculate the point in canvas coordinates before zoom
+                const canvasX = (containerX - currentX) / zoomLevel;
+                const canvasY = (containerY - currentY) / zoomLevel;
+                
+                // Update zoom level
+                const newZoom = Math.max(minZoom, Math.min(maxZoom, zoomLevel + zoomDelta));
+                
+                // Calculate the new position to keep the same point under the cursor
+                currentX = containerX - canvasX * newZoom;
+                currentY = containerY - canvasY * newZoom;
+                
+                zoomLevel = newZoom;
+                updateCanvasTransform();
+            }
+            
+            function zoomIn() {
+                zoomAtPoint(window.innerWidth / 2, window.innerHeight / 2, zoomStep);
+            }
+            
+            function zoomOut() {
+                zoomAtPoint(window.innerWidth / 2, window.innerHeight / 2, -zoomStep);
+            }
+            
+            function resetZoom() {
+                zoomLevel = 0.05; // Reset to default zoom (0.05x to see the full 20x canvas)
+                const containerWidth = canvasContainer.clientWidth;
+                const containerHeight = canvasContainer.clientHeight;
+                currentX = (containerWidth - canvasWidth * zoomLevel) / 2;
+                currentY = (containerHeight - canvasHeight * zoomLevel) / 2;
+                updateCanvasTransform();
+            }
+            
+            // Initialize immediately (DOM is ready)
+            initializeCanvas();
+            
+            // Prevent context menu on right-click
+            canvasContainer.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+            });
+            
+            // Right mouse button down (button 2)
+            canvasContainer.addEventListener('mousedown', (e) => {
+                if (e.button === 2) { // Right mouse button
+                    isDragging = true;
+                    startX = e.clientX - currentX;
+                    startY = e.clientY - currentY;
+                    canvasContainer.style.cursor = 'grabbing';
+                    e.preventDefault();
+                }
+            });
+            
+            // Mouse move
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    currentX = e.clientX - startX;
+                    currentY = e.clientY - startY;
+                    updateCanvasTransform();
+                }
+            });
+            
+            // Mouse up
+            document.addEventListener('mouseup', (e) => {
+                if (e.button === 2) {
+                    isDragging = false;
+                    canvasContainer.style.cursor = 'grab';
+                }
+            });
+            
+            // Mouse wheel zoom (with Ctrl key or Cmd key on Mac)
+            canvasContainer.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    const zoomDelta = e.deltaY > 0 ? -zoomStep : zoomStep;
+                    zoomAtPoint(e.clientX, e.clientY, zoomDelta);
+                }
+            }, { passive: false });
+            
+            // Keyboard zoom controls
+            document.addEventListener('keydown', (e) => {
+                // Zoom in with + or =
+                if ((e.key === '+' || e.key === '=') && !e.shiftKey) {
+                    e.preventDefault();
+                    zoomIn();
+                }
+                // Zoom out with - or _
+                else if (e.key === '-' || e.key === '_') {
+                    e.preventDefault();
+                    zoomOut();
+                }
+                // Reset zoom with 0
+                else if (e.key === '0' && !e.shiftKey) {
+                    e.preventDefault();
+                    resetZoom();
+                }
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                initializeCanvas();
+            });
+        });
+    </script>
+</body>
+</html>
