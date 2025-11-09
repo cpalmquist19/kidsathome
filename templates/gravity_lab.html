@@ -1191,6 +1191,14 @@
                 icon: '🎧',
                 type: 'small object'
             },
+            'tardigrade': {
+                name: 'Tardigrade',
+                mass: 3.9e-9, // kg (3.9 micrograms - average tardigrade mass)
+                radius: 2.5e-5, // m (approximate half of 50 micrometer length)
+                icon: '🦠',
+                type: 'small object',
+                image: "{{ static_file('images/tardigrade.png') }}"
+            },
             'up_quark': {
                 name: 'Up Quark',
                 mass: 4.1e-30, // kg (approximate mass of up quark)
@@ -1244,6 +1252,321 @@
                 type: 'quantum object',
                 quantumVariant: 'quark',
                 quarkType: 'bottom'
+            },
+            'electron': {
+                name: 'Electron',
+                mass: 9.10938356e-31, // kg (rest mass of electron)
+                radius: 2.81794e-15, // m (classical electron radius)
+                icon: 'e⁻',
+                type: 'quantum object',
+                phase: 'lepton',
+                phaseColor: '#f59e0b'
+            },
+            'muon': {
+                name: 'Muon',
+                mass: 1.883531627e-28, // kg (rest mass of muon)
+                radius: 1e-19, // m (estimated interaction radius)
+                icon: 'μ⁻',
+                type: 'quantum object',
+                phase: 'lepton',
+                phaseColor: '#f59e0b'
+            },
+            'tau': {
+                name: 'Tau',
+                mass: 3.16754e-27, // kg (rest mass of tau lepton)
+                radius: 1e-19, // m (estimated interaction radius)
+                icon: 'τ⁻',
+                type: 'quantum object',
+                phase: 'lepton',
+                phaseColor: '#f59e0b'
+            },
+            'electron_neutrino': {
+                name: 'Electron Neutrino',
+                mass: 1e-36, // kg (upper bound estimate)
+                radius: 1e-18, // m (estimated interaction scale)
+                icon: 'νₑ',
+                type: 'quantum object',
+                phase: 'lepton',
+                phaseColor: '#f59e0b'
+            },
+            'muon_neutrino': {
+                name: 'Muon Neutrino',
+                mass: 5e-36, // kg (upper bound estimate)
+                radius: 1e-18, // m (estimated interaction scale)
+                icon: 'νμ',
+                type: 'quantum object',
+                phase: 'lepton',
+                phaseColor: '#f59e0b'
+            },
+            'tau_neutrino': {
+                name: 'Tau Neutrino',
+                mass: 1e-35, // kg (upper bound estimate)
+                radius: 1e-18, // m (estimated interaction scale)
+                icon: 'ντ',
+                type: 'quantum object',
+                phase: 'lepton',
+                phaseColor: '#f59e0b'
+            },
+            'proton': {
+                name: 'Proton',
+                mass: 1.6726219e-27, // kg (rest mass of proton)
+                radius: 8.4e-16, // m (charge radius ~0.84 fm)
+                icon: 'p⁺',
+                type: 'quantum object',
+                phase: 'baryon',
+                phaseColor: '#ef4444'
+            },
+            'neutron': {
+                name: 'Neutron',
+                mass: 1.6749275e-27, // kg (rest mass of neutron)
+                radius: 8.6e-16, // m (approximate radius)
+                icon: 'n⁰',
+                type: 'quantum object',
+                phase: 'baryon',
+                phaseColor: '#ef4444'
+            },
+            'photon': {
+                name: 'Photon',
+                mass: 0, // kg (massless)
+                radius: 1e-17, // m (effective wavelength scale)
+                icon: 'γ',
+                type: 'quantum object',
+                phase: 'boson',
+                phaseColor: '#facc15'
+            },
+            'gluon': {
+                name: 'Gluon',
+                mass: 0, // kg (massless gauge boson)
+                radius: 5e-19, // m (confinement scale)
+                icon: 'g',
+                type: 'quantum object',
+                phase: 'boson',
+                phaseColor: '#facc15'
+            },
+            'w_boson_plus': {
+                name: 'W⁺ Boson',
+                mass: 1.433e-25, // kg (80.379 GeV/c²)
+                radius: 1e-18, // m (interaction scale)
+                icon: 'W⁺',
+                type: 'quantum object',
+                phase: 'boson',
+                phaseColor: '#facc15'
+            },
+            'w_boson_minus': {
+                name: 'W⁻ Boson',
+                mass: 1.433e-25, // kg (80.379 GeV/c²)
+                radius: 1e-18, // m (interaction scale)
+                icon: 'W⁻',
+                type: 'quantum object',
+                phase: 'boson',
+                phaseColor: '#facc15'
+            },
+            'z_boson': {
+                name: 'Z⁰ Boson',
+                mass: 1.62e-25, // kg (91.1876 GeV/c²)
+                radius: 1e-18, // m (interaction scale)
+                icon: 'Z⁰',
+                type: 'quantum object',
+                phase: 'boson',
+                phaseColor: '#facc15'
+            },
+            'higgs_boson': {
+                name: 'Higgs Boson',
+                mass: 2.246e-25, // kg (125.25 GeV/c²)
+                radius: 1e-18, // m (interaction scale)
+                icon: 'H⁰',
+                type: 'quantum object',
+                phase: 'boson',
+                phaseColor: '#facc15'
+            },
+            'wimp': {
+                name: 'WIMP',
+                mass: 1e-25, // kg (hypothetical weakly interacting massive particle)
+                radius: 1e-18, // m (interaction scale)
+                icon: 'χ',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'axion': {
+                name: 'Axion',
+                mass: 1e-39, // kg (hypothetical ultra-light particle)
+                radius: 1e-17, // m (interaction scale)
+                icon: 'a',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'sterile_neutrino': {
+                name: 'Sterile Neutrino',
+                mass: 1e-33, // kg (hypothetical neutrino candidate)
+                radius: 1e-18, // m (interaction scale)
+                icon: 'νₛ',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'macho': {
+                name: 'MACHO',
+                mass: 1e30, // kg (hypothetical astrophysical object)
+                radius: 5e8, // m (representative stellar scale)
+                icon: 'M',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'primordial_black_hole': {
+                name: 'Primordial Black Hole',
+                mass: 1e15, // kg (hypothetical micro black hole)
+                radius: 1e-12, // m (Schwarzschild radius scale)
+                icon: 'PBH',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'neutralino': {
+                name: 'Neutralino',
+                mass: 5e-26, // kg (hypothetical SUSY particle)
+                radius: 1e-19, // m (interaction scale)
+                icon: 'χ⁰',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'chargino': {
+                name: 'Chargino',
+                mass: 5e-26, // kg (hypothetical SUSY particle)
+                radius: 1e-19, // m (interaction scale)
+                icon: 'χ⁺',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'slepton': {
+                name: 'Slepton',
+                mass: 1e-25, // kg (hypothetical SUSY partner of lepton)
+                radius: 1e-19, // m (interaction scale)
+                icon: 'ŀ',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'squark': {
+                name: 'Squark',
+                mass: 5e-25, // kg (hypothetical SUSY partner of quark)
+                radius: 1e-19, // m (interaction scale)
+                icon: 'q̃',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'gluino': {
+                name: 'Gluino',
+                mass: 5e-25, // kg (hypothetical SUSY partner of gluon)
+                radius: 1e-19, // m (interaction scale)
+                icon: 'ĝ',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'photino': {
+                name: 'Photino',
+                mass: 1e-26, // kg (hypothetical SUSY partner of photon)
+                radius: 1e-19, // m (interaction scale)
+                icon: 'γ̃',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'gravitino': {
+                name: 'Gravitino',
+                mass: 1e-27, // kg (hypothetical SUSY partner of graviton)
+                radius: 1e-19, // m (interaction scale)
+                icon: 'ĝ',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'x_boson': {
+                name: 'X Boson',
+                mass: 1.8e-12, // kg (GUT scale ~10^15 GeV/c²)
+                radius: 1e-35, // m (Planck scale)
+                icon: 'X',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'y_boson': {
+                name: 'Y Boson',
+                mass: 1.8e-12, // kg (GUT scale ~10^15 GeV/c²)
+                radius: 1e-35, // m (Planck scale)
+                icon: 'Y',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'graviton': {
+                name: 'Graviton',
+                mass: 0, // kg (massless hypothetical quantum of gravity)
+                radius: 1e-18, // m (interaction scale)
+                icon: 'ḡ',
+                type: 'quantum object',
+                phase: 'gravitational',
+                phaseColor: '#14b8a6'
+            },
+            'magnetic_monopole': {
+                name: 'Magnetic Monopole',
+                mass: 1e-8, // kg (hypothetical magnetic charge carrier)
+                radius: 1e-18, // m (interaction scale)
+                icon: '𝑚',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'preon': {
+                name: 'Preon',
+                mass: 1e-30, // kg (hypothetical constituent of quarks/leptons)
+                radius: 1e-20, // m (interaction scale)
+                icon: 'pʳ',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'majoron': {
+                name: 'Majoron',
+                mass: 1e-36, // kg (hypothetical Goldstone boson)
+                radius: 1e-19, // m (interaction scale)
+                icon: 'J',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'dilaton': {
+                name: 'Dilaton',
+                mass: 1e-27, // kg (hypothetical scalar particle)
+                radius: 1e-19, // m (interaction scale)
+                icon: 'φ',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'kaluza_klein_particle': {
+                name: 'Kaluza-Klein Particle',
+                mass: 1e-24, // kg (hypothetical higher-dimensional excitation)
+                radius: 1e-19, // m (interaction scale)
+                icon: 'KK',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
+            },
+            'tachyon': {
+                name: 'Tachyon',
+                mass: 0, // kg (hypothetical faster-than-light particle with imaginary mass)
+                radius: 1e-18, // m (effective interaction scale)
+                icon: 'τᶜ',
+                type: 'quantum object',
+                phase: 'hypothetical',
+                phaseColor: '#a855f7'
             },
             // Quantum Objects - Periodic table elements
             'hydrogen': {
@@ -2154,6 +2477,13 @@
                 mass: 6.765e12, // kg (6.765 trillion kg - volume from Hunga Tonga eruption)
                 radius: 1150, // m (approximate radius of affected water volume)
                 icon: '🌊',
+                type: 'large object'
+            },
+            'solar_flare': {
+                name: 'Solar Flare',
+                mass: 1.6e12, // kg
+                radius: 1e9, // m (1 million km)
+                icon: '🔥',
                 type: 'large object'
             },
             'pyramid_of_giza': { 
@@ -3342,7 +3672,12 @@
             solid: '#38bdf8',
             liquid: '#f97316',
             gas: '#22c55e',
-            plasma: '#f472b6'
+            plasma: '#f472b6',
+            baryon: '#ef4444',
+            lepton: '#f59e0b',
+            boson: '#facc15',
+            hypothetical: '#a855f7',
+            gravitational: '#14b8a6'
         };
 
         const QUANTUM_GASES = new Set([
@@ -3409,20 +3744,27 @@
                 if (obj.quantumVariant === 'quark') {
                     const quarkType = obj.quarkType || 'unknown';
                     const color = QUARK_COLORS[quarkType] || '#38bdf8';
-                    obj.phase = `${quarkType} quark`;
-                    obj.phaseColor = color;
-                } else {
-                    let phase = 'solid';
-                    if (QUANTUM_GASES.has(key)) {
-                        phase = 'gas';
-                    } else if (QUANTUM_LIQUIDS.has(key)) {
-                        phase = 'liquid';
-                    } else if (QUANTUM_PLASMAS.has(key)) {
-                        phase = 'plasma';
+                    if (!obj.phase) {
+                        obj.phase = `${quarkType} quark`;
                     }
-
-                    obj.phase = phase;
-                    obj.phaseColor = QUANTUM_PHASE_COLORS[phase];
+                    if (!obj.phaseColor) {
+                        obj.phaseColor = color;
+                    }
+                } else {
+                    if (!obj.phase) {
+                        let phase = 'solid';
+                        if (QUANTUM_GASES.has(key)) {
+                            phase = 'gas';
+                        } else if (QUANTUM_LIQUIDS.has(key)) {
+                            phase = 'liquid';
+                        } else if (QUANTUM_PLASMAS.has(key)) {
+                            phase = 'plasma';
+                        }
+                        obj.phase = phase;
+                    }
+                    if (!obj.phaseColor) {
+                        obj.phaseColor = QUANTUM_PHASE_COLORS[obj.phase] || QUANTUM_PHASE_COLORS.solid;
+                    }
                 }
             }
         });
@@ -4250,6 +4592,7 @@
                 'Olympus Mons': 'bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 shadow-red-500/25 hover:shadow-red-500/40',
                 'Valles Marineris': 'bg-gradient-to-r from-amber-600 to-orange-700 hover:from-amber-700 hover:to-orange-800 shadow-amber-600/25 hover:shadow-amber-600/40',
                 'Tsunami': 'bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 shadow-blue-600/25 hover:shadow-blue-600/40',
+                'Solar Flare': 'bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 shadow-amber-500/25 hover:shadow-amber-500/40',
                 'Pyramid of Giza': 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 shadow-amber-500/25 hover:shadow-amber-500/40',
                 'The Great Wall of China': 'bg-gradient-to-r from-red-600 to-orange-700 hover:from-red-700 hover:to-orange-800 shadow-red-600/25 hover:shadow-red-600/40',
                 'Hurricane Helene': 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-blue-500/25 hover:shadow-blue-500/40',
