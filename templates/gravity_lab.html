@@ -166,6 +166,9 @@
                                         <button onclick="filterObjects('small object')" class="category-filter" data-category="small object">
                                             <i class="fas fa-circle mr-2"></i>Small Objects
                                         </button>
+                                        <button onclick="filterObjects('quantum object')" class="category-filter" data-category="quantum object">
+                                            <i class="fas fa-atom mr-2"></i>Quantum Objects
+                                        </button>
                                         <button onclick="filterObjects('custom')" class="category-filter" data-category="custom">
                                             <i class="fas fa-cog mr-2"></i>Custom
                                         </button>
@@ -202,6 +205,17 @@
                                         <div>
                                             <p class="text-purple-200 text-sm font-medium mb-1">Deep Space Objects (DSO) Note:</p>
                                             <p class="text-purple-300 text-xs">These objects are so massive and spread out that gravity becomes extremely weak at their "surface." The tiny weights you see reflect the enormous distances from their centers of mass. This is why galaxies don't collapse under their own gravity!</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quantum Objects Note -->
+                                <div id="quantum-objects-note" class="hidden mb-4 p-3 bg-sky-900/30 border border-sky-600/50 rounded-lg">
+                                    <div class="flex items-start">
+                                        <i class="fas fa-atom text-sky-300 mr-2 mt-0.5"></i>
+                                        <div>
+                                            <p class="text-sky-200 text-sm font-medium mb-1">Quantum Scale Objects:</p>
+                                            <p class="text-sky-300 text-xs">These are individual atoms. Gravity is practically nonexistent at this scale, so expect microscopic weights far smaller than anything you can feel.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -653,6 +667,17 @@
             text-align: center;
             line-height: 1;
             text-transform: capitalize;
+        }
+        
+        .phase-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-top: 4px;
         }
         
         /* Search Input */
@@ -1165,6 +1190,887 @@
                 radius: 0.0085, // m (17mm - approximate radius of AirPod case)
                 icon: '🎧',
                 type: 'small object'
+            },
+            'up_quark': {
+                name: 'Up Quark',
+                mass: 4.1e-30, // kg (approximate mass of up quark)
+                radius: 1e-19, // m (estimated interaction radius)
+                icon: 'u',
+                type: 'quantum object',
+                quantumVariant: 'quark',
+                quarkType: 'up'
+            },
+            'down_quark': {
+                name: 'Down Quark',
+                mass: 8.5e-30, // kg (approximate mass of down quark)
+                radius: 1e-19, // m
+                icon: 'd',
+                type: 'quantum object',
+                quantumVariant: 'quark',
+                quarkType: 'down'
+            },
+            'charm_quark': {
+                name: 'Charm Quark',
+                mass: 2.3e-27, // kg (approximate mass of charm quark)
+                radius: 1e-19, // m
+                icon: 'c',
+                type: 'quantum object',
+                quantumVariant: 'quark',
+                quarkType: 'charm'
+            },
+            'strange_quark': {
+                name: 'Strange Quark',
+                mass: 1.7e-28, // kg (approximate mass of strange quark)
+                radius: 1e-19, // m
+                icon: 's',
+                type: 'quantum object',
+                quantumVariant: 'quark',
+                quarkType: 'strange'
+            },
+            'top_quark': {
+                name: 'Top Quark',
+                mass: 3.1e-25, // kg (approximate mass of top quark)
+                radius: 1e-19, // m
+                icon: 't',
+                type: 'quantum object',
+                quantumVariant: 'quark',
+                quarkType: 'top'
+            },
+            'bottom_quark': {
+                name: 'Bottom Quark',
+                mass: 7.4e-27, // kg (approximate mass of bottom quark)
+                radius: 1e-19, // m
+                icon: 'b',
+                type: 'quantum object',
+                quantumVariant: 'quark',
+                quarkType: 'bottom'
+            },
+            // Quantum Objects - Periodic table elements
+            'hydrogen': {
+                name: 'Hydrogen Atom',
+                mass: 1.6735e-27, // kg (mass of a hydrogen atom)
+                radius: 5.3e-11, // m (Bohr radius)
+                icon: 'H',
+                type: 'quantum object'
+            },
+            'helium': {
+                name: 'Helium Atom',
+                mass: 6.6465e-27, // kg
+                radius: 3.1e-11, // m
+                icon: 'He',
+                type: 'quantum object'
+            },
+            'lithium': {
+                name: 'Lithium Atom',
+                mass: 1.1526e-26, // kg
+                radius: 1.67e-10, // m
+                icon: 'Li',
+                type: 'quantum object'
+            },
+            'beryllium': {
+                name: 'Beryllium Atom',
+                mass: 1.496e-26, // kg
+                radius: 1.12e-10, // m
+                icon: 'Be',
+                type: 'quantum object'
+            },
+            'boron': {
+                name: 'Boron Atom',
+                mass: 1.797e-26, // kg
+                radius: 8.7e-11, // m
+                icon: 'B',
+                type: 'quantum object'
+            },
+            'carbon': {
+                name: 'Carbon Atom',
+                mass: 1.994e-26, // kg
+                radius: 6.7e-11, // m
+                icon: 'C',
+                type: 'quantum object'
+            },
+            'nitrogen': {
+                name: 'Nitrogen Atom',
+                mass: 2.324e-26, // kg
+                radius: 5.6e-11, // m
+                icon: 'N',
+                type: 'quantum object'
+            },
+            'oxygen': {
+                name: 'Oxygen Atom',
+                mass: 2.656e-26, // kg
+                radius: 4.8e-11, // m
+                icon: 'O',
+                type: 'quantum object'
+            },
+            'fluorine': {
+                name: 'Fluorine Atom',
+                mass: 3.154e-26, // kg
+                radius: 4.2e-11, // m
+                icon: 'F',
+                type: 'quantum object'
+            },
+            'neon': {
+                name: 'Neon Atom',
+                mass: 3.349e-26, // kg
+                radius: 3.8e-11, // m
+                icon: 'Ne',
+                type: 'quantum object'
+            },
+            'sodium': {
+                name: 'Sodium Atom',
+                mass: 3.818e-26, // kg
+                radius: 1.86e-10, // m
+                icon: 'Na',
+                type: 'quantum object'
+            },
+            'magnesium': {
+                name: 'Magnesium Atom',
+                mass: 4.038e-26, // kg
+                radius: 1.60e-10, // m
+                icon: 'Mg',
+                type: 'quantum object'
+            },
+            'aluminum': {
+                name: 'Aluminum Atom',
+                mass: 4.479e-26, // kg
+                radius: 1.43e-10, // m
+                icon: 'Al',
+                type: 'quantum object'
+            },
+            'silicon': {
+                name: 'Silicon Atom',
+                mass: 4.661e-26, // kg
+                radius: 1.18e-10, // m
+                icon: 'Si',
+                type: 'quantum object'
+            },
+            'phosphorus': {
+                name: 'Phosphorus Atom',
+                mass: 5.146e-26, // kg
+                radius: 1.10e-10, // m
+                icon: 'P',
+                type: 'quantum object'
+            },
+            'sulfur': {
+                name: 'Sulfur Atom',
+                mass: 5.325e-26, // kg
+                radius: 1.03e-10, // m
+                icon: 'S',
+                type: 'quantum object'
+            },
+            'chlorine': {
+                name: 'Chlorine Atom',
+                mass: 5.886e-26, // kg
+                radius: 9.9e-11, // m
+                icon: 'Cl',
+                type: 'quantum object'
+            },
+            'argon': {
+                name: 'Argon Atom',
+                mass: 6.635e-26, // kg
+                radius: 7.1e-11, // m
+                icon: 'Ar',
+                type: 'quantum object'
+            },
+            'potassium': {
+                name: 'Potassium Atom',
+                mass: 6.490e-26, // kg
+                radius: 2.27e-10, // m
+                icon: 'K',
+                type: 'quantum object'
+            },
+            'calcium': {
+                name: 'Calcium Atom',
+                mass: 6.677e-26, // kg
+                radius: 1.97e-10, // m
+                icon: 'Ca',
+                type: 'quantum object'
+            },
+            'scandium': {
+                name: 'Scandium Atom',
+                mass: 7.466e-26, // kg
+                radius: 1.62e-10, // m
+                icon: 'Sc',
+                type: 'quantum object'
+            },
+            'titanium': {
+                name: 'Titanium Atom',
+                mass: 7.953e-26, // kg
+                radius: 1.47e-10, // m
+                icon: 'Ti',
+                type: 'quantum object'
+            },
+            'vanadium': {
+                name: 'Vanadium Atom',
+                mass: 8.461e-26, // kg
+                radius: 1.34e-10, // m
+                icon: 'V',
+                type: 'quantum object'
+            },
+            'chromium': {
+                name: 'Chromium Atom',
+                mass: 8.633e-26, // kg
+                radius: 1.28e-10, // m
+                icon: 'Cr',
+                type: 'quantum object'
+            },
+            'manganese': {
+                name: 'Manganese Atom',
+                mass: 9.123e-26, // kg
+                radius: 1.27e-10, // m
+                icon: 'Mn',
+                type: 'quantum object'
+            },
+            'iron': {
+                name: 'Iron Atom',
+                mass: 9.275e-26, // kg
+                radius: 1.26e-10, // m
+                icon: 'Fe',
+                type: 'quantum object'
+            },
+            'cobalt': {
+                name: 'Cobalt Atom',
+                mass: 9.787e-26, // kg
+                radius: 1.25e-10, // m
+                icon: 'Co',
+                type: 'quantum object'
+            },
+            'nickel': {
+                name: 'Nickel Atom',
+                mass: 9.746e-26, // kg
+                radius: 1.24e-10, // m
+                icon: 'Ni',
+                type: 'quantum object'
+            },
+            'copper': {
+                name: 'Copper Atom',
+                mass: 1.056e-25, // kg
+                radius: 1.28e-10, // m
+                icon: 'Cu',
+                type: 'quantum object'
+            },
+            'zinc': {
+                name: 'Zinc Atom',
+                mass: 1.086e-25, // kg
+                radius: 1.34e-10, // m
+                icon: 'Zn',
+                type: 'quantum object'
+            },
+            'gallium': {
+                name: 'Gallium Atom',
+                mass: 1.157e-25, // kg
+                radius: 1.35e-10, // m
+                icon: 'Ga',
+                type: 'quantum object'
+            },
+            'germanium': {
+                name: 'Germanium Atom',
+                mass: 1.206e-25, // kg
+                radius: 1.22e-10, // m
+                icon: 'Ge',
+                type: 'quantum object'
+            },
+            'arsenic': {
+                name: 'Arsenic Atom',
+                mass: 1.244e-25, // kg
+                radius: 1.19e-10, // m
+                icon: 'As',
+                type: 'quantum object'
+            },
+            'selenium': {
+                name: 'Selenium Atom',
+                mass: 1.310e-25, // kg
+                radius: 1.16e-10, // m
+                icon: 'Se',
+                type: 'quantum object'
+            },
+            'bromine': {
+                name: 'Bromine Atom',
+                mass: 1.327e-25, // kg
+                radius: 1.14e-10, // m
+                icon: 'Br',
+                type: 'quantum object'
+            },
+            'krypton': {
+                name: 'Krypton Atom',
+                mass: 1.389e-25, // kg
+                radius: 1.12e-10, // m
+                icon: 'Kr',
+                type: 'quantum object'
+            },
+            'rubidium': {
+                name: 'Rubidium Atom',
+                mass: 1.419e-25, // kg
+                radius: 2.48e-10, // m
+                icon: 'Rb',
+                type: 'quantum object'
+            },
+            'strontium': {
+                name: 'Strontium Atom',
+                mass: 1.455e-25, // kg
+                radius: 2.15e-10, // m
+                icon: 'Sr',
+                type: 'quantum object'
+            },
+            'yttrium': {
+                name: 'Yttrium Atom',
+                mass: 1.477e-25, // kg
+                radius: 1.90e-10, // m
+                icon: 'Y',
+                type: 'quantum object'
+            },
+            'zirconium': {
+                name: 'Zirconium Atom',
+                mass: 1.515e-25, // kg
+                radius: 1.60e-10, // m
+                icon: 'Zr',
+                type: 'quantum object'
+            },
+            'niobium': {
+                name: 'Niobium Atom',
+                mass: 1.543e-25, // kg
+                radius: 1.46e-10, // m
+                icon: 'Nb',
+                type: 'quantum object'
+            },
+            'molybdenum': {
+                name: 'Molybdenum Atom',
+                mass: 1.593e-25, // kg
+                radius: 1.39e-10, // m
+                icon: 'Mo',
+                type: 'quantum object'
+            },
+            'technetium': {
+                name: 'Technetium Atom',
+                mass: 1.627e-25, // kg
+                radius: 1.36e-10, // m
+                icon: 'Tc',
+                type: 'quantum object'
+            },
+            'ruthenium': {
+                name: 'Ruthenium Atom',
+                mass: 1.678e-25, // kg
+                radius: 1.34e-10, // m
+                icon: 'Ru',
+                type: 'quantum object'
+            },
+            'rhodium': {
+                name: 'Rhodium Atom',
+                mass: 1.709e-25, // kg
+                radius: 1.34e-10, // m
+                icon: 'Rh',
+                type: 'quantum object'
+            },
+            'palladium': {
+                name: 'Palladium Atom',
+                mass: 1.768e-25, // kg
+                radius: 1.37e-10, // m
+                icon: 'Pd',
+                type: 'quantum object'
+            },
+            'silver': {
+                name: 'Silver Atom',
+                mass: 1.790e-25, // kg
+                radius: 1.44e-10, // m
+                icon: 'Ag',
+                type: 'quantum object'
+            },
+            'cadmium': {
+                name: 'Cadmium Atom',
+                mass: 1.868e-25, // kg
+                radius: 1.54e-10, // m
+                icon: 'Cd',
+                type: 'quantum object'
+            },
+            'indium': {
+                name: 'Indium Atom',
+                mass: 1.907e-25, // kg
+                radius: 1.67e-10, // m
+                icon: 'In',
+                type: 'quantum object'
+            },
+            'tin': {
+                name: 'Tin Atom',
+                mass: 1.971e-25, // kg
+                radius: 1.58e-10, // m
+                icon: 'Sn',
+                type: 'quantum object'
+            },
+            'antimony': {
+                name: 'Antimony Atom',
+                mass: 2.022e-25, // kg
+                radius: 1.45e-10, // m
+                icon: 'Sb',
+                type: 'quantum object'
+            },
+            'tellurium': {
+                name: 'Tellurium Atom',
+                mass: 2.119e-25, // kg
+                radius: 1.40e-10, // m
+                icon: 'Te',
+                type: 'quantum object'
+            },
+            'iodine': {
+                name: 'Iodine Atom',
+                mass: 2.108e-25, // kg
+                radius: 1.33e-10, // m
+                icon: 'I',
+                type: 'quantum object'
+            },
+            'xenon': {
+                name: 'Xenon Atom',
+                mass: 2.180e-25, // kg
+                radius: 1.30e-10, // m
+                icon: 'Xe',
+                type: 'quantum object'
+            },
+            'cesium': {
+                name: 'Cesium Atom',
+                mass: 2.205e-25, // kg
+                radius: 2.60e-10, // m
+                icon: 'Cs',
+                type: 'quantum object'
+            },
+            'barium': {
+                name: 'Barium Atom',
+                mass: 2.282e-25, // kg
+                radius: 2.21e-10, // m
+                icon: 'Ba',
+                type: 'quantum object'
+            },
+            'lanthanum': {
+                name: 'Lanthanum Atom',
+                mass: 2.309e-25, // kg
+                radius: 1.95e-10, // m
+                icon: 'La',
+                type: 'quantum object'
+            },
+            'cerium': {
+                name: 'Cerium Atom',
+                mass: 2.330e-25, // kg
+                radius: 1.85e-10, // m
+                icon: 'Ce',
+                type: 'quantum object'
+            },
+            'praseodymium': {
+                name: 'Praseodymium Atom',
+                mass: 2.343e-25, // kg
+                radius: 1.83e-10, // m
+                icon: 'Pr',
+                type: 'quantum object'
+            },
+            'neodymium': {
+                name: 'Neodymium Atom',
+                mass: 2.395e-25, // kg
+                radius: 1.82e-10, // m
+                icon: 'Nd',
+                type: 'quantum object'
+            },
+            'promethium': {
+                name: 'Promethium Atom',
+                mass: 2.409e-25, // kg
+                radius: 1.80e-10, // m
+                icon: 'Pm',
+                type: 'quantum object'
+            },
+            'samarium': {
+                name: 'Samarium Atom',
+                mass: 2.500e-25, // kg
+                radius: 1.81e-10, // m
+                icon: 'Sm',
+                type: 'quantum object'
+            },
+            'europium': {
+                name: 'Europium Atom',
+                mass: 2.522e-25, // kg
+                radius: 1.99e-10, // m
+                icon: 'Eu',
+                type: 'quantum object'
+            },
+            'gadolinium': {
+                name: 'Gadolinium Atom',
+                mass: 2.610e-25, // kg
+                radius: 1.79e-10, // m
+                icon: 'Gd',
+                type: 'quantum object'
+            },
+            'terbium': {
+                name: 'Terbium Atom',
+                mass: 2.640e-25, // kg
+                radius: 1.76e-10, // m
+                icon: 'Tb',
+                type: 'quantum object'
+            },
+            'dysprosium': {
+                name: 'Dysprosium Atom',
+                mass: 2.700e-25, // kg
+                radius: 1.75e-10, // m
+                icon: 'Dy',
+                type: 'quantum object'
+            },
+            'holmium': {
+                name: 'Holmium Atom',
+                mass: 2.740e-25, // kg
+                radius: 1.74e-10, // m
+                icon: 'Ho',
+                type: 'quantum object'
+            },
+            'erbium': {
+                name: 'Erbium Atom',
+                mass: 2.780e-25, // kg
+                radius: 1.73e-10, // m
+                icon: 'Er',
+                type: 'quantum object'
+            },
+            'thulium': {
+                name: 'Thulium Atom',
+                mass: 2.810e-25, // kg
+                radius: 1.72e-10, // m
+                icon: 'Tm',
+                type: 'quantum object'
+            },
+            'ytterbium': {
+                name: 'Ytterbium Atom',
+                mass: 2.870e-25, // kg
+                radius: 1.94e-10, // m
+                icon: 'Yb',
+                type: 'quantum object'
+            },
+            'lutetium': {
+                name: 'Lutetium Atom',
+                mass: 2.900e-25, // kg
+                radius: 1.74e-10, // m
+                icon: 'Lu',
+                type: 'quantum object'
+            },
+            'hafnium': {
+                name: 'Hafnium Atom',
+                mass: 2.960e-25, // kg
+                radius: 1.59e-10, // m
+                icon: 'Hf',
+                type: 'quantum object'
+            },
+            'tantalum': {
+                name: 'Tantalum Atom',
+                mass: 3.000e-25, // kg
+                radius: 1.46e-10, // m
+                icon: 'Ta',
+                type: 'quantum object'
+            },
+            'tungsten': {
+                name: 'Tungsten Atom',
+                mass: 3.050e-25, // kg
+                radius: 1.39e-10, // m
+                icon: 'W',
+                type: 'quantum object'
+            },
+            'rhenium': {
+                name: 'Rhenium Atom',
+                mass: 3.090e-25, // kg
+                radius: 1.37e-10, // m
+                icon: 'Re',
+                type: 'quantum object'
+            },
+            'osmium': {
+                name: 'Osmium Atom',
+                mass: 3.160e-25, // kg
+                radius: 1.35e-10, // m
+                icon: 'Os',
+                type: 'quantum object'
+            },
+            'iridium': {
+                name: 'Iridium Atom',
+                mass: 3.190e-25, // kg
+                radius: 1.36e-10, // m
+                icon: 'Ir',
+                type: 'quantum object'
+            },
+            'platinum': {
+                name: 'Platinum Atom',
+                mass: 3.240e-25, // kg
+                radius: 1.39e-10, // m
+                icon: 'Pt',
+                type: 'quantum object'
+            },
+            'gold': {
+                name: 'Gold Atom',
+                mass: 3.270e-25, // kg
+                radius: 1.44e-10, // m
+                icon: 'Au',
+                type: 'quantum object'
+            },
+            'mercury': {
+                name: 'Mercury Atom',
+                mass: 3.330e-25, // kg
+                radius: 1.49e-10, // m
+                icon: 'Hg',
+                type: 'quantum object'
+            },
+            'thallium': {
+                name: 'Thallium Atom',
+                mass: 3.390e-25, // kg
+                radius: 1.70e-10, // m
+                icon: 'Tl',
+                type: 'quantum object'
+            },
+            'lead': {
+                name: 'Lead Atom',
+                mass: 3.440e-25, // kg
+                radius: 1.75e-10, // m
+                icon: 'Pb',
+                type: 'quantum object'
+            },
+            'bismuth': {
+                name: 'Bismuth Atom',
+                mass: 3.470e-25, // kg
+                radius: 1.60e-10, // m
+                icon: 'Bi',
+                type: 'quantum object'
+            },
+            'polonium': {
+                name: 'Polonium Atom',
+                mass: 3.470e-25, // kg
+                radius: 1.53e-10, // m
+                icon: 'Po',
+                type: 'quantum object'
+            },
+            'astatine': {
+                name: 'Astatine Atom',
+                mass: 3.490e-25, // kg
+                radius: 1.50e-10, // m
+                icon: 'At',
+                type: 'quantum object'
+            },
+            'radon': {
+                name: 'Radon Atom',
+                mass: 3.685e-25, // kg
+                radius: 1.20e-10, // m
+                icon: 'Rn',
+                type: 'quantum object'
+            },
+            'francium': {
+                name: 'Francium Atom',
+                mass: 3.700e-25, // kg
+                radius: 2.60e-10, // m
+                icon: 'Fr',
+                type: 'quantum object'
+            },
+            'radium': {
+                name: 'Radium Atom',
+                mass: 3.754e-25, // kg
+                radius: 2.15e-10, // m
+                icon: 'Ra',
+                type: 'quantum object'
+            },
+            'actinium': {
+                name: 'Actinium Atom',
+                mass: 3.771e-25, // kg
+                radius: 1.88e-10, // m
+                icon: 'Ac',
+                type: 'quantum object'
+            },
+            'thorium': {
+                name: 'Thorium Atom',
+                mass: 3.854e-25, // kg
+                radius: 1.79e-10, // m
+                icon: 'Th',
+                type: 'quantum object'
+            },
+            'protactinium': {
+                name: 'Protactinium Atom',
+                mass: 3.838e-25, // kg
+                radius: 1.78e-10, // m
+                icon: 'Pa',
+                type: 'quantum object'
+            },
+            'uranium': {
+                name: 'Uranium Atom',
+                mass: 3.953e-25, // kg
+                radius: 1.75e-10, // m
+                icon: 'U',
+                type: 'quantum object'
+            },
+            'neptunium': {
+                name: 'Neptunium Atom',
+                mass: 3.937e-25, // kg
+                radius: 1.74e-10, // m
+                icon: 'Np',
+                type: 'quantum object'
+            },
+            'plutonium': {
+                name: 'Plutonium Atom',
+                mass: 4.051e-25, // kg
+                radius: 1.73e-10, // m
+                icon: 'Pu',
+                type: 'quantum object'
+            },
+            'americium': {
+                name: 'Americium Atom',
+                mass: 4.034e-25, // kg
+                radius: 1.72e-10, // m
+                icon: 'Am',
+                type: 'quantum object'
+            },
+            'curium': {
+                name: 'Curium Atom',
+                mass: 4.100e-25, // kg
+                radius: 1.71e-10, // m
+                icon: 'Cm',
+                type: 'quantum object'
+            },
+            'berkelium': {
+                name: 'Berkelium Atom',
+                mass: 4.100e-25, // kg
+                radius: 1.70e-10, // m
+                icon: 'Bk',
+                type: 'quantum object'
+            },
+            'californium': {
+                name: 'Californium Atom',
+                mass: 4.166e-25, // kg
+                radius: 1.69e-10, // m
+                icon: 'Cf',
+                type: 'quantum object'
+            },
+            'einsteinium': {
+                name: 'Einsteinium Atom',
+                mass: 4.183e-25, // kg
+                radius: 1.68e-10, // m
+                icon: 'Es',
+                type: 'quantum object'
+            },
+            'fermium': {
+                name: 'Fermium Atom',
+                mass: 4.266e-25, // kg
+                radius: 1.67e-10, // m
+                icon: 'Fm',
+                type: 'quantum object'
+            },
+            'mendelevium': {
+                name: 'Mendelevium Atom',
+                mass: 4.283e-25, // kg
+                radius: 1.66e-10, // m
+                icon: 'Md',
+                type: 'quantum object'
+            },
+            'nobelium': {
+                name: 'Nobelium Atom',
+                mass: 4.300e-25, // kg
+                radius: 1.65e-10, // m
+                icon: 'No',
+                type: 'quantum object'
+            },
+            'lawrencium': {
+                name: 'Lawrencium Atom',
+                mass: 4.350e-25, // kg
+                radius: 1.64e-10, // m
+                icon: 'Lr',
+                type: 'quantum object'
+            },
+            'rutherfordium': {
+                name: 'Rutherfordium Atom',
+                mass: 4.433e-25, // kg
+                radius: 1.57e-10, // m
+                icon: 'Rf',
+                type: 'quantum object'
+            },
+            'dubnium': {
+                name: 'Dubnium Atom',
+                mass: 4.450e-25, // kg
+                radius: 1.49e-10, // m
+                icon: 'Db',
+                type: 'quantum object'
+            },
+            'seaborgium': {
+                name: 'Seaborgium Atom',
+                mass: 4.500e-25, // kg
+                radius: 1.43e-10, // m
+                icon: 'Sg',
+                type: 'quantum object'
+            },
+            'bohrium': {
+                name: 'Bohrium Atom',
+                mass: 4.517e-25, // kg
+                radius: 1.41e-10, // m
+                icon: 'Bh',
+                type: 'quantum object'
+            },
+            'hassium': {
+                name: 'Hassium Atom',
+                mass: 4.600e-25, // kg
+                radius: 1.34e-10, // m
+                icon: 'Hs',
+                type: 'quantum object'
+            },
+            'meitnerium': {
+                name: 'Meitnerium Atom',
+                mass: 4.617e-25, // kg
+                radius: 1.30e-10, // m
+                icon: 'Mt',
+                type: 'quantum object'
+            },
+            'darmstadtium': {
+                name: 'Darmstadtium Atom',
+                mass: 4.667e-25, // kg
+                radius: 1.28e-10, // m
+                icon: 'Ds',
+                type: 'quantum object'
+            },
+            'roentgenium': {
+                name: 'Roentgenium Atom',
+                mass: 4.717e-25, // kg
+                radius: 1.24e-10, // m
+                icon: 'Rg',
+                type: 'quantum object'
+            },
+            'copernicium': {
+                name: 'Copernicium Atom',
+                mass: 4.767e-25, // kg
+                radius: 1.22e-10, // m
+                icon: 'Cn',
+                type: 'quantum object'
+            },
+            'nihonium': {
+                name: 'Nihonium Atom',
+                mass: 4.816e-25, // kg
+                radius: 1.70e-10, // m
+                icon: 'Nh',
+                type: 'quantum object'
+            },
+            'flerovium': {
+                name: 'Flerovium Atom',
+                mass: 4.866e-25, // kg
+                radius: 1.80e-10, // m
+                icon: 'Fl',
+                type: 'quantum object'
+            },
+            'moscovium': {
+                name: 'Moscovium Atom',
+                mass: 4.916e-25, // kg
+                radius: 1.90e-10, // m
+                icon: 'Mc',
+                type: 'quantum object'
+            },
+            'livermorium': {
+                name: 'Livermorium Atom',
+                mass: 4.966e-25, // kg
+                radius: 1.95e-10, // m
+                icon: 'Lv',
+                type: 'quantum object'
+            },
+            'tennessine': {
+                name: 'Tennessine Atom',
+                mass: 5.016e-25, // kg
+                radius: 2.00e-10, // m
+                icon: 'Ts',
+                type: 'quantum object'
+            },
+            'oganesson': {
+                name: 'Oganesson Atom',
+                mass: 5.066e-25, // kg
+                radius: 2.00e-10, // m
+                icon: 'Og',
+                type: 'quantum object'
             },
             'cheerio': { 
                 name: 'Cheerio', 
@@ -1961,6 +2867,15 @@
                 image: "{{ static_file('images/Giganaurus.png') }}",
                 luminosity: 8.11e55 // L☉
             },
+            'tachyon_star': {
+                name: 'Tachyon Star',
+                mass: 0, // kg (massless hypothetical object)
+                radius: 2.6448e9, // m (3.8 times the Sun's radius)
+                icon: '🌠',
+                type: 'why does this even exist',
+                image: "{{ static_file('images/tachyon_star.jpeg') }}",
+                luminosity: 4.9e213 // L☉ (4.9 septuagintillion solar luminosities)
+            },
             'ulturuas': {
                 name: 'Ulturuas',
                 mass: 1.4658e93, // kg (4.91×10^50 Milky Way galaxies)
@@ -2423,6 +3338,95 @@
             // },
         };
 
+        const QUANTUM_PHASE_COLORS = {
+            solid: '#38bdf8',
+            liquid: '#f97316',
+            gas: '#22c55e',
+            plasma: '#f472b6'
+        };
+
+        const QUANTUM_GASES = new Set([
+            'hydrogen',
+            'helium',
+            'nitrogen',
+            'oxygen',
+            'fluorine',
+            'neon',
+            'chlorine',
+            'argon',
+            'krypton',
+            'xenon',
+            'radon'
+        ]);
+
+        const QUANTUM_LIQUIDS = new Set([
+            'bromine',
+            'mercury'
+        ]);
+
+        const QUANTUM_PLASMAS = new Set([
+            'nihonium',
+            'flerovium',
+            'moscovium',
+            'livermorium',
+            'tennessine',
+            'oganesson'
+        ]);
+
+        const QUARK_COLORS = {
+            up: '#fbbf24',        // amber
+            down: '#fb7185',      // rose
+            charm: '#a855f7',     // purple
+            strange: '#34d399',   // emerald
+            top: '#60a5fa',       // blue
+            bottom: '#f472b6'     // pink
+        };
+
+        function compareQuantumObjects([, objA], [, objB]) {
+            const isQuarkA = objA.type === 'quantum object' && objA.quantumVariant === 'quark';
+            const isQuarkB = objB.type === 'quantum object' && objB.quantumVariant === 'quark';
+
+            if (isQuarkA && !isQuarkB) return -1;
+            if (!isQuarkA && isQuarkB) return 1;
+
+            const radiusA = Number.isFinite(objA.radius) ? objA.radius : Number.POSITIVE_INFINITY;
+            const radiusB = Number.isFinite(objB.radius) ? objB.radius : Number.POSITIVE_INFINITY;
+            if (radiusA !== radiusB) {
+                return radiusA - radiusB;
+            }
+
+            const massA = Number.isFinite(objA.mass) ? objA.mass : Number.POSITIVE_INFINITY;
+            const massB = Number.isFinite(objB.mass) ? objB.mass : Number.POSITIVE_INFINITY;
+            if (massA !== massB) {
+                return massA - massB;
+            }
+
+            return (objA.name || '').localeCompare(objB.name || '');
+        }
+
+        Object.entries(celestialData).forEach(([key, obj]) => {
+            if (obj.type === 'quantum object') {
+                if (obj.quantumVariant === 'quark') {
+                    const quarkType = obj.quarkType || 'unknown';
+                    const color = QUARK_COLORS[quarkType] || '#38bdf8';
+                    obj.phase = `${quarkType} quark`;
+                    obj.phaseColor = color;
+                } else {
+                    let phase = 'solid';
+                    if (QUANTUM_GASES.has(key)) {
+                        phase = 'gas';
+                    } else if (QUANTUM_LIQUIDS.has(key)) {
+                        phase = 'liquid';
+                    } else if (QUANTUM_PLASMAS.has(key)) {
+                        phase = 'plasma';
+                    }
+
+                    obj.phase = phase;
+                    obj.phaseColor = QUANTUM_PHASE_COLORS[phase];
+                }
+            }
+        });
+
         // Universal gravitational constant
         const G = 6.674e-11; // m³/(kg·s²)
 
@@ -2571,35 +3575,68 @@
             return `${formattedValue} ${label} lbs`;
         }
 
+        function formatConvertedWeight(weight, factor, unit) {
+            const converted = weight * factor;
+            if (converted === 0) return `0 ${unit}`;
+
+            let decimals;
+            if (converted >= 100) {
+                decimals = 0;
+            } else if (converted >= 10) {
+                decimals = 1;
+            } else if (converted >= 1) {
+                decimals = 2;
+            } else if (converted >= 0.1) {
+                decimals = 4;
+            } else {
+                decimals = 6;
+            }
+
+            let formatted = converted.toFixed(decimals);
+
+            if (parseFloat(formatted) === 0 && converted > 0) {
+                formatted = converted.toExponential(3);
+                return `${formatted} ${unit}`;
+            }
+
+            formatted = formatted
+                .replace(/\.0+$/, '')
+                .replace(/(\.\d*[1-9])0+$/, '$1');
+
+            return `${formatted} ${unit}`;
+        }
+
         // Format weight with appropriate units (moved to global scope)
         function formatWeight(weight) {
             const largeWeight = formatLargeWeight(weight);
             if (largeWeight) {
                 return largeWeight;
             } else if (weight >= 1) {
-                return weight.toFixed(1) + ' lbs';
+                return formatConvertedWeight(weight, 1, 'lbs');
             } else if (weight >= 0.001) {
-                return (weight * 16).toFixed(2) + ' oz';
+                return formatConvertedWeight(weight, 16, 'oz');
             } else if (weight >= 0.00001) {
-                return (weight * 453.592).toFixed(2) + ' g';
+                return formatConvertedWeight(weight, 453.592, 'g');
             } else if (weight >= 0.0000008) {
-                return (weight * 453592).toFixed(2) + ' mg';
+                return formatConvertedWeight(weight, 453592, 'mg');
             } else if (weight >= 0.00000000001) {
-                return (weight * 453592000).toFixed(2) + ' μg';
+                return formatConvertedWeight(weight, 453592000, 'μg');
             } else if (weight >= 0.00000000000001) {
-                return (weight * 453592000000).toFixed(2) + ' ng';
+                return formatConvertedWeight(weight, 453592000000, 'ng');
             } else if (weight >= 0.00000000000000001) {
-                return (weight * 453592000000000).toFixed(2) + ' pg';
+                return formatConvertedWeight(weight, 453592000000000, 'pg');
             } else if (weight >= 0.00000000000000000001) {
-                return (weight * 453592000000000000).toFixed(2) + ' fg';
+                return formatConvertedWeight(weight, 453592000000000000, 'fg');
             } else if (weight >= 0.00000000000000000000001) {
-                return (weight * 453592000000000000000).toFixed(2) + ' ag';
+                return formatConvertedWeight(weight, 453592000000000000000, 'ag');
             } else if (weight >= 0.00000000000000000000000001) {
-                return (weight * 453592000000000000000000).toFixed(2) + ' zg';
+                return formatConvertedWeight(weight, 453592000000000000000000, 'zg');
             } else if (weight >= 0.00000000000000000000000000001) {
-                return (weight * 453592000000000000000000000).toFixed(2) + ' yg';
+                return formatConvertedWeight(weight, 453592000000000000000000000, 'yg');
+            } else if (weight === 0) {
+                return '0 lbs';
             } else {
-                return weight.toExponential(2) + ' lbs';
+                return weight.toExponential(3) + ' lbs';
             }
         }
 
@@ -2826,6 +3863,30 @@
             return formatWeight(weight);
         }
 
+        function hexToRGBA(hex, alpha) {
+            if (!hex) return '';
+            const sanitized = hex.replace('#', '');
+            if (sanitized.length !== 6) {
+                return hex;
+            }
+            const r = parseInt(sanitized.slice(0, 2), 16);
+            const g = parseInt(sanitized.slice(2, 4), 16);
+            const b = parseInt(sanitized.slice(4, 6), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function formatPhase(phase) {
+            if (!phase) return '';
+            return phase.charAt(0).toUpperCase() + phase.slice(1);
+        }
+
+        function applyQuantumCardStyling(card, obj) {
+            if (!obj || !obj.phaseColor) return;
+            card.style.borderColor = obj.phaseColor;
+            card.style.boxShadow = `0 6px 18px ${hexToRGBA(obj.phaseColor, 0.35)}`;
+            card.style.background = `linear-gradient(135deg, ${hexToRGBA(obj.phaseColor, 0.2)}, rgba(55, 65, 81, 0.6))`;
+        }
+
         // Calculate Earth's surface gravity for reference
         const earthGravity = calculateSurfaceGravity(celestialData.earth.mass, celestialData.earth.radius);
 
@@ -3043,6 +4104,12 @@
                                 <span class="text-gray-300">Radius:</span>
                                 <span class="text-green-400 font-bold">${formatRadius(celestialObject.radius)}</span>
                             </div>
+                            ${celestialObject.phase ? `
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Phase:</span>
+                                <span class="phase-badge" style="background:${hexToRGBA(celestialObject.phaseColor, 0.15)}; color:${celestialObject.phaseColor}; border:1px solid ${hexToRGBA(celestialObject.phaseColor, 0.5)};">${formatPhase(celestialObject.phase)}</span>
+                            </div>
+                            ` : ''}
                             ${celestialObject.length ? `
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-300">Length:</span>
@@ -3468,6 +4535,12 @@
                                 <div class="text-gray-300 text-xs">vs Earth</div>
                                 <div class="text-purple-400 font-bold">${gravityRatio < 0.001 ? gravityRatio.toExponential(3) + '×' : gravityRatio.toFixed(3) + '×'}</div>
                             </div>
+                            ${celestialObject.phase ? `
+                            <div class="text-center p-3 bg-gray-800/50 rounded col-span-2">
+                                <div class="text-gray-300 text-xs">Phase</div>
+                                <span class="phase-badge inline-block mt-2" style="background:${hexToRGBA(celestialObject.phaseColor, 0.15)}; color:${celestialObject.phaseColor}; border:1px solid ${hexToRGBA(celestialObject.phaseColor, 0.5)};">${formatPhase(celestialObject.phase)}</span>
+                            </div>
+                            ` : ''}
                             ${celestialObject.length ? `
                             <div class="text-center p-3 bg-gray-800/50 rounded col-span-2">
                                 <div class="text-gray-300 text-xs">Length</div>
@@ -3890,6 +4963,14 @@
             } else {
                 dsoObjectsNote.classList.add('hidden');
             }
+
+            // Show/hide quantum objects note
+            const quantumObjectsNote = document.getElementById('quantum-objects-note');
+            if (category === 'quantum object') {
+                quantumObjectsNote.classList.remove('hidden');
+            } else {
+                quantumObjectsNote.classList.add('hidden');
+            }
             
             // Refresh grid
             initializeObjectGrid();
@@ -4047,12 +5128,23 @@
                 : obj.name === 'Great Dark Spot'
                 ? `<img src="{{ static_file("images/Neptune's_Great_Dark_Spot.jpg") }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : `<div class="object-icon">${obj.icon}</div>`;
+
+            const phaseBadge = (obj.type === 'quantum object' && obj.phase)
+                ? `<span class="phase-badge" style="background:${hexToRGBA(obj.phaseColor, 0.15)}; color:${obj.phaseColor}; border:1px solid ${hexToRGBA(obj.phaseColor, 0.5)};">${formatPhase(obj.phase)}</span>`
+                : '';
             
             card.innerHTML = `
                 ${iconHtml}
                 <div class="object-name">${obj.name}</div>
                 <div class="object-type">${obj.type}</div>
+                ${phaseBadge}
             `;
+
+            if (obj.type === 'quantum object') {
+                card.dataset.phase = obj.phase || '';
+                card.dataset.phaseColor = obj.phaseColor || '';
+                applyQuantumCardStyling(card, obj);
+            }
             
             return card;
         }
@@ -4061,22 +5153,22 @@
         function initializeObjectGrid() {
             const grid = document.getElementById('objects-grid');
             grid.innerHTML = '';
-            
-            // Add all celestial objects
-            Object.keys(celestialData).forEach(key => {
-                const obj = celestialData[key];
-                if (shouldShowObject(obj)) {
-                    const card = createObjectCard(key, obj);
-                    grid.appendChild(card);
-                }
+
+            let entries = Object.entries(celestialData).filter(([, obj]) => shouldShowObject(obj));
+
+            if (currentFilter === 'quantum object') {
+                entries.sort(compareQuantumObjects);
+            }
+
+            entries.forEach(([key, obj]) => {
+                const card = createObjectCard(key, obj);
+                grid.appendChild(card);
             });
-            
+
             // Add custom object if filter matches
-            if (currentFilter === 'all' || currentFilter === 'custom') {
-                if (shouldShowObject(customObject)) {
-                    const card = createObjectCard('custom', customObject);
-                    grid.appendChild(card);
-                }
+            if ((currentFilter === 'all' || currentFilter === 'custom') && shouldShowObject(customObject)) {
+                const card = createObjectCard('custom', customObject);
+                grid.appendChild(card);
             }
         }
 
