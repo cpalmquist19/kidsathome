@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Image Playground — warp & distortion toy</title>
+    <script type="module" crossorigin src="/static/image_playground/assets/index-BRxV8c33.js"></script>
+    <link rel="stylesheet" crossorigin href="/static/image_playground/assets/index-Xo3UAdL_.css">
+  </head>
+  <body>
+    <header id="topbar">
+      <div class="brand">🎨 Image Playground</div>
+      <div class="spacer"></div>
+      <button id="loadBtn" class="pill">📂 Load image</button>
+      <input type="file" id="fileInput" accept="image/*" hidden />
+    </header>
+    <main id="layout">
+      <aside id="palette"></aside>
+      <div id="stage">
+        <canvas id="view"></canvas>
+        <div id="ring"></div>
+        <div id="error"></div>
+      </div>
+    </main>
+  </body>
+</html>

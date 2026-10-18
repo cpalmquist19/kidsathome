@@ -1063,6 +1063,17 @@
     }
 }
 
+@keyframes octupleBlueHyperGiantFloatUp {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -100%) scale(1.2);
+    }
+}
+
 /* Auto-Clicker Styles */
 .auto-clicker-controls {
     display: flex;

@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="icon" href="data:," />
+  <title>Shader Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #eaf4f1;
+      --muted: #92a49f;
+      --faint: #63736f;
+      --panel: #111817;
+      --panel-2: #16201e;
+      --line: #293532;
+      --acid: #a9ff3f;
+      --cyan: #33e4d1;
+      --amber: #ffb238;
+      --danger: #ff6b4a;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #080d0c; color: var(--ink); }
+    body {
+      font-family: "IBM Plex Sans", sans-serif;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        #080d0c;
+      background-size: 32px 32px;
+    }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .shell {
+      min-height: 100svh;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: minmax(230px, 290px) minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    .modes {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(132px, .82fr) repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .back-btn {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 10px 12px;
+      border-radius: 11px 3px 3px 11px;
+      border: 1px solid var(--acid);
+      background: var(--acid);
+      color: #0a100d;
+      text-decoration: none;
+      min-width: 0;
+      box-shadow: 0 0 16px rgba(169, 255, 63, .22);
+      transition: filter .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+    .back-btn:hover {
+      filter: brightness(1.06);
+      transform: translateX(-1px);
+      box-shadow: 0 0 22px rgba(169, 255, 63, .36);
+    }
+    .back-btn:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 3px;
+    }
+    .mode {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #0e1514;
+      padding: 10px 12px;
+      text-align: left;
+      cursor: pointer;
+      min-width: 0;
+      transition: border-color .18s ease, background .18s ease, color .18s ease;
+    }
+    .mode:last-child { border-radius: 3px 11px 11px 3px; }
+    .mode:hover { border-color: #53645f; }
+    .mode.active {
+      background: var(--acid);
+      color: #0a100d;
+      border-color: var(--acid);
+    }
+    .mode-index {
+      display: block;
+      font: 500 10px/1 "IBM Plex Mono", monospace;
+      opacity: .58;
+      margin-bottom: 6px;
+    }
+    .mode-name { display: block; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .controls {
+      background: rgba(14,21,20,.96);
+      border: 1px solid var(--line);
+      border-radius: 14px 5px 5px 14px;
+      padding: 18px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .specimen-number {
+      font: 500 11px/1.2 "IBM Plex Mono", monospace;
+      color: var(--acid);
+      margin-bottom: 8px;
+    }
+    .controls h1 {
+      font-size: clamp(26px, 3vw, 40px);
+      line-height: .98;
+      letter-spacing: -.035em;
+      margin: 0 0 10px;
+      max-width: 8ch;
+    }
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.48;
+      font-size: 13px;
+    }
+    .control-list { display: grid; gap: 18px; }
+    .control-row { display: grid; gap: 9px; }
+    .control-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+    .control-head label { font-size: 12px; font-weight: 500; }
+    .control-head output { font: 500 11px/1 "IBM Plex Mono", monospace; color: var(--cyan); }
+    input[type="range"] {
+      width: 100%; height: 20px; margin: 0; appearance: none; background: transparent; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: #40504c; }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none; width: 13px; height: 13px; border-radius: 2px; background: var(--acid); margin-top: -5.5px; border: 0;
+    }
+    input[type="range"]::-moz-range-track { height: 2px; background: #40504c; }
+    input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border-radius: 2px; background: var(--acid); border: 0; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .action {
+      border: 1px solid #3a4945;
+      background: transparent;
+      border-radius: 7px;
+      padding: 9px 10px;
+      font: 500 11px/1 "IBM Plex Mono", monospace;
+      cursor: pointer;
+    }
+    .action:hover { background: var(--panel-2); border-color: #667b75; }
+    .note {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 10px 1fr;
+      gap: 10px;
+      color: var(--faint);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .note-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; background: var(--acid); box-shadow: 0 0 12px var(--acid); }
+
+    .stage {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 5px 14px 14px 5px;
+      overflow: hidden;
+      background: #020504;
+      position: relative;
+      display: grid;
+      grid-template-rows: minmax(430px, 1fr) auto;
+    }
+    .viewport { position: relative; min-height: 0; overflow: hidden; touch-action: none; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .scanlines {
+      position: absolute; inset: 0; pointer-events: none; opacity: .12;
+      background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(0,0,0,.45) 4px);
+      mix-blend-mode: multiply;
+    }
+    .hud {
+      position: absolute; top: 14px; left: 14px; right: 14px;
+      display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none;
+      font: 500 10px/1.3 "IBM Plex Mono", monospace;
+      color: rgba(226,244,239,.68);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .hud-chip { background: rgba(5,12,10,.58); border: 1px solid rgba(170,255,63,.18); padding: 7px 9px; border-radius: 4px; }
+    .hud-right { text-align: right; }
+    .drag-hint {
+      position: absolute; bottom: 14px; right: 14px;
+      font: 400 10px/1 "IBM Plex Mono", monospace;
+      color: rgba(226,244,239,.48);
+      background: rgba(5,12,10,.5);
+      padding: 7px 9px; border-radius: 4px;
+      pointer-events: none;
+    }
+    .explain {
+      border-top: 1px solid var(--line);
+      background: #0d1413;
+      padding: 18px 20px;
+      display: grid;
+      grid-template-columns: minmax(180px, .72fr) minmax(0, 1.5fr);
+      gap: 28px;
+    }
+    .explain-label {
+      font: 500 10px/1.2 "IBM Plex Mono", monospace;
+      color: var(--amber);
+      margin-bottom: 9px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .explain h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+    .explain p { color: var(--muted); margin: 0; font-size: 12.5px; line-height: 1.58; }
+    .tech-line { margin-top: 10px; color: #b8cac5; font: 400 10px/1.5 "IBM Plex Mono", monospace; }
+    .fallback {
+      position: absolute; inset: 0; display: none; place-items: center; padding: 24px;
+      text-align: center; color: var(--muted); font-size: 13px; background: #050908;
+    }
+    @media (max-width: 760px) {
+      .shell { display: flex; flex-direction: column; padding: 10px; gap: 8px; }
+      .modes { order: 0; grid-template-columns: 1fr 1fr; }
+      .back-btn { grid-column: 1 / -1; border-radius: 8px; }
+      .mode, .mode:last-child { border-radius: 6px; padding: 10px; }
+      .controls { order: 2; border-radius: 8px 8px 14px 14px; padding: 16px; }
+      .controls h1 { max-width: none; font-size: 28px; }
+      .stage { order: 1; border-radius: 14px 14px 6px 6px; grid-template-rows: minmax(52svh, 430px) auto; }
+      .explain { grid-template-columns: 1fr; gap: 12px; padding: 16px; }
+      .control-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+      .actions { max-width: 320px; }
+      .note { margin-top: 0; }
+    }
+    @media (max-width: 500px) {
+      .control-list { grid-template-columns: 1fr; gap: 15px; }
+      .stage { grid-template-rows: 58svh auto; }
+      .hud { top: 9px; left: 9px; right: 9px; }
+      .drag-hint { bottom: 9px; right: 9px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .scanlines { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav class="modes" aria-label="Shader scenes">
+      <a class="back-btn" href="/">
+        <span class="mode-index">00 / HOME</span>
+        <span class="mode-name">← Back</span>
+      </a>
+      <button class="mode active" data-scene="blackhole"><span class="mode-index">01 / GRAVITY</span><span class="mode-name">Black hole</span></button>
+      <button class="mode" data-scene="plasma"><span class="mode-index">02 / ENERGY</span><span class="mode-name">Plasma beam</span></button>
+      <button class="mode" data-scene="ocean"><span class="mode-index">03 / SURFACE</span><span class="mode-name">Deep ocean</span></button>
+      <button class="mode" data-scene="aurora"><span class="mode-index">04 / FIELD</span><span class="mode-name">Aurora</span></button>
+    </nav>
+
+    <aside class="controls">
+      <section>
+        <div class="specimen-number" id="specimen">SPECIMEN 01</div>
+        <h1 id="sceneTitle">Gravity made visible.</h1>
+        <p class="lead" id="sceneLead">A stylized event horizon bends a procedural starfield while hot gas races around the edge.</p>
+      </section>
+
+      <section class="control-list" aria-label="Scene controls">
+        <div class="control-row">
+          <div class="control-head"><label for="controlA" id="labelA">Spin</label><output id="outA">1.00×</output></div>
+          <input id="controlA" type="range" min="0" max="2" value="1" step="0.01" />
+        </div>
+        <div class="control-row">
+          <div class="control-head"><label for="controlB" id="labelB">Lensing</label><output id="outB">0.85</output></div>
+          <input id="controlB" type="range" min="0" max="3" value="0.85" step="0.01" />
+        </div>
+        <div class="control-row">
+          <div class="control-head"><label for="controlC" id="labelC">Exposure</label><output id="outC">1.18</output></div>
+          <input id="controlC" type="range" min="0.1" max="5" value="1.18" step="0.01" />
+        </div>
+        <div class="control-row">
+          <div class="control-head"><label for="controlD" id="labelD">Stars</label><output id="outD">1.00×</output></div>
+          <input id="controlD" type="range" min="0" max="2" value="1" step="0.01" />
+        </div>
+        <div class="control-row">
+          <div class="control-head"><label for="controlE" id="labelE">Zoom</label><output id="outE">1.00×</output></div>
+          <input id="controlE" type="range" min="0.4" max="2.4" value="1" step="0.01" />
+        </div>
+      </section>
+
+      <div class="actions">
+        <button class="action" id="pauseBtn" type="button">PAUSE</button>
+        <button class="action" id="resetBtn" type="button">RESET</button>
+      </div>
+
+      <div class="note"><span class="note-dot"></span><span>Move across the viewport to disturb the field. The math runs on your GPU in real time.</span></div>
+    </aside>
+
+    <section class="stage" aria-label="Interactive shader viewport">
+      <div class="viewport" id="viewport">
+        <div class="hud"><span class="hud-chip" id="hudName">BH–01 / ACCRETION</span><span class="hud-right"><span id="fps">60</span> FPS<br><span id="resolution">—</span></span></div>
+        <div class="drag-hint">POINTER → FIELD OFFSET</div>
+        <div class="scanlines"></div>
+        <div class="fallback" id="fallback">WebGL could not start in this browser. Try opening the lab in a current browser with hardware acceleration enabled.</div>
+      </div>
+      <div class="explain">
+        <div>
+          <div class="explain-label">What you’re seeing</div>
+          <h2 id="explainTitle">Light curves around an absence.</h2>
+        </div>
+        <div>
+          <p id="explainBody">The hole is a dark mask. Around it, the shader twists coordinates before sampling a procedural starfield, which creates the illusion of gravitational lensing. The disk is layered noise bent into polar coordinates—not a simulation, but a fast visual model.</p>
+          <div class="tech-line" id="techLine">FRAGMENT SHADER · FBM NOISE · POLAR WARP · ADDITIVE COLOR</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    const vertex = `
+      attribute vec2 aPosition;
+      varying vec2 vUv;
+      void main(){
+        vUv = aPosition * .5 + .5;
+        gl_Position = vec4(aPosition, 0.0, 1.0);
+      }
+    `;
+
+    const common = `
+      precision highp float;
+      varying vec2 vUv;
+      uniform float uTime;
+      uniform vec2 uResolution;
+      uniform vec2 uPointer;
+      uniform vec3 uControl;
+      uniform vec2 uExtra;
+      #define PI 3.14159265359
+      float hash21(vec2 p){
+        p = fract(p * vec2(123.34, 456.21));
+        p += dot(p, p + 45.32);
+        return fract(p.x * p.y);
+      }
+      float noise(vec2 p){
+        vec2 i=floor(p), f=fract(p);
+        f=f*f*(3.0-2.0*f);
+        return mix(mix(hash21(i),hash21(i+vec2(1,0)),f.x),mix(hash21(i+vec2(0,1)),hash21(i+vec2(1,1)),f.x),f.y);
+      }
+      float fbm(vec2 p){
+        float v=0.0, a=.5;
+        mat2 r=mat2(.8,-.6,.6,.8);
+        for(int i=0;i<5;i++){ v += a*noise(p); p=r*p*2.03+1.7; a*=.5; }
+        return v;
+      }
+      vec3 tonemap(vec3 c){ return c/(1.0+c); }
+    `;
+
+    const shaders = {
+      blackhole: `${common}
+        void main(){
+          vec2 uv=(gl_FragCoord.xy-.5*uResolution.xy)/uResolution.y;
+          uv /= max(uExtra.y,.2);
+          uv += uPointer*.035;
+          float r=length(uv), a=atan(uv.y,uv.x);
+          float lens=uControl.y;
+          float invR=1.0/max(r,.055);
+          float invR2=1.0/max(r*r,.006);
+          float lensAmt=lens*(.11*invR2+.26*invR);
+          vec2 bent=uv*(1.0+lensAmt);
+          float swirl=a+lens*.28*invR;
+          vec2 warped=vec2(cos(swirl),sin(swirl))*length(bent);
+          vec2 starRes=vec2(125.,70.);
+          vec2 cell=warped*starRes;
+          vec2 grid=floor(cell);
+          float core=pow(max(0.,1.-length(fract(cell)-.5)*2.),7.);
+          float density=clamp(uExtra.x,0.,2.);
+          float thresh=mix(.99982,.978,density*.5);
+          float star=step(thresh,hash21(grid))*core;
+          vec3 col=vec3(star)*mix(vec3(.3,.65,1.),vec3(1.),hash21(grid+4.));
+          float faintThresh=mix(1.,.985,clamp(density-1.,0.,1.));
+          float faint=step(faintThresh,hash21(grid+19.7))*pow(max(0.,1.-length(fract(cell)-.5)*2.6),9.);
+          col+=vec3(faint)*mix(vec3(.4,.7,1.),vec3(.9,.95,1.),hash21(grid+8.))*.45;
+          float warp=fbm(vec2(uv.x*14.-uv.y*2.-uTime*uControl.x*1.8,(r-.23)*34.));
+          float disk=exp(-pow(abs(r-.27 + (warp-.5)*.026)/.045,2.));
+          float cut=smoothstep(.06,.19,abs(uv.y+2.*uv.x*uv.y/max(r*r,.001)*.018));
+          float dop=.42+.95*smoothstep(-.8,.8,cos(a-.25));
+          vec3 hot=mix(vec3(.95,.1,.015),vec3(1.,.92,.5),pow(dop,1.8));
+          col += hot*disk*(.7+1.5*warp)*mix(.4,1.,cut)*dop;
+          float ring=exp(-abs(r-.205)*105.);
+          col += vec3(1.,.68,.2)*ring*(.45+dop);
+          float horizon=smoothstep(.157,.169,r);
+          col*=horizon;
+          col += vec3(.02,.045,.04)*smoothstep(.5,.12,r)*horizon;
+          float vign=smoothstep(1.05,.35,length(uv));
+          col=tonemap(col*uControl.z*1.7)*vign;
+          col += (hash21(gl_FragCoord.xy+uTime)-.5)/255.;
+          gl_FragColor=vec4(col,1.);
+        }`,
+      plasma: `${common}
+        void main(){
+          vec2 uv=(gl_FragCoord.xy-.5*uResolution.xy)/uResolution.y;
+          uv += uPointer*.06;
+          uv=mat2(.94,-.34,.34,.94)*uv;
+          float turb=uControl.x;
+          float n=fbm(vec2(uv.x*3.5-uTime*2.2,uv.y*8.)*turb);
+          float bend=.06*sin(uv.x*6.-uTime*2.)+.035*sin(uv.x*15.+uTime*3.);
+          float d=abs(uv.y+bend+(n-.5)*.16);
+          float core=exp(-d*95.*uControl.z);
+          float body=exp(-d*17.);
+          float shell=exp(-abs(d-.075)*32.);
+          float endMask=smoothstep(.74,.55,abs(uv.x));
+          vec3 col=vec3(.004,.008,.018);
+          col += vec3(.03,.22,.95)*body*2.2*uControl.y;
+          col += vec3(.02,1.,.85)*shell*.75*uControl.y;
+          col += vec3(1.,1.,1.)*core*4.*uControl.y;
+          col*=endMask;
+          float sparks=step(.986,noise(vec2(uv.x*80.-uTime*8.,uv.y*70.)))*exp(-d*7.)*endMask;
+          col+=vec3(.3,.8,1.)*sparks*2.;
+          col += vec3(.01,.018,.04)*(1.-length(uv));
+          gl_FragColor=vec4(tonemap(col*1.8),1.);
+        }`,
+      ocean: `${common}
+        void main(){
+          vec2 p=(gl_FragCoord.xy/uResolution.xy)*2.-1.;
+          p.x*=uResolution.x/uResolution.y;
+          p += uPointer*.05;
+          float horizon=-.08;
+          vec3 sky=mix(vec3(.006,.035,.065),vec3(.17,.48,.55),max(0.,p.y+.45));
+          float sun=exp(-length(p-vec2(.43,.35))*8.)*uControl.z;
+          sky+=vec3(1.,.62,.24)*sun;
+          if(p.y>horizon){
+            float haze=exp(-abs(p.y-horizon)*14.);
+            sky+=vec3(.3,.55,.55)*haze*.18;
+            gl_FragColor=vec4(tonemap(sky),1.); return;
+          }
+          float depth=1./max(.04,horizon-p.y);
+          vec2 q=vec2(p.x*depth*.62, depth*.24+uTime*.18*uControl.x);
+          float w=fbm(q*vec2(1.3,2.8));
+          float w2=fbm(q*vec2(4.,7.)+w*2.4);
+          float ridge=pow(abs(w2-.5)*2.,3.5);
+          float fres=pow(clamp(depth*.035,0.,1.),.6);
+          vec3 sea=mix(vec3(.002,.035,.045),vec3(.025,.19,.2),fres);
+          sea+=vec3(.11,.37,.36)*ridge*uControl.y;
+          float glint=pow(max(0.,1.-abs(q.x-1.3)*.17-ridge),10.)*uControl.z;
+          sea+=vec3(1.,.65,.32)*glint*.8;
+          float foam=smoothstep(.72,.95,w2+ridge*.35)*smoothstep(2.,8.,depth);
+          sea+=vec3(.5,.85,.8)*foam*.35*uControl.y;
+          gl_FragColor=vec4(tonemap(sea*1.35),1.);
+        }`,
+      aurora: `${common}
+        void main(){
+          vec2 uv=(gl_FragCoord.xy-.5*uResolution.xy)/uResolution.y;
+          uv += uPointer*.075;
+          vec3 col=vec3(.003,.007,.018);
+          vec2 stars=floor(uv*150.);
+          float st=step(.996,hash21(stars))*pow(max(0.,1.-length(fract(uv*150.)-.5)*2.),6.);
+          col+=vec3(.45,.65,1.)*st;
+          float curtains=0.;
+          vec3 aur=vec3(0.);
+          for(int i=0;i<4;i++){
+            float fi=float(i);
+            float x=uv.x*1.7+sin(uv.y*(3.+fi)+uTime*uControl.y*(.35+fi*.08)+fi)*.22;
+            float wave=sin(x*(5.+fi*1.7)+fbm(vec2(x*2.,uv.y*1.4+uTime*.12))*3.);
+            float band=exp(-abs(uv.y+.04-fi*.075+wave*.07)*28./uControl.x);
+            float ray=noise(vec2(x*35.+fi*8.,uv.y*2.-uTime*.5));
+            vec3 c=mix(vec3(.05,1.,.42),vec3(.18,.38,1.),smoothstep(-.5,.65,uv.x+fi*.08));
+            c=mix(c,vec3(.82,.18,1.),smoothstep(.55,1.1,uv.y+wave));
+            aur+=c*band*(.3+.9*ray);
+            curtains+=band;
+          }
+          float vertical=smoothstep(-.8,.6,uv.y)*(.25+.75*noise(vec2(uv.x*40.,uTime*.1)));
+          col+=aur*(.6+vertical)*uControl.z;
+          col+=vec3(.03,.16,.12)*pow(curtains*.18,2.);
+          float ground=smoothstep(-.38,-.55,uv.y)*(1.-smoothstep(-.62,-.48,uv.y+noise(vec2(uv.x*4.,0.))*.1));
+          col=mix(col,vec3(.003,.009,.012),ground);
+          gl_FragColor=vec4(tonemap(col*1.7),1.);
+        }`
+    };
+
+    const sceneData = {
+      blackhole: {
+        specimen:'SPECIMEN 01', title:'Gravity made visible.', lead:'A stylized event horizon bends a procedural starfield while hot gas races around the edge.',
+        labels:['Spin','Lensing','Exposure','Stars','Zoom'], ranges:[[0,2,1],[0,3,.85],[.1,5,1.18],[0,2,1],[.4,2.4,1]], units:['×','','','×','×'], hud:'BH–01 / ACCRETION',
+        explainTitle:'Light curves around an absence.', explain:'The hole is a dark mask. Around it, the shader twists coordinates before sampling a procedural starfield, which creates the illusion of gravitational lensing. The disk is layered noise bent into polar coordinates—not a simulation, but a fast visual model.', tech:'FRAGMENT SHADER · FBM NOISE · POLAR WARP · ADDITIVE COLOR'
+      },
+      plasma: {
+        specimen:'SPECIMEN 02', title:'Contained violence.', lead:'A white-hot core wrapped in turbulent blue plasma, built entirely from distance fields and layered noise.',
+        labels:['Turbulence','Intensity','Core focus'], ranges:[[.35,2.2,1.15],[.3,2,1.25],[.45,1.8,1]], units:['×','×',''], hud:'PL–02 / ION STREAM',
+        explainTitle:'Noise gives the beam a pulse.', explain:'A simple line-shaped distance field becomes the beam. Fractal noise offsets that line differently at every point, creating the writhing outer shell. Several soft layers stack from deep blue to cyan to white, imitating an overexposed energy core.', tech:'FRAGMENT SHADER · SIGNED DISTANCE FIELD · FRACTAL NOISE · GLOW LAYERS'
+      },
+      ocean: {
+        specimen:'SPECIMEN 03', title:'An ocean without water.', lead:'Perspective, wave bands, and a low sun turn a flat rectangle into a restless deep-sea horizon.',
+        labels:['Swell speed','Choppiness','Sun glint'], ranges:[[0,2,1],[.2,2,1.15],[0,2,1.1]], units:['×','×','×'], hud:'OC–03 / SEA STATE',
+        explainTitle:'Depth is a coordinate trick.', explain:'Pixels near the horizon sample the noise field more densely than pixels near the viewer. That compressed spacing reads as distance. Ridged noise becomes wavelets and foam, while a Fresnel-like blend makes shallow viewing angles brighter.', tech:'FRAGMENT SHADER · PERSPECTIVE PROJECTION · RIDGED NOISE · FRESNEL APPROXIMATION'
+      },
+      aurora: {
+        specimen:'SPECIMEN 04', title:'A magnetic sky.', lead:'Layered luminous curtains drift across a sparse starfield, with color changing through height and overlap.',
+        labels:['Fold width','Drift speed','Glow'], ranges:[[.45,2,1],[0,2,.85],[.3,2,1.2]], units:['×','×','×'], hud:'AU–04 / FIELD CURTAIN',
+        explainTitle:'Four waves become a moving curtain.', explain:'Each aurora band is a sine wave displaced by smooth noise. Narrow vertical variations break the bands into rays, and overlapping green, blue, and magenta layers create the luminous folds. It is an artistic model—not a simulation of charged particles.', tech:'FRAGMENT SHADER · LAYERED SINE FIELDS · DOMAIN WARPING · PROCEDURAL STARS'
+      }
+    };
+
+    const viewport=document.getElementById('viewport');
+    const fallback=document.getElementById('fallback');
+    const canvas=document.createElement('canvas');
+    viewport.insertBefore(canvas,viewport.firstChild);
+    const gl=canvas.getContext('webgl',{antialias:false,powerPreference:'high-performance',preserveDrawingBuffer:true});
+    let active='blackhole', paused=false, elapsed=0, last=performance.now(), frameCount=0, fpsTime=last;
+    const pointer={x:0,y:0}, pointerTarget={x:0,y:0};
+    let program=null, locations={};
+
+    function compile(type,source){
+      const sh=gl.createShader(type); gl.shaderSource(sh,source); gl.compileShader(sh);
+      if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+      return sh;
+    }
+    function createProgram(fragment){
+      const prog=gl.createProgram();
+      gl.attachShader(prog,compile(gl.VERTEX_SHADER,vertex));
+      gl.attachShader(prog,compile(gl.FRAGMENT_SHADER,fragment));
+      gl.linkProgram(prog);
+      if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+      return prog;
+    }
+    function loadProgram(name){
+      if(!gl)return;
+      try {
+        if(program) gl.deleteProgram(program);
+        program=createProgram(shaders[name]); gl.useProgram(program);
+        const pos=gl.getAttribLocation(program,'aPosition');
+        const buffer=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]),gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
+        locations={
+          time:gl.getUniformLocation(program,'uTime'), resolution:gl.getUniformLocation(program,'uResolution'),
+          pointer:gl.getUniformLocation(program,'uPointer'), control:gl.getUniformLocation(program,'uControl'), extra:gl.getUniformLocation(program,'uExtra')
+        };
+      } catch(e){ fallback.style.display='grid'; fallback.textContent='The shader could not compile on this GPU: '+e.message; }
+    }
+    if(!gl){ fallback.style.display='grid'; }
+    else { loadProgram(active); }
+
+    const ids=['A','B','C','D','E'];
+    const inputs=ids.map(x=>document.getElementById('control'+x));
+    const outputs=ids.map(x=>document.getElementById('out'+x));
+    const labels=ids.map(x=>document.getElementById('label'+x));
+
+    function displayValue(i,val){
+      const unit=sceneData[active].units[i]||'';
+      return Number(val).toFixed(2)+unit;
+    }
+    function updateUniforms(){ inputs.forEach((input,i)=>{ if(!input.closest('.control-row').hidden) outputs[i].value=displayValue(i,input.value); }); }
+    inputs.forEach(i=>i.addEventListener('input',updateUniforms));
+
+    function setScene(name){
+      active=name; const d=sceneData[name];
+      document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active',b.dataset.scene===name));
+      document.getElementById('specimen').textContent=d.specimen;
+      document.getElementById('sceneTitle').textContent=d.title;
+      document.getElementById('sceneLead').textContent=d.lead;
+      document.getElementById('hudName').textContent=d.hud;
+      document.getElementById('explainTitle').textContent=d.explainTitle;
+      document.getElementById('explainBody').textContent=d.explain;
+      document.getElementById('techLine').textContent=d.tech;
+      inputs.forEach((input,i)=>{
+        const row=input.closest('.control-row');
+        const on=i<d.labels.length;
+        row.hidden=!on;
+        if(!on) return;
+        labels[i].textContent=d.labels[i];
+        const r=d.ranges[i];
+        input.min=r[0]; input.max=r[1]; input.value=r[2]; input.step=.01;
+      });
+      loadProgram(name); updateUniforms();
+    }
+    document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>setScene(b.dataset.scene)));
+
+    function resize(){
+      if(!gl)return;
+      const ratio=Math.min(devicePixelRatio||1,1.5), w=Math.max(1,Math.floor(viewport.clientWidth*ratio)), h=Math.max(1,Math.floor(viewport.clientHeight*ratio));
+      if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h); }
+      document.getElementById('resolution').textContent=`${w}×${h}`;
+    }
+    new ResizeObserver(resize).observe(viewport); resize();
+
+    function point(e){
+      const r=viewport.getBoundingClientRect();
+      pointerTarget.x=((e.clientX-r.left)/r.width-.5)*2;
+      pointerTarget.y=-((e.clientY-r.top)/r.height-.5)*2;
+    }
+    viewport.addEventListener('pointermove',point);
+    viewport.addEventListener('pointerleave',()=>{pointerTarget.x=0;pointerTarget.y=0;});
+    document.getElementById('pauseBtn').addEventListener('click',()=>{ paused=!paused; document.getElementById('pauseBtn').textContent=paused?'PLAY':'PAUSE'; });
+    document.getElementById('resetBtn').addEventListener('click',()=>{elapsed=0;pointerTarget.x=pointerTarget.y=0;setScene(active);});
+
+    function animate(now){
+      requestAnimationFrame(animate);
+      if(!gl||!program)return;
+      resize();
+      const dt=Math.min(.05,(now-last)/1000); last=now;
+      if(!paused && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) elapsed+=dt;
+      pointer.x+=(pointerTarget.x-pointer.x)*.055; pointer.y+=(pointerTarget.y-pointer.y)*.055;
+      gl.useProgram(program);
+      gl.uniform1f(locations.time,elapsed);
+      gl.uniform2f(locations.resolution,canvas.width,canvas.height);
+      gl.uniform2f(locations.pointer,pointer.x,pointer.y);
+      gl.uniform3f(locations.control,Number(inputs[0].value),Number(inputs[1].value),Number(inputs[2].value));
+      gl.uniform2f(locations.extra,Number(inputs[3].value),Number(inputs[4].value));
+      gl.drawArrays(gl.TRIANGLES,0,6);
+      frameCount++;
+      if(now-fpsTime>700){ document.getElementById('fps').textContent=Math.round(frameCount*1000/(now-fpsTime)); frameCount=0; fpsTime=now; }
+    }
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

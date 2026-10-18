@@ -16,11 +16,15 @@ import mysql.connector
 import locale
 import os
 import random
+import ipaddress
+import socket
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from pathlib import Path
 import openai
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
+from urllib.error import HTTPError, URLError
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 import json
 import secrets
 import smtplib
@@ -143,6 +147,29 @@ def get_database_uri():
     else:
         return DevelopmentConfig.get_database_uri()
 
+def get_monsters_database_uri():
+    """Get monsters database URI based on detected environment"""
+    environment = get_environment()
+    
+    if environment == 'production':
+        mysql_config = {
+            'host': os.environ.get('PRODUCTION_DB_HOST'),
+            'port': int(os.environ.get('PRODUCTION_DB_PORT', 3306)),
+            'user': os.environ.get('PRODUCTION_DB_USER'),
+            'password': os.environ.get('PRODUCTION_DB_PASSWORD'),
+            'database': os.environ.get('PRODUCTION_MONSTERS_DB_NAME', 'monsters')
+        }
+    else:
+        mysql_config = {
+            'host': os.environ.get('LOCAL_MYSQL_HOST', 'localhost'),
+            'port': int(os.environ.get('LOCAL_MYSQL_PORT', 3306)),
+            'user': os.environ.get('LOCAL_MYSQL_USER', 'root'),
+            'password': os.environ.get('LOCAL_MYSQL_PASSWORD', ''),
+            'database': os.environ.get('LOCAL_MONSTERS_DB_NAME', 'monsters')
+        }
+    
+    return f"mysql+pymysql://{mysql_config['user']}:{mysql_config['password']}@{mysql_config['host']}:{mysql_config['port']}/{mysql_config['database']}"
+
 def log_startup_info():
     """Log comprehensive startup information for diagnostics"""
     environment = get_environment()
@@ -198,10 +225,15 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # Cache static files aggress
 
 # Set database URI based on detected environment
 app.config['SQLALCHEMY_DATABASE_URI'] = get_database_uri()
+# Set monsters database URI for boss creator models
+app.config['SQLALCHEMY_BINDS'] = {
+    'monsters': get_monsters_database_uri()
+}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Import models and initialize database
-from models import db, UserModel, PasswordResetToken, GeneratedSystem, UserActivity, UserSpaceStats, Boss
+from models import (db, UserModel, PasswordResetToken, GeneratedSystem, UserActivity, 
+                    UserSpaceStats, Boss)
 
 # Initialize extensions
 db.init_app(app)
@@ -377,6 +409,144 @@ def unieat():
 def gravity_lab():
     return render_template('gravity_lab.html')
 
+@app.route('/shader_lab')
+def shader_lab():
+    return render_template('Shader_Lab.html')
+
+IMAGE_PLAYGROUND_EXTENSIONS = {'.gif', '.ico', '.jpeg', '.jpg', '.png', '.webp'}
+REMOTE_IMAGE_TYPES = {
+    'image/avif',
+    'image/gif',
+    'image/jpeg',
+    'image/png',
+    'image/vnd.microsoft.icon',
+    'image/webp',
+    'image/x-icon',
+}
+MAX_REMOTE_IMAGE_BYTES = 10 * 1024 * 1024
+
+
+class ImageProxyNoRedirect(HTTPRedirectHandler):
+    """Keep redirects visible so each destination can be safety-checked."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def is_public_image_host(hostname):
+    """Reject local, private, and otherwise non-public proxy destinations."""
+    if not hostname:
+        return False
+
+    try:
+        addresses = socket.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)
+        return bool(addresses) and all(
+            ipaddress.ip_address(address[4][0].split('%')[0]).is_global
+            for address in addresses
+        )
+    except (OSError, ValueError):
+        return False
+
+
+def validate_remote_image_url(url):
+    parsed = urlparse(url)
+    if parsed.scheme not in {'http', 'https'} or parsed.username or parsed.password:
+        return None
+    if not is_public_image_host(parsed.hostname):
+        return None
+    return parsed
+
+
+def fetch_remote_image(url):
+    """Fetch a public raster image, checking every redirect before following it."""
+    opener = build_opener(ImageProxyNoRedirect())
+    current_url = url
+
+    for _ in range(4):
+        if not validate_remote_image_url(current_url):
+            raise ValueError('The image URL must use a public HTTP or HTTPS address.')
+
+        request_headers = {'User-Agent': 'KidsAtHome-ImagePlayground/1.0'}
+        try:
+            response = opener.open(Request(current_url, headers=request_headers), timeout=10)
+        except HTTPError as error:
+            if error.code not in {301, 302, 303, 307, 308}:
+                raise
+            location = error.headers.get('Location')
+            error.close()
+            if not location:
+                raise ValueError('The image URL redirected without a destination.')
+            current_url = urljoin(current_url, location)
+            continue
+        except URLError as error:
+            raise ValueError('The image URL could not be reached.') from error
+
+        return response
+
+    raise ValueError('The image URL redirected too many times.')
+
+
+def get_image_playground_library():
+    """Return the browser-displayable images available to the playground."""
+    images_root = os.path.join(app.static_folder, 'images')
+    images = []
+
+    for root, _, filenames in os.walk(images_root):
+        for filename in filenames:
+            if os.path.splitext(filename)[1].lower() not in IMAGE_PLAYGROUND_EXTENSIONS:
+                continue
+
+            file_path = os.path.join(root, filename)
+            static_path = os.path.relpath(file_path, app.static_folder).replace(os.sep, '/')
+            images.append({
+                'name': filename,
+                'path': static_path,
+                'url': static_file(static_path),
+            })
+
+    return sorted(images, key=lambda image: image['path'].casefold())
+
+
+@app.route('/api/image-proxy')
+def image_proxy():
+    """Safely retrieve a remote raster image for the browser-based editor."""
+    image_url = request.args.get('url', '').strip()
+    if not image_url:
+        return jsonify({'error': 'An image URL is required.'}), 400
+
+    try:
+        response = fetch_remote_image(image_url)
+        content_type = response.headers.get_content_type().lower()
+        content_length = response.headers.get('Content-Length')
+        if content_type not in REMOTE_IMAGE_TYPES:
+            response.close()
+            return jsonify({'error': 'The URL did not return a supported raster image.'}), 415
+        if content_length:
+            try:
+                if int(content_length) > MAX_REMOTE_IMAGE_BYTES:
+                    response.close()
+                    return jsonify({'error': 'The image is larger than the 10 MB limit.'}), 413
+            except ValueError:
+                # A malformed length header is harmless; enforce the limit while streaming below.
+                pass
+
+        image_bytes = bytearray()
+        while chunk := response.read(min(64 * 1024, MAX_REMOTE_IMAGE_BYTES + 1 - len(image_bytes))):
+            image_bytes.extend(chunk)
+            if len(image_bytes) > MAX_REMOTE_IMAGE_BYTES:
+                response.close()
+                return jsonify({'error': 'The image is larger than the 10 MB limit.'}), 413
+        response.close()
+    except (HTTPError, ValueError, OSError):
+        return jsonify({'error': 'Unable to retrieve that image URL.'}), 400
+
+    return send_file(BytesIO(image_bytes), mimetype=content_type, max_age=0)
+
+
+@app.route('/image_playground')
+def image_playground():
+    return render_template('image_playground.html', image_library=get_image_playground_library())
+
 @app.route('/stellar_evolution')
 def stellar_evolution():
     return render_template('stellar_evolution.html')
@@ -389,9 +559,47 @@ def space_explorer_3d():
 def game_monster_generator():
     return render_template('game_monster_generator.html', current_user=current_user)
 
+@app.route('/boss_creator')
+def boss_creator():
+    return render_template('base_view.html', current_user=current_user)
+
 @app.route('/life_on_exoplanet_clicker')
 def life_on_exoplanet_clicker():
     return render_template('life_on_exoplanet_clicker.html', current_user=current_user)
+
+@app.route('/star_map')
+def star_map():
+    return render_template('star_map.html', current_user=current_user)
+
+@app.route('/star_map/stats')
+def star_stats():
+    return render_template('star_stats.html', current_user=current_user)
+
+@app.route('/leviathan_map')
+def leviathan_map():
+    return render_template('leviathan_map.html', current_user=current_user)
+
+@app.route('/tier_maker')
+def tier_maker():
+    return render_template('tier_maker.html', current_user=current_user)
+
+@app.route('/rarities_game')
+def rarities_game():
+    return render_template('rarities_game.html', current_user=current_user)
+
+@app.route('/ocean_depth_game')
+def ocean_depth_game():
+    effects_dir = os.path.join(app.static_folder, 'sound', 'effects')
+    sound_prefetch_urls = []
+    if os.path.isdir(effects_dir):
+        for filename in sorted(os.listdir(effects_dir)):
+            if filename.lower().endswith('.mp3'):
+                sound_prefetch_urls.append(static_file(f'sound/effects/{filename}'))
+    return render_template(
+        'ocean_depth_game.html',
+        current_user=current_user,
+        sound_prefetch_urls=sound_prefetch_urls,
+    )
 
 @app.route('/leaderboards')
 def leaderboards():

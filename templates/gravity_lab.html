@@ -143,7 +143,7 @@
                                             <i class="fas fa-bolt mr-2"></i>Extreme
                                         </button>
                                         <button onclick="filterObjects('comet')" class="category-filter" data-category="comet">
-                                            <i class="fas fa-comet mr-2"></i>Comets
+                                            <i class="fas fa-meteor mr-2"></i>Comets
                                         </button>
                                         <button onclick="filterObjects('star')" class="category-filter" data-category="star">
                                             <i class="fas fa-sun mr-2"></i>Stars
@@ -178,8 +178,11 @@
                         <button onclick="filterObjects('fictional')" class="category-filter" data-category="fictional">
                             <i class="fas fa-magic mr-2"></i>Fictional
                         </button>
-                        <button onclick="filterObjects('meteorite')" class="category-filter" data-category="meteorite">
-                            <i class="fas fa-meteor mr-2"></i>Meteorites
+                        <button onclick="filterObjects('fictional ass')" class="category-filter" data-category="fictional ass">
+                            <i class="fas fa-face-rolling-eyes mr-2"></i>Fictional Ass
+                        </button>
+                                        <button onclick="filterObjects('movies')" class="category-filter" data-category="movies">
+                                            <i class="fas fa-film mr-2"></i>Movies
                                         </button>
                                         <button onclick="filterObjects('why does this even exist')" class="category-filter" data-category="why does this even exist">
                                             <i class="fas fa-question mr-2"></i>Why Does This Even Exist?
@@ -952,6 +955,22 @@
                 radius: 2.1e10, // m (21 million km radius - Wolf-Rayet star)
                 icon: '💫',
                 type: 'star'
+            },
+            'vfts_352': { 
+                name: 'VFTS 352', 
+                mass: 5.72e31, // kg (28.74 solar masses - contact binary O-type star system)
+                radius: 5.04e9, // m (7.235 solar radii - contact binary in Tarantula Nebula)
+                icon: '⭐',
+                type: 'star',
+                image: "{{ static_file('images/VFTS 352.jpg') }}"
+            },
+            'godzilla': { 
+                name: 'Godzilla', 
+                mass: 3.978e32, // kg (200 solar masses - LBV star in Sunburst Galaxy, ~11 billion light-years away)
+                radius: 2.088e11, // m (300 solar radii - exceptionally luminous blue variable star)
+                icon: '🦖',
+                type: 'star',
+                image: "{{ static_file('images/Yothetiuktaliathan.jpg') }}"
             },
             'achernar': { 
                 name: 'Achernar', 
@@ -2122,7 +2141,7 @@
                 icon: 'Au',
                 type: 'quantum object'
             },
-            'mercury': {
+            'mercury_atom': {
                 name: 'Mercury Atom',
                 mass: 3.330e-25, // kg
                 radius: 1.49e-10, // m
@@ -2479,6 +2498,22 @@
                 icon: '🌊',
                 type: 'large object'
             },
+            'bloop_tsunami': {
+                name: 'Bloop Tsunami',
+                mass: 2009496, // kg (4,429,782 pounds)
+                radius: 8, // m
+                image: "{{ static_file('images/tsunami.jpg') }}",
+                icon: '🌊',
+                type: 'large object'
+            },
+            'sniffelah': {
+                name: 'Sniffelah',
+                mass: 1.728e7, // kg (17.28 million kg)
+                radius: 16, // m
+                image: "{{ static_file('images/Sniffelah.webp') }}",
+                icon: '👃',
+                type: 'fictional'
+            },
             'solar_flare': {
                 name: 'Solar Flare',
                 mass: 1.6e12, // kg
@@ -2668,6 +2703,103 @@
                 radius: 1.5e25, // m (1.6 billion light-years radius - colossal wall of galaxies)
                 icon: '🌉',
                 type: 'dso'
+            },
+            'tremendous_1500': {
+                name: 'TREMENDOUS-1500',
+                mass: 5.967e74, // kg (3×10⁴⁴ solar masses)
+                radius: 1.419e34, // m (1.5 quintillion light-years radius)
+                icon: '🌌',
+                type: 'dso',
+                image: "{{ static_file('images/tremendous-1500.webp') }}",
+                luminosity: 1e44 // L☉
+            },
+            'grondeo_asigion_attoverse_complex': {
+                name: 'Grondeo-Asigion Attoverse Complex',
+                mass: 6e104, // kg (6×10¹⁰⁴ kg)
+                radius: 1.419e44, // m (15 octillion light-years radius)
+                icon: '🌌',
+                type: 'dso',
+                image: "{{ static_file('images/grondeo-asigion-attoverse-complex.webp') }}",
+                luminosity: 4e100 // L☉
+            },
+            'uuz_435_ultracluster_complex': {
+                name: 'UUZ-435 Ultracluster Complex',
+                mass: '2.088e497', // kg (7×10⁴⁵⁴ Milky Ways; beyond IEEE-754 range)
+                radius: 5.014e174, // m (5.3×10¹⁵⁸ light-years)
+                icon: '🌌',
+                type: 'dso',
+                image: "{{ static_file('images/435-ultracluster-complex.webp') }}",
+                luminosity: '4e466' // L☉
+            },
+            'mar_234_megacluster_complex': {
+                name: 'MAR-234 Megacluster Complex',
+                mass: 2e154, // kg
+                radius: 2.4e60, // m
+                icon: '🌌',
+                type: 'dso',
+                image: "{{ static_file('images/MAR-234.webp') }}",
+                luminosity: 4e123 // L☉
+            },
+            'mlti_183': {
+                name: 'MLTI-183',
+                mass: 9.945e67, // kg (5×10³⁷ solar masses)
+                radius: 3.8e28, // m
+                icon: '🌌',
+                type: 'dso',
+                image: "{{ static_file('images/mlti-183.webp') }}",
+                luminosity: 2e37 // L☉
+            },
+            'meve_1': {
+                name: 'MEVE-1',
+                mass: {
+                    type: 'log10',
+                    log10: 3e10 + Math.log10(1.989e30), // kg equivalent of 10^(3×10^10) M☉
+                    display: '10^(3.00×10¹⁰) M☉'
+                },
+                radius: {
+                    type: 'omega',
+                    power: 3,
+                    display: 'ω³ ly'
+                },
+                icon: '🌌',
+                type: 'dso',
+                image: "{{ static_file('images/meve-1.webp') }}",
+                luminosity: {
+                    type: 'log10',
+                    log10: 3e10 - Math.log10(3.826e26), // 10^(3×10^10) W in L☉
+                    display: '10^(3.00×10¹⁰) W'
+                },
+                description: 'Mass and wattage are kept as log₁₀ because 10^(3×10¹⁰) cannot be stored as a normal number. Radius is the ordinal ω³ ly (transfinite), so g = GM/r² and density go to 0.'
+            },
+            'phyve_1_loc': {
+                name: 'PHYVE-1-LOC',
+                diameter: {
+                    type: 'log10',
+                    log10: { type: 'pow10', coeff: 1, exp: 1e10 },
+                    display: '10^(10^(10^10)) m'
+                },
+                radius: {
+                    type: 'log10',
+                    log10: { type: 'pow10', coeff: 1, exp: 1e10, add: Math.log10(0.5) },
+                    display: '10^(10^(10^10)) m'
+                },
+                mass: {
+                    type: 'log10',
+                    log10: { type: 'pow10', coeff: 3, exp: 1e10 },
+                    display: '≈ 10^(3×10^(10^10)) kg'
+                },
+                luminosity: {
+                    type: 'log10',
+                    log10: { type: 'pow10', coeff: 3, exp: 1e10, add: -Math.log10(3.826e26) },
+                    display: '≈ 10^(3×10^(10^10)) W'
+                },
+                absoluteMagnitude: {
+                    display: '≈ −7.5 × 10^(10^10)'
+                },
+                icon: '🌌',
+                type: 'dso',
+                image: "{{ static_file('images/phyve-1.webp') }}",
+                description: 'Triple-exponential canon: diameter 10^(10^(10^10)) m. Radius is 5×10^(10^(10^10)−1) m, shown at the same tower. Mass and luminosity live as nested log₁₀ (coeff × 10^(10^10)) because even log₁₀ of the value overflows a normal float. Density stays ordinary (~kg/m³) because M scales like R³.'
             },
             'hd100546': { 
                 name: 'HD 100546 (KR Muscae)', 
@@ -3206,6 +3338,55 @@
                 image: "{{ static_file('images/tachyon_star.jpeg') }}",
                 luminosity: 4.9e213 // L☉ (4.9 septuagintillion solar luminosities)
             },
+            // Movie Objects
+            'gargantua': {
+                name: 'Gargantua',
+                mass: 1.989e38, // kg (100 million times the Sun's mass)
+                radius: 1.5e11, // m (150 million kilometers)
+                icon: '🎬',
+                type: 'movies',
+                image: "{{ static_file('images/gargantua.webp') }}"
+            },
+            'miller': {
+                name: "Miller's Planet",
+                mass: 1.194474e25, // kg (2× Earth's mass)
+                radius: 8.2823e6, // m (1.3× Earth's radius)
+                icon: '🌊',
+                type: 'movies',
+                image: "{{ static_file('images/millers.webp') }}"
+            },
+            'manns': {
+                name: "Mann's Planet",
+                mass: 4.777896e24, // kg (0.8× Earth's mass)
+                radius: 6.371e6, // m (Earth's radius)
+                icon: '❄️',
+                type: 'movies',
+                image: "{{ static_file('images/manns.jpg') }}"
+            },
+            'edmunds': {
+                name: "Edmund's Planet",
+                mass: 6.569607e24, // kg (1.1× Earth's mass)
+                radius: 6.24358e6, // m (0.98× Earth's radius)
+                icon: '🛰️',
+                type: 'movies',
+                image: "{{ static_file('images/edmunds.png') }}"
+            },
+            'pantagruel': {
+                name: 'Pantagruel',
+                mass: 3.978e30, // kg (2× Sun's mass)
+                radius: 12000, // m (12 km - neutron star scale)
+                icon: '🌟',
+                type: 'movies',
+                image: "{{ static_file('images/neutron-star.webp') }}"
+            },
+            'millers_tsunami': {
+                name: "Miller's Tsunami",
+                mass: 1.3e18, // kg (1.3×10^18 kg - massive wave on Miller's planet)
+                radius: 75000, // m (75 km crest radius)
+                icon: '🌊',
+                type: 'movies',
+                image: "{{ static_file('images/millers_tsunami.jpg') }}"
+            },
             'ulturuas': {
                 name: 'Ulturuas',
                 mass: 1.4658e93, // kg (4.91×10^50 Milky Way galaxies)
@@ -3240,6 +3421,23 @@
                 icon: '🕳️',
                 type: 'why does this even exist',
                 image: "{{ static_file('images/black_hole.jpg') }}"
+            },
+            'the_felon': {
+                name: 'The Felon',
+                mass: 1.996e58, // kg (6.69×10^15 Milky Ways)
+                radius: 4.276e18, // m (452 light years)
+                icon: '🦹',
+                type: 'why does this even exist',
+                image: "{{ static_file('images/the_felon.webp') }}"
+            },
+            'yort_2': {
+                name: 'Yort₂',
+                mass: 5.97237e24, // kg (1 Earth mass)
+                radius: 6.371e6, // m (1 Earth radius)
+                icon: '🌍',
+                type: 'why does this even exist',
+                image: "{{ static_file('images/yort2.webp') }}",
+                luminosity: -2.6e34 // L☉ (-26 decillion solar luminosities; absorbs light)
             },
             // Jupiter's Galilean Moons
             'io': { 
@@ -3627,7 +3825,7 @@
                 mass: 6e4, // kg (60 tons - largest known meteorite on Earth)
                 radius: 2.7, // m (2.7 meters radius)
                 icon: '☄️',
-                type: 'meteorite'
+                type: 'large object'
             },
             // 'uragon': {
             //     name: 'Uragon',
@@ -3644,6 +3842,167 @@
                 radius: 1.88e9, // m (2.7 solar radii)
                 icon: '🌟',
                 type: 'fictional'
+            },
+            'orthodon': {
+                name: 'Orthodon',
+                mass: 5.657e33, // kg (2,846 solar masses)
+                radius: 2.380e11, // m (342 solar radii)
+                icon: '💙',
+                type: 'fictional'
+            },
+            'orthon': {
+                name: 'Orthon',
+                mass: 5.058e27, // kg (847 Earth masses)
+                radius: 8.3624e7, // m (83,624 km)
+                icon: '🪐',
+                type: 'fictional'
+            },
+            'obion': {
+                name: 'Obion',
+                mass: 2.568e24, // kg (0.43 Earth masses)
+                radius: 2.641e6, // m (2,641 km)
+                icon: '🌍',
+                type: 'fictional'
+            },
+            'morkage': {
+                name: 'Morkage',
+                mass: 5.443e7, // kg (60,000 tons)
+                radius: 210, // m (210 meters)
+                icon: '🪨',
+                type: 'fictional'
+            },
+            'xyrion': {
+                name: 'Xyrion',
+                mass: 3.629e7, // kg (40,000 tons)
+                radius: 270, // m (270 meters)
+                icon: '🪨',
+                type: 'fictional',
+                image: "{{ static_file('images/xyrion.jpg') }}"
+            },
+            'batuchara': {
+                name: 'Batuchara',
+                mass: 9.072e6, // kg (10,000 tons)
+                radius: 60, // m (60 meters)
+                icon: '🪨',
+                type: 'fictional',
+                image: "{{ static_file('images/Batuchara.webp') }}"
+            },
+            'goliath': {
+                name: 'Goliath',
+                mass: 1.304e8, // kg (143,800 tons)
+                radius: 108, // m (108 meters)
+                icon: '🪨',
+                type: 'fictional',
+                image: "{{ static_file('images/Goliath.webp') }}"
+            },
+            'zaratan': {
+                name: 'Zaratan',
+                mass: 6.35e7, // kg (70,000 tons)
+                radius: 60, // m (60 meters)
+                icon: '🪨',
+                type: 'fictional',
+                image: "{{ static_file('images/Zaratan.jpg') }}"
+            },
+            'aglacius': {
+                name: 'Aglacius',
+                mass: 2.395e7, // kg (26,400 tons)
+                radius: 50, // m (50 meters)
+                icon: '🪨',
+                type: 'fictional',
+                image: "{{ static_file('images/Aglacius.jpg') }}"
+            },
+            'sakura': {
+                name: 'Sakura',
+                mass: 3.175e7, // kg (35,000 tons)
+                radius: 210, // m (210 meters)
+                icon: '🌸',
+                type: 'fictional',
+                image: "{{ static_file('images/sakura.jpg') }}"
+            },
+            'voltidra': {
+                name: 'Voltidra',
+                mass: 2.722e7, // kg (30,000 tons)
+                radius: 80, // m (80 meters)
+                icon: '⚡',
+                type: 'fictional',
+                image: "{{ static_file('images/Voltidra.webp') }}"
+            },
+            'strykarech': {
+                name: 'Strykarech',
+                mass: 2.585e7, // kg (28,500 tons)
+                radius: 120, // m (120 meters)
+                icon: '🪨',
+                type: 'fictional',
+                image: "{{ static_file('images/strykarech.jpg') }}"
+            },
+            'incineros': {
+                name: 'Incineros',
+                mass: 1.406e8, // kg (155,000 tons)
+                radius: 140, // m (140 meters)
+                icon: '🔥',
+                type: 'fictional',
+                image: "{{ static_file('images/Incineros.jpg') }}"
+            },
+            'primordia': {
+                name: 'Primordia',
+                mass: 6.185e34, // kg (31,097 solar masses)
+                radius: 1.375e13, // m (91.9 AU)
+                icon: '🌟',
+                type: 'fictional',
+                image: "{{ static_file('images/primordia.webp') }}",
+                luminosity: 2.8371066e7 // L☉ (28,371,066 solar luminosities)
+            },
+            'hadrochath': {
+                name: 'Hadrochath',
+                mass: 9.197e24, // kg (1.54 Earth masses)
+                radius: 7.136e6, // m (1.12 Earth radii)
+                icon: '🪐',
+                type: 'fictional',
+                image: "{{ static_file('images/hadrochath.webp') }}"
+            },
+            'lumora': {
+                name: 'Lumora',
+                mass: 1.648e23, // kg (0.0276 Earth masses)
+                densityFieldEarthMasses: 75,
+                radius: 2.032e6, // m (0.319 Earth radii)
+                icon: '✨',
+                type: 'fictional',
+                image: "{{ static_file('images/lumora.webp') }}"
+            },
+            'oceanus': {
+                name: 'Oceanus',
+                mass: 9.078e20, // kg (0.000152 Earth masses)
+                radius: 2.319e7, // m (3.64 Earth radii)
+                icon: '🌊',
+                type: 'fictional',
+                image: "{{ static_file('images/oceanus.webp') }}",
+                luminosity: -0 // L☉ (signed zero; shown as -0 in the UI)
+            },
+            'parahilion': {
+                name: 'Parahilion',
+                mass: 1.13892e28, // kg (6 Jupiter masses)
+                radius: 7.69021e7, // m (1.10 Jupiter radii)
+                icon: '🪐',
+                type: 'fictional',
+                image: "{{ static_file('images/parahilion.webp') }}",
+                luminosity: 4.003e-7 // L☉ (from mass/radius; evolved Stefan-Boltzmann estimate)
+            },
+            'flat_earth': {
+                name: 'Flat Earth',
+                description: 'For all you stupid people...',
+                mass: 5.97237e24, // kg (1 Earth mass)
+                radius: 6.371e6, // m (1 Earth radius)
+                icon: '🗺️',
+                type: 'fictional ass',
+                image: "{{ static_file('images/flat_earth.webp') }}"
+            },
+            'flat_earth_nasa_penguins': {
+                name: 'Flat Earth NASA Penguins',
+                mass: 204.117, // kg (90 lbs × 5)
+                radius: 1.524, // m (1 foot × 5)
+                icon: '🐧',
+                type: 'fictional ass',
+                image: "{{ static_file('images/flat-earth-nasa-penguins.webp') }}"
             },
             'saturns_hexagon': { 
                 name: "Saturn's Hexagon", 
@@ -3696,7 +4055,7 @@
 
         const QUANTUM_LIQUIDS = new Set([
             'bromine',
-            'mercury'
+            'mercury_atom'
         ]);
 
         const QUANTUM_PLASMAS = new Set([
@@ -3771,11 +4130,145 @@
 
         // Universal gravitational constant
         const G = 6.674e-11; // m³/(kg·s²)
+        const SUPER_DIGITS = {
+            '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+            '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+            '+': '⁺', '-': '⁻'
+        };
+
+        function toSuperscriptExponent(exp) {
+            return String(exp).split('').map((ch) => SUPER_DIGITS[ch] ?? ch).join('');
+        }
+
+        function isPow10(value) {
+            return Boolean(value) && typeof value === 'object' && value.type === 'pow10';
+        }
+
+        function isHyperValue(value) {
+            return Boolean(value) && typeof value === 'object' && (value.type === 'log10' || value.type === 'omega' || value.type === 'pow10');
+        }
+
+        function makePow10(coeff, exp, add = 0) {
+            if (!Number.isFinite(coeff) || coeff === 0) {
+                return add;
+            }
+            if (Number.isFinite(exp) && exp < 300 && exp > -300) {
+                const collapsed = coeff * Math.pow(10, exp) + add;
+                if (Number.isFinite(collapsed)) return collapsed;
+            }
+            return { type: 'pow10', coeff, exp, add };
+        }
+
+        function coerceLogTerm(value) {
+            if (typeof value === 'number') return value;
+            if (isPow10(value)) return value;
+            if (isHyperValue(value) && value.type === 'log10') return coerceLogTerm(value.log10);
+            return value;
+        }
+
+        function logScale(term, k) {
+            term = coerceLogTerm(term);
+            if (typeof term === 'number') return term * k;
+            if (!isPow10(term)) return NaN;
+            return makePow10(term.coeff * k, term.exp, (term.add || 0) * k);
+        }
+
+        function logAdd(a, b) {
+            a = coerceLogTerm(a);
+            b = coerceLogTerm(b);
+            if (!isPow10(a) && !isPow10(b)) return a + b;
+            if (!isPow10(a)) return logAdd(b, a);
+            if (!isPow10(b)) {
+                return makePow10(a.coeff, a.exp, (a.add || 0) + b);
+            }
+            if (a.exp === b.exp) {
+                return makePow10(a.coeff + b.coeff, a.exp, (a.add || 0) + (b.add || 0));
+            }
+            if (a.exp > b.exp) {
+                return makePow10(a.coeff, a.exp, (a.add || 0) + (b.add || 0));
+            }
+            return logAdd(b, a);
+        }
+
+        function logSub(a, b) {
+            return logAdd(a, logScale(b, -1));
+        }
+
+        function sciLog10(value) {
+            if (value == null) return NaN;
+            if (isHyperValue(value)) {
+                if (value.type === 'omega') return Number.POSITIVE_INFINITY;
+                if (value.type === 'pow10') return value;
+                return value.log10;
+            }
+            if (typeof value === 'number') {
+                if (value === 0) return -Infinity;
+                return Math.log10(Math.abs(value));
+            }
+            const match = String(value).trim().replace(/\s+/g, '').match(/^([+-]?\d*\.?\d+)(?:e([+-]?\d+))?$/i);
+            if (!match) return NaN;
+            const coeff = parseFloat(match[1]);
+            const exp = match[2] ? parseInt(match[2], 10) : 0;
+            if (coeff === 0) return -Infinity;
+            return Math.log10(Math.abs(coeff)) + exp;
+        }
+
+        function sciPow10(log10) {
+            if (isPow10(log10)) return { type: 'log10', log10 };
+            if (log10 === -Infinity) return 0;
+            if (!Number.isFinite(log10)) return Number.POSITIVE_INFINITY;
+            if (log10 > 308.2547155599167) return { type: 'log10', log10 };
+            if (log10 < -323) return 0;
+            return Math.pow(10, log10);
+        }
+
+        function formatPlainSci(n, digits = 2) {
+            if (!Number.isFinite(n)) return '∞';
+            const sign = n < 0 ? '−' : '';
+            const abs = Math.abs(n);
+            if (abs === 0) return '0';
+            const exp = Math.floor(Math.log10(abs));
+            const coeff = abs / Math.pow(10, exp);
+            if (Math.abs(coeff - 1) < 1e-9) {
+                return `${sign}10${toSuperscriptExponent(exp)}`;
+            }
+            return `${sign}${coeff.toFixed(digits)}×10${toSuperscriptExponent(exp)}`;
+        }
+
+        function formatTenPowerExp(exp) {
+            if (Math.abs(exp - 1e10) / 1e10 < 1e-12) return '10^10';
+            return formatPlainSci(exp);
+        }
+
+        function formatScientificFromLog10(log10, digits = 3) {
+            if (isPow10(log10)) {
+                const coeff = log10.coeff;
+                const expStr = formatTenPowerExp(log10.exp);
+                if (Math.abs(coeff - 1) < 1e-9) {
+                    return `10^(10^(${expStr}))`;
+                }
+                const coeffStr = Number(coeff.toFixed(digits));
+                return `10^(${coeffStr}×10^(${expStr}))`;
+            }
+            if (log10 === -Infinity) return '0';
+            if (!Number.isFinite(log10)) return '∞';
+            if (Math.abs(log10) >= 10000) {
+                const sign = log10 < 0 ? '−' : '';
+                return `${sign}10^(${formatScientificFromLog10(Math.log10(Math.abs(log10)), digits)})`;
+            }
+            let exp = Math.floor(log10);
+            let coeff = Math.pow(10, log10 - exp);
+            if (coeff >= 10 - 1e-12) {
+                coeff = 1;
+                exp += 1;
+            }
+            return `${coeff.toFixed(digits)}×10${toSuperscriptExponent(exp)}`;
+        }
 
         // Calculate surface gravity for any object
         function calculateSurfaceGravity(mass, radius) {
-            // Formula: g = GM/r²
-            return (G * mass) / (radius * radius);
+            // Formula: g = GM/r² (log-space so oversized catalog values stay usable)
+            return sciPow10(logSub(logAdd(sciLog10(G), sciLog10(mass)), logScale(sciLog10(radius), 2)));
         }
 
         const SHORT_SCALE_BASE_NAMES = {
@@ -3950,6 +4443,9 @@
 
         // Format weight with appropriate units (moved to global scope)
         function formatWeight(weight) {
+            if (isHyperValue(weight) || isPow10(weight)) {
+                return formatScientificFromLog10(sciLog10(weight)) + ' lbs';
+            }
             const largeWeight = formatLargeWeight(weight);
             if (largeWeight) {
                 return largeWeight;
@@ -3984,6 +4480,13 @@
 
         // Format mass with appropriate units
         function formatMass(mass) {
+            if (isHyperValue(mass) && mass.display) {
+                return mass.display;
+            }
+            const massLog10 = sciLog10(mass);
+            if (typeof mass === 'string' || !Number.isFinite(mass) || massLog10 >= 30) {
+                return formatScientificFromLog10(massLog10) + ' kg';
+            }
             if (mass >= 1e27) {
                 return (mass / 1e27).toFixed(3) + '×10²⁷ kg';
             } else if (mass >= 1e24) {
@@ -4017,6 +4520,17 @@
 
         // Format radius with appropriate units
         function formatRadius(radius) {
+            if (isHyperValue(radius) && radius.display) {
+                return radius.display;
+            }
+            if (isHyperValue(radius) && radius.type === 'omega') {
+                const power = radius.power == null || radius.power === 1 ? '' : toSuperscriptExponent(radius.power);
+                return `ω${power} ${radius.unit || 'ly'}`;
+            }
+            const radiusLog10 = sciLog10(radius);
+            if (typeof radius === 'string' || !Number.isFinite(radius) || radiusLog10 >= 12) {
+                return formatScientificFromLog10(radiusLog10) + ' m';
+            }
             if (radius >= 1e9) {
                 return (radius / 1e9).toFixed(3) + '×10⁹ m';
             } else if (radius >= 1e6) {
@@ -4055,6 +4569,13 @@
 
         // Format surface gravity with appropriate precision
         function formatSurfaceGravity(gravity) {
+            if (gravity === 0) {
+                return '0 m/s²';
+            }
+            const gravityLog10 = sciLog10(gravity);
+            if (isHyperValue(gravity) || typeof gravity === 'string' || !Number.isFinite(gravity) || gravityLog10 >= 6) {
+                return formatScientificFromLog10(gravityLog10) + ' m/s²';
+            }
             if (gravity >= 1) {
                 return gravity.toFixed(2) + ' m/s²';
             } else if (gravity >= 0.01) {
@@ -4071,8 +4592,7 @@
         // Calculate density for any object
         function calculateDensity(mass, radius) {
             // Formula: ρ = m/V where V = (4/3)πr³
-            const volume = (4/3) * Math.PI * Math.pow(radius, 3);
-            return mass / volume;
+            return sciPow10(logSub(sciLog10(mass), logAdd(Math.log10((4 / 3) * Math.PI), logScale(sciLog10(radius), 3))));
         }
         
         // Calculate luminosity for stars
@@ -4130,8 +4650,9 @@
             // Habitable zone boundaries (conservative estimates)
             // Inner edge: where water would boil (recent Venus)
             // Outer edge: where water would freeze (early Mars)
-            const innerEdge = Math.sqrt(luminosity / 1.1); // AU
-            const outerEdge = Math.sqrt(luminosity / 0.53); // AU
+            const luminosityLog10 = sciLog10(luminosity);
+            const innerEdge = sciPow10(logScale(logSub(luminosityLog10, Math.log10(1.1)), 0.5)); // AU
+            const outerEdge = sciPow10(logScale(logSub(luminosityLog10, Math.log10(0.53)), 0.5)); // AU
             
             return {
                 inner: innerEdge,
@@ -4142,6 +4663,13 @@
 
         // Format density with appropriate units
         function formatDensity(density) {
+            if (density === 0) {
+                return '0 kg/m³';
+            }
+            const densityLog10 = sciLog10(density);
+            if (typeof density === 'string' || !Number.isFinite(density) || densityLog10 >= 15) {
+                return formatScientificFromLog10(densityLog10) + ' kg/m³';
+            }
             if (density >= 1e12) {
                 return (density / 1e12).toFixed(3) + '×10¹² kg/m³';
             } else if (density >= 1e9) {
@@ -4168,6 +4696,9 @@
             const inner = habitableZone.inner;
             const outer = habitableZone.outer;
             
+            if (!Number.isFinite(inner) || !Number.isFinite(outer) || inner >= 1e6) {
+                return `${formatScientificFromLog10(sciLog10(inner))} - ${formatScientificFromLog10(sciLog10(outer))} AU`;
+            }
             if (inner >= 100) {
                 return `${inner.toFixed(0)} - ${outer.toFixed(0)} AU`;
             } else if (inner >= 10) {
@@ -4183,6 +4714,16 @@
         
         // Format luminosity with appropriate precision
         function formatLuminosity(luminosity) {
+            if (isHyperValue(luminosity) && luminosity.display) {
+                return luminosity.display;
+            }
+            if (Object.is(luminosity, -0)) {
+                return '-0 L☉';
+            }
+            const luminosityLog10 = sciLog10(luminosity);
+            if (typeof luminosity === 'string' || !Number.isFinite(luminosity) || luminosityLog10 >= 9) {
+                return formatScientificFromLog10(luminosityLog10, 2) + ' L☉';
+            }
             if (luminosity >= 1e6) {
                 return (luminosity / 1e6).toFixed(2) + '×10⁶ L☉';
             } else if (luminosity >= 1e3) {
@@ -4232,10 +4773,84 @@
         // Calculate Earth's surface gravity for reference
         const earthGravity = calculateSurfaceGravity(celestialData.earth.mass, celestialData.earth.radius);
 
+        function getObjectDensityFieldMass(obj) {
+            if (obj.densityFieldEarthMasses == null) {
+                return 0;
+            }
+
+            return obj.densityFieldEarthMasses * celestialData.earth.mass;
+        }
+
+        function getObjectGravityMass(obj) {
+            const fieldMass = getObjectDensityFieldMass(obj);
+            if (!fieldMass) return obj.mass;
+            if (isHyperValue(obj.mass) || isPow10(sciLog10(obj.mass))) {
+                return obj.mass;
+            }
+            if (typeof obj.mass === 'string' || !Number.isFinite(obj.mass)) {
+                if (sciLog10(obj.mass) - sciLog10(fieldMass) > 12) return obj.mass;
+                return sciPow10(Math.log10(1 + sciPow10(sciLog10(fieldMass) - sciLog10(obj.mass))) + sciLog10(obj.mass));
+            }
+            return obj.mass + fieldMass;
+        }
+
+        function formatDensityField(densityFieldEarthMasses) {
+            return `+${densityFieldEarthMasses} Earth Masses`;
+        }
+
+        function formatObjectMassFieldsHtml(obj) {
+            let html = `
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Mass:</span>
+                                <span class="text-orange-400 font-bold">${formatMass(obj.mass)}</span>
+                            </div>`;
+
+            if (obj.densityFieldEarthMasses != null) {
+                html += `
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Density Field:</span>
+                                <span class="text-pink-400 font-bold">${formatDensityField(obj.densityFieldEarthMasses)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Total Mass (M+DF):</span>
+                                <span class="text-orange-300 font-bold">${formatMass(getObjectGravityMass(obj))}</span>
+                            </div>`;
+            }
+
+            return html;
+        }
+
         // Convert any object's gravity to Earth gravity ratio
         function getGravityRatio(celestialObject) {
-            const objectGravity = calculateSurfaceGravity(celestialObject.mass, celestialObject.radius);
+            const objectGravity = calculateSurfaceGravity(getObjectGravityMass(celestialObject), celestialObject.radius);
+            if (isHyperValue(objectGravity) || isPow10(sciLog10(objectGravity))) {
+                return sciPow10(logSub(sciLog10(objectGravity), sciLog10(earthGravity)));
+            }
             return objectGravity / earthGravity;
+        }
+
+        function formatGravityRatio(ratio) {
+            if (isHyperValue(ratio) || isPow10(ratio) || typeof ratio === 'object') {
+                return formatScientificFromLog10(sciLog10(ratio)) + '×';
+            }
+            if (ratio < 0.001) {
+                return ratio.toExponential(3) + '×';
+            }
+            return ratio.toFixed(3) + '×';
+        }
+
+        function gravityForSimulator(gravity) {
+            if (typeof gravity === 'number' && Number.isFinite(gravity)) {
+                return gravity;
+            }
+            return Number.MAX_VALUE;
+        }
+
+        function applyEarthWeight(earthWeight, gravityRatio) {
+            if (isHyperValue(gravityRatio) || isPow10(gravityRatio)) {
+                return sciPow10(logAdd(Math.log10(earthWeight || 1), sciLog10(gravityRatio)));
+            }
+            return earthWeight * gravityRatio;
         }
 
         function calculatePlanetWeight(celestialKey) {
@@ -4253,10 +4868,10 @@
             
             // Calculate gravity ratio using mass and radius
             const gravityRatio = getGravityRatio(celestialObject);
-            const calculatedGravity = calculateSurfaceGravity(celestialObject.mass, celestialObject.radius);
+            const calculatedGravity = calculateSurfaceGravity(getObjectGravityMass(celestialObject), celestialObject.radius);
             
             // Calculate weight on the celestial object
-            const celestialWeight = earthWeight * gravityRatio;
+            const celestialWeight = applyEarthWeight(earthWeight, gravityRatio);
             
             // Debug logging for grain of salt
             if (celestialKey === 'grain_of_salt') {
@@ -4353,7 +4968,7 @@
             
             // Update the center panel with results
             const iconHtml = celestialObject.image
-                ? `<img src="${celestialObject.image}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="${celestialObject.image}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.hasCrater
                 ? `<div class="mb-2 flex justify-center">${createCraterPlanetIcon(64)}</div>`
                 : celestialObject.hasCanyon
@@ -4361,57 +4976,65 @@
                 : celestialObject.hasGreenDots
                 ? `<div class="mb-2 flex justify-center">${createGreenDotsPlanetIcon(64)}</div>`
                 : celestialObject.name === 'Eternal Infinity Beast Egg' 
-                ? `<img src="{{ static_file('images/MJ-Eternal-Infinity-Beast-Egg.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/MJ-Eternal-Infinity-Beast-Egg.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Kryptonite Leviathan Egg'
-                ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hyper Star'
-                ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Uirinax'
-                ? `<img src="{{ static_file('images/Gravastar.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Gravastar.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hyper Planet'
-                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hyper Galaxy'
-                ? `<img src="{{ static_file('images/MJ-Hyper-Galaxy.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/MJ-Hyper-Galaxy.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hyper Universe'
-                ? `<img src="{{ static_file('images/MJ-Hyper-Universe.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/MJ-Hyper-Universe.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Oganix'
-                ? `<img src="{{ static_file('images/blue-star.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/blue-star.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Satan\'s Planet'
-                ? `<img src="{{ static_file('images/NASA-BrownDwarf.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/NASA-BrownDwarf.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Corria'
-                ? `<img src="{{ static_file('images/radioactive_asteroid.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/radioactive_asteroid.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Volcanius'
-                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Fripp'
-                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Cygnus X-1'
-                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Sagittarius A*'
-                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'TON 618'
-                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Phoenix A*'
-                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hawkramenshon'
-                ? `<img src="{{ static_file('images/Purple-Hyper-Giant.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Purple-Hyper-Giant.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Tithanmatrix'
-                ? `<img src="{{ static_file('images/Tithanmatrix.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Tithanmatrix.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Yothetiuktaliathan'
-                ? `<img src="{{ static_file('images/Yothetiuktaliathan.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Yothetiuktaliathan.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hoba Meteorite'
-                ? `<img src="{{ static_file('images/hoba.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/hoba.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === "Saturn's Hexagon"
-                ? `<img src="{{ static_file('images/Saturn_Hexagon.webp') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Saturn_Hexagon.webp') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Great Red Spot'
-                ? `<img src="{{ static_file('images/Jupiter-Great-Red-Spot.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Jupiter-Great-Red-Spot.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hurricane Creator Shuriken'
-                ? `<img src="{{ static_file('images/Shuriken.jpeg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Shuriken.jpeg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Annacrantieth'
-                ? `<img src="{{ static_file('images/Protostar.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Protostar.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
+                : celestialObject.name === 'Orthodon'
+                ? `<img src="{{ static_file('images/blue-star.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
+                : celestialObject.name === 'Orthon'
+                ? `<img src="{{ static_file('images/Orthon.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
+                : celestialObject.name === 'Obion'
+                ? `<img src="{{ static_file('images/Obion.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
+                : celestialObject.name === 'Morkage'
+                ? `<img src="{{ static_file('images/Morkage.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hurricane Helene'
-                ? `<img src="{{ static_file('images/helene.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/helene.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Great Dark Spot'
-                ? `<img src="{{ static_file("images/Neptune's_Great_Dark_Spot.jpg") }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file("images/Neptune's_Great_Dark_Spot.jpg") }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : `<div class="text-2xl mb-2">${celestialObject.icon}</div>`;
             
             const resultsHTML = `
@@ -4420,6 +5043,7 @@
                         ${iconHtml}
                         <h3 class="text-lg font-bold text-white mb-2">${celestialObject.name}</h3>
                         <p class="text-xs text-gray-400 mb-3 capitalize">${celestialObject.type}</p>
+                        ${formatObjectDescriptionHtml(celestialObject.description)}
                         
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between items-center">
@@ -4436,16 +5060,19 @@
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-300">vs Earth:</span>
-                                <span class="text-purple-400 font-bold">${gravityRatio < 0.001 ? gravityRatio.toExponential(3) + '×' : gravityRatio.toFixed(3) + '×'}</span>
+                                <span class="text-purple-400 font-bold">${formatGravityRatio(gravityRatio)}</span>
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-300">Mass:</span>
-                                <span class="text-orange-400 font-bold">${formatMass(celestialObject.mass)}</span>
-                            </div>
+                            ${formatObjectMassFieldsHtml(celestialObject)}
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-300">Radius:</span>
                                 <span class="text-green-400 font-bold">${formatRadius(celestialObject.radius)}</span>
                             </div>
+                            ${celestialObject.diameter ? `
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Diameter:</span>
+                                <span class="text-green-300 font-bold">${celestialObject.diameter.display || formatRadius(celestialObject.diameter)}</span>
+                            </div>
+                            ` : ''}
                             ${celestialObject.phase ? `
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-300">Phase:</span>
@@ -4467,6 +5094,12 @@
                                 <span class="text-gray-300">Luminosity:</span>
                                 <span class="text-yellow-400 font-bold">${formatLuminosity(calculateHabitableZone(celestialObject).luminosity)}</span>
                             </div>
+                            ${celestialObject.absoluteMagnitude ? `
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Abs. Magnitude:</span>
+                                <span class="text-amber-300 font-bold">${celestialObject.absoluteMagnitude.display}</span>
+                            </div>
+                            ` : ''}
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-300">Habitable Zone:</span>
                                 <span class="text-green-400 font-bold">${formatHabitableZone(calculateHabitableZone(celestialObject))}</span>
@@ -4483,8 +5116,9 @@
                             </p>
                             ${celestialObject.type === 'dso' ? `
                                 <p class="text-xs text-purple-300 mt-2 italic">
-                                    💡 The tiny weight reflects the enormous size of this ${celestialObject.type === 'dso' ? 'deep space object' : celestialObject.type}. 
-                                    Gravity weakens dramatically with distance!
+                                    ${isHyperValue(celestialWeight)
+                                        ? '💡 Weight is huge here: mass scales like R³, so surface gravity stays on the same power-tower as the radius.'
+                                        : '💡 The tiny weight reflects the enormous size of this deep space object. Gravity weakens dramatically with distance!'}
                                 </p>
                             ` : ''}
                         </div>
@@ -4504,10 +5138,93 @@
             const mainContentArea = document.querySelector('.w-full.lg\\:w-3\\/5 .bg-gray-800\\/30');
             if (mainContentArea) {
                 mainContentArea.innerHTML = resultsHTML;
+                attachResultImageViewers(mainContentArea);
             }
         }
         
+        function formatObjectDescriptionHtml(description) {
+            if (!description) {
+                return '';
+            }
+
+            return `
+                <div class="celestial-description">
+                    <div class="celestial-description-inner">
+                        <i class="fas fa-quote-left celestial-description-quote" aria-hidden="true"></i>
+                        <p class="celestial-description-text">${description}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openCelestialImageViewer(src, alt) {
+            const viewer = document.getElementById('celestial-image-viewer');
+            const img = document.getElementById('celestial-image-viewer-img');
+            const caption = document.getElementById('celestial-image-viewer-caption');
+
+            if (!viewer || !img) {
+                return;
+            }
+
+            img.src = src;
+            img.alt = alt;
+            if (caption) {
+                caption.textContent = alt;
+            }
+
+            viewer.classList.add('is-open');
+            viewer.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('celestial-image-viewer-open');
+        }
+
+        function closeCelestialImageViewer() {
+            const viewer = document.getElementById('celestial-image-viewer');
+            if (!viewer || !viewer.classList.contains('is-open')) {
+                return;
+            }
+
+            viewer.classList.remove('is-open');
+            viewer.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('celestial-image-viewer-open');
+        }
+
+        function attachResultImageViewers(container) {
+            if (!container) {
+                return;
+            }
+
+            container.querySelectorAll('img.celestial-result-image').forEach(img => {
+                if (img.closest('.celestial-result-image-btn')) {
+                    return;
+                }
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'celestial-result-image-btn';
+                btn.setAttribute('aria-label', `View full size image of ${img.alt}`);
+
+                const hint = document.createElement('span');
+                hint.className = 'celestial-result-image-hint';
+                hint.innerHTML = '<i class="fas fa-expand"></i> Tap to enlarge';
+
+                img.parentNode.insertBefore(btn, img);
+                btn.appendChild(img);
+                btn.appendChild(hint);
+
+                btn.addEventListener('click', () => openCelestialImageViewer(img.src, img.alt));
+            });
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeCelestialImageViewer();
+            }
+        });
+
         function getWeightComparison(planetWeight, earthWeight) {
+            if (isHyperValue(planetWeight) || isPow10(planetWeight)) {
+                return `You would weigh ${formatWeight(planetWeight)} here — this object's gravity is on a triple-exponential scale.`;
+            }
             const difference = planetWeight - earthWeight;
             const percentage = ((planetWeight / earthWeight) * 100 - 100).toFixed(1);
             
@@ -4628,6 +5345,12 @@
                 'Hyper Planet': 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 shadow-blue-500/25 hover:shadow-blue-500/40',
                 'Hyper Galaxy': 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-indigo-500/25 hover:shadow-indigo-500/40',
                 'Hyper Universe': 'bg-gradient-to-r from-slate-800 to-gray-900 hover:from-slate-900 hover:to-black shadow-slate-800/25 hover:shadow-slate-800/40',
+                'Gargantua': 'bg-gradient-to-r from-black via-slate-800 to-purple-900 hover:from-black hover:via-slate-900 hover:to-purple-950 shadow-purple-800/30 hover:shadow-purple-800/45',
+                "Miller's Planet": 'bg-gradient-to-r from-blue-800 via-slate-900 to-black hover:from-blue-900 hover:via-slate-950 hover:to-black shadow-blue-800/30 hover:shadow-blue-800/45',
+                "Mann's Planet": 'bg-gradient-to-r from-slate-400 via-gray-600 to-slate-800 hover:from-slate-500 hover:via-gray-700 hover:to-slate-900 shadow-gray-700/30 hover:shadow-gray-700/45',
+                "Edmund's Planet": 'bg-gradient-to-r from-teal-400 via-blue-700 to-slate-900 hover:from-teal-500 hover:via-blue-800 hover:to-slate-950 shadow-blue-800/30 hover:shadow-blue-800/45',
+                'Pantagruel': 'bg-gradient-to-r from-purple-700 via-indigo-900 to-black hover:from-purple-800 hover:via-indigo-950 hover:to-black shadow-purple-900/35 hover:shadow-purple-900/50',
+                "Miller's Tsunami": 'bg-gradient-to-r from-cyan-500 via-blue-700 to-navy-900 hover:from-cyan-600 hover:via-blue-800 hover:to-navy-950 shadow-blue-800/40 hover:shadow-blue-800/55',
                 'Giganaurus': 'bg-gradient-to-r from-rose-700 to-purple-900 hover:from-rose-800 hover:to-purple-950 shadow-rose-700/25 hover:shadow-rose-700/40',
                 'Ulturuas': 'bg-gradient-to-r from-fuchsia-800 to-black hover:from-fuchsia-900 hover:to-black shadow-fuchsia-800/25 hover:shadow-fuchsia-800/40',
                 'Ulturuas B': 'bg-gradient-to-r from-indigo-700 to-blue-900 hover:from-indigo-800 hover:to-blue-950 shadow-indigo-700/25 hover:shadow-indigo-700/40',
@@ -4667,6 +5390,10 @@
                 'Hoba Meteorite': 'bg-gradient-to-r from-gray-700 to-slate-800 hover:from-gray-800 hover:to-slate-900 shadow-gray-700/25 hover:shadow-gray-700/40',
                 'Hurricane Creator Shuriken': 'bg-gradient-to-r from-gray-600 to-slate-700 hover:from-gray-700 hover:to-slate-800 shadow-gray-600/25 hover:shadow-gray-600/40',
                 'Annacrantieth': 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-orange-500/25 hover:shadow-orange-500/40',
+                'Orthodon': 'bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-500 hover:to-indigo-700 shadow-blue-400/25 hover:shadow-blue-400/40',
+                'Orthon': 'bg-gradient-to-r from-violet-500 to-purple-700 hover:from-violet-600 hover:to-purple-800 shadow-violet-500/25 hover:shadow-violet-500/40',
+                'Obion': 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-emerald-500/25 hover:shadow-emerald-500/40',
+                'Morkage': 'bg-gradient-to-r from-stone-500 to-amber-700 hover:from-stone-600 hover:to-amber-800 shadow-stone-500/25 hover:shadow-stone-500/40',
                 "Saturn's Hexagon": 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 shadow-blue-500/25 hover:shadow-blue-500/40'
             };
             
@@ -4742,7 +5469,7 @@
             
             // Calculate gravity ratio
             const gravityRatio = getGravityRatio(celestialObject);
-            const calculatedGravity = calculateSurfaceGravity(celestialObject.mass, celestialObject.radius);
+            const calculatedGravity = calculateSurfaceGravity(getObjectGravityMass(celestialObject), celestialObject.radius);
             
             // Display the jumping simulator
             displayJumpingSimulator(celestialObject, earthWeight, calculatedGravity, gravityRatio, feet, inches);
@@ -4801,7 +5528,7 @@
         
         function displayJumpingSimulator(celestialObject, earthWeight, calculatedGravity, gravityRatio, feet, inches) {
             const iconHtml = celestialObject.image
-                ? `<img src="${celestialObject.image}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="${celestialObject.image}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.hasCrater
                 ? `<div class="mb-2 flex justify-center">${createCraterPlanetIcon(64)}</div>`
                 : celestialObject.hasCanyon
@@ -4809,57 +5536,65 @@
                 : celestialObject.hasGreenDots
                 ? `<div class="mb-2 flex justify-center">${createGreenDotsPlanetIcon(64)}</div>`
                 : celestialObject.name === 'Eternal Infinity Beast Egg' 
-                ? `<img src="{{ static_file('images/MJ-Eternal-Infinity-Beast-Egg.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/MJ-Eternal-Infinity-Beast-Egg.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Kryptonite Leviathan Egg'
-                ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hyper Star'
-                ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Uirinax'
-                ? `<img src="{{ static_file('images/Gravastar.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Gravastar.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hyper Planet'
-                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hyper Galaxy'
-                ? `<img src="{{ static_file('images/MJ-Hyper-Galaxy.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/MJ-Hyper-Galaxy.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hyper Universe'
-                ? `<img src="{{ static_file('images/MJ-Hyper-Universe.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/MJ-Hyper-Universe.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Oganix'
-                ? `<img src="{{ static_file('images/blue-star.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/blue-star.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Satan\'s Planet'
-                ? `<img src="{{ static_file('images/NASA-BrownDwarf.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/NASA-BrownDwarf.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Corria'
-                ? `<img src="{{ static_file('images/radioactive_asteroid.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/radioactive_asteroid.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Volcanius'
-                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Fripp'
-                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Cygnus X-1'
-                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Sagittarius A*'
-                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'TON 618'
-                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Phoenix A*'
-                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hawkramenshon'
-                ? `<img src="{{ static_file('images/Purple-Hyper-Giant.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Purple-Hyper-Giant.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Tithanmatrix'
-                ? `<img src="{{ static_file('images/Tithanmatrix.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Tithanmatrix.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Yothetiuktaliathan'
-                ? `<img src="{{ static_file('images/Yothetiuktaliathan.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Yothetiuktaliathan.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hoba Meteorite'
-                ? `<img src="{{ static_file('images/hoba.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/hoba.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === "Saturn's Hexagon"
-                ? `<img src="{{ static_file('images/Saturn_Hexagon.webp') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Saturn_Hexagon.webp') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Great Red Spot'
-                ? `<img src="{{ static_file('images/Jupiter-Great-Red-Spot.png') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Jupiter-Great-Red-Spot.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hurricane Creator Shuriken'
-                ? `<img src="{{ static_file('images/Shuriken.jpeg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Shuriken.jpeg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Annacrantieth'
-                ? `<img src="{{ static_file('images/Protostar.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/Protostar.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
+                : celestialObject.name === 'Orthodon'
+                ? `<img src="{{ static_file('images/blue-star.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
+                : celestialObject.name === 'Orthon'
+                ? `<img src="{{ static_file('images/Orthon.png') }}" alt="${celestialObject.name}" class="celestial-result-image">`
+                : celestialObject.name === 'Obion'
+                ? `<img src="{{ static_file('images/Obion.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
+                : celestialObject.name === 'Morkage'
+                ? `<img src="{{ static_file('images/Morkage.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Hurricane Helene'
-                ? `<img src="{{ static_file('images/helene.jpg') }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file('images/helene.jpg') }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : celestialObject.name === 'Great Dark Spot'
-                ? `<img src="{{ static_file("images/Neptune's_Great_Dark_Spot.jpg") }}" alt="${celestialObject.name}" class="w-24 h-20 object-contain mx-auto mb-2">`
+                ? `<img src="{{ static_file("images/Neptune's_Great_Dark_Spot.jpg") }}" alt="${celestialObject.name}" class="celestial-result-image">`
                 : `<div class="text-2xl mb-2">${celestialObject.icon}</div>`;
             
             const simulatorHTML = `
@@ -4876,7 +5611,7 @@
                             </div>
                             <div class="text-center p-3 bg-gray-800/50 rounded">
                                 <div class="text-gray-300 text-xs">vs Earth</div>
-                                <div class="text-purple-400 font-bold">${gravityRatio < 0.001 ? gravityRatio.toExponential(3) + '×' : gravityRatio.toFixed(3) + '×'}</div>
+                                <div class="text-purple-400 font-bold">${formatGravityRatio(gravityRatio)}</div>
                             </div>
                             ${celestialObject.phase ? `
                             <div class="text-center p-3 bg-gray-800/50 rounded col-span-2">
@@ -4948,7 +5683,7 @@
                     
                     <!-- Controls -->
                     <div class="text-center space-y-4">
-                        <button id="jump-button" onclick="performJump('${celestialObject.name.replace(/'/g, "\\'")}', ${calculatedGravity})" class="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-green-500/25 transform hover:scale-105">
+                        <button id="jump-button" onclick="performJump('${celestialObject.name.replace(/'/g, "\\'")}', ${gravityForSimulator(calculatedGravity)})" class="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold rounded-lg hover:from-green-700 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-green-500/25 transform hover:scale-105">
                             <i class="fas fa-keyboard mr-2"></i>
                             Press SPACEBAR to Jump
                         </button>
@@ -4965,13 +5700,14 @@
             const mainContentArea = document.querySelector('.w-full.lg\\:w-3\\/5 .bg-gray-800\\/30');
             if (mainContentArea) {
                 mainContentArea.innerHTML = simulatorHTML;
+                attachResultImageViewers(mainContentArea);
                 
                 // Auto-focus the jumping area and set up keyboard controls
                 setTimeout(() => {
                     const jumpingArea = document.getElementById('jumping-area');
                     if (jumpingArea) {
                         jumpingArea.focus();
-                        setupKeyboardControls(celestialObject.name, calculatedGravity);
+                        setupKeyboardControls(celestialObject.name, gravityForSimulator(calculatedGravity));
                     }
                 }, 100);
             }
@@ -5056,8 +5792,8 @@
                 const inches = height % 12;
                 
                 const gravityRatio = getGravityRatio(celestialObject);
-                const calculatedGravity = calculateSurfaceGravity(celestialObject.mass, celestialObject.radius);
-                const celestialWeight = earthWeight * gravityRatio;
+                const calculatedGravity = calculateSurfaceGravity(getObjectGravityMass(celestialObject), celestialObject.radius);
+                const celestialWeight = applyEarthWeight(earthWeight, gravityRatio);
                 
                 displayCelestialResults(celestialObject, earthWeight, celestialWeight, gravityRatio, calculatedGravity, feet, inches);
             }
@@ -5183,105 +5919,6 @@
         let currentFilter = 'all';
         let searchTerm = '';
         
-        function initializeObjectGrid() {
-            const grid = document.getElementById('objects-grid');
-            grid.innerHTML = '';
-            
-            Object.keys(celestialData).forEach(key => {
-                const obj = celestialData[key];
-                if (shouldShowObject(obj)) {
-                    const card = createObjectCard(key, obj);
-                    grid.appendChild(card);
-                }
-            });
-        }
-        
-        function createObjectCard(key, obj) {
-            const card = document.createElement('div');
-            card.className = 'object-card';
-            card.onclick = () => calculatePlanetWeight(key);
-            
-            // Check if this is a fictional object and use custom image or crater visual
-            const iconHtml = obj.image
-                ? `<img src="${obj.image}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.hasCrater
-                ? createCraterPlanetIcon(32)
-                : obj.hasCanyon
-                ? createCanyonPlanetIcon(32)
-                : obj.hasGreenDots
-                ? createGreenDotsPlanetIcon(32)
-                : obj.name === 'Eternal Infinity Beast Egg' 
-                ? `<img src="{{ static_file('images/MJ-Eternal-Infinity-Beast-Egg.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Kryptonite Leviathan Egg'
-                ? `<img src="{{ static_file('images/MJ-Kryptonite-Leviathan-Egg.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Hyper Star'
-                ? `<img src="{{ static_file('images/ChatGPT-Hyper-Star.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Uirinax'
-                ? `<img src="{{ static_file('images/Gravastar.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Hyper Planet'
-                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Hyper Galaxy'
-                ? `<img src="{{ static_file('images/MJ-Hyper-Galaxy.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Hyper Universe'
-                ? `<img src="{{ static_file('images/MJ-Hyper-Universe.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Oganix'
-                ? `<img src="{{ static_file('images/blue-star.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Satan\'s Planet'
-                ? `<img src="{{ static_file('images/NASA-BrownDwarf.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Corria'
-                ? `<img src="{{ static_file('images/radioactive_asteroid.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Volcanius'
-                ? `<img src="{{ static_file('images/Gemini-HyperPlanet.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Fripp'
-                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Cygnus X-1'
-                ? `<img src="{{ static_file('images/black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Sagittarius A*'
-                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'TON 618'
-                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Phoenix A*'
-                ? `<img src="{{ static_file('images/super_massive_black_hole.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Hawkramenshon'
-                ? `<img src="{{ static_file('images/Purple-Hyper-Giant.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Tithanmatrix'
-                ? `<img src="{{ static_file('images/Tithanmatrix.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Yothetiuktaliathan'
-                ? `<img src="{{ static_file('images/Yothetiuktaliathan.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Hoba Meteorite'
-                ? `<img src="{{ static_file('images/hoba.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === "Saturn's Hexagon"
-                ? `<img src="{{ static_file('images/Saturn_Hexagon.webp') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Great Red Spot'
-                ? `<img src="{{ static_file('images/Jupiter-Great-Red-Spot.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Hurricane Creator Shuriken'
-                ? `<img src="{{ static_file('images/Shuriken.jpeg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Annacrantieth'
-                ? `<img src="{{ static_file('images/Protostar.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Hurricane Helene'
-                ? `<img src="{{ static_file('images/helene.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : obj.name === 'Great Dark Spot'
-                ? `<img src="{{ static_file("images/Neptune's_Great_Dark_Spot.jpg") }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
-                : `<div class="object-icon">${obj.icon}</div>`;
-            
-            card.innerHTML = `
-                ${iconHtml}
-                <div class="object-name">${obj.name}</div>
-                <div class="object-type">${obj.type}</div>
-            `;
-            
-            return card;
-        }
-        
-        function shouldShowObject(obj) {
-            const matchesFilter = currentFilter === 'all' || obj.type === currentFilter;
-            const matchesSearch = searchTerm === '' || 
-                obj.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                obj.type.toLowerCase().includes(searchTerm.toLowerCase());
-            
-            return matchesFilter && matchesSearch;
-        }
-        
         function filterObjects(category) {
             currentFilter = category;
             
@@ -5289,7 +5926,12 @@
             document.querySelectorAll('.category-filter').forEach(btn => {
                 btn.classList.remove('active');
             });
-            document.querySelector(`[data-category="${category}"]`).classList.add('active');
+            const button = document.querySelector(`[data-category="${category}"]`);
+            if (button) {
+                button.classList.add('active');
+            } else {
+                console.warn(`Button with data-category="${category}" not found`);
+            }
             
             // Show/hide small objects note
             const smallObjectsNote = document.getElementById('small-objects-note');
@@ -5388,7 +6030,6 @@
             displayCelestialResults(customObject, earthWeight, customWeight, gravityRatio, calculatedGravity, feet, inches);
         }
         
-        // Update the shouldShowObject function to include custom objects
         function shouldShowObject(obj) {
             const matchesFilter = currentFilter === 'all' || obj.type === currentFilter;
             const matchesSearch = searchTerm === '' || 
@@ -5466,6 +6107,14 @@
                 ? `<img src="{{ static_file('images/Shuriken.jpeg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Annacrantieth'
                 ? `<img src="{{ static_file('images/Protostar.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Orthodon'
+                ? `<img src="{{ static_file('images/blue-star.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Orthon'
+                ? `<img src="{{ static_file('images/Orthon.png') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Obion'
+                ? `<img src="{{ static_file('images/Obion.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
+                : obj.name === 'Morkage'
+                ? `<img src="{{ static_file('images/Morkage.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Hurricane Helene'
                 ? `<img src="{{ static_file('images/helene.jpg') }}" alt="${obj.name}" class="w-12 h-10 object-contain">`
                 : obj.name === 'Great Dark Spot'
@@ -5495,9 +6144,20 @@
         // Update the initializeObjectGrid function to include custom objects
         function initializeObjectGrid() {
             const grid = document.getElementById('objects-grid');
+            if (!grid) {
+                console.error('objects-grid element not found');
+                return;
+            }
+            
             grid.innerHTML = '';
 
             let entries = Object.entries(celestialData).filter(([, obj]) => shouldShowObject(obj));
+            
+            // Debug logging for comet filter
+            if (currentFilter === 'comet') {
+                const cometEntries = Object.entries(celestialData).filter(([, obj]) => obj.type === 'comet');
+                console.log(`Comet filter active. Found ${cometEntries.length} comets in data, ${entries.length} after filtering`);
+            }
 
             if (currentFilter === 'quantum object') {
                 entries.sort(compareQuantumObjects);
@@ -5515,6 +6175,19 @@
             }
         }
 
+        // Modal Functions
+        function openAddObjectModal() {
+            document.getElementById('addObjectModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        function closeAddObjectModal() {
+            document.getElementById('addObjectModal').classList.add('hidden');
+            document.body.style.overflow = 'auto'; // Restore scrolling
+            // Clear form
+            document.getElementById('addObjectForm').reset();
+        }
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             // Set initial values and update figure
@@ -5529,21 +6202,21 @@
             initializeObjectGrid();
             
             // Add search event listener
-            document.getElementById('object-search').addEventListener('input', searchObjects);
+            const searchInput = document.getElementById('object-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', searchObjects);
+            }
+            
+            // Add modal event listeners
+            const addObjectModal = document.getElementById('addObjectModal');
+            if (addObjectModal) {
+                addObjectModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeAddObjectModal();
+                    }
+                });
+            }
         });
-
-        // Modal Functions
-        function openAddObjectModal() {
-            document.getElementById('addObjectModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Prevent background scrolling
-        }
-
-        function closeAddObjectModal() {
-            document.getElementById('addObjectModal').classList.add('hidden');
-            document.body.style.overflow = 'auto'; // Restore scrolling
-            // Clear form
-            document.getElementById('addObjectForm').reset();
-        }
 
         function submitNewObject() {
             const form = document.getElementById('addObjectForm');
@@ -5609,17 +6282,13 @@
             }
         }
 
-        // Close modal when clicking outside of it
-        document.getElementById('addObjectModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeAddObjectModal();
-            }
-        });
-
         // Close modal with Escape key
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && !document.getElementById('addObjectModal').classList.contains('hidden')) {
-                closeAddObjectModal();
+            if (e.key === 'Escape') {
+                const addObjectModal = document.getElementById('addObjectModal');
+                if (addObjectModal && !addObjectModal.classList.contains('hidden')) {
+                    closeAddObjectModal();
+                }
             }
         });
     </script>
@@ -5724,6 +6393,20 @@
                     <i class="fas fa-plus mr-2"></i>Add Object
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div id="celestial-image-viewer" class="celestial-image-viewer" role="dialog" aria-modal="true" aria-label="Image viewer" aria-hidden="true">
+        <button type="button" class="celestial-image-viewer-backdrop" onclick="closeCelestialImageViewer()" aria-label="Close image viewer"></button>
+        <div class="celestial-image-viewer-panel">
+            <button type="button" class="celestial-image-viewer-close-x" onclick="closeCelestialImageViewer()" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+            <img id="celestial-image-viewer-img" src="" alt="" class="celestial-image-viewer-img">
+            <p id="celestial-image-viewer-caption" class="celestial-image-viewer-caption"></p>
+            <button type="button" class="celestial-image-viewer-close-btn" onclick="closeCelestialImageViewer()">
+                <i class="fas fa-times mr-2"></i>Close
+            </button>
         </div>
     </div>
 

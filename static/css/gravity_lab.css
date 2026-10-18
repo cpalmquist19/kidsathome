@@ -362,6 +362,195 @@
     background: #9ca3af;
 }
 
+/* Celestial body image in weight results card */
+.celestial-result-image {
+    display: block;
+    width: 100%;
+    height: 16rem;
+    object-fit: contain;
+    margin: 0;
+    border-radius: 0.75rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.celestial-result-image-btn {
+    display: block;
+    width: min(100%, 22rem);
+    margin: 0 auto 1rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    border-radius: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.celestial-result-image-btn:hover {
+    transform: scale(1.02);
+}
+
+.celestial-result-image-btn:hover .celestial-result-image {
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.celestial-result-image-hint {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    transition: color 0.2s;
+}
+
+.celestial-result-image-btn:hover .celestial-result-image-hint {
+    color: #93c5fd;
+}
+
+.celestial-description {
+    margin: 0 auto 1.25rem;
+    max-width: 28rem;
+    padding: 1px;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.45), rgba(244, 63, 94, 0.35));
+}
+
+.celestial-description-inner {
+    position: relative;
+    padding: 0.875rem 1rem 0.875rem 2.25rem;
+    border-radius: 0.6875rem;
+    background: rgba(17, 24, 39, 0.88);
+    border: 1px solid rgba(251, 191, 36, 0.18);
+}
+
+.celestial-description-quote {
+    position: absolute;
+    left: 0.75rem;
+    top: 0.85rem;
+    color: rgba(251, 191, 36, 0.55);
+    font-size: 0.85rem;
+}
+
+.celestial-description-text {
+    margin: 0;
+    font-size: 0.925rem;
+    line-height: 1.55;
+    font-style: italic;
+    color: #e5e7eb;
+    text-align: left;
+}
+
+.celestial-image-viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.celestial-image-viewer.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.celestial-image-viewer-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+}
+
+.celestial-image-viewer-panel {
+    position: relative;
+    z-index: 1;
+    width: min(95vw, 72rem);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    animation: celestialImageViewerIn 0.25s ease;
+}
+
+@keyframes celestialImageViewerIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.celestial-image-viewer-close-x {
+    position: absolute;
+    top: -0.75rem;
+    right: -0.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    background: rgba(31, 41, 55, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+    z-index: 2;
+}
+
+.celestial-image-viewer-close-x:hover {
+    background: rgba(239, 68, 68, 0.9);
+    transform: scale(1.05);
+}
+
+.celestial-image-viewer-img {
+    max-width: 100%;
+    max-height: calc(90vh - 8rem);
+    object-fit: contain;
+    border-radius: 0.75rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.celestial-image-viewer-caption {
+    color: #d1d5db;
+    font-size: 0.95rem;
+    text-align: center;
+    margin: 0;
+}
+
+.celestial-image-viewer-close-btn {
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    background: rgba(55, 65, 81, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.celestial-image-viewer-close-btn:hover {
+    background: rgba(75, 85, 99, 1);
+}
+
+body.celestial-image-viewer-open {
+    overflow: hidden;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .planet-button {

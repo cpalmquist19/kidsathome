@@ -469,6 +469,19 @@ function initStarCollection() {
                     unlocked: false
                 }
             ]
+        },
+        { 
+            id: 12, 
+            name: 'Midificidin', 
+            type: 'Purple Hypergiant',
+            description: 'A massive purple hypergiant star with incredible energy output. Generates 1 Dc stardust per click.', 
+            cost: 1e36, 
+            unlocked: false, 
+            icon: 'fas fa-star', 
+            color: '#8b5cf6',
+            image: '/static/images/Purple-Hyper-Giant.jpg',
+            stardustPerClick: 1e36,
+            upgrades: []
         }
     ];
     
@@ -721,6 +734,13 @@ function getCurrentStar() {
             type: 'Quasar',
             stardustPerClick: 1000000000000000000000000000000,
             image: '/static/images/quasar.png'
+        },
+        { 
+            id: 12, 
+            name: 'Midificidin', 
+            type: 'Purple Hypergiant',
+            stardustPerClick: 1e36,
+            image: '/static/images/Purple-Hyper-Giant.jpg'
         }
     ];
     
@@ -1232,6 +1252,44 @@ function createElement118PlanetTickEffect(element118PlanetElement, amount) {
     
     // Add to Element 118 Planet element
     element118PlanetElement.appendChild(effect);
+    
+    // Remove after animation
+    setTimeout(() => {
+        if (effect.parentNode) {
+            effect.parentNode.removeChild(effect);
+        }
+    }, 1000);
+}
+
+function createOctupleBlueHyperGiantTickEffect(octupleBlueHyperGiantElement, amount) {
+    if (!octupleBlueHyperGiantElement) {
+        return;
+    }
+    
+    // Create floating text effect for Octuple Blue Hyper Giant
+    const effect = document.createElement('div');
+    effect.className = 'octuple-blue-hyper-giant-tick-effect';
+    effect.textContent = `+${formatNumber(amount)}`;
+    effect.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #3B82F6;
+        font-size: 1.2rem;
+        font-weight: bold;
+        pointer-events: none;
+        z-index: 1000;
+        text-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+        animation: octupleBlueHyperGiantFloatUp 1s ease-out forwards;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(59, 130, 246, 0.5);
+        border-radius: 4px;
+        padding: 2px 6px;
+    `;
+    
+    // Add to Octuple Blue Hyper Giant element
+    octupleBlueHyperGiantElement.appendChild(effect);
     
     // Remove after animation
     setTimeout(() => {
@@ -1776,6 +1834,25 @@ function applyAutoGeneration() {
         }
     }
     
+    // Octuple Blue Hyper Giants generate stardust per second
+    const numOctupleBlueHyperGiants = (currentSystem.objects && currentSystem.objects.octupleBlueHyperGiants) ? currentSystem.objects.octupleBlueHyperGiants : 0;
+    const octupleBlueHyperGiantRatePerSecond = (currentSystem.objects && currentSystem.objects.octupleBlueHyperGiantRatePerSecond) ? currentSystem.objects.octupleBlueHyperGiantRatePerSecond : 0;
+    const octupleBlueHyperGiantGenerated = numOctupleBlueHyperGiants * octupleBlueHyperGiantRatePerSecond;
+    
+    if (octupleBlueHyperGiantGenerated > 0) {
+        totalGenerated += octupleBlueHyperGiantGenerated;
+        
+        // Trigger floating effect for each Octuple Blue Hyper Giant
+        if (panel) {
+            for (let i = 0; i < numOctupleBlueHyperGiants; i++) {
+                const octupleBlueHyperGiantElement = panel.querySelector(`[data-octuple-blue-hyper-giant-index="${i}"]`);
+                if (octupleBlueHyperGiantElement) {
+                    createOctupleBlueHyperGiantTickEffect(octupleBlueHyperGiantElement, octupleBlueHyperGiantRatePerSecond);
+                }
+            }
+        }
+    }
+    
     if (totalGenerated > 0) {
         gameState.stardust += totalGenerated;
         gameState.totalStardustEarned += totalGenerated;
@@ -2277,6 +2354,37 @@ function renderSystemObjects() {
         container.appendChild(element118PlanetRow);
     }
     
+    const numOctupleBlueHyperGiants = currentSystem.objects && typeof currentSystem.objects.octupleBlueHyperGiants === 'number' ? currentSystem.objects.octupleBlueHyperGiants : 0;
+    const octupleBlueHyperGiantRate = currentSystem.objects && typeof currentSystem.objects.octupleBlueHyperGiantRatePerSecond === 'number' ? currentSystem.objects.octupleBlueHyperGiantRatePerSecond : 0;
+    
+    console.log('Octuple Blue Hyper Giants - count:', numOctupleBlueHyperGiants, 'rate:', octupleBlueHyperGiantRate);
+    
+    for (let i = 0; i < numOctupleBlueHyperGiants; i++) {
+        const octupleBlueHyperGiantRow = document.createElement('div');
+        octupleBlueHyperGiantRow.setAttribute('data-octuple-blue-hyper-giant-index', i);
+        octupleBlueHyperGiantRow.style.display = 'flex';
+        octupleBlueHyperGiantRow.style.justifyContent = 'space-between';
+        octupleBlueHyperGiantRow.style.alignItems = 'center';
+        octupleBlueHyperGiantRow.style.padding = '0.5rem 0.75rem';
+        octupleBlueHyperGiantRow.style.background = 'rgba(255, 255, 255, 0.05)';
+        octupleBlueHyperGiantRow.style.border = '1px solid rgba(59, 130, 246, 0.2)';
+        octupleBlueHyperGiantRow.style.borderRadius = '8px';
+        octupleBlueHyperGiantRow.style.position = 'relative';
+        
+        const left = document.createElement('div');
+        left.style.display = 'flex';
+        left.style.alignItems = 'center';
+        left.style.gap = '8px';
+        left.innerHTML = `<span style="color:#3B82F6; font-size: 1.2rem; margin-right: 8px;">⭐</span><span>Octuple Blue Hyper Giant ${i + 1}</span>`;
+        
+        const right = document.createElement('div');
+        right.innerHTML = `<span style="color:#3B82F6;font-weight:700">${formatNumber(octupleBlueHyperGiantRate)}/sec</span>`;
+        
+        octupleBlueHyperGiantRow.appendChild(left);
+        octupleBlueHyperGiantRow.appendChild(right);
+        container.appendChild(octupleBlueHyperGiantRow);
+    }
+    
     panel.appendChild(container);
 }
 
@@ -2467,9 +2575,9 @@ function markUpgradeAsPurchased(upgradeName) {
     }
     
     if (upgradeName === 'Unlock Fictional Objects' && currentStarId === 11) {
-        // Unlock fictional objects when Gironix's Unlock Fictional Objects is purchased
-        console.log('Fictional Objects unlocked on Gironix!');
-        // Future: Add fictional objects or next system here
+        // Unlock the next star system (Midificidin) when Gironix's Unlock Fictional Objects is purchased
+        unlockTwelfthStarSystem();
+        console.log('Unlock Fictional Objects - Midificidin star system available!');
     }
     
     // Refresh the star collection UI so unlocked upgrades are non-clickable
@@ -3179,6 +3287,60 @@ function unlockEleventhStarSystem() {
     saveGame();
 }
 
+function unlockTwelfthStarSystem() {
+    console.log('Unlocking twelfth star system...');
+    
+    // Update game state to unlock the twelfth star
+    gameState.starsUnlocked = 12;
+    gameState.starSystems[12].unlocked = true;
+    
+    console.log('Updated game state:', gameState.starSystems);
+    
+    // Find and unlock the Midificidin star
+    const starCollection = document.getElementById('starCollection');
+    if (starCollection) {
+        const starElements = starCollection.querySelectorAll('.star-item');
+        console.log(`Found ${starElements.length} star elements`);
+        
+        if (starElements.length > 11) {
+            const midificidinElement = starElements[11]; // Twelfth star element
+            console.log('Unlocking Midificidin element:', midificidinElement);
+            console.log('Element classes before unlock:', midificidinElement.className);
+            
+            midificidinElement.classList.remove('locked');
+            console.log('Element classes after removing locked:', midificidinElement.className);
+            
+            // Remove any existing click handlers to avoid duplicates
+            const newElement = midificidinElement.cloneNode(true);
+            midificidinElement.parentNode.replaceChild(newElement, midificidinElement);
+            console.log('New element classes:', newElement.className);
+            
+            // Add click handler for the newly unlocked star
+            newElement.addEventListener('click', (e) => {
+                console.log('=== CLICK EVENT TRIGGERED ===');
+                console.log('Clicked on unlocked Midificidin star');
+                console.log('Event target:', e.target);
+                console.log('Event currentTarget:', e.currentTarget);
+                console.log('About to call selectStar(12)');
+                selectStar(12); // Select Midificidin
+                console.log('=== CLICK EVENT COMPLETED ===');
+            });
+            
+            // Midificidin has no upgrades, so no upgrade handlers needed
+            
+            console.log('Midificidin star unlocked and click handlers added');
+        } else {
+            console.warn('Not enough star elements found to unlock Midificidin');
+        }
+    }
+    
+    // Update UI to reflect the new star count
+    updateUI();
+    
+    // Save game after unlocking new star
+    saveGame();
+}
+
 function showPurchaseSuccess(upgradeName) {
     // Create a temporary success message
     const successMsg = document.createElement('div');
@@ -3626,6 +3788,43 @@ function loadGame() {
                 console.log('Added "Unlock Fictional Objects" upgrade to system 11');
             }
             
+            // Migration: Add system 12 if it doesn't exist
+            if (!gameState.starSystems[12]) {
+                gameState.starSystems[12] = {
+                    unlocked: false,
+                    upgrades: {},
+                    objects: {
+                        asteroids: 0,
+                        asteroidRatePerSecond: 1,
+                        comets: 0,
+                        cometRatePerSecond: 10,
+                        dwarfPlanets: 0,
+                        dwarfPlanetRatePerSecond: 10,
+                        habitablePlanets: 0,
+                        habitablePlanetRatePerSecond: 10,
+                        binaryIceGiants: 0,
+                        binaryIceGiantRatePerSecond: 10,
+                        gasGiants: 0,
+                        gasGiantRatePerSecond: 10,
+                        neutronStars: 0,
+                        neutronStarRatePerSecond: 10,
+                        binaryGasGiants: 0,
+                        binaryGasGiantRatePerSecond: 10,
+                        primordialBlackHoles: 0,
+                        primordialBlackHoleRatePerSecond: 10,
+                        element118Atoms: 0,
+                        element118AtomRatePerSecond: 10,
+                        wolfRayetStars: 0,
+                        wolfRayetStarRatePerSecond: 10,
+                        element118Planets: 0,
+                        element118PlanetRatePerSecond: 10,
+                        octupleBlueHyperGiants: 1,
+                        octupleBlueHyperGiantRatePerSecond: 500 * 1e33  // 500 No/second
+                    }
+                };
+                console.log('Added system 12 (Midificidin) with Octuple Blue Hyper Giant');
+            }
+            
             // Update UI to reflect loaded state
             updateStarCollectionFromState();
             updateCentralStarDisplay();
@@ -3835,6 +4034,14 @@ function checkAndUnlockSystems() {
         console.log('System 11 should be unlocked - System 10 Activate Quasar is purchased');
         gameState.starsUnlocked = Math.max(gameState.starsUnlocked, 11);
         gameState.starSystems[11].unlocked = true;
+    }
+    
+    // Check if system 12 should be unlocked (system 11's Unlock Fictional Objects)
+    if (gameState.starSystems[11] && gameState.starSystems[11].upgrades && gameState.starSystems[11].upgrades['Unlock Fictional Objects'] &&
+        gameState.starSystems[12] && !gameState.starSystems[12].unlocked) {
+        console.log('System 12 should be unlocked - System 11 Unlock Fictional Objects is purchased');
+        gameState.starsUnlocked = Math.max(gameState.starsUnlocked, 12);
+        gameState.starSystems[12].unlocked = true;
     }
     
     // Update UI to reflect any newly unlocked systems

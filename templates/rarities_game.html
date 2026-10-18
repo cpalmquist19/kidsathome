@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rarities Game - Kids at Home</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cosmic-purple': '#7C3AED',
+                        'space-blue': '#2563EB',
+                        'star-gold': '#D97706',
+                        'nebula-pink': '#BE185D',
+                        'galaxy-indigo': '#4F46E5'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes wiggle {
+            0%, 7% { transform: rotateZ(0); }
+            15% { transform: rotateZ(-15deg); }
+            20% { transform: rotateZ(10deg); }
+            25% { transform: rotateZ(-10deg); }
+            30% { transform: rotateZ(6deg); }
+            35% { transform: rotateZ(-4deg); }
+            40%, 100% { transform: rotateZ(0); }
+        }
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+        .rarity-item {
+            transition: all 0.3s ease;
+        }
+        .rarity-item:hover {
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-gray-900 to-black min-h-screen">
+    <!-- Navigation -->
+    <nav class="relative bg-gradient-to-b from-blue-900/95 to-blue-800/95 backdrop-blur-sm sticky top-0 z-50">
+        <!-- Enhanced starfield background -->
+        <div class="absolute inset-0 opacity-30">
+            <!-- Row 1 -->
+            <div class="absolute top-1 left-1/6 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-1 left-1/3 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-1 left-1/2 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            <div class="absolute top-1 left-2/3 w-0.5 h-0.5 bg-cyan-200 rounded-full"></div>
+            <div class="absolute top-1 left-5/6 w-0.5 h-0.5 bg-white rounded-full"></div>
+            
+            <!-- Row 2 -->
+            <div class="absolute top-3 left-1/8 w-0.5 h-0.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute top-3 left-2/5 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            <div class="absolute top-3 left-3/5 w-0.5 h-0.5 bg-cyan-300 rounded-full"></div>
+            <div class="absolute top-3 left-7/8 w-0.5 h-0.5 bg-white rounded-full"></div>
+            
+            <!-- Row 3 -->
+            <div class="absolute top-5 left-1/4 w-0.5 h-0.5 bg-white rounded-full"></div>
+            <div class="absolute top-5 left-1/2 w-0.5 h-0.5 bg-blue-200 rounded-full"></div>
+            <div class="absolute top-5 left-3/4 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+        </div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo Section -->
+                <a href="/" class="group flex items-center space-x-3 hover:scale-105 transition-transform duration-300">
+                    <div class="relative">
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <span class="text-2xl font-bold text-white group-hover:text-gray-200 transition-colors duration-300">
+                        Kids at Home
+                    </span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="/" class="group flex items-center space-x-2 text-gray-300 hover:text-blue-400 transition-colors duration-300 relative">
+                        <i class="fas fa-home text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Home</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/#games" class="group flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-colors duration-300 relative">
+                        <i class="fas fa-gamepad text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Games</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Header Section -->
+        <div class="text-center mb-12">
+            <div class="inline-block mb-6">
+                <i class="fas fa-gem text-6xl text-yellow-400 animate-pulse-slow"></i>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent">
+                Rarities Game
+            </h1>
+            <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+                Explore every rarity ever created! Rarities are ranked from most common (bottom) to most rare (top). Each rarity includes an example item that demonstrates that level of rareness.
+            </p>
+        </div>
+
+        <!-- Rarities List Container -->
+        <div class="bg-gray-900/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-800 shadow-2xl">
+            <!-- Legend -->
+            <div class="mb-8 pb-6 border-b border-gray-700">
+                <div class="flex items-center justify-center space-x-2 text-gray-300">
+                    <i class="fas fa-info-circle text-blue-400"></i>
+                    <span class="text-sm">Most Rare</span>
+                    <i class="fas fa-arrow-up text-yellow-400"></i>
+                    <span class="text-sm">↓</span>
+                    <i class="fas fa-arrow-down text-gray-400"></i>
+                    <span class="text-sm">Most Common</span>
+                </div>
+            </div>
+
+            <!-- Rarities List -->
+            <div id="raritiesList" class="space-y-4">
+                <!-- Rarities will be dynamically populated here -->
+                <!-- Placeholder message -->
+                <div class="text-center py-12">
+                    <i class="fas fa-gem text-4xl text-gray-600 mb-4"></i>
+                    <p class="text-gray-400 text-lg">Rarities list will be populated here</p>
+                    <p class="text-gray-500 text-sm mt-2">Most rare items appear at the top, most common at the bottom</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions Card -->
+        <div class="mt-8 bg-gradient-to-r from-yellow-600/20 to-amber-600/20 rounded-2xl p-6 border border-yellow-500/30">
+            <div class="flex items-start space-x-4">
+                <i class="fas fa-lightbulb text-2xl text-yellow-400 mt-1"></i>
+                <div>
+                    <h3 class="text-xl font-bold text-white mb-2">How It Works</h3>
+                    <ul class="text-gray-300 space-y-2">
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mr-2 mt-1"></i>
+                            <span>Rarities are displayed in order from most rare (top) to most common (bottom)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mr-2 mt-1"></i>
+                            <span>Each rarity includes an example item that demonstrates that level of rareness</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check-circle text-yellow-400 mr-2 mt-1"></i>
+                            <span>Scroll through the list to discover all the different rarity levels</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gradient-to-b from-gray-900 to-black border-t border-gray-800 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center">
+                <p class="text-gray-400">
+                    © {{ current_year }} Kids at Home - Where Learning Meets Adventure
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for Rarities List -->
+    <script>
+        // Rarities ordered from most common (bottom) to most rare (top)
+        // The array is reversed when rendering, so most rare appears at top
+        const rarities = [
+            { name: "Super Ultra Infinity Common", example: "Dark Matter", description: "The most common of all items" },
+            { name: "Omega Common", example: "Red Star", description: "Extremely common items" },
+            { name: "Common", example: "Planet", description: "Common items found everywhere" },
+            { name: "Uncommon", example: "Ringed Planet", description: "Slightly less common items" },
+            { name: "Rare", example: "Diamond", description: "Items that are hard to find" },
+            { name: "Epic", example: "Tanzanite", description: "Powerful and valuable items" },
+            { name: "Exotic", example: "Blue Star", description: "Unusual and unique items" },
+            { name: "Legendary", example: "Unicellular Life", description: "Items of great renown" },
+            { name: "Mythical", example: "Primitive Multicellular Life", description: "Items from ancient legends" },
+            { name: "Secret", example: "Galaxy without a Super Massive Blackhole", description: "Hidden and mysterious items" },
+            { name: "Divine", example: "Star made entirely out of diamonds", description: "Items touched by the gods" },
+            { name: "Prismatic", example: "Human-like life", description: "Items of pure light and color" },
+            { name: "Chroma", example: "Anti-matter", description: "Items that shift and change" },
+            { name: "Transcendent", example: "Tachyon", description: "Items beyond normal understanding" },
+            { name: "Godly", example: "Element 118", description: "The absolute pinnacle of rarity" }
+        ];
+
+        function renderRarities() {
+            const container = document.getElementById('raritiesList');
+            
+            if (rarities.length === 0) {
+                // Keep the placeholder message
+                return;
+            }
+
+            // Clear placeholder
+            container.innerHTML = '';
+
+            // Render rarities (most rare first, so reverse the array)
+            rarities.slice().reverse().forEach((rarity, index) => {
+                const rarityElement = document.createElement('div');
+                
+                // Determine rarity tier for styling (0 = most rare, higher = more common)
+                let borderColor, textColor, iconColor, bgGradient, exampleColor;
+                
+                if (index < 3) {
+                    // Ultra Rare (Top 3: Godly, Transcendent, Chroma)
+                    borderColor = 'border-yellow-500/70';
+                    textColor = 'text-yellow-300';
+                    iconColor = 'text-yellow-400';
+                    bgGradient = 'bg-gradient-to-r from-yellow-900/30 to-amber-900/30';
+                    exampleColor = 'text-yellow-200';
+                } else if (index < 6) {
+                    // Very Rare (Prismatic, Divine, Secret)
+                    borderColor = 'border-purple-500/70';
+                    textColor = 'text-purple-300';
+                    iconColor = 'text-purple-400';
+                    bgGradient = 'bg-gradient-to-r from-purple-900/30 to-indigo-900/30';
+                    exampleColor = 'text-purple-200';
+                } else if (index < 9) {
+                    // Rare (Mythical, Legendary, Exotic)
+                    borderColor = 'border-blue-500/70';
+                    textColor = 'text-blue-300';
+                    iconColor = 'text-blue-400';
+                    bgGradient = 'bg-gradient-to-r from-blue-900/30 to-cyan-900/30';
+                    exampleColor = 'text-blue-200';
+                } else if (index < 12) {
+                    // Uncommon (Epic, Rare, Uncommon)
+                    borderColor = 'border-green-500/70';
+                    textColor = 'text-green-300';
+                    iconColor = 'text-green-400';
+                    bgGradient = 'bg-gradient-to-r from-green-900/30 to-teal-900/30';
+                    exampleColor = 'text-green-200';
+                } else {
+                    // Common (Common, Omega Common, Super Ultra Infinity Common)
+                    borderColor = 'border-gray-600/70';
+                    textColor = 'text-gray-400';
+                    iconColor = 'text-gray-500';
+                    bgGradient = 'bg-gray-800/30';
+                    exampleColor = 'text-gray-300';
+                }
+
+                rarityElement.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-gem text-3xl ${iconColor}"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold ${textColor} mb-1">${rarity.name}</h3>
+                                <p class="text-gray-400 text-sm">${rarity.description || ''}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="${exampleColor} font-semibold mb-1">Example:</div>
+                            <div class="text-white font-medium">${rarity.example}</div>
+                        </div>
+                    </div>
+                `;
+                
+                rarityElement.className = `rarity-item ${bgGradient} rounded-xl p-6 border ${borderColor} hover:border-yellow-500/50 transition-all duration-300`;
+                
+                container.appendChild(rarityElement);
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            renderRarities();
+        });
+    </script>
+</body>
+</html>
+

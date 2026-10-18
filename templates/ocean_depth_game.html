@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake Ocean Creature Depth Comparison</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
+    {% for sound_url in sound_prefetch_urls %}
+    <link rel="prefetch" href="{{ sound_url }}" as="fetch" crossorigin>
+    {% endfor %}
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'sunlight-top': '#38bdf8',
+                        'sunlight-bottom': '#0284c7',
+                        'twilight-top': '#0369a1',
+                        'twilight-bottom': '#1e3a5f',
+                        'midnight-top': '#172554',
+                        'midnight-bottom': '#0a0f1a',
+                        'abyssal-top': '#070b14',
+                        'abyssal-bottom': '#030509',
+                        'hadal-top': '#020305',
+                        'hadal-bottom': '#000000',
+                        'beneath-top': '#010102',
+                        'beneath-bottom': '#000000',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .zone-sunlight {
+            background: linear-gradient(180deg, #7dd3fc 0%, #0284c7 100%);
+        }
+        .zone-twilight {
+            background: linear-gradient(180deg, #0369a1 0%, #1e3a5f 100%);
+        }
+        .zone-midnight {
+            background: linear-gradient(180deg, #172554 0%, #0a0f1a 100%);
+        }
+        .zone-abyssal {
+            background: linear-gradient(180deg, #070b14 0%, #030509 100%);
+        }
+        .zone-hadal {
+            background: linear-gradient(180deg, #020305 0%, #000000 100%);
+        }
+        .zone-beneath {
+            background: linear-gradient(180deg, #010102 0%, #000000 50%, #050008 100%);
+        }
+
+        .depth-marker {
+            border-top: 1px dashed rgba(255, 255, 255, 0.15);
+        }
+
+        .zone-label {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
+        @keyframes surface-shimmer {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+        .surface-shimmer {
+            animation: surface-shimmer 4s ease-in-out infinite;
+        }
+
+        @keyframes bubble-rise {
+            0% { transform: translateY(0) scale(1); opacity: 0.6; }
+            100% { transform: translateY(-60px) scale(0.5); opacity: 0; }
+        }
+
+        .creature-card {
+            cursor: pointer;
+        }
+        .creature-card:focus-visible {
+            outline: 2px solid rgba(56, 189, 248, 0.8);
+            outline-offset: 4px;
+            border-radius: 0.75rem;
+        }
+
+        .creature-modal-image-frame {
+            height: 13rem;
+            background: linear-gradient(180deg, #111827 0%, #030712 100%);
+        }
+        @media (min-width: 768px) {
+            .creature-modal-image-frame {
+                height: 16rem;
+            }
+        }
+        .creature-modal-image-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            padding: 0.75rem 1rem;
+        }
+
+        .creature-sound-scrub canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #creatureModelCanvasHost canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-900 via-cyan-900 to-blue-900 py-6 text-center border-b border-cyan-800/50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <i class="fas fa-water text-3xl text-cyan-400"></i>
+                <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent">
+                    Fake Ocean Creature Depth Comparison
+                </h1>
+                <i class="fas fa-water text-3xl text-cyan-400"></i>
+            </div>
+            <p class="text-gray-400 text-sm md:text-base">How deep do these made-up creatures live? Click a creature to read its lore.</p>
+            <a href="/" class="inline-block mt-3 text-cyan-400 hover:text-cyan-300 transition-colors text-sm">
+                <i class="fas fa-arrow-left mr-1"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <!-- Ocean Column -->
+    <div class="relative w-full">
+
+        <!-- Surface / waterline decoration -->
+        <div class="relative w-full h-8 bg-gradient-to-b from-sky-300 to-sky-400 overflow-hidden">
+            <div class="absolute inset-0 surface-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-b from-sky-400/80 to-sky-500"></div>
+        </div>
+
+        <!-- ===== SUNLIGHT ZONE (0 – 200m) ===== -->
+        <div class="zone-sunlight relative w-full" style="min-height: 400px;">
+            <!-- Zone info strip -->
+            <div class="sticky top-0 z-20 w-full flex items-center justify-between px-4 md:px-8 py-3 bg-sky-600/60 backdrop-blur-sm border-b border-sky-400/30">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-sun text-yellow-300 text-xl"></i>
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold text-white">Sunlight Zone</h2>
+                        <p class="text-sky-100 text-xs md:text-sm">Epipelagic</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-white font-mono text-sm md:text-base font-semibold">0 – 200m</p>
+                    <p class="text-sky-200 text-xs">Warm &amp; bright, most ocean life</p>
+                </div>
+            </div>
+
+            <!-- Creature area -->
+            <div class="relative px-4 md:px-8 py-8 min-h-[320px] flex flex-wrap items-start gap-6 content-start">
+
+                <!-- Riffhead -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="riffhead" tabindex="0" role="button" aria-label="Riffhead — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-sky-600/30 shadow-lg shadow-sky-800/20 group-hover:shadow-sky-700/30 group-hover:border-sky-500/40 transition-all duration-300">
+                        <img src="{{ static_file('images/riffhead.jpg') }}" alt="Riffhead" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-sky-600 group-hover:text-sky-500 transition-colors">Riffhead</h3>
+                        <p class="text-sky-800/60 text-xs font-mono mt-0.5">~80m</p>
+                    </div>
+                </div>
+
+                <!-- Fuzzy Boi -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="fuzzy-boi" tabindex="0" role="button" aria-label="Fuzzy Boi — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-amber-600/30 shadow-lg shadow-sky-800/20 group-hover:shadow-amber-700/30 group-hover:border-amber-500/40 transition-all duration-300">
+                        <img src="{{ static_file('images/fuzzy-boi.jpg') }}" alt="Fuzzy Boi" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-amber-600 group-hover:text-amber-500 transition-colors">Fuzzy Boi</h3>
+                        <p class="text-sky-800/60 text-xs font-mono mt-0.5">~140m</p>
+                    </div>
+                </div>
+
+                <!-- Aourlath -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="aourlath" tabindex="0" role="button" aria-label="Aourlath — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-cyan-600/30 shadow-lg shadow-sky-800/20 group-hover:shadow-cyan-700/30 group-hover:border-cyan-500/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Aourlath.webp') }}" alt="Aourlath" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-cyan-600 group-hover:text-cyan-500 transition-colors">Aourlath</h3>
+                        <p class="text-sky-800/60 text-xs font-mono mt-0.5">~110m</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Depth tick at bottom -->
+            <div class="depth-marker w-full px-4 md:px-8 py-1 flex justify-end">
+                <span class="text-sky-200/60 text-xs font-mono">200m</span>
+            </div>
+        </div>
+
+        <!-- ===== TWILIGHT ZONE (200 – 1,000m) ===== -->
+        <div class="zone-twilight relative w-full" style="min-height: 500px;">
+            <div class="sticky top-0 z-20 w-full flex items-center justify-between px-4 md:px-8 py-3 bg-blue-800/60 backdrop-blur-sm border-b border-blue-500/20">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-moon text-blue-300 text-xl"></i>
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold text-white">Twilight Zone</h2>
+                        <p class="text-blue-200 text-xs md:text-sm">Mesopelagic</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-white font-mono text-sm md:text-base font-semibold">200 – 1,000m</p>
+                    <p class="text-blue-300 text-xs">Dim light fading to darkness</p>
+                </div>
+            </div>
+
+            <div class="relative px-4 md:px-8 py-8 min-h-[420px] flex flex-wrap items-start gap-6 content-start">
+
+                <!-- Kraken -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="kraken" tabindex="0" role="button" aria-label="The Kraken — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-indigo-900/30 shadow-lg shadow-indigo-950/20 group-hover:shadow-indigo-900/30 group-hover:border-indigo-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/kraken.jpg') }}" alt="Kraken" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-indigo-400 group-hover:text-indigo-300 transition-colors">The Kraken</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~600m</p>
+                    </div>
+                </div>
+
+                <!-- The Leviathan -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="the-leviathan" tabindex="0" role="button" aria-label="The Leviathan — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-slate-700/30 shadow-lg shadow-indigo-950/20 group-hover:shadow-slate-800/40 group-hover:border-slate-600/40 transition-all duration-300">
+                        <img src="{{ static_file('images/The_Leviathan.jpg') }}" alt="The Leviathan" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-slate-300 group-hover:text-slate-200 transition-colors">The Leviathan</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~350m</p>
+                    </div>
+                </div>
+
+                <!-- The Red Bluster -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="red-bluster" tabindex="0" role="button" aria-label="The Red Bluster — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-red-900/30 shadow-lg shadow-red-950/20 group-hover:shadow-red-900/30 group-hover:border-red-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/TheRedBluster.jpg') }}" alt="The Red Bluster" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-red-400 group-hover:text-red-300 transition-colors">The Red Bluster</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~450m</p>
+                    </div>
+                </div>
+
+                <!-- Derathos -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="derathos" tabindex="0" role="button" aria-label="Derathos — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-cyan-900/30 shadow-lg shadow-cyan-950/20 group-hover:shadow-cyan-900/30 group-hover:border-cyan-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Dunk.jpg') }}" alt="Derathos" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-cyan-400 group-hover:text-cyan-300 transition-colors">Derathos</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~750m</p>
+                    </div>
+                </div>
+
+                <!-- Charybdis -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="charybdis" tabindex="0" role="button" aria-label="Charybdis — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-teal-900/30 shadow-lg shadow-teal-950/20 group-hover:shadow-teal-900/30 group-hover:border-teal-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Charybdis.webp') }}" alt="Charybdis" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-teal-400 group-hover:text-teal-300 transition-colors">Charybdis</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~920m</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="depth-marker w-full px-4 md:px-8 py-1 flex justify-end">
+                <span class="text-blue-300/40 text-xs font-mono">1,000m</span>
+            </div>
+        </div>
+
+        <!-- ===== MIDNIGHT ZONE (1,000 – 4,000m) ===== -->
+        <div class="zone-midnight relative w-full" style="min-height: 600px;">
+            <div class="sticky top-0 z-20 w-full flex items-center justify-between px-4 md:px-8 py-3 bg-indigo-950/60 backdrop-blur-sm border-b border-indigo-500/15">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-eye-slash text-indigo-300 text-xl"></i>
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold text-white">Midnight Zone</h2>
+                        <p class="text-indigo-300 text-xs md:text-sm">Bathypelagic</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-white font-mono text-sm md:text-base font-semibold">1,000 – 4,000m</p>
+                    <p class="text-indigo-400 text-xs">Pitch black, near freezing</p>
+                </div>
+            </div>
+
+            <div class="relative px-4 md:px-8 py-8 min-h-[520px] flex flex-wrap items-start gap-6 content-start">
+
+                <!-- Ningen -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="ningen" tabindex="0" role="button" aria-label="Ningen — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-slate-700/30 shadow-lg shadow-slate-950/20 group-hover:shadow-slate-800/30 group-hover:border-slate-600/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Ningen.webp') }}" alt="Ningen" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-slate-300 group-hover:text-slate-200 transition-colors">Ningen</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~2,200m</p>
+                    </div>
+                </div>
+
+                <!-- Mouluth -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="mouluth" tabindex="0" role="button" aria-label="Mouluth — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-cyan-900/30 shadow-lg shadow-cyan-950/20 group-hover:shadow-cyan-900/30 group-hover:border-cyan-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Mouluth.webp') }}" alt="Mouluth" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-cyan-400 group-hover:text-cyan-300 transition-colors">Mouluth</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~1,850m</p>
+                    </div>
+                </div>
+
+                <!-- Great Thrasher -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="great-thrasher" tabindex="0" role="button" aria-label="Great Thrasher — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-red-900/30 shadow-lg shadow-red-950/20 group-hover:shadow-red-900/30 group-hover:border-red-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Great_Thrasher.webp') }}" alt="Great Thrasher" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-red-400 group-hover:text-red-300 transition-colors">Great Thrasher</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~3,400m</p>
+                    </div>
+                </div>
+
+                <!-- Itaculoth -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="itaculoth" tabindex="0" role="button" aria-label="Itaculoth — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-purple-900/30 shadow-lg shadow-purple-950/20 group-hover:shadow-purple-900/30 group-hover:border-purple-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Itaculoth.jpg') }}" alt="Itaculoth" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-purple-400 group-hover:text-purple-300 transition-colors">Itaculoth</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~2,750m</p>
+                    </div>
+                </div>
+
+                <!-- Ancient Leviathan -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="ancient-leviathan" tabindex="0" role="button" aria-label="Ancient Leviathan — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-indigo-900/30 shadow-lg shadow-indigo-950/20 group-hover:shadow-indigo-900/30 group-hover:border-indigo-800/40 transition-all duration-300 bg-black">
+                        <img src="{{ static_file('images/josh-govier-joshuagovier-leviathan-33-scale.jpg') }}" alt="Ancient Leviathan" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-indigo-400 group-hover:text-indigo-300 transition-colors">Ancient Leviathan</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~3,000m</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="depth-marker w-full px-4 md:px-8 py-1 flex justify-end">
+                <span class="text-indigo-400/30 text-xs font-mono">4,000m</span>
+            </div>
+        </div>
+
+        <!-- ===== ABYSSAL ZONE (4,000 – 6,000m) ===== -->
+        <div class="zone-abyssal relative w-full" style="min-height: 500px;">
+            <div class="sticky top-0 z-20 w-full flex items-center justify-between px-4 md:px-8 py-3 bg-gray-950/60 backdrop-blur-sm border-b border-gray-700/15">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-skull text-gray-400 text-xl"></i>
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold text-gray-100">Abyssal Zone</h2>
+                        <p class="text-gray-400 text-xs md:text-sm">Abyssopelagic</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-gray-200 font-mono text-sm md:text-base font-semibold">4,000 – 6,000m</p>
+                    <p class="text-gray-500 text-xs">Crushing pressure, eternal dark</p>
+                </div>
+            </div>
+
+            <div class="relative px-4 md:px-8 py-8 min-h-[420px] flex flex-wrap items-start gap-6 content-start">
+
+                <!-- Gomblore -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="gomblore" tabindex="0" role="button" aria-label="Gomblore — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-emerald-900/30 shadow-lg shadow-emerald-950/20 group-hover:shadow-emerald-900/30 group-hover:border-emerald-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/gomblore.webp') }}" alt="Gomblore" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">Gomblore</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~4,200m</p>
+                    </div>
+                </div>
+
+                <!-- Zumusiasal -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="zumusiasal" tabindex="0" role="button" aria-label="Zumusiasal — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-teal-900/30 shadow-lg shadow-teal-950/20 group-hover:shadow-teal-900/30 group-hover:border-teal-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Zumusiasal.jpg') }}" alt="Zumusiasal" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-teal-400 group-hover:text-teal-300 transition-colors">Zumusiasal</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~4,600m</p>
+                    </div>
+                </div>
+
+                <!-- Abyssal Monster -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="abyssal-monster" tabindex="0" role="button" aria-label="Abyssal Monster — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-rose-900/30 shadow-lg shadow-rose-950/20 group-hover:shadow-rose-900/30 group-hover:border-rose-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/abyssal_monster.jpg') }}" alt="Abyssal Monster" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-rose-400 group-hover:text-rose-300 transition-colors">Abyssal Monster</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~5,100m</p>
+                    </div>
+                </div>
+
+                <!-- Abyssal Behemoth -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="abyssal-behemoth" tabindex="0" role="button" aria-label="Abyssal Behemoth — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-violet-900/30 shadow-lg shadow-violet-950/20 group-hover:shadow-violet-900/30 group-hover:border-violet-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/abyssal_behemoth.png') }}" alt="Abyssal Behemoth" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-violet-400 group-hover:text-violet-300 transition-colors">Abyssal Behemoth</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~5,500m</p>
+                    </div>
+                </div>
+
+                <!-- Telescope Leviathan -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="telescope-leviathan" tabindex="0" role="button" aria-label="Telescope Leviathan — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-blue-900/30 shadow-lg shadow-blue-950/20 group-hover:shadow-blue-900/30 group-hover:border-blue-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/telescope_leviathan.jpg') }}" alt="Telescope Leviathan" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-blue-400 group-hover:text-blue-300 transition-colors">Telescope Leviathan</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~5,800m</p>
+                    </div>
+                </div>
+
+                <!-- Gobul -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="gobul" tabindex="0" role="button" aria-label="Gobul — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-lime-900/30 shadow-lg shadow-lime-950/20 group-hover:shadow-lime-900/30 group-hover:border-lime-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Gobul.jpg') }}" alt="Gobul" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-lime-400 group-hover:text-lime-300 transition-colors">Gobul</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~5,300m</p>
+                    </div>
+                </div>
+
+                <!-- Aboleth -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="aboleth" tabindex="0" role="button" aria-label="Aboleth — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-sky-900/30 shadow-lg shadow-sky-950/20 group-hover:shadow-sky-900/30 group-hover:border-sky-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Aboleth.jpg') }}" alt="Aboleth" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-sky-400 group-hover:text-sky-300 transition-colors">Aboleth</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~4,900m</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="depth-marker w-full px-4 md:px-8 py-1 flex justify-end">
+                <span class="text-gray-600/30 text-xs font-mono">6,000m</span>
+            </div>
+        </div>
+
+        <!-- ===== HADAL ZONE (6,000 – 11,000m) ===== -->
+        <div class="zone-hadal relative w-full" style="min-height: 600px;">
+            <div class="sticky top-0 z-20 w-full flex items-center justify-between px-4 md:px-8 py-3 bg-black/60 backdrop-blur-sm border-b border-gray-800/15">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-bolt text-red-500 text-xl"></i>
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold text-gray-200">Hadal Zone</h2>
+                        <p class="text-gray-500 text-xs md:text-sm">Hadopelagic</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-gray-300 font-mono text-sm md:text-base font-semibold">6,000 – 11,000m</p>
+                    <p class="text-gray-600 text-xs">The deepest trenches on Earth</p>
+                </div>
+            </div>
+
+            <div class="relative px-4 md:px-8 py-8 min-h-[520px] flex flex-wrap items-start gap-6 content-start">
+
+                <!-- The Bloop -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="bloop" tabindex="0" role="button" aria-label="The Bloop — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-red-900/30 shadow-lg shadow-red-950/20 group-hover:shadow-red-900/30 group-hover:border-red-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/the_bloop.webp') }}" alt="The Bloop" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-red-400 group-hover:text-red-300 transition-colors">The Bloop</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~7,000m</p>
+                    </div>
+                </div>
+
+                <!-- El Gran Maja -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="el-gran-maja" tabindex="0" role="button" aria-label="El Gran Maja — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-purple-900/30 shadow-lg shadow-purple-950/20 group-hover:shadow-purple-900/30 group-hover:border-purple-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/el_gran_maja.jpg') }}" alt="El Gran Maja" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-purple-400 group-hover:text-purple-300 transition-colors">El Gran Maja</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~8,200m</p>
+                    </div>
+                </div>
+
+                <!-- Julia -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="julia" tabindex="0" role="button" aria-label="Julia — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-cyan-900/30 shadow-lg shadow-cyan-950/20 group-hover:shadow-cyan-900/30 group-hover:border-cyan-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/julia.webp') }}" alt="Julia" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-cyan-400 group-hover:text-cyan-300 transition-colors">Julia</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~9,500m</p>
+                    </div>
+                </div>
+
+                <!-- Anantashesha -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="anantashesha" tabindex="0" role="button" aria-label="Anantashesha — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-amber-900/30 shadow-lg shadow-amber-950/20 group-hover:shadow-amber-900/30 group-hover:border-amber-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/anantashesha.png') }}" alt="Anantashesha" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-amber-400 group-hover:text-amber-300 transition-colors">Anantashesha</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~10,800m</p>
+                    </div>
+                </div>
+
+                <!-- Sea Eater -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="sea-eater" tabindex="0" role="button" aria-label="The Sea Eater — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-orange-900/30 shadow-lg shadow-orange-950/20 group-hover:shadow-orange-900/30 group-hover:border-orange-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/the_sea_eater.jpg') }}" alt="Sea Eater" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-orange-400 group-hover:text-orange-300 transition-colors">The Sea Eater</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~8,900m</p>
+                    </div>
+                </div>
+
+                <!-- Upsweep -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="upsweep" tabindex="0" role="button" aria-label="Upsweep — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-teal-900/30 shadow-lg shadow-teal-950/20 group-hover:shadow-teal-900/30 group-hover:border-teal-800/40 transition-all duration-300">
+                        <img src="{{ static_file('images/Upsweep.jpg') }}" alt="Upsweep" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500">
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-teal-400 group-hover:text-teal-300 transition-colors">Upsweep</h3>
+                        <p class="text-gray-500 text-xs font-mono mt-0.5">~8,500m</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="depth-marker w-full px-4 md:px-8 py-1 flex justify-end">
+                <span class="text-gray-700/30 text-xs font-mono">11,000m — Challenger Deep</span>
+            </div>
+        </div>
+
+        <!-- ===== THE BENEATH (11,000 – 27,000m) ===== -->
+        <div class="zone-beneath relative w-full" style="min-height: 700px;">
+            <div class="sticky top-0 z-20 w-full flex items-center justify-between px-4 md:px-8 py-3 bg-black/80 backdrop-blur-sm border-b border-violet-950/30">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-circle text-violet-950 text-xl"></i>
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold text-gray-300">The Beneath</h2>
+                        <p class="text-gray-600 text-xs md:text-sm">Sub-hadal void</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-gray-400 font-mono text-sm md:text-base font-semibold">11,000 – 27,000m</p>
+                    <p class="text-gray-700 text-xs">Below the floor — pressure without map</p>
+                </div>
+            </div>
+
+            <div class="relative px-4 md:px-8 py-8 min-h-[520px] flex flex-wrap items-start gap-6 content-start">
+
+                <!-- Kcatakatatanouth -->
+                <div class="creature-card group flex flex-col items-center w-48 md:w-56" data-creature="kcatakatatanouth" tabindex="0" role="button" aria-label="Kcatakatatanouth — click for lore">
+                    <div class="relative rounded-xl overflow-hidden border border-fuchsia-950/40 shadow-lg shadow-black/60 group-hover:shadow-fuchsia-950/40 group-hover:border-fuchsia-900/50 transition-all duration-300 bg-black min-h-[140px] flex items-center justify-center">
+                        <img src="{{ static_file('images/Kcatakatatanouth.jpg') }}" alt="Kcatakatatanouth" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="hidden flex-col items-center justify-center p-6 text-center text-gray-600" aria-hidden="true">
+                            <i class="fas fa-image text-3xl mb-2 opacity-40"></i>
+                            <span class="text-xs">Image coming soon</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <h3 class="text-sm md:text-base font-bold text-fuchsia-500/90 group-hover:text-fuchsia-400 transition-colors">Kcatakatatanouth</h3>
+                        <p class="text-gray-600 text-xs font-mono mt-0.5">~19,000m</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="w-full px-4 md:px-8 py-1 flex justify-end">
+                <span class="text-gray-800/50 text-xs font-mono">27,000m</span>
+            </div>
+            <div class="w-full h-4 bg-gradient-to-b from-transparent to-stone-950/90"></div>
+            <div class="w-full h-8 bg-gradient-to-b from-stone-950/90 to-black border-t border-violet-950/20"></div>
+        </div>
+
+    </div>
+
+    <!-- Depth scale sidebar (visible on larger screens) -->
+    <div class="fixed right-0 top-1/2 -translate-y-1/2 z-30 hidden lg:flex flex-col items-center gap-0 mr-2">
+        <div class="bg-black/70 backdrop-blur-sm rounded-lg border border-gray-700/40 px-2 py-3 flex flex-col items-center gap-1">
+            <span class="text-[10px] text-gray-400 font-mono">0m</span>
+            <div class="w-px h-6 bg-sky-400/60"></div>
+            <span class="text-[10px] text-gray-400 font-mono">200m</span>
+            <div class="w-px h-8 bg-blue-400/50"></div>
+            <span class="text-[10px] text-gray-400 font-mono">1km</span>
+            <div class="w-px h-10 bg-indigo-400/40"></div>
+            <span class="text-[10px] text-gray-400 font-mono">4km</span>
+            <div class="w-px h-8 bg-gray-500/30"></div>
+            <span class="text-[10px] text-gray-400 font-mono">6km</span>
+            <div class="w-px h-10 bg-gray-600/20"></div>
+            <span class="text-[10px] text-gray-500 font-mono">11km</span>
+            <div class="w-px h-12 bg-violet-950/40"></div>
+            <span class="text-[10px] text-gray-600 font-mono">27km</span>
+        </div>
+    </div>
+
+    <div id="creatureInfoModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" style="display: none;" aria-hidden="true"></div>
+
+    <div id="creatureModelModal" class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" style="display: none;" aria-hidden="true">
+        <div class="bg-gray-900 rounded-2xl max-w-4xl w-full mx-4 border border-gray-700 shadow-2xl overflow-hidden max-h-[min(92vh,100%)] flex flex-col" role="dialog" aria-modal="true" aria-labelledby="creatureModelModalTitle">
+            <div class="flex justify-between items-center gap-4 px-5 py-4 border-b border-gray-700/80 shrink-0">
+                <h2 id="creatureModelModalTitle" class="text-xl md:text-2xl font-bold text-white truncate">3D Model</h2>
+                <button type="button" data-creature-model-close class="text-gray-400 hover:text-white transition-colors shrink-0" aria-label="Close model viewer">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="creatureModelCanvasHost" class="relative w-full h-[min(60vh,32rem)] bg-gradient-to-b from-gray-950 to-black">
+                <p data-creature-model-loading class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm pointer-events-none">Loading model…</p>
+            </div>
+            <p class="px-5 py-3 text-xs text-gray-500 border-t border-gray-800/80 shrink-0">Drag to rotate · scroll to zoom</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        const OCEAN_CREATURES = {
+            'riffhead': {
+                name: 'Riffhead',
+                zone: 'Sunlight Zone',
+                depth: '~80m',
+                description: 'The Riffhead is a bell-shaped hunter built like a tidally locked world, with one side that stays lit and one side that stays dark. A living reef of coral, sponge, and algae covers the sunlit upper surface and works like a solar array, feeding the animal through shared photosynthetic tissue. The underside is a dark kill zone lined with barbed, venom-loaded tentacles that spear fish and drag them up into the bell. Armored crustaceans live in the reef and attack anything that lands on it. The Riffhead is an aggressive territory holder and rams other animals out of its water.'
+            },
+            'fuzzy-boi': {
+                name: 'Fuzzy Boi',
+                zone: 'Sunlight Zone',
+                depth: '~140m',
+                description: 'Fuzzy Boi is a round, shaggy ambusher whose entire body is a mat of venomous bristles, like the spiny balloon-predators imagined for shallow, high-UV ocean worlds. It drifts with the current looking like harmless flotsam until prey brushes the fur, then the bristles fire barbed threads that reel the animal in. Under the fuzz, a hidden mouth opens wide enough to swallow fish whole. It is deceptively slow but lashes out with sudden lunges when something gets close. Divers who mistake it for algae have learned not to pet it twice.'
+            },
+            'aourlath': {
+                name: 'Aourlath',
+                zone: 'Sunlight Zone',
+                depth: '~110m',
+                description: 'Aourlath is a reef-sized leviathan whose back is a living seamount of stone plates, crystal spires, and coral gardens, like the symbiotic megafauna predicted for worlds where geology and biology fuse at the surface. Four glowing eyes scan the sunlit water while whisker-tendrils taste the current for prey. It moves slowly enough that fish nest in its armor until it flexes a fin and the glow along its wings drives them into its mouth. Smaller sharks circle it for scraps and become snacks. It is ancient, territorial, and will ram any ship that drops anchor on its back.'
+            },
+            'kraken': {
+                name: 'The Kraken',
+                zone: 'Twilight Zone',
+                depth: '~600m',
+                description: 'The Kraken is a trawler-sized cephalopod with eight arms and a metabolism based on chemosynthesis, like life on a methane-rich ocean moon. It runs on sulfur and methane from cold seeps, which lets it stay powered with almost no sunlight. Its arms are lined with serrated suckers and hooked claws, and it crushes prey in a coil before tearing it apart with its beak. It is a violent ambusher that strikes from the dark with sudden bursts of speed. It rises toward storm-churned water to hunt the large animals disturbed by the waves.'
+            },
+            'red-bluster': {
+                name: 'The Red Bluster',
+                zone: 'Twilight Zone',
+                depth: '~450m',
+                description: 'The Red Bluster is a red-plated animal adapted to scalding vent fields, similar to the heat-loving life predicted for volcanic ocean worlds. Its armored body shrugs off water that would cook most animals. It carries a single large horn and one green eye that glows to lure prey into range. It attacks anything that enters its vent field, including machinery, and rams intruders with the horn at full speed. It makes a harsh rattling roar that carries through water and metal.'
+            },
+            'derathos': {
+                name: 'Derathos',
+                zone: 'Twilight Zone',
+                depth: '~750m',
+                model: "{{ static_file('models/dunkleosteus.glb') }}",
+                description: 'Derathos is a helmeted ambush predator built like the sessile filter-hunters imagined for high-gravity worlds, with a thick bone-like shell and low, heavy muscle. It anchors itself against the current on a seamount slope with its jaw unhinged and snaps shut on anything that drifts in. The shell makes it nearly immune to counterattack. Groups hold positions side by side facing the current, forming a wall of open mouths. It bites hard enough to crack other armored animals and fights over its feeding ground.'
+            },
+            'charybdis': {
+                name: 'Charybdis',
+                zone: 'Twilight Zone',
+                depth: '~920m',
+                description: 'Charybdis is a vast mouth fixed to the seafloor with a throat that spirals downward like a whirlpool vent, comparable to the tidal-pump predators predicted for moons with extreme ocean currents. It inhales water in a roaring vortex three times each day, pulling entire schools into its gullet. The spiral scars the sediment for kilometers and leaves a hollow acoustic signature on sonar. Smaller animals nest in the eddies around the rim and flee when the suck begins. It does not chase prey; everything it eats is drawn to it by the current it creates.'
+            },
+            'ningen': {
+                name: 'Ningen',
+                zone: 'Midnight Zone',
+                depth: '~2,200m',
+                description: 'Ningen is a pale, bus-sized predator with a long humanoid body and the smooth, pigment-free skin expected of life from a perpetually dark world. Its skin senses electric fields and pressure changes, so it can find prey in complete blackness from kilometers away. It is a relentless pursuer that follows a target for hours and closes in with long, powerful limbs. It grabs prey with its hands and drags it down. It is a long-distance migrant that crosses entire ocean basins while hunting.'
+            },
+            'mouluth': {
+                name: 'Mouluth',
+                zone: 'Midnight Zone',
+                depth: '~1,850m',
+                description: 'Mouluth is a long, crocodilian serpent armored in cracked midnight scales, with a throat and dorsal fins that blaze cyan like the deep-sea displays imagined for high-pressure bioluminescent worlds. It hunts with its mouth already open, using the inner glow to blind prey before the teeth close. A row of photophores runs its flank and pulses in a hunting rhythm that draws fish into striking range. It coils through seamount passes and strikes from below with a forked tail strong enough to stun whales. It is an aggressive pursuit predator that follows glowing prey for hours in the black.'
+            },
+            'great-thrasher': {
+                name: 'Great Thrasher',
+                zone: 'Midnight Zone',
+                depth: '~3,400m',
+                description: 'The Great Thrasher is a heavy, armored animal built like the plated megafauna predicted for high-pressure ocean worlds. Its snout is a ram of dense, mineral-reinforced bone that can crush a whale carcass in a few strikes. It beats its tail against the seafloor in loud, repeated slams that stun nearby prey and drive off rivals. Each individual has its own slam rhythm. It is quick to attack anything that approaches a carcass it has claimed.'
+            },
+            'itaculoth': {
+                name: 'Itaculoth',
+                zone: 'Midnight Zone',
+                depth: '~2,750m',
+                description: 'Itaculoth is a many-limbed stalker with a crown of bone hooks around its head, shaped like the grappling predators imagined for worlds where prey hides inside dense coral labyrinths. It threads its arms through cracks in rock and reef, feeling for heartbeat and heat, then yanks prey out in a single violent pull. Its body is narrow enough to slip through gaps a meter wide but strong enough to tear a submarine hatch. It hunts in silence and only the clicking of its hooks on stone warns animals nearby. It is relentless once it has wrapped a target.'
+            },
+            'gomblore': {
+                name: 'Gomblore',
+                zone: 'Abyssal Zone',
+                depth: '~4,200m',
+                description: 'Gomblore is a rock-textured ambusher with a body partly built from mineral deposits, similar to the crystal-bearing life imagined for silicate-rich planets. It buries itself in the sediment and leaves only its jaw whiskers exposed. The whiskers twitch in rhythmic patterns that draw prey close, then the Gomblore erupts from the mud and clamps down with a spring-loaded jaw. It strikes in a fraction of a second. It grips tightly and does not let go until its prey stops moving.'
+            },
+            'zumusiasal': {
+                name: 'Zumusiasal',
+                zone: 'Abyssal Zone',
+                depth: '~4,600m',
+                description: 'Zumusiasal is a drifting predator covered in lights that pulse red, a color suited to the dim red-dwarf environments that life on some exoplanets would be adapted to. It uses the pulses to disorient and stun prey, then wraps the confused animal in grasping, sticky filaments. It holds its position against the current and attacks anything that drifts into its light. Its body is soft but heavily armed with stinging cells. It hunts aggressively in the open water above the abyssal plain.'
+            },
+            'abyssal-monster': {
+                name: 'Abyssal Monster',
+                zone: 'Abyssal Zone',
+                depth: '~5,100m',
+                description: 'The Abyssal Monster is a square-headed predator built like the slow, heavily armored apex hunters imagined for cold, low-energy worlds. It stands motionless on the seafloor for days with its head tipped slightly upward, conserving energy between kills. When prey comes within reach it moves with sudden, crushing force. Its thick hide resists lights, impacts, and most bites. It is territorial and attacks any large object that stays too long in its area.'
+            },
+            'abyssal-behemoth': {
+                name: 'Abyssal Behemoth',
+                zone: 'Abyssal Zone',
+                depth: '~5,500m',
+                description: 'The Abyssal Behemoth is a huge swimmer marked with glowing stripes, a display style comparable to warning coloration on tidally locked worlds where light is scarce. The stripes pulse slowly while it cruises and faster when it attacks. Smaller fish bunch together ahead of the glow, and the Behemoth drives them into tight groups before ramming through and swallowing dozens at a time. It is aggressive toward other large predators and challenges them with rapid flashing. Its light can be seen from more than a kilometer away.'
+            },
+            'telescope-leviathan': {
+                name: 'Telescope Leviathan',
+                zone: 'Abyssal Zone',
+                depth: '~5,800m',
+                description: 'The Telescope Leviathan has a ring of peg-like teeth around a tube-shaped mouth, a feeding structure similar to the vacuum-mouth predators imagined for dense-atmosphere worlds. Its jaw unhinges to an enormous gape and closes with crushing force. It swallows whale falls whole and attacks living animals that come near a feast. The teeth are evenly spaced and leave parallel scoring on anything it bites. It is a persistent, aggressive scavenger-hunter that defends a carcass until nothing is left.'
+            },
+            'gobul': {
+                name: 'Gobul',
+                zone: 'Abyssal Zone',
+                depth: '~5,300m',
+                description: 'Gobul is a mud-buried lure predator with a body chemistry based on ammonia-tolerant tissue, like the cold-solvent life proposed for frozen ocean worlds. Only its lure shows above the sediment. The lure pulses in the rhythm of its prey mating call. When an animal answers and comes close, the Gobul lunges up from the mud and seizes it in jaws lined with backward-pointing teeth. It strikes with enough force to break the spine of prey much larger than itself.'
+            },
+            'aboleth': {
+                name: 'Aboleth',
+                zone: 'Abyssal Zone',
+                depth: '~4,900m',
+                description: 'The Aboleth is a pale, eel-bodied tyrant with three vertical blue eyes and head tentacles that taste memory as well as water, comparable to the psionic filter-feeders once speculated for ammonia oceans on ice giants. Its mucus sheen carries a chemical signal that disorients prey and makes them swim toward the open jaw instead of away. Rows of triangular teeth and a glowing tail fin give away its position only when it chooses to strike. It nests in silt-filled basins and defends them with lunging charges that can snap a submersible arm. Animals that escape still circle back, unable to shake the scent.'
+            },
+            'bloop': {
+                name: 'The Bloop',
+                zone: 'Hadal Zone',
+                depth: '~7,000m',
+                description: 'The Bloop is almost entirely mouth, a body plan suited to the extreme pressures of deep ocean worlds. It produces a single enormous sound that travels thousands of kilometers and stuns animals within range. After calling, it lunges at the dazed prey and swallows it whole. It may go months between calls. It is a fierce, solitary hunter that drives away any competitor entering its trench.'
+            },
+            'el-gran-maja': {
+                name: 'El Gran Maja',
+                zone: 'Hadal Zone',
+                depth: '~8,200m',
+                sound: "{{ static_file('sound/effects/dragon-studio-deep-sea-alien-sound-487681.mp3') }}",
+                description: 'El Gran Maja is a ferry-sized filter feeder, close to 200 meters long, with a mouth wide enough to take in whole krill clouds. Its body plan resembles the giant swarm-feeders predicted for low-gravity worlds, where animals can grow to very large sizes. It sweeps along trench walls with its mouth open and engulfs everything in its path. It rams and crushes anything that blocks its feeding route, including submarines and other large animals. It moves slowly but cannot be stopped.'
+            },
+            'julia': {
+                name: 'Julia',
+                zone: 'Hadal Zone',
+                depth: '~9,500m',
+                description: 'Julia is a hill-sized predator with several extra limbs that unfold from around the mouth, a layout similar to the radially symmetric hunters imagined for dark, high-pressure worlds. It grabs prey with the limbs and draws it into the mouth. It emits a short, rising sound that disorients animals within range before it attacks. It is fast for its size and strikes from below. It hunts the deepest trenches and attacks nearly anything that moves.'
+            },
+            'anantashesha': {
+                name: 'Anantashesha',
+                zone: 'Hadal Zone',
+                depth: '~10,800m',
+                description: 'Anantashesha is a long, serpentine hunter that coils across the trench floor, a body style similar to the burrowing and constricting predators imagined for tectonically active worlds. It senses ground tremors and uses them to find prey. It wraps its coils around a target and crushes it. Its muscles are dense enough to hold a grip against the strongest animals in the trench. It is a patient but ferocious ambusher.'
+            },
+            'sea-eater': {
+                name: 'The Sea Eater',
+                zone: 'Hadal Zone',
+                depth: '~8,900m',
+                description: 'The Sea Eater stands upright on two thick legs, a bipedal layout that is rare among ocean animals and resembles the walking predators imagined for shallow-sea exoplanets. Its torso is a tall, vertical mouth that opens wide enough to take in whole animals. It charges prey across the seafloor and rises toward the surface during storms to hunt at the waterline. It attacks without warning and swallows prey whole. It is an aggressive hunter that fears nothing in its trench.'
+            },
+            'upsweep': {
+                name: 'Upsweep',
+                zone: 'Hadal Zone',
+                depth: '~8,500m',
+                description: 'Upsweep is a soft, pale hunter anchored near a vent field, with a body chemistry that runs on vent heat, like the vent-based life proposed for the oceans of icy moons. Its flower-like mouth opens wide when it calls. The call is a long, rising whoop that lures animals toward the vent and disorients them as they arrive. It snaps the mouth shut around them and digests prey with strong acids. It defends the vent field fiercely against all other animals.'
+            },
+            'the-leviathan': {
+                name: 'The Leviathan',
+                zone: 'Twilight Zone',
+                depth: '~350m',
+                description: 'The Leviathan is a ship-length serpent that haunts the dim blue band where sunlight finally gives out, built like the ribbon-hunters imagined for ocean worlds with thick, cloudy atmospheres. Its scales drink the last photons and break up its outline against the open water. It cruises just above the slope with its jaw slack, then snaps shut on schools of fish that mistake its shadow for a cloud. It can unhinge its mouth wide enough to take a dolphin in one gulp and shakes prey apart with a sideways thrash. Fishermen report a long wake with no body behind it. It is the largest predator in the twilight zone and drives krakens and blusters off the richest hunting lanes.'
+            },
+            'ancient-leviathan': {
+                name: 'Ancient Leviathan',
+                zone: 'Midnight Zone',
+                depth: '~3,000m',
+                description: 'The Ancient Leviathan is an older, deeper cousin of the twilight serpents, scaled to sizes that strain belief even in the midnight black, where pressure and cold let muscle and bone grow far larger than near the surface. Sonar maps show its wake bending along the slope as if the seafloor itself were moving. It feeds on whale falls that drift down from above and on anything large enough to register on its lateral line. Its call is a low groan that carries for dozens of kilometers through the bathypelagic. Few images exist because submersibles that reach its depth rarely survive the approach.'
+            },
+            'kcatakatatanouth': {
+                name: 'Kcatakatatanouth',
+                zone: 'The Beneath',
+                depth: '~19,000m',
+                sound: "{{ static_file('sound/effects/dragon-studio-glitch-effect-1-397982.mp3') }}",
+                description: 'Kcatakatatanouth is a void-trench predator whose body stutters through the water in out-of-sync fragments, compared to organisms trapped between collapsed matter states on ultra-dense ocean worlds. Plates of chitin and bare muscle slide sideways a heartbeat late, leaving pale afterimages in water too dark for eyes. It hunts with a broken, looping call that tears apart echolocation and turns sonar into static. Confused prey spiral inward, and the Kcatakatatanouth closes with a jaw that seems to arrive twice before the bite lands. It nests in pockets below the hadal floor where pressure warps sound into noise. It strikes without warning and drops off every hydrophone at once.'
+            }
+        };
+
+        const SOUND_PREFETCH_URLS = {{ sound_prefetch_urls | tojson }};
+        const soundPrefetchCache = new Map();
+        const soundPrefetchInFlight = new Map();
+
+        let creatureInfoAudio = null;
+        let creatureInfoSoundBtn = null;
+        let creatureSoundUpdateProgress = null;
+        let creatureSoundTeardown = null;
+        let creatureInfoBlobUrl = null;
+
+        let creatureModelViewer = null;
+
+        function disposeCreatureModelViewer() {
+            if (!creatureModelViewer) return;
+            const { renderer, controls, resizeHandler, host, mixer } = creatureModelViewer;
+            creatureModelViewer.active = false;
+            if (mixer) mixer.stopAllAction();
+            if (resizeHandler) window.removeEventListener('resize', resizeHandler);
+            if (controls) controls.dispose();
+            if (renderer) {
+                if (renderer.domElement && renderer.domElement.parentNode) {
+                    renderer.domElement.parentNode.removeChild(renderer.domElement);
+                }
+                renderer.dispose();
+            }
+            if (host) host.querySelectorAll('canvas').forEach((el) => el.remove());
+            creatureModelViewer = null;
+        }
+
+        function hideCreatureModelViewer() {
+            const modal = document.getElementById('creatureModelModal');
+            if (!modal) return;
+            disposeCreatureModelViewer();
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            const loadingEl = modal.querySelector('[data-creature-model-loading]');
+            if (loadingEl) {
+                loadingEl.textContent = 'Loading model…';
+                loadingEl.style.display = '';
+            }
+        }
+
+        function showCreatureModelViewer(modelUrl, title) {
+            if (!modelUrl || typeof THREE === 'undefined' || typeof THREE.GLTFLoader === 'undefined') return;
+
+            const modal = document.getElementById('creatureModelModal');
+            const host = document.getElementById('creatureModelCanvasHost');
+            const titleEl = document.getElementById('creatureModelModalTitle');
+            const loadingEl = modal ? modal.querySelector('[data-creature-model-loading]') : null;
+            if (!modal || !host || !titleEl) return;
+
+            disposeCreatureModelViewer();
+            if (loadingEl) loadingEl.style.display = '';
+            titleEl.textContent = title ? `${title} — 3D model` : '3D model';
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x030712);
+
+            const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
+            camera.position.set(0, 0.4, 2.8);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            host.appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+            scene.add(ambient);
+            const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            keyLight.position.set(3, 4, 5);
+            scene.add(keyLight);
+            const fillLight = new THREE.DirectionalLight(0x7dd3fc, 0.35);
+            fillLight.position.set(-4, 1, -2);
+            scene.add(fillLight);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.08;
+            controls.minDistance = 0.5;
+            controls.maxDistance = 12;
+
+            function resizeRenderer() {
+                const w = host.clientWidth;
+                const h = host.clientHeight;
+                if (w <= 0 || h <= 0) return;
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h, false);
+            }
+
+            const resizeHandler = () => resizeRenderer();
+            window.addEventListener('resize', resizeHandler);
+            resizeRenderer();
+
+            const clock = new THREE.Clock();
+            const viewerState = {
+                scene,
+                camera,
+                renderer,
+                controls,
+                resizeHandler,
+                host,
+                clock,
+                mixer: null,
+                active: true
+            };
+            creatureModelViewer = viewerState;
+
+            const tick = () => {
+                if (!viewerState.active) return;
+                requestAnimationFrame(tick);
+                const delta = clock.getDelta();
+                if (viewerState.mixer) viewerState.mixer.update(delta);
+                controls.update();
+                renderer.render(scene, camera);
+            };
+            tick();
+
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                modelUrl,
+                (gltf) => {
+                    if (!viewerState.active || creatureModelViewer !== viewerState) return;
+                    const root = gltf.scene;
+                    scene.add(root);
+
+                    const box = new THREE.Box3().setFromObject(root);
+                    const center = box.getCenter(new THREE.Vector3());
+                    const size = box.getSize(new THREE.Vector3());
+                    root.position.sub(center);
+                    const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+                    const fitScale = 1.6 / maxDim;
+                    root.scale.multiplyScalar(fitScale);
+
+                    const fittedBox = new THREE.Box3().setFromObject(root);
+                    const fittedSize = fittedBox.getSize(new THREE.Vector3());
+                    const fittedCenter = fittedBox.getCenter(new THREE.Vector3());
+                    controls.target.copy(fittedCenter);
+                    const dist = Math.max(fittedSize.x, fittedSize.y, fittedSize.z) * 1.35;
+                    camera.position.set(fittedCenter.x, fittedCenter.y + fittedSize.y * 0.15, fittedCenter.z + dist);
+                    camera.near = dist / 100;
+                    camera.far = dist * 100;
+                    camera.updateProjectionMatrix();
+                    controls.update();
+
+                    if (gltf.animations && gltf.animations.length) {
+                        viewerState.mixer = new THREE.AnimationMixer(root);
+                        gltf.animations.forEach((clip) => {
+                            viewerState.mixer.clipAction(clip).play();
+                        });
+                    }
+
+                    if (loadingEl) loadingEl.style.display = 'none';
+                },
+                undefined,
+                (err) => {
+                    console.error('Creature model failed to load:', modelUrl, err);
+                    if (loadingEl) {
+                        const detail = err && err.message ? ` ${err.message}` : '';
+                        loadingEl.textContent = `Could not load model.${detail}`;
+                        loadingEl.style.display = '';
+                    }
+                }
+            );
+        }
+
+        (function bindCreatureModelModal() {
+            const modal = document.getElementById('creatureModelModal');
+            if (!modal || modal.dataset.bound) return;
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) hideCreatureModelViewer();
+            });
+            const closeBtn = modal.querySelector('[data-creature-model-close]');
+            if (closeBtn) closeBtn.addEventListener('click', hideCreatureModelViewer);
+            modal.dataset.bound = 'true';
+        })();
+
+        function ensureSoundCached(url) {
+            if (!url) return Promise.reject(new Error('No URL'));
+            if (soundPrefetchCache.has(url)) {
+                return Promise.resolve(soundPrefetchCache.get(url));
+            }
+            if (soundPrefetchInFlight.has(url)) {
+                return soundPrefetchInFlight.get(url);
+            }
+            const request = fetch(url)
+                .then((response) => {
+                    if (!response.ok) throw new Error('Sound prefetch failed');
+                    return response.arrayBuffer();
+                })
+                .then((arrayBuffer) => {
+                    soundPrefetchCache.set(url, arrayBuffer);
+                    return arrayBuffer;
+                })
+                .finally(() => {
+                    soundPrefetchInFlight.delete(url);
+                });
+            soundPrefetchInFlight.set(url, request);
+            return request;
+        }
+
+        function prefetchSoundEffects(urls) {
+            urls.forEach((url) => {
+                ensureSoundCached(url).catch(() => {});
+            });
+        }
+
+        function revokeCreatureInfoBlobUrl() {
+            if (creatureInfoBlobUrl) {
+                URL.revokeObjectURL(creatureInfoBlobUrl);
+                creatureInfoBlobUrl = null;
+            }
+        }
+
+        function audioUrlFromCache(url) {
+            const cached = soundPrefetchCache.get(url);
+            if (!cached) return url;
+            revokeCreatureInfoBlobUrl();
+            creatureInfoBlobUrl = URL.createObjectURL(new Blob([cached], { type: 'audio/mpeg' }));
+            return creatureInfoBlobUrl;
+        }
+
+        function formatSoundTime(seconds) {
+            if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        async function loadCreatureWaveformPeaks(url, barCount = 100) {
+            const arrayBuffer = await ensureSoundCached(url);
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) throw new Error('Web Audio not supported');
+            const ctx = new AudioCtx();
+            try {
+                const buffer = await ctx.decodeAudioData(arrayBuffer);
+                const channel = buffer.getChannelData(0);
+                const blockSize = Math.max(1, Math.floor(channel.length / barCount));
+                const peaks = [];
+                for (let i = 0; i < barCount; i++) {
+                    const start = i * blockSize;
+                    let max = 0;
+                    for (let j = 0; j < blockSize; j++) {
+                        max = Math.max(max, Math.abs(channel[start + j] || 0));
+                    }
+                    peaks.push(max);
+                }
+                const peakMax = Math.max(...peaks, 0.001);
+                return {
+                    peaks: peaks.map((p) => p / peakMax),
+                    duration: buffer.duration
+                };
+            } finally {
+                ctx.close();
+            }
+        }
+
+        function setCreatureSoundButtonState(playing) {
+            if (!creatureInfoSoundBtn) return;
+            const icon = creatureInfoSoundBtn.querySelector('i');
+            const label = creatureInfoSoundBtn.querySelector('[data-sound-btn-label]');
+            if (playing) {
+                creatureInfoSoundBtn.setAttribute('aria-label', 'Stop creature sound');
+                if (icon) icon.className = 'fas fa-stop text-xs';
+                if (label) label.textContent = 'Stop';
+            } else {
+                creatureInfoSoundBtn.setAttribute('aria-label', 'Play creature sound');
+                if (icon) icon.className = 'fas fa-play text-xs';
+                if (label) label.textContent = 'Play sound';
+            }
+        }
+
+        function teardownCreatureSoundPlayer() {
+            if (creatureSoundTeardown) {
+                creatureSoundTeardown();
+                creatureSoundTeardown = null;
+            }
+            creatureSoundUpdateProgress = null;
+            if (creatureInfoAudio) {
+                creatureInfoAudio.pause();
+                creatureInfoAudio.removeAttribute('src');
+                creatureInfoAudio.load();
+                creatureInfoAudio = null;
+            }
+            revokeCreatureInfoBlobUrl();
+        }
+
+        function stopCreatureInfoAudio() {
+            if (creatureInfoAudio) {
+                creatureInfoAudio.pause();
+                creatureInfoAudio.currentTime = 0;
+            }
+            setCreatureSoundButtonState(false);
+            if (creatureSoundUpdateProgress) creatureSoundUpdateProgress();
+        }
+
+        function playCreatureInfoSound() {
+            if (!creatureInfoAudio) return;
+            creatureInfoAudio.currentTime = 0;
+            setCreatureSoundButtonState(true);
+            if (creatureSoundUpdateProgress) creatureSoundUpdateProgress();
+            creatureInfoAudio.play().catch(() => {
+                setCreatureSoundButtonState(false);
+            });
+        }
+
+        function toggleCreatureInfoSound() {
+            if (!creatureInfoAudio) return;
+            if (!creatureInfoAudio.paused && !creatureInfoAudio.ended) {
+                stopCreatureInfoAudio();
+                return;
+            }
+            if (creatureInfoAudio.ended) creatureInfoAudio.currentTime = 0;
+            setCreatureSoundButtonState(true);
+            if (creatureSoundUpdateProgress) creatureSoundUpdateProgress();
+            creatureInfoAudio.play().catch(() => setCreatureSoundButtonState(false));
+        }
+
+        function initCreatureSoundPlayer(modal, creature) {
+            const player = modal.querySelector('[data-creature-sound-player]');
+            if (!player || !creature.sound) return Promise.resolve();
+
+            const canvas = player.querySelector('[data-sound-waveform]');
+            const scrub = player.querySelector('[data-sound-scrub]');
+            const currentEl = player.querySelector('[data-sound-current]');
+            const durationEl = player.querySelector('[data-sound-duration]');
+            if (!canvas || !scrub || !currentEl || !durationEl) return Promise.resolve();
+
+            const soundUrl = creature.sound;
+            let peaks = new Array(80).fill(0.12);
+            let progress = 0;
+
+            return ensureSoundCached(soundUrl).catch(() => {}).then(() => {
+                if (!modal.isConnected || modal.getAttribute('aria-hidden') === 'true') return;
+
+                creatureInfoAudio = new Audio(audioUrlFromCache(soundUrl));
+                creatureInfoAudio.preload = 'auto';
+
+            function drawWaveform() {
+                const rect = scrub.getBoundingClientRect();
+                const w = rect.width;
+                const h = rect.height;
+                if (w <= 0 || h <= 0) return;
+
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = Math.floor(w * dpr);
+                canvas.height = Math.floor(h * dpr);
+                const ctx = canvas.getContext('2d');
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                ctx.clearRect(0, 0, w, h);
+
+                const bars = peaks.length;
+                const gap = 2;
+                const barW = Math.max(1, (w - gap * (bars - 1)) / bars);
+                const mid = h / 2;
+                const playedX = progress * w;
+
+                for (let i = 0; i < bars; i++) {
+                    const peak = peaks[i];
+                    const barH = Math.max(2, peak * (h - 6));
+                    const x = i * (barW + gap);
+                    const played = x + barW * 0.5 <= playedX;
+                    ctx.fillStyle = played ? 'rgba(34, 211, 238, 0.9)' : 'rgba(82, 82, 91, 0.85)';
+                    ctx.fillRect(x, mid - barH / 2, barW, barH);
+                }
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.fillRect(Math.min(playedX, w - 1), 0, 1, h);
+            }
+
+            function updateProgress() {
+                const dur = creatureInfoAudio.duration;
+                const cur = creatureInfoAudio.currentTime;
+                progress = dur > 0 ? cur / dur : 0;
+                currentEl.textContent = formatSoundTime(cur);
+                if (Number.isFinite(dur)) durationEl.textContent = formatSoundTime(dur);
+                drawWaveform();
+            }
+
+            creatureSoundUpdateProgress = updateProgress;
+
+            const onMetadata = () => updateProgress();
+            const onTimeUpdate = () => updateProgress();
+            const onEnded = () => {
+                setCreatureSoundButtonState(false);
+                creatureInfoAudio.currentTime = 0;
+                updateProgress();
+            };
+
+            creatureInfoAudio.addEventListener('loadedmetadata', onMetadata);
+            creatureInfoAudio.addEventListener('durationchange', onMetadata);
+            creatureInfoAudio.addEventListener('timeupdate', onTimeUpdate);
+            creatureInfoAudio.addEventListener('ended', onEnded);
+
+            const onScrubClick = (e) => {
+                const dur = creatureInfoAudio.duration;
+                if (!Number.isFinite(dur) || dur <= 0) return;
+                const rect = scrub.getBoundingClientRect();
+                const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                creatureInfoAudio.currentTime = ratio * dur;
+                updateProgress();
+            };
+            scrub.addEventListener('click', onScrubClick);
+
+            const onResize = () => drawWaveform();
+            window.addEventListener('resize', onResize);
+
+            creatureSoundTeardown = () => {
+                window.removeEventListener('resize', onResize);
+                scrub.removeEventListener('click', onScrubClick);
+                creatureInfoAudio.removeEventListener('loadedmetadata', onMetadata);
+                creatureInfoAudio.removeEventListener('durationchange', onMetadata);
+                creatureInfoAudio.removeEventListener('timeupdate', onTimeUpdate);
+                creatureInfoAudio.removeEventListener('ended', onEnded);
+            };
+
+                loadCreatureWaveformPeaks(soundUrl)
+                    .then((data) => {
+                        peaks = data.peaks;
+                        if (Number.isFinite(data.duration)) {
+                            durationEl.textContent = formatSoundTime(data.duration);
+                        }
+                        drawWaveform();
+                    })
+                    .catch(() => drawWaveform());
+
+                requestAnimationFrame(() => drawWaveform());
+            });
+        }
+    
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    
+        function hideCreatureInfo() {
+            const modal = document.getElementById('creatureInfoModal');
+            if (!modal) return;
+            stopCreatureInfoAudio();
+            teardownCreatureSoundPlayer();
+            creatureInfoSoundBtn = null;
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            modal.innerHTML = '';
+        }
+    
+        function showCreatureInfo(creatureId, imageSrc) {
+            const creature = OCEAN_CREATURES[creatureId];
+            if (!creature) return;
+
+            teardownCreatureSoundPlayer();
+
+            const modal = document.getElementById('creatureInfoModal');
+            if (!modal) return;
+
+            const imageBlock = imageSrc
+                ? `<div class="creature-modal-image-frame border-b border-gray-700/80 shrink-0">
+                        <img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(creature.name)}">
+                   </div>`
+                : '';
+
+            const soundButton = creature.sound
+                ? `<button type="button" data-creature-sound-replay class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-900/40 border border-cyan-700/40 text-cyan-200 text-sm font-medium hover:bg-cyan-800/50 hover:border-cyan-600/50 transition-colors" aria-label="Play creature sound">
+                        <i class="fas fa-play text-xs" aria-hidden="true"></i>
+                        <span data-sound-btn-label>Play sound</span>
+                   </button>`
+                : '';
+
+            const modelButton = creature.model
+                ? `<button type="button" data-creature-view-model class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-900/40 border border-indigo-700/40 text-indigo-200 text-sm font-medium hover:bg-indigo-800/50 hover:border-indigo-600/50 transition-colors" aria-label="View 3D model">
+                        <i class="fas fa-cube text-xs" aria-hidden="true"></i>
+                        <span>View Model</span>
+                   </button>`
+                : '';
+
+            const soundPlayer = creature.sound
+                ? `<div class="mt-4 w-full" data-creature-sound-player>
+                        <div class="flex justify-between text-xs text-gray-400 font-mono tabular-nums mb-1.5 px-0.5">
+                            <span data-sound-current>0:00</span>
+                            <span data-sound-duration>0:00</span>
+                        </div>
+                        <div data-sound-scrub class="creature-sound-scrub relative h-14 rounded-lg bg-gray-950/90 border border-gray-700/80 overflow-hidden cursor-pointer" title="Click to seek">
+                            <canvas data-sound-waveform aria-hidden="true"></canvas>
+                        </div>
+                   </div>`
+                : '';
+    
+            modal.innerHTML = `
+                <div class="bg-gray-900 rounded-2xl max-w-4xl w-full mx-4 border border-gray-700 shadow-2xl overflow-hidden max-h-[min(90vh,100%)] flex flex-col" role="dialog" aria-modal="true" aria-labelledby="creatureModalTitle">
+                    ${imageBlock}
+                    <div class="p-6 md:p-8 overflow-y-auto min-h-0">
+                        <div class="flex justify-between items-start gap-4 mb-5">
+                            <div class="min-w-0">
+                                <h2 id="creatureModalTitle" class="text-2xl md:text-3xl font-bold text-white mb-2">${escapeHtml(creature.name)}</h2>
+                                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-gray-300 text-sm md:text-base">
+                                    <span><strong>Zone:</strong> ${escapeHtml(creature.zone)}</span>
+                                    <span><strong>Depth:</strong> ${escapeHtml(creature.depth)}</span>
+                                    ${soundButton}
+                                    ${modelButton}
+                                </div>
+                                ${soundPlayer}
+                            </div>
+                            <button type="button" onclick="hideCreatureInfo()" class="text-gray-400 hover:text-white transition-colors shrink-0" aria-label="Close">
+                                <i class="fas fa-times text-2xl"></i>
+                            </button>
+                        </div>
+                        <p class="text-gray-300 leading-relaxed">${escapeHtml(creature.description)}</p>
+                    </div>
+                </div>
+            `;
+    
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+
+            creatureInfoSoundBtn = modal.querySelector('[data-creature-sound-replay]');
+            if (creatureInfoSoundBtn) {
+                creatureInfoSoundBtn.addEventListener('click', () => toggleCreatureInfoSound());
+            }
+
+            const viewModelBtn = modal.querySelector('[data-creature-view-model]');
+            if (viewModelBtn && creature.model) {
+                viewModelBtn.addEventListener('click', () => {
+                    showCreatureModelViewer(creature.model, creature.name);
+                });
+            }
+
+            if (creature.sound) {
+                initCreatureSoundPlayer(modal, creature).then(() => {
+                    if (modal.style.display === 'flex' && modal.getAttribute('aria-hidden') === 'false') {
+                        playCreatureInfoSound();
+                    }
+                });
+            }
+
+            if (!modal.dataset.bound) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) hideCreatureInfo();
+                });
+                modal.dataset.bound = 'true';
+            }
+        }
+    
+        function creatureCardImageSrc(card) {
+            const img = card.querySelector('img');
+            if (!img || img.style.display === 'none') return '';
+            return img.currentSrc || img.getAttribute('src') || '';
+        }
+
+        document.querySelectorAll('.creature-card').forEach((card) => {
+            const open = () => {
+                const id = card.getAttribute('data-creature');
+                if (id) showCreatureInfo(id, creatureCardImageSrc(card));
+            };
+            card.addEventListener('click', open);
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    open();
+                }
+            });
+        });
+    
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            const modelModal = document.getElementById('creatureModelModal');
+            if (modelModal && modelModal.style.display === 'flex' && modelModal.getAttribute('aria-hidden') === 'false') {
+                hideCreatureModelViewer();
+                return;
+            }
+            hideCreatureInfo();
+        });
+
+        prefetchSoundEffects(SOUND_PREFETCH_URLS);
+    </script>
+    
+
+</body>
+</html>

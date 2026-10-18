@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Kids at Home{% endblock %}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'monster-red': '#DC2626',
+                        'monster-purple': '#7C3AED',
+                        'monster-orange': '#EA580C',
+                        'monster-green': '#16A34A',
+                        'monster-blue': '#2563EB'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                        'bounce-slow': 'bounce 3s infinite',
+                        'shake': 'shake 0.5s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate'
+                    }
+                }
+            }
+        }
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gradient-to-b from-gray-900 via-purple-900 to-black min-h-screen">
+    <!-- Navigation Header -->
+    <nav class="relative bg-gradient-to-b from-red-900/95 to-purple-800/95 backdrop-blur-sm sticky top-0 z-50">
+        <!-- Monster-themed starfield background -->
+        <div class="absolute inset-0 opacity-40">
+            <!-- Row 1 -->
+            <div class="absolute top-1 left-1/6 w-0.5 h-0.5 bg-red-300 rounded-full"></div>
+            <div class="absolute top-1 left-1/3 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            <div class="absolute top-1 left-1/2 w-0.5 h-0.5 bg-orange-300 rounded-full"></div>
+            <div class="absolute top-1 left-2/3 w-0.5 h-0.5 bg-red-200 rounded-full"></div>
+            <div class="absolute top-1 left-5/6 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+            
+            <!-- Row 2 -->
+            <div class="absolute top-3 left-1/8 w-0.5 h-0.5 bg-orange-300 rounded-full"></div>
+            <div class="absolute top-3 left-2/5 w-0.5 h-0.5 bg-red-300 rounded-full"></div>
+            <div class="absolute top-3 left-3/5 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            <div class="absolute top-3 left-7/8 w-0.5 h-0.5 bg-orange-200 rounded-full"></div>
+            
+            <!-- Row 3 -->
+            <div class="absolute top-5 left-1/4 w-0.5 h-0.5 bg-red-200 rounded-full"></div>
+            <div class="absolute top-5 left-1/2 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            <div class="absolute top-5 left-3/4 w-0.5 h-0.5 bg-orange-300 rounded-full"></div>
+            
+            <!-- Row 4 -->
+            <div class="absolute top-7 left-1/6 w-0.5 h-0.5 bg-purple-300 rounded-full"></div>
+            <div class="absolute top-7 left-2/5 w-0.5 h-0.5 bg-red-200 rounded-full"></div>
+            <div class="absolute top-7 left-3/5 w-0.5 h-0.5 bg-orange-300 rounded-full"></div>
+            <div class="absolute top-7 left-5/6 w-0.5 h-0.5 bg-purple-200 rounded-full"></div>
+        </div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <!-- Logo Section -->
+                <a href="/" class="group flex items-center space-x-3 hover:scale-105 transition-transform duration-300">
+                    <div class="relative">
+                        <span class="text-2xl">🐉</span>
+                    </div>
+                    <span class="text-2xl font-bold text-white group-hover:text-red-200 transition-colors duration-300">
+                        {% block nav_title %}Kids at Home{% endblock %}
+                    </span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="/" class="group flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors duration-300 relative">
+                        <i class="fas fa-home text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Home</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-red-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/leaderboards" class="group flex items-center space-x-2 text-gray-300 hover:text-yellow-400 transition-colors duration-300 relative">
+                        <i class="fas fa-trophy text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Leaderboards</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-yellow-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    {% if current_user.is_authenticated %}
+                        <button onclick="showLogoutModal()" class="group flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors duration-300 relative">
+                            <i class="fas fa-sign-out-alt text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                            <span class="font-medium">Logout</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-red-400 group-hover:w-full transition-all duration-300"></div>
+                        </button>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="group flex items-center space-x-2 text-gray-300 hover:text-green-400 transition-colors duration-300 relative">
+                            <i class="fas fa-sign-in-alt text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                            <span class="font-medium">Login</span>
+                            <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-green-400 group-hover:w-full transition-all duration-300"></div>
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button id="mobileMenuToggle" class="text-gray-300 hover:text-white transition-colors duration-300 p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Layout Container -->
+    <div class="flex min-h-[calc(100vh-80px)]">
+        <!-- Side Menu -->
+        <aside id="sidebar" class="w-64 bg-gradient-to-b from-gray-900/95 to-black/95 backdrop-blur-sm border-r border-red-500/20 sticky top-[80px] h-[calc(100vh-80px)] overflow-y-auto z-40">
+            <div class="p-6">
+                <!-- Sidebar Header -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-bold text-white mb-2 bg-gradient-to-r from-red-400 to-purple-500 bg-clip-text text-transparent">
+                        {% block sidebar_title %}Menu{% endblock %}
+                    </h2>
+                    <div class="h-0.5 bg-gradient-to-r from-red-500/50 to-purple-500/50 rounded-full"></div>
+                </div>
+                
+                <!-- Sidebar Navigation -->
+                <nav class="space-y-2">
+                    {% block sidebar_content %}                  
+                    
+                    <!-- Create New Boss -->
+                    <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-800/50 hover:bg-gradient-to-r hover:from-purple-900/50 hover:to-indigo-900/50 border border-transparent hover:border-purple-500/30 transition-all duration-300">
+                        <i class="fas fa-plus-circle text-purple-400 group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="text-gray-300 group-hover:text-white font-medium">Create New Boss</span>
+                    </a>
+
+                    <!-- Saved Bosses -->
+                    <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-800/50 hover:bg-gradient-to-r hover:from-red-900/50 hover:to-purple-900/50 border border-transparent hover:border-red-500/30 transition-all duration-300">
+                        <i class="fas fa-book text-red-400 group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="text-gray-300 group-hover:text-white font-medium">Saved Bosses</span>
+                    </a>
+                    
+                    <!-- Spells -->
+                    <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-800/50 hover:bg-gradient-to-r hover:from-orange-900/50 hover:to-yellow-900/50 border border-transparent hover:border-orange-500/30 transition-all duration-300">
+                        <i class="fas fa-magic text-orange-400 group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="text-gray-300 group-hover:text-white font-medium">Spells</span>
+                    </a>
+                    
+                    <!-- Attacks -->
+                    <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-800/50 hover:bg-gradient-to-r hover:from-red-900/50 hover:to-pink-900/50 border border-transparent hover:border-red-500/30 transition-all duration-300">
+                        <i class="fas fa-sword text-red-400 group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="text-gray-300 group-hover:text-white font-medium">Attacks</span>
+                    </a>
+                    
+                    <!-- Modifiers -->
+                    <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-800/50 hover:bg-gradient-to-r hover:from-green-900/50 hover:to-emerald-900/50 border border-transparent hover:border-green-500/30 transition-all duration-300">
+                        <i class="fas fa-sliders-h text-green-400 group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="text-gray-300 group-hover:text-white font-medium">Modifiers</span>
+                    </a>
+                    
+                    <!-- Items -->
+                    <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-lg bg-gray-800/50 hover:bg-gradient-to-r hover:from-yellow-900/50 hover:to-amber-900/50 border border-transparent hover:border-yellow-500/30 transition-all duration-300">
+                        <i class="fas fa-gem text-yellow-400 group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="text-gray-300 group-hover:text-white font-medium">Items</span>
+                    </a>
+                    {% endblock %}
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto">
+            <div class="p-6 lg:p-8">
+                {% block content %}
+                <!-- Main content will go here -->
+                {% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Custom Animations -->
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes wiggle {
+            0%, 7% { transform: rotateZ(0); }
+            15% { transform: rotateZ(-15deg); }
+            20% { transform: rotateZ(10deg); }
+            25% { transform: rotateZ(-10deg); }
+            30% { transform: rotateZ(6deg); }
+            35% { transform: rotateZ(-4deg); }
+            40%, 100% { transform: rotateZ(0); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        @keyframes glow {
+            0% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.5); }
+            100% { box-shadow: 0 0 30px rgba(124, 58, 237, 0.8); }
+        }
+        
+        /* Mobile sidebar styles */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: fixed;
+                left: -100%;
+                transition: left 0.3s ease-in-out;
+                z-index: 50;
+            }
+            #sidebar.mobile-open {
+                left: 0;
+            }
+        }
+    </style>
+
+    <!-- JavaScript -->
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobileMenuToggle')?.addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar?.classList.toggle('mobile-open');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('mobileMenuToggle');
+            
+            if (window.innerWidth <= 768 && sidebar && toggle) {
+                if (!sidebar.contains(event.target) && !toggle.contains(event.target)) {
+                    sidebar.classList.remove('mobile-open');
+                }
+            }
+        });
+
+        function showLogoutModal() {
+            // Implementation would go here if needed
+            alert('Logout functionality will be implemented soon!');
+        }
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+

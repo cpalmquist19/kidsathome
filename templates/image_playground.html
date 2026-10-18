@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A browser-based image distortion playground">
+    <title>Image Playground | Kids at Home</title>
+    <link rel="stylesheet" href="{{ static_file('image_playground/assets/index-Xo3UAdL_.css') }}">
+    <link rel="stylesheet" href="{{ static_file('image_playground/image_library.css') }}">
+</head>
+<body>
+    <header id="topbar">
+        <a class="brand" href="/" aria-label="Return to Kids at Home">← Kids at Home</a>
+        <div class="brand">🎨 Image Playground</div>
+        <div class="spacer"></div>
+        <form id="image-url-form" class="image-url-form">
+            <label class="sr-only" for="imageUrlInput">Image URL</label>
+            <input id="imageUrlInput" type="url" inputmode="url" placeholder="Paste an image URL" autocomplete="url">
+            <button id="loadUrlBtn" class="pill" type="submit">Load URL</button>
+        </form>
+        <button id="recordGifBtn" class="pill" type="button" title="Record up to five seconds of the canvas as an animated GIF">⏺ Record GIF</button>
+        <button id="loadBtn" class="pill" type="button">📂 Load image</button>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+    </header>
+    <main id="layout">
+        <aside id="image-library" aria-label="Kids at Home image library">
+            <div class="image-library-heading">
+                <span>Kids at Home images</span>
+                <span class="image-count">{{ image_library|length }}</span>
+            </div>
+            <p id="image-library-status" class="image-library-status" aria-live="polite">
+                Choose an image to load it.
+            </p>
+            <div class="image-library-grid">
+                {% for image in image_library %}
+                <button class="library-image" type="button" data-image-url="{{ image.url }}" data-image-name="{{ image.name }}" title="Load {{ image.name }}">
+                    <img src="{{ image.url }}" alt="{{ image.name }}" loading="lazy">
+                    <span>{{ image.name }}</span>
+                </button>
+                {% endfor %}
+            </div>
+        </aside>
+        <aside id="palette" aria-label="Image tools"></aside>
+        <div id="stage">
+            <canvas id="view"></canvas>
+            <div id="ring"></div>
+            <div id="error" role="alert"></div>
+            <section id="weapon-panel" aria-label="Weapon tools">
+                <div class="weapon-heading">
+                    <span>⚡ Weapon Lab</span>
+                    <span id="weapon-mode-label">Brush mode</span>
+                </div>
+                <div class="weapon-buttons" role="group" aria-label="Choose a weapon">
+                    <button class="weapon-button is-active" type="button" data-weapon="none">🖌️ Brush</button>
+                    <button class="weapon-button" type="button" data-weapon="missile">🚀 Missile</button>
+                    <button class="weapon-button" type="button" data-weapon="laser">🔴 Laser</button>
+                    <button class="weapon-button" type="button" data-weapon="gravity">🕳️ Gravity</button>
+                </div>
+                <p id="weapon-help" class="weapon-help">Choose a weapon, then tap an image target.</p>
+                <label class="weapon-setting" for="weaponSize">
+                    <span>Blast size <output id="weaponSizeValue">120</output></span>
+                    <input id="weaponSize" type="range" min="20" max="350" value="120" step="1">
+                </label>
+                <label class="weapon-setting" for="weaponStrength">
+                    <span>Damage <output id="weaponStrengthValue">1.4×</output></span>
+                    <input id="weaponStrength" type="range" min="0.25" max="3" value="1.4" step="0.05">
+                </label>
+                <label class="weapon-setting" for="weaponSpeed">
+                    <span>Projectile speed <output id="weaponSpeedValue">800</output></span>
+                    <input id="weaponSpeed" type="range" min="200" max="1400" value="800" step="25">
+                </label>
+            </section>
+        </div>
+    </main>
+    <script type="module" src="{{ static_file('image_playground/assets/index-BRxV8c33.js') }}"></script>
+    <script type="module" src="{{ static_file('image_playground/image_library.js') }}"></script>
+    <script type="module" src="{{ static_file('image_playground/image_tools.js') }}"></script>
+    <script type="module" src="{{ static_file('image_playground/weapons.js') }}"></script>
+</body>
+</html>

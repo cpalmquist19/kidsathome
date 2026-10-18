@@ -15,7 +15,11 @@ from .password_reset import PasswordResetToken
 from .generated_system import GeneratedSystem
 from .user_activity import UserActivity
 from .user_space_stats import UserSpaceStats
-from .boss import Boss
+from .boss import Boss, boss_spells, boss_attacks, boss_modifiers, boss_items
+from .spell import Spell
+from .attack import Attack
+from .modifier import Modifier
+from .item import Item
 
 # List of all models for easy access
 __all__ = [
@@ -25,7 +29,15 @@ __all__ = [
     'GeneratedSystem',
     'UserActivity',
     'UserSpaceStats',
-    'Boss'
+    'Boss',
+    'boss_spells',
+    'boss_attacks',
+    'boss_modifiers',
+    'boss_items',
+    'Spell',
+    'Attack',
+    'Modifier',
+    'Item'
 ]
 
 def init_db(app):
@@ -55,5 +67,9 @@ def get_all_models():
         GeneratedSystem,
         UserActivity,
         UserSpaceStats,
-        Boss
+        Boss,
+        Spell,
+        Attack,
+        Modifier,
+        Item
     ]

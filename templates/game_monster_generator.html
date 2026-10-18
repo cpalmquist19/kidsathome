@@ -155,9 +155,9 @@
             
             <!-- Coming Soon Badge -->
             <div class="mb-12">
-                <span class="inline-block px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold text-lg rounded-full shadow-2xl animate-pulse">
+                <a href="{{ url_for('boss_creator') }}" class="inline-block px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold text-lg rounded-full shadow-2xl animate-pulse hover:from-yellow-400 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 cursor-pointer">
                     🚀 Coming Soon - Beta Access Available
-                </span>
+                </a>
             </div>
         </div>
     </div>
@@ -344,7 +344,7 @@
                         Join the waitlist to get early access when we launch. Be among the first to design epic boss encounters that players will never forget.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                        <a href="#" class="group inline-flex items-center px-10 py-5 bg-gradient-to-r from-red-600 to-purple-600 text-white font-bold text-xl rounded-full hover:from-red-700 hover:to-purple-700 transition-all duration-300 shadow-2xl hover:shadow-red-500/50 transform hover:scale-105">
+                        <a href="{{ url_for('boss_creator') }}" class="group inline-flex items-center px-10 py-5 bg-gradient-to-r from-red-600 to-purple-600 text-white font-bold text-xl rounded-full hover:from-red-700 hover:to-purple-700 transition-all duration-300 shadow-2xl hover:shadow-red-500/50 transform hover:scale-105">
                             <i class="fas fa-rocket mr-3"></i>
                             Join Waitlist
                             <i class="fas fa-arrow-right ml-3 group-hover:translate-x-1 transition-transform"></i>

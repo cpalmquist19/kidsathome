@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Statistics - Kids at Home</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
+    <!-- Custom Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cosmic-purple': '#7C3AED',
+                        'space-blue': '#2563EB',
+                        'star-gold': '#D97706',
+                        'nebula-pink': '#BE185D',
+                        'galaxy-indigo': '#4F46E5'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #000;
+        }
+    </style>
+</head>
+<body class="min-h-screen" style="background-color: #000;">
+    <!-- Navigation -->
+    <nav class="relative bg-gradient-to-b from-blue-900/95 to-blue-800/95 backdrop-blur-sm z-50">
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-3">
+                <!-- Logo Section -->
+                <a href="/" class="group flex items-center space-x-3 hover:scale-105 transition-transform duration-300">
+                    <div class="relative">
+                        <span class="text-xl">🚀</span>
+                    </div>
+                    <span class="text-xl font-bold text-white group-hover:text-gray-200 transition-colors duration-300">
+                        Kids at Home
+                    </span>
+                </a>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex space-x-6">
+                    <a href="/" class="group flex items-center space-x-2 text-gray-300 hover:text-blue-400 transition-colors duration-300 relative">
+                        <i class="fas fa-home text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Home</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/star_map" class="group flex items-center space-x-2 text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative">
+                        <i class="fas fa-map text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Star Map</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-cyan-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                    <a href="/star_map/stats" class="group flex items-center space-x-2 text-cyan-300 hover:text-cyan-400 transition-colors duration-300 relative bg-cyan-900/30 px-3 py-1 rounded-lg">
+                        <i class="fas fa-chart-line text-lg group-hover:scale-110 transition-transform duration-300"></i>
+                        <span class="font-medium">Stats</span>
+                        <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-cyan-400 group-hover:w-full transition-all duration-300"></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-violet-400 to-purple-500 bg-clip-text text-transparent drop-shadow-lg mb-4">
+                Star Statistics
+            </h1>
+            <p class="text-gray-300 text-lg">
+                Explore fascinating statistics about the stars in our cosmic neighborhood
+            </p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- HR Diagram -->
+            <div class="bg-gray-900/80 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center space-x-2">
+                    <i class="fas fa-star text-yellow-400"></i>
+                    <span>Hertzsprung-Russell Diagram</span>
+                </h2>
+                <p class="text-gray-400 text-sm mb-4">
+                    Temperature vs. Luminosity - shows the relationship between star temperature and brightness
+                </p>
+                <div class="relative h-96">
+                    <canvas id="hrDiagram"></canvas>
+                </div>
+            </div>
+
+            <!-- Distance Distribution -->
+            <div class="bg-gray-900/80 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center space-x-2">
+                    <i class="fas fa-ruler text-blue-400"></i>
+                    <span>Distance Distribution</span>
+                </h2>
+                <p class="text-gray-400 text-sm mb-4">
+                    Distribution of stars by distance from the Sun
+                </p>
+                <div class="relative h-96">
+                    <canvas id="distanceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Spectral Type Distribution -->
+            <div class="bg-gray-900/80 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center space-x-2">
+                    <i class="fas fa-palette text-purple-400"></i>
+                    <span>Spectral Type Distribution</span>
+                </h2>
+                <p class="text-gray-400 text-sm mb-4">
+                    Number of stars by spectral class
+                </p>
+                <div class="relative h-96">
+                    <canvas id="spectralTypeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Magnitude Distribution -->
+            <div class="bg-gray-900/80 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center space-x-2">
+                    <i class="fas fa-sun text-orange-400"></i>
+                    <span>Apparent Magnitude Distribution</span>
+                </h2>
+                <p class="text-gray-400 text-sm mb-4">
+                    Distribution of stars by apparent brightness
+                </p>
+                <div class="relative h-96">
+                    <canvas id="magnitudeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-gradient-to-br from-blue-900/80 to-blue-800/80 backdrop-blur-sm rounded-xl p-6 border border-blue-700/50 text-center">
+                <div class="text-3xl font-bold text-white mb-2" id="totalStars">0</div>
+                <div class="text-blue-300 text-sm">Total Stars</div>
+            </div>
+            <div class="bg-gradient-to-br from-purple-900/80 to-purple-800/80 backdrop-blur-sm rounded-xl p-6 border border-purple-700/50 text-center">
+                <div class="text-3xl font-bold text-white mb-2" id="avgDistance">0</div>
+                <div class="text-purple-300 text-sm">Avg Distance</div>
+            </div>
+            <div class="bg-gradient-to-br from-yellow-900/80 to-yellow-800/80 backdrop-blur-sm rounded-xl p-6 border border-yellow-700/50 text-center">
+                <div class="text-3xl font-bold text-white mb-2" id="brightestStar">-</div>
+                <div class="text-yellow-300 text-sm">Brightest</div>
+            </div>
+            <div class="bg-gradient-to-br from-red-900/80 to-red-800/80 backdrop-blur-sm rounded-xl p-6 border border-red-700/50 text-center">
+                <div class="text-3xl font-bold text-white mb-2" id="closestStar">-</div>
+                <div class="text-red-300 text-sm">Closest</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom JavaScript -->
+    <script src="{{ static_file('js/star_map.js') }}"></script>
+    <script src="{{ static_file('js/star_stats.js') }}"></script>
+</body>
+</html>
+
