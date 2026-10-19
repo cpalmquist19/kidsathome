@@ -521,12 +521,14 @@
             'fulatun': "{{ static_file('images/fulatun.jpg') }}",
             'lyrath': "{{ static_file('images/lyrath.jpg') }}",
             'entas': "{{ static_file('images/entas.jpg') }}",
+            'rooth': "{{ static_file('images/rooth.jpg') }}",
         };
         // The map is the level background at its natural size; objects are placed on
         // it by fractional position (node.x / node.y, 0 to 1), centered on the image.
         const MAP_WIDTH = 2096;
         const MAP_HEIGHT = 1184;
-        const DEFAULT_NODE_SIZE = 192;
+        // Pixel size of an object with scale 1 (the Binary Star System).
+        const BASE_NODE_SIZE = 192;
         const viewportEl = document.getElementById('viewport');
         const mapEl = document.getElementById('map');
         mapEl.style.width = MAP_WIDTH + 'px';
@@ -559,7 +561,7 @@
         TechTree.nodes.forEach(node => {
             const el = document.createElement('div');
             el.className = 'world-node';
-            const size = node.size || DEFAULT_NODE_SIZE;
+            const size = TechTree.scale(node.id) * BASE_NODE_SIZE;
             el.style.setProperty('--node-size', size + 'px');
             el.style.left = (node.x * MAP_WIDTH - size / 2) + 'px';
             el.style.top = (node.y * MAP_HEIGHT - size / 2) + 'px';
@@ -582,7 +584,7 @@
 
         // Plays the unlock celebration over a node: a flash, a ring and a burst of sparks.
         const SPARK_COLORS = ['#ffd86b', '#ffffff', '#8fd3ff', '#ff9ad5'];
-        function celebrate(el, size) {
+        function celebrate(el, scale) {
             const img = el.querySelector('.world-object');
             img.classList.remove('pop');
             void img.offsetWidth; // restart the animation if it is still running
@@ -594,7 +596,7 @@
             const SPARKS = 18;
             for (let i = 0; i < SPARKS; i++) {
                 const angle = (i / SPARKS) * 2 * Math.PI + Math.random() * 0.3;
-                const distance = (105 + Math.random() * 75) * size / DEFAULT_NODE_SIZE;
+                const distance = (105 + Math.random() * 75) * scale;
                 const spark = document.createElement('div');
                 spark.className = 'celebration-particle';
                 spark.style.color = SPARK_COLORS[i % SPARK_COLORS.length];
@@ -615,7 +617,7 @@
             TechTree.nodes.forEach(node => {
                 const el = nodeEls.get(node.id);
                 const unlocked = TechTree.isUnlocked(node.id);
-                if (nodesInitialized && unlocked && !wasUnlocked.get(node.id)) celebrate(el, node.size || DEFAULT_NODE_SIZE);
+                if (nodesInitialized && unlocked && !wasUnlocked.get(node.id)) celebrate(el, TechTree.scale(node.id));
                 wasUnlocked.set(node.id, unlocked);
                 el.classList.toggle('locked', !unlocked);
                 el.classList.toggle('affordable', TechTree.canUnlock(node.id));

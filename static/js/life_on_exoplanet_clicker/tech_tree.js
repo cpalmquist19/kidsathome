@@ -13,11 +13,13 @@
 //   unlockCost   - Star Dust spent to unlock it
 //   startsUnlocked - unlocked from the beginning (the root of the tree)
 //   x, y         - position on the map as a fraction of its width/height (0 to 1)
-//   size         - image size in map pixels (defaults to 192)
+//   scale        - image size relative to the Binary Star System (which is 1), so 1.5
+//                 is half again as big. Defaults to DEFAULT_SCALE.
 //   requires     - ids of nodes that must be unlocked first
 // Unlocked state has its own storage key, like StarDust.
 const TechTree = (() => {
     const STORAGE_KEY = 'lifeOnExoplanet.techTree';
+    const DEFAULT_SCALE = 0.5;
     const TYPES = { BASE: 'BASE', GENERATOR: 'GENERATOR', EVOLUTION: 'EVOLUTION' };
 
     const nodes = [
@@ -29,6 +31,7 @@ const TechTree = (() => {
             perClick: 1,
             unlockCost: 10,
             startsUnlocked: false,
+            scale: 1,
             x: 0.5,
             y: 0.5,
             requires: [],
@@ -43,7 +46,6 @@ const TechTree = (() => {
             startsUnlocked: false,
             x: 0.65,
             y: 0.38,
-            size: 96,
             requires: ['binary-star-system'],
         },
         {
@@ -56,7 +58,6 @@ const TechTree = (() => {
             startsUnlocked: false,
             x: 0.647,
             y: 0.683,
-            size: 96,
             requires: ['binary-star-system'],
         },
         {
@@ -70,8 +71,21 @@ const TechTree = (() => {
             startsUnlocked: false,
             x: 0.3675,
             y: 0.365,
-            size: 96,
             requires: ['binary-star-system'],
+        },
+        {
+            // Down and to the left of the binary star system, mirroring Lyrath.
+            id: 'rooth',
+            name: 'Rooth',
+            type: TYPES.BASE,
+            description: 'A mossy green world patched with pale, shimmering plains, wrapped in a thin blue glow of atmosphere.',
+            perClick: 50,
+            unlockCost: 2500,
+            startsUnlocked: false,
+            x: 0.353,
+            y: 0.683,
+            requires: ['binary-star-system'],
+            scale: 1
         },
     ];
 
@@ -103,6 +117,12 @@ const TechTree = (() => {
 
     function get(id) {
         return nodes.find(node => node.id === id) || null;
+    }
+
+    // Image size of a node relative to the Binary Star System.
+    function scale(id) {
+        const node = get(id);
+        return node && node.scale ? node.scale : DEFAULT_SCALE;
     }
 
     function isUnlocked(id) {
@@ -209,6 +229,7 @@ const TechTree = (() => {
         TYPES,
         nodes,
         get,
+        scale,
         isUnlocked,
         dependencies,
         missingRequirements,
