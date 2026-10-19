@@ -72,12 +72,14 @@
         #star-dust-amount {
             color: #ffd86b;
         }
-        /* The viewport is the screen; the map is the level background, moved and
-           scaled inside it by the camera (see the pan/zoom script). */
+        /* The viewport is the screen; the map is the world, moved and scaled inside it
+           by the camera (see the pan/zoom script). It is black wherever the level
+           background image doesn't reach. */
         #viewport {
             position: fixed;
             inset: 0;
             overflow: hidden;
+            background: #000;
             cursor: grab;
             touch-action: none;
         }
@@ -90,7 +92,8 @@
             left: 0;
             transform-origin: 0 0;
             will-change: transform;
-            background: url("{{ static_file('images/life_on_exoplanet_level_1_background.jpg') }}") 0 0 / 100% 100% no-repeat;
+            /* The area background images are set by the script (see AREAS). */
+            background-repeat: no-repeat;
         }
         /* Lines between an object and what it depends on, drawn under the objects. */
         #links {
@@ -132,15 +135,28 @@
             object-fit: cover;
             display: block;
         }
+        /* The labels sit on a dark backing with a text outline so they stay readable
+           over any area background. */
+        .world-node-name,
+        .world-node-status {
+            width: max-content;
+            max-width: 240px;
+            padding: 2px 10px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.72);
+            text-align: center;
+            text-shadow: 0 0 3px #000, 0 1px 2px #000;
+        }
+        .world-node-name:empty,
+        .world-node-status:empty {
+            display: none;
+        }
         .world-node-name {
             margin-top: 6px;
-            width: 240px;
-            text-align: center;
             font-weight: bold;
         }
         .world-node-status {
-            width: 240px;
-            text-align: center;
+            margin-top: 3px;
             font-size: 0.8rem;
             color: #ffd86b;
         }
@@ -152,7 +168,7 @@
         }
         .world-node.locked .world-node-name,
         .world-node.locked .world-node-status {
-            color: #888;
+            color: #c4c4c4;
         }
         .world-node.locked.affordable .world-node-status {
             color: #ffd86b;
@@ -552,17 +568,53 @@
             'entas': "{{ static_file('images/entas.jpg') }}",
             'rooth': "{{ static_file('images/rooth.jpg') }}",
             'ubonae': "{{ static_file('images/ubonae.jpg') }}",
+            'the-cells-arrival': "{{ static_file('images/the_cells_arrival.jpg') }}",
         };
-        // The map is the level background at its natural size; objects are placed on
-        // it by fractional position (node.x / node.y, 0 to 1), centered on the image.
-        const MAP_WIDTH = 2096;
-        const MAP_HEIGHT = 1184;
+        // The level background image keeps its natural size and sits in the center of
+        // a world WORLD_SIZE times larger in each direction. Objects are placed by
+        // fractional position (node.x / node.y, 0 to 1) over that image, so the
+        // positions don't change with the world size. The camera is bounded by the world.
+        // Further areas (AREAS, below) are placed around it with their own images.
+        const IMAGE_WIDTH = 2096;
+        const IMAGE_HEIGHT = 1184;
+        const WORLD_SIZE = 10;
+        const MAP_WIDTH = IMAGE_WIDTH * WORLD_SIZE;
+        const MAP_HEIGHT = IMAGE_HEIGHT * WORLD_SIZE;
+        const IMAGE_LEFT = (MAP_WIDTH - IMAGE_WIDTH) / 2;
+        const IMAGE_TOP = (MAP_HEIGHT - IMAGE_HEIGHT) / 2;
+        // A node's center on the map, in map pixels.
+        const nodeX = node => IMAGE_LEFT + node.x * IMAGE_WIDTH;
+        const nodeY = node => IMAGE_TOP + node.y * IMAGE_HEIGHT;
         // Pixel size of an object with scale 1 (the Binary Star System).
         const BASE_NODE_SIZE = 192;
         const viewportEl = document.getElementById('viewport');
         const mapEl = document.getElementById('map');
         mapEl.style.width = MAP_WIDTH + 'px';
         mapEl.style.height = MAP_HEIGHT + 'px';
+
+        // Each area is a background image at its natural size, positioned by its top-left
+        // corner in map pixels. Anywhere no area reaches stays black.
+        const AREAS = [
+            {
+                // Level one, in the center of the world.
+                image: "{{ static_file('images/life_on_exoplanet_level_1_background.jpg') }}",
+                width: IMAGE_WIDTH,
+                height: IMAGE_HEIGHT,
+                left: IMAGE_LEFT,
+                top: IMAGE_TOP,
+            },
+            {
+                // The one-celled area, directly below level one and centered under it.
+                image: "{{ static_file('images/life_on_exoplanet_one_celled_background.webp') }}",
+                width: 1920,
+                height: 1280,
+                left: IMAGE_LEFT + (IMAGE_WIDTH - 1920) / 2,
+                top: IMAGE_TOP + IMAGE_HEIGHT,
+            },
+        ];
+        mapEl.style.backgroundImage = AREAS.map(area => 'url("' + area.image + '")').join(', ');
+        mapEl.style.backgroundSize = AREAS.map(area => area.width + 'px ' + area.height + 'px').join(', ');
+        mapEl.style.backgroundPosition = AREAS.map(area => area.left + 'px ' + area.top + 'px').join(', ');
 
         // One line per dependency, from the node to what it depends on. They are built
         // from TechTree.dependencies, so new objects get their lines automatically.
@@ -578,10 +630,10 @@
                 const dep = TechTree.get(depId);
                 const line = document.createElementNS(SVG_NS, 'line');
                 line.setAttribute('class', 'link');
-                line.setAttribute('x1', dep.x * MAP_WIDTH);
-                line.setAttribute('y1', dep.y * MAP_HEIGHT);
-                line.setAttribute('x2', node.x * MAP_WIDTH);
-                line.setAttribute('y2', node.y * MAP_HEIGHT);
+                line.setAttribute('x1', nodeX(dep));
+                line.setAttribute('y1', nodeY(dep));
+                line.setAttribute('x2', nodeX(node));
+                line.setAttribute('y2', nodeY(node));
                 linksEl.appendChild(line);
                 linkEls.push({ line, nodeId: node.id, depId });
             });
@@ -593,8 +645,8 @@
             el.className = 'world-node';
             const size = TechTree.scale(node.id) * BASE_NODE_SIZE;
             el.style.setProperty('--node-size', size + 'px');
-            el.style.left = (node.x * MAP_WIDTH - size / 2) + 'px';
-            el.style.top = (node.y * MAP_HEIGHT - size / 2) + 'px';
+            el.style.left = (nodeX(node) - size / 2) + 'px';
+            el.style.top = (nodeY(node) - size / 2) + 'px';
             el.innerHTML = '<img class="world-object" draggable="false"><div class="world-node-name"></div><div class="world-node-status"></div>';
             const img = el.querySelector('img');
             img.src = IMAGE_URLS[node.id];
@@ -838,7 +890,7 @@
         });
 
         // Camera: drag to pan, mouse wheel to zoom. The map always covers the whole
-        // viewport, so the camera can never show anything outside the background image.
+        // viewport, so the camera can never show anything outside the world.
         let camScale = 1;
         let camX = 0;
         let camY = 0;

@@ -104,6 +104,20 @@ const TechTree = (() => {
             requires: ['rooth'],
             scale: .5
         },
+        {
+            // In the one-celled area, below the level one image (y is past 1) and under Rooth.
+            id: 'the-cells-arrival',
+            name: "The Cell's Arrival",
+            type: TYPES.BASE,
+            description: 'A single glowing cell, trailing fine threads like a comet, drifts down out of the dark and touches Rooth. It is tiny and alone, and it is the first living thing this world has ever known.',
+            perClick: 250,
+            unlockCost: 10000,
+            startsUnlocked: false,
+            x: 0.353,
+            y: 1.3,
+            requires: ['rooth'],
+            scale: .5
+        },
     ];
 
     const unlocked = new Set(nodes.filter(node => node.startsUnlocked).map(node => node.id));
