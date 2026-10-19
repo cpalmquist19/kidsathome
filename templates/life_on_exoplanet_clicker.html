@@ -2,320 +2,575 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Life on an Exoplanet Clicker - Kids at Home</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
-    
-    <!-- Tailwind Config -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'cosmic-purple': '#7C3AED',
-                        'space-blue': '#2563EB',
-                        'star-gold': '#D97706',
-                        'nebula-pink': '#BE185D',
-                        'galaxy-indigo': '#4F46E5',
-                        'life-green': '#10B981',
-                        'exoplanet-lime': '#84CC16',
-                        'ecosystem-yellow': '#FCD34D'
-                    },
-                    animation: {
-                        'float': 'float 6s ease-in-out infinite',
-                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'wiggle': 'wiggle 1s ease-in-out infinite',
-                    }
-                }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life on Exoplanet Clicker</title>
+    <style>
+        html, body {
+            margin: 0;
+            height: 100%;
+            background: rgb(32, 31, 31);
+            color: #fff;
+            font-family: system-ui, sans-serif;
+        }
+        /* Text can't be selected, so spam-clicking doesn't highlight the page or
+           open the browser's selection popup. */
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        #star-dust-hud {
+            z-index: 10;
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 1.1rem;
+        }
+        .hud-row {
+            display: flex;
+            gap: 6px;
+        }
+        .hud-card {
+            padding: 6px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            background: linear-gradient(rgba(40, 42, 56, 0.85), rgba(16, 17, 24, 0.85));
+            white-space: nowrap;
+        }
+        .hud-large {
+            min-width: 170px;
+        }
+        .hud-value {
+            font-weight: bold;
+        }
+        .hud-icon {
+            margin-right: 4px;
+        }
+        .hud-unit {
+            font-weight: normal;
+            font-size: 0.85rem;
+            color: #bbb;
+        }
+        .hud-sub {
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .hud-small {
+            flex: 1;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .hud-small span {
+            font-weight: bold;
+            color: #fff;
+        }
+        #star-dust-amount {
+            color: #ffd86b;
+        }
+        /* The viewport is the screen; the map is the level background, moved and
+           scaled inside it by the camera (see the pan/zoom script). */
+        #viewport {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            cursor: grab;
+            touch-action: none;
+        }
+        #viewport.dragging {
+            cursor: grabbing;
+        }
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+            will-change: transform;
+            background: url("{{ static_file('images/life_on_exoplanet_level_1_background.jpg') }}") 0 0 / 100% 100% no-repeat;
+        }
+        .world-node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: var(--node-size);
+        }
+        .world-object {
+            width: var(--node-size);
+            height: var(--node-size);
+            box-sizing: border-box;
+            border: 2px solid gray;
+            object-fit: cover;
+            display: block;
+        }
+        .world-node-name {
+            margin-top: 6px;
+            width: 240px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .world-node-status {
+            width: 240px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #ffd86b;
+        }
+        .world-node.locked {
+            cursor: pointer;
+        }
+        .world-node.locked .world-object {
+            filter: grayscale(1) brightness(0.4);
+        }
+        .world-node.locked .world-node-name,
+        .world-node.locked .world-node-status {
+            color: #888;
+        }
+        .world-node.locked.affordable .world-node-status {
+            color: #ffd86b;
+        }
+
+        /* Locked objects bob around in place. */
+        .world-object {
+            transition: filter 0.6s;
+        }
+        .world-node.locked .world-object {
+            animation: world-object-bob 6s ease-in-out infinite;
+        }
+        @keyframes world-object-bob {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(4px, -5px) rotate(1.5deg); }
+            40% { transform: translate(-3px, -8px) rotate(-1deg); }
+            60% { transform: translate(-5px, 2px) rotate(1deg); }
+            80% { transform: translate(3px, 4px) rotate(-1.5deg); }
+        }
+
+        /* Celebration played over an object when it unlocks. */
+        .world-object.pop {
+            animation: world-object-pop 0.7s ease-out;
+        }
+        @keyframes world-object-pop {
+            0% { transform: scale(1); filter: brightness(1); }
+            30% { transform: scale(1.18); filter: brightness(1.8); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        .celebration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: var(--node-size);
+            height: var(--node-size);
+            pointer-events: none;
+        }
+        .celebration-flash {
+            position: absolute;
+            inset: -20px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(255, 216, 107, 0) 70%);
+            animation: celebration-flash 0.8s ease-out forwards;
+        }
+        @keyframes celebration-flash {
+            from { opacity: 1; transform: scale(0.6); }
+            to { opacity: 0; transform: scale(1.6); }
+        }
+        .celebration-ring {
+            position: absolute;
+            inset: 0;
+            box-sizing: border-box;
+            border: 3px solid #ffd86b;
+            border-radius: 50%;
+            box-shadow: 0 0 16px #ffd86b;
+            animation: celebration-ring 1s ease-out forwards;
+        }
+        @keyframes celebration-ring {
+            from { opacity: 1; transform: scale(0.4); }
+            to { opacity: 0; transform: scale(2.2); }
+        }
+        .celebration-particle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            margin: -4px 0 0 -4px;
+            border-radius: 50%;
+            box-shadow: 0 0 8px currentColor;
+            background: currentColor;
+            animation: celebration-particle 1s ease-out forwards;
+        }
+        @keyframes celebration-particle {
+            from { opacity: 1; transform: translate(0, 0) scale(1); }
+            to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.2); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .world-node.locked .world-object,
+            .world-object.pop,
+            .celebration-ring,
+            .celebration-particle {
+                animation: none;
+            }
+            .celebration-ring,
+            .celebration-particle {
+                display: none;
             }
         }
-    </script>
+
+        /* Floating "+N" shown where a click collected star dust. */
+        .click-popup {
+            position: fixed;
+            z-index: 50;
+            pointer-events: none;
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: #ffd86b;
+            text-shadow: 0 0 6px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.9);
+            transform: translate(-50%, -50%);
+            animation: click-popup 0.9s ease-out forwards;
+        }
+        @keyframes click-popup {
+            from { opacity: 1; margin-top: 0; }
+            to { opacity: 0; margin-top: -60px; }
+        }
+
+        /* TEMPORARY: reset button and confirm modal, for testing only. */
+        #reset-button {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            z-index: 100;
+            padding: 8px 16px;
+            border: 1px solid #ff8a8a;
+            border-radius: 6px;
+            background: #c62828;
+            color: #fff;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+        }
+        #reset-button:hover {
+            background: #e53935;
+        }
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.6);
+        }
+        .modal-backdrop[hidden] {
+            display: none;
+        }
+        .modal {
+            max-width: 340px;
+            margin: 0 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            background: linear-gradient(rgb(40, 42, 56), rgb(16, 17, 24));
+        }
+        .modal h2 {
+            margin: 0 0 8px;
+            font-size: 1.1rem;
+        }
+        .modal p {
+            margin: 0 0 16px;
+            color: #bbb;
+            font-size: 0.9rem;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+        .modal-actions button {
+            padding: 6px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            cursor: pointer;
+        }
+        .modal-actions .danger {
+            border-color: #ff8a8a;
+            background: #c62828;
+            font-weight: bold;
+        }
+        @media (max-width: 480px) {
+            #star-dust-hud {
+                top: 8px;
+                font-size: 0.95rem;
+            }
+            .hud-large {
+                min-width: 0;
+            }
+        }
+    </style>
 </head>
-<body class="min-h-screen overflow-hidden bg-black" style="background-color: #000000; margin: 0; padding: 0;">
-    <!-- Canvas container with pan functionality -->
-    <div id="canvas-container" class="w-full h-screen overflow-hidden relative cursor-grab active:cursor-grabbing" style="background-color: #000000;">
-        <canvas 
-            id="starfield-canvas" 
-            class="absolute select-none"
-            style="user-select: none; pointer-events: none; display: block; border: 2px solid red;"
-        ></canvas>
+<body>
+    <div id="star-dust-hud">
+        <div class="hud-row">
+            <div class="hud-card hud-large">
+                <div class="hud-value"><span class="hud-icon">&#10024;</span><span id="star-dust-amount">0</span> <span class="hud-unit">Star Dust</span></div>
+            </div>
+            <div class="hud-card hud-large">
+                <div class="hud-value"><span class="hud-icon">&#11088;</span><span id="star-dust-lifetime">0</span> <span class="hud-unit">Lifetime</span></div>
+                <div class="hud-sub">total earned</div>
+            </div>
+        </div>
+        <div class="hud-row">
+            <div class="hud-card hud-small">Per click <span id="star-dust-per-click"></span></div>
+            <div class="hud-card hud-small">Per sec <span id="star-dust-per-sec">0</span></div>
+        </div>
     </div>
-    
-    <!-- Page content will go here -->
-    
+
+    <div id="viewport">
+        <div id="map"></div>
+    </div>
+
+    <!-- TEMPORARY: reset button and confirm modal, for testing only. -->
+    <button id="reset-button" type="button">RESET</button>
+    <div id="reset-modal" class="modal-backdrop" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reset-title">
+            <h2 id="reset-title">Reset all progress?</h2>
+            <p>This clears your Star Dust, lifetime total and unlocked objects. It can't be undone.</p>
+            <div class="modal-actions">
+                <button id="reset-cancel" type="button">Cancel</button>
+                <button id="reset-confirm" type="button" class="danger">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ static_file('js/life_on_exoplanet_clicker/star_dust.js') }}"></script>
+    <script src="{{ static_file('js/life_on_exoplanet_clicker/tech_tree.js') }}"></script>
     <script>
-        // Wait for DOM to be ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, initializing canvas...');
-            
-            // Canvas setup and starfield generation
-            const canvasContainer = document.getElementById('canvas-container');
-            const canvas = document.getElementById('starfield-canvas');
-            
-            if (!canvasContainer || !canvas) {
-                console.error('Canvas elements not found', { canvasContainer, canvas });
-                document.body.innerHTML += '<div style="color: red; padding: 20px;">Error: Canvas elements not found</div>';
-                return;
-            }
-            
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                console.error('Could not get canvas context');
-                document.body.innerHTML += '<div style="color: red; padding: 20px;">Error: Could not get canvas context</div>';
-                return;
-            }
-            
-            console.log('Canvas elements found, proceeding...');
-            
-            let isDragging = false;
-            let startX = 0;
-            let startY = 0;
-            let currentX = 0;
-            let currentY = 0;
-            
-            // Zoom functionality
-            let zoomLevel = 0.05; // Default zoom (0.05x = see 20x more area, fits the 20x canvas)
-            const minZoom = 0.01; // Can zoom out to 1% (see 100x more area)
-            const maxZoom = 4.0; // Can zoom in to 400%
-            const zoomStep = 0.01; // Zoom increment/decrement amount
-            
-            // Calculate canvas size (20x screen size)
-            let canvasWidth = 0;
-            let canvasHeight = 0;
-            const stars = [];
-            
-            function initializeCanvas() {
-                try {
-                    const screenWidth = window.innerWidth;
-                    const screenHeight = window.innerHeight;
-                    
-                    // Set canvas to 20x screen size
-                    canvasWidth = screenWidth * 20;
-                    canvasHeight = screenHeight * 20;
-                    
-                    // Set canvas dimensions
-                    canvas.width = canvasWidth;
-                    canvas.height = canvasHeight;
-                    canvas.style.width = canvasWidth + 'px';
-                    canvas.style.height = canvasHeight + 'px';
-                    
-                    // Start zoomed out to show more area (0.05x = see 20x more area, fits the 20x canvas)
-                    zoomLevel = 0.05;
-                    
-                    // Center canvas initially - show the center of the 20x canvas
-                    const containerWidth = canvasContainer.clientWidth || window.innerWidth;
-                    const containerHeight = canvasContainer.clientHeight || window.innerHeight;
-                    
-                    // Position so the center of the canvas aligns with center of viewport
-                    // At 0.05x zoom, a 20x canvas becomes 1x screen size, so center it
-                    currentX = (containerWidth - canvasWidth * zoomLevel) / 2;
-                    currentY = (containerHeight - canvasHeight * zoomLevel) / 2;
-                    
-                    // Ensure we have valid numbers
-                    if (isNaN(currentX) || isNaN(currentY) || !isFinite(currentX) || !isFinite(currentY)) {
-                        currentX = 0;
-                        currentY = 0;
-                        console.warn('Invalid position calculated, using 0,0');
-                    }
-                    
-                    updateCanvasTransform();
-                    
-                    // Generate and draw stars
-                    generateStars();
-                    drawStarfield();
-                    
-                    // Check canvas visibility
-                    const canvasRect = canvas.getBoundingClientRect();
-                    const containerRect = canvasContainer.getBoundingClientRect();
-                    
-                    console.log('Canvas initialized:', {
-                        canvasWidth,
-                        canvasHeight,
-                        zoomLevel,
-                        currentX,
-                        currentY,
-                        stars: stars.length,
-                        canvasRect: { width: canvasRect.width, height: canvasRect.height, left: canvasRect.left, top: canvasRect.top },
-                        containerRect: { width: containerRect.width, height: containerRect.height },
-                        computedTransform: window.getComputedStyle(canvas).transform,
-                        canvasDisplay: window.getComputedStyle(canvas).display,
-                        canvasVisibility: window.getComputedStyle(canvas).visibility
-                    });
-                } catch (error) {
-                    console.error('Error initializing canvas:', error);
-                }
-            }
-            
-            function generateStars() {
-                stars.length = 0; // Clear existing stars
-                
-                // Generate a good number of stars (adjust density as needed)
-                const starCount = Math.floor((canvasWidth * canvasHeight) / 10000); // ~1 star per 10k pixels
-                
-                for (let i = 0; i < starCount; i++) {
-                    stars.push({
-                        x: Math.random() * canvasWidth,
-                        y: Math.random() * canvasHeight,
-                        size: Math.random() * 3 + 1.0, // Star size between 1.0 and 4.0 (larger for visibility)
-                        brightness: Math.random() * 0.3 + 0.7 // Brightness between 0.7 and 1.0 (brighter)
-                    });
-                }
-                
-                console.log(`Generated ${stars.length} stars`);
-            }
-            
-            function drawStarfield() {
-                // Clear canvas with black background
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-                
-                // Draw stars
-                ctx.fillStyle = '#FFFFFF';
-                stars.forEach(star => {
-                    ctx.globalAlpha = star.brightness;
-                    ctx.beginPath();
-                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                    ctx.fill();
-                });
-                
-                // Reset alpha
-                ctx.globalAlpha = 1.0;
-                
-                // Verify canvas was drawn by checking a pixel
-                const imageData = ctx.getImageData(0, 0, 1, 1);
-                console.log('Canvas draw verified - first pixel:', imageData.data);
-            }
-            
-            function updateCanvasTransform() {
-                // Apply both position and zoom using CSS transform
-                canvas.style.transform = `translate(${currentX}px, ${currentY}px) scale(${zoomLevel})`;
-                canvas.style.transformOrigin = '0 0';
-                
-                // Debug transform
-                console.log('Transform updated:', {
-                    transform: canvas.style.transform,
-                    currentX,
-                    currentY,
-                    zoomLevel,
-                    canvasWidth,
-                    canvasHeight
-                });
-            }
-            
-            function zoomAtPoint(clientX, clientY, zoomDelta) {
-                // Get container bounds
-                const rect = canvasContainer.getBoundingClientRect();
-                const containerX = clientX - rect.left;
-                const containerY = clientY - rect.top;
-                
-                // Calculate the point in canvas coordinates before zoom
-                const canvasX = (containerX - currentX) / zoomLevel;
-                const canvasY = (containerY - currentY) / zoomLevel;
-                
-                // Update zoom level
-                const newZoom = Math.max(minZoom, Math.min(maxZoom, zoomLevel + zoomDelta));
-                
-                // Calculate the new position to keep the same point under the cursor
-                currentX = containerX - canvasX * newZoom;
-                currentY = containerY - canvasY * newZoom;
-                
-                zoomLevel = newZoom;
-                updateCanvasTransform();
-            }
-            
-            function zoomIn() {
-                zoomAtPoint(window.innerWidth / 2, window.innerHeight / 2, zoomStep);
-            }
-            
-            function zoomOut() {
-                zoomAtPoint(window.innerWidth / 2, window.innerHeight / 2, -zoomStep);
-            }
-            
-            function resetZoom() {
-                zoomLevel = 0.05; // Reset to default zoom (0.05x to see the full 20x canvas)
-                const containerWidth = canvasContainer.clientWidth;
-                const containerHeight = canvasContainer.clientHeight;
-                currentX = (containerWidth - canvasWidth * zoomLevel) / 2;
-                currentY = (containerHeight - canvasHeight * zoomLevel) / 2;
-                updateCanvasTransform();
-            }
-            
-            // Initialize immediately (DOM is ready)
-            initializeCanvas();
-            
-            // Prevent context menu on right-click
-            canvasContainer.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
+        const IMAGE_URLS = {
+            'binary-star-system': "{{ static_file('images/binary_star_system.jpg') }}",
+            'fulatun': "{{ static_file('images/fulatun.jpg') }}",
+        };
+        // The map is the level background at its natural size; objects are placed on
+        // it by fractional position (node.x / node.y, 0 to 1), centered on the image.
+        const MAP_WIDTH = 2096;
+        const MAP_HEIGHT = 1184;
+        const DEFAULT_NODE_SIZE = 192;
+        const viewportEl = document.getElementById('viewport');
+        const mapEl = document.getElementById('map');
+        mapEl.style.width = MAP_WIDTH + 'px';
+        mapEl.style.height = MAP_HEIGHT + 'px';
+
+        const nodeEls = new Map();
+        TechTree.nodes.forEach(node => {
+            const el = document.createElement('div');
+            el.className = 'world-node';
+            const size = node.size || DEFAULT_NODE_SIZE;
+            el.style.setProperty('--node-size', size + 'px');
+            el.style.left = (node.x * MAP_WIDTH - size / 2) + 'px';
+            el.style.top = (node.y * MAP_HEIGHT - size / 2) + 'px';
+            el.innerHTML = '<img class="world-object" draggable="false"><div class="world-node-name"></div><div class="world-node-status"></div>';
+            const img = el.querySelector('img');
+            img.src = IMAGE_URLS[node.id];
+            img.alt = node.name;
+            el.querySelector('.world-node-name').textContent = node.name;
+            el.addEventListener('click', event => {
+                if (TechTree.isUnlocked(node.id)) return;
+                // Unlock attempts don't also collect star dust.
+                event.stopPropagation();
+                TechTree.unlock(node.id);
             });
-            
-            // Right mouse button down (button 2)
-            canvasContainer.addEventListener('mousedown', (e) => {
-                if (e.button === 2) { // Right mouse button
-                    isDragging = true;
-                    startX = e.clientX - currentX;
-                    startY = e.clientY - currentY;
-                    canvasContainer.style.cursor = 'grabbing';
-                    e.preventDefault();
+            mapEl.appendChild(el);
+            nodeEls.set(node.id, el);
+        });
+
+        // Plays the unlock celebration over a node: a flash, a ring and a burst of sparks.
+        const SPARK_COLORS = ['#ffd86b', '#ffffff', '#8fd3ff', '#ff9ad5'];
+        function celebrate(el, size) {
+            const img = el.querySelector('.world-object');
+            img.classList.remove('pop');
+            void img.offsetWidth; // restart the animation if it is still running
+            img.classList.add('pop');
+
+            const fx = document.createElement('div');
+            fx.className = 'celebration';
+            fx.innerHTML = '<div class="celebration-flash"></div><div class="celebration-ring"></div>';
+            const SPARKS = 18;
+            for (let i = 0; i < SPARKS; i++) {
+                const angle = (i / SPARKS) * 2 * Math.PI + Math.random() * 0.3;
+                const distance = (105 + Math.random() * 75) * size / DEFAULT_NODE_SIZE;
+                const spark = document.createElement('div');
+                spark.className = 'celebration-particle';
+                spark.style.color = SPARK_COLORS[i % SPARK_COLORS.length];
+                spark.style.setProperty('--dx', Math.cos(angle) * distance + 'px');
+                spark.style.setProperty('--dy', Math.sin(angle) * distance + 'px');
+                spark.style.animationDelay = Math.random() * 80 + 'ms';
+                fx.appendChild(spark);
+            }
+            el.appendChild(fx);
+            setTimeout(() => fx.remove(), 1500);
+        }
+
+        // Syncs each node's locked/unlocked look and status line with the game state.
+        // Celebrates a node when it goes from locked to unlocked (not on page load).
+        const wasUnlocked = new Map();
+        let nodesInitialized = false;
+        function updateNodes() {
+            TechTree.nodes.forEach(node => {
+                const el = nodeEls.get(node.id);
+                const unlocked = TechTree.isUnlocked(node.id);
+                if (nodesInitialized && unlocked && !wasUnlocked.get(node.id)) celebrate(el, node.size || DEFAULT_NODE_SIZE);
+                wasUnlocked.set(node.id, unlocked);
+                el.classList.toggle('locked', !unlocked);
+                el.classList.toggle('affordable', TechTree.canUnlock(node.id));
+                // Locked nodes act as buttons so clicking them doesn't also collect star dust.
+                if (unlocked) {
+                    el.removeAttribute('role');
+                } else {
+                    el.setAttribute('role', 'button');
                 }
+                const bonuses = [];
+                if (node.perClick) bonuses.push('+' + StarDust.format(node.perClick) + '/click');
+                if (node.perSecond) bonuses.push('+' + StarDust.format(node.perSecond) + '/sec');
+                el.querySelector('.world-node-status').textContent = unlocked
+                    ? bonuses.join(' ')
+                    : 'Locked - ' + StarDust.format(node.unlockCost) + ' Star Dust';
             });
-            
-            // Mouse move
-            document.addEventListener('mousemove', (e) => {
-                if (isDragging) {
-                    currentX = e.clientX - startX;
-                    currentY = e.clientY - startY;
-                    updateCanvasTransform();
-                }
-            });
-            
-            // Mouse up
-            document.addEventListener('mouseup', (e) => {
-                if (e.button === 2) {
-                    isDragging = false;
-                    canvasContainer.style.cursor = 'grab';
-                }
-            });
-            
-            // Mouse wheel zoom (with Ctrl key or Cmd key on Mac)
-            canvasContainer.addEventListener('wheel', (e) => {
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    const zoomDelta = e.deltaY > 0 ? -zoomStep : zoomStep;
-                    zoomAtPoint(e.clientX, e.clientY, zoomDelta);
-                }
-            }, { passive: false });
-            
-            // Keyboard zoom controls
-            document.addEventListener('keydown', (e) => {
-                // Zoom in with + or =
-                if ((e.key === '+' || e.key === '=') && !e.shiftKey) {
-                    e.preventDefault();
-                    zoomIn();
-                }
-                // Zoom out with - or _
-                else if (e.key === '-' || e.key === '_') {
-                    e.preventDefault();
-                    zoomOut();
-                }
-                // Reset zoom with 0
-                else if (e.key === '0' && !e.shiftKey) {
-                    e.preventDefault();
-                    resetZoom();
-                }
-            });
-            
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                initializeCanvas();
-            });
+            nodesInitialized = true;
+        }
+
+        const BASE_PER_CLICK = 1;
+        const perClick = () => BASE_PER_CLICK + TechTree.perClick();
+        const amountEl = document.getElementById('star-dust-amount');
+        const lifetimeEl = document.getElementById('star-dust-lifetime');
+        const perClickEl = document.getElementById('star-dust-per-click');
+        const perSecEl = document.getElementById('star-dust-per-sec');
+        function updateRates() {
+            perClickEl.textContent = '+' + StarDust.format(perClick());
+            perSecEl.textContent = StarDust.format(TechTree.perSecond());
+        }
+        StarDust.onChange(() => {
+            amountEl.textContent = StarDust.format(StarDust.balance);
+            lifetimeEl.textContent = StarDust.format(StarDust.lifetime);
+            updateNodes();
+        });
+        TechTree.onChange(() => {
+            updateRates();
+            updateNodes();
+        });
+        updateRates();
+
+        // Unlocked objects auto-generate star dust.
+        const TICK_MS = 200;
+        setInterval(() => TechTree.tick(TICK_MS / 1000), TICK_MS);
+        // TEMPORARY: reset button with a confirm modal, for testing only.
+        const resetModal = document.getElementById('reset-modal');
+        const closeResetModal = () => { resetModal.hidden = true; };
+        document.getElementById('reset-button').addEventListener('click', () => { resetModal.hidden = false; });
+        document.getElementById('reset-cancel').addEventListener('click', closeResetModal);
+        document.getElementById('reset-confirm').addEventListener('click', () => {
+            TechTree.reset();
+            StarDust.reset();
+            closeResetModal();
+        });
+        // Clicking the backdrop cancels; clicks in the modal never collect star dust.
+        resetModal.addEventListener('click', event => {
+            event.stopPropagation();
+            if (event.target === resetModal) closeResetModal();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeResetModal();
+        });
+
+        // Camera: drag to pan, mouse wheel to zoom. The map always covers the whole
+        // viewport, so the camera can never show anything outside the background image.
+        let camScale = 1;
+        let camX = 0;
+        let camY = 0;
+
+        const minScale = () => Math.max(innerWidth / MAP_WIDTH, innerHeight / MAP_HEIGHT);
+        const maxScale = () => Math.max(3, minScale() * 3);
+
+        function applyCamera() {
+            camScale = Math.min(maxScale(), Math.max(minScale(), camScale));
+            camX = Math.min(0, Math.max(innerWidth - MAP_WIDTH * camScale, camX));
+            camY = Math.min(0, Math.max(innerHeight - MAP_HEIGHT * camScale, camY));
+            mapEl.style.transform = 'translate(' + camX + 'px, ' + camY + 'px) scale(' + camScale + ')';
+        }
+
+        // Start centered on the map.
+        camScale = 1;
+        camX = (innerWidth - MAP_WIDTH * camScale) / 2;
+        camY = (innerHeight - MAP_HEIGHT * camScale) / 2;
+        applyCamera();
+        addEventListener('resize', applyCamera);
+
+        // Zoom keeps the point under the cursor fixed.
+        viewportEl.addEventListener('wheel', event => {
+            event.preventDefault();
+            const lines = event.deltaMode === 1 ? 16 : 1;
+            const oldScale = camScale;
+            camScale = oldScale * Math.exp(-event.deltaY * lines * 0.0015);
+            camScale = Math.min(maxScale(), Math.max(minScale(), camScale));
+            const ratio = camScale / oldScale;
+            camX = event.clientX - (event.clientX - camX) * ratio;
+            camY = event.clientY - (event.clientY - camY) * ratio;
+            applyCamera();
+        }, { passive: false });
+
+        const DRAG_THRESHOLD = 5;
+        let drag = null;
+        let justDragged = false;
+        viewportEl.addEventListener('pointerdown', event => {
+            if (event.button !== 0) return;
+            drag = { id: event.pointerId, startX: event.clientX, startY: event.clientY, lastX: event.clientX, lastY: event.clientY, moved: false };
+        });
+        addEventListener('pointermove', event => {
+            if (!drag || event.pointerId !== drag.id) return;
+            if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < DRAG_THRESHOLD) return;
+            drag.moved = true;
+            viewportEl.classList.add('dragging');
+            camX += event.clientX - drag.lastX;
+            camY += event.clientY - drag.lastY;
+            drag.lastX = event.clientX;
+            drag.lastY = event.clientY;
+            applyCamera();
+        });
+        function endDrag(event) {
+            if (!drag || event.pointerId !== drag.id) return;
+            // A drag is not a click: swallow the click that follows the release.
+            if (drag.moved) {
+                justDragged = true;
+                setTimeout(() => { justDragged = false; }, 0);
+            }
+            drag = null;
+            viewportEl.classList.remove('dragging');
+        }
+        addEventListener('pointerup', endDrag);
+        addEventListener('pointercancel', endDrag);
+        addEventListener('click', event => {
+            if (!justDragged) return;
+            event.stopPropagation();
+            justDragged = false;
+        }, true);
+
+        // Shows the amount earned, floating up from where the click happened.
+        function showClickPopup(x, y, amount) {
+            const popup = document.createElement('div');
+            popup.className = 'click-popup';
+            popup.textContent = '+' + StarDust.format(amount);
+            popup.style.left = x + (Math.random() * 24 - 12) + 'px';
+            popup.style.top = y + 'px';
+            popup.addEventListener('animationend', () => popup.remove());
+            document.body.appendChild(popup);
+        }
+
+        // Clicking anywhere that isn't an interactive element also collects star dust.
+        document.addEventListener('click', event => {
+            if (event.target.closest('button, a, input, select, textarea, label, [role="button"]')) return;
+            const amount = perClick();
+            StarDust.add(amount);
+            showClickPopup(event.clientX, event.clientY, amount);
         });
     </script>
 </body>

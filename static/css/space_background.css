@@ -1,0 +1,63 @@
+/*
+ * Kids at Home - Space Background
+ *
+ * A fixed, full-viewport starfield behind the page content. Stars are drawn
+ * with layered radial gradients, so no extra markup or images are needed.
+ */
+
+.space-background {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 20% 30%, rgba(124, 58, 237, 0.22), transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(37, 99, 235, 0.18), transparent 55%),
+        linear-gradient(to bottom, #05030f, #0b0a1f 60%, #000000);
+}
+
+.space-background::before,
+.space-background::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+}
+
+/* Small, dense stars */
+.space-background::before {
+    background-image:
+        radial-gradient(1px 1px at 37px 52px, #ffffff, transparent),
+        radial-gradient(1px 1px at 183px 141px, #dddddd, transparent),
+        radial-gradient(1px 1px at 291px 27px, #ffffff, transparent),
+        radial-gradient(1px 1px at 124px 218px, #bfdbfe, transparent),
+        radial-gradient(1px 1px at 252px 186px, #ffffff, transparent),
+        radial-gradient(1px 1px at 78px 287px, #e9d5ff, transparent),
+        radial-gradient(1px 1px at 310px 300px, #ffffff, transparent),
+        radial-gradient(1px 1px at 16px 110px, #a5f3fc, transparent);
+    background-size: 320px 320px;
+    animation: space-twinkle 5s ease-in-out infinite;
+}
+
+/* Larger, brighter stars */
+.space-background::after {
+    background-image:
+        radial-gradient(2px 2px at 140px 90px, #ffffff, transparent),
+        radial-gradient(2px 2px at 310px 260px, #a5f3fc, transparent),
+        radial-gradient(2px 2px at 20px 200px, #fde68a, transparent),
+        radial-gradient(2px 2px at 400px 40px, #f0abfc, transparent);
+    background-size: 480px 480px;
+    animation: space-twinkle 7s ease-in-out infinite reverse;
+}
+
+@keyframes space-twinkle {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .space-background::before,
+    .space-background::after {
+        animation: none;
+    }
+}

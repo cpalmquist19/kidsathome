@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ static_file('css/main.css') }}">
+    <link rel="stylesheet" href="{{ static_file('css/space_background.css') }}">
     <!-- Custom Tailwind Config -->
     <script>
         tailwind.config = {
@@ -33,6 +34,9 @@
     </script>
 </head>
 <body>
+    <!-- Space background -->
+    <div class="space-background" aria-hidden="true"></div>
+
     <!-- Navigation -->
     <nav class="relative bg-gradient-to-b from-blue-900/95 to-blue-800/95 backdrop-blur-sm sticky top-0 z-50">
         <!-- Enhanced starfield background -->
@@ -125,7 +129,7 @@
     </nav>
 
     <!-- Hero Section -->
-    <div class="relative bg-gradient-to-b from-gray-900 to-black min-h-screen flex items-center justify-center overflow-hidden">
+    <div class="relative min-h-screen flex items-center justify-center overflow-hidden">
         <!-- Background Stars -->
         <div class="absolute inset-0 opacity-60">
             <div class="absolute top-1/5 left-1/5 w-1 h-1 bg-white rounded-full"></div>
@@ -185,7 +189,7 @@
     </div>
 
     <!-- Games Section -->
-    <section id="games" class="py-20 bg-gradient-to-b from-gray-900 to-black">
+    <section id="games" class="py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <h2 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-4">
@@ -480,7 +484,7 @@
                         </div>
                     </div>
                 </a>
-                
+
                 <!-- Star Map Card -->
                 <a href="/star_map" class="group relative block">
                     <div class="absolute -inset-1 bg-gradient-to-r from-violet-600 via-purple-600 to-blue-600 rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
@@ -638,7 +642,7 @@
     </section>
 
     <!-- Footer -->
-    <footer class="bg-gradient-to-b from-gray-900 to-black border-t border-gray-800">
+    <footer class="border-t border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div class="text-center">
                 <!-- Footer Card with Glow Effect -->

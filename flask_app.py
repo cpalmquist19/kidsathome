@@ -567,6 +567,10 @@ def boss_creator():
 def life_on_exoplanet_clicker():
     return render_template('life_on_exoplanet_clicker.html', current_user=current_user)
 
+@app.route('/stardust_to_planet')
+def stardust_to_planet():
+    return render_template('stardust_to_planet.html', current_user=current_user)
+
 @app.route('/star_map')
 def star_map():
     return render_template('star_map.html', current_user=current_user)
