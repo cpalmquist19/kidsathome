@@ -92,6 +92,31 @@
             will-change: transform;
             background: url("{{ static_file('images/life_on_exoplanet_level_1_background.jpg') }}") 0 0 / 100% 100% no-repeat;
         }
+        /* Lines between an object and what it depends on, drawn under the objects. */
+        #links {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: visible;
+        }
+        .link {
+            stroke: rgba(255, 255, 255, 0.25);
+            stroke-width: 3;
+            stroke-dasharray: 8 8;
+            stroke-linecap: round;
+            transition: stroke 0.6s;
+        }
+        .link.ready {
+            stroke: rgba(255, 216, 107, 0.6);
+        }
+        .link.active {
+            stroke: #ffd86b;
+            stroke-dasharray: none;
+            filter: drop-shadow(0 0 4px #ffd86b);
+        }
         .world-node {
             position: absolute;
             display: flex;
@@ -234,10 +259,135 @@
             to { opacity: 0; margin-top: -60px; }
         }
 
+        /* Info box for the object that was last clicked. */
+        .world-node.selected .world-object {
+            border-color: #ffd86b;
+        }
+        #info-box {
+            position: fixed;
+            left: 50%;
+            bottom: 16px;
+            transform: translateX(-50%);
+            z-index: 20;
+            box-sizing: border-box;
+            width: min(420px, calc(100vw - 32px));
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            background: linear-gradient(rgba(40, 42, 56, 0.95), rgba(16, 17, 24, 0.95));
+            cursor: pointer;
+        }
+        #info-box[hidden] {
+            display: none;
+        }
+        .info-close {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            padding: 2px 8px;
+            border: 0;
+            background: none;
+            color: #bbb;
+            font-size: 1.3rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .info-close:hover {
+            color: #fff;
+        }
+        .info-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding-right: 24px;
+        }
+        #info-image {
+            width: 56px;
+            height: 56px;
+            flex: none;
+            object-fit: cover;
+            border: 2px solid gray;
+        }
+        #info-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .info-type {
+            display: inline-block;
+            margin-top: 2px;
+            padding: 1px 8px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.12);
+            font-size: 0.7rem;
+            font-weight: bold;
+            letter-spacing: 0.08em;
+        }
+        .info-type.BASE { color: #8fd3ff; }
+        .info-type.GENERATOR { color: #ffd86b; }
+        .info-type.EVOLUTION { color: #ff9ad5; }
+        #info-description-toggle {
+            margin-bottom: 8px;
+            color: #8fd3ff;
+            font-size: 0.8rem;
+        }
+        #info-description-toggle[hidden],
+        #info-description[hidden] {
+            display: none;
+        }
+        #info-description {
+            margin: 0 0 10px;
+            color: #bbb;
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+        #info-lines {
+            font-size: 0.9rem;
+            color: #ddd;
+        }
+        #info-lines p {
+            margin: 0 0 6px;
+        }
+        #info-lines .info-sub {
+            color: #888;
+            font-size: 0.8rem;
+        }
+        #info-lines ul {
+            margin: 0 0 6px;
+            padding-left: 18px;
+            font-size: 0.85rem;
+        }
+        #info-lines li.done {
+            color: #ffd86b;
+        }
+        #info-lines li.locked {
+            color: #888;
+        }
+        #info-unlock {
+            width: 100%;
+            margin-top: 8px;
+            padding: 8px 14px;
+            border: 1px solid #ffd86b;
+            border-radius: 6px;
+            background: rgba(255, 216, 107, 0.15);
+            color: #ffd86b;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #info-unlock:disabled {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+            cursor: not-allowed;
+        }
+        #info-unlock[hidden] {
+            display: none;
+        }
+
         /* TEMPORARY: reset button and confirm modal, for testing only. */
         #reset-button {
             position: fixed;
-            right: 16px;
+            left: 16px;
             bottom: 16px;
             z-index: 100;
             padding: 8px 16px;
@@ -307,6 +457,10 @@
             .hud-large {
                 min-width: 0;
             }
+            /* Clear of the reset button in the bottom-left corner. */
+            #info-box {
+                bottom: 64px;
+            }
         }
     </style>
 </head>
@@ -331,6 +485,21 @@
         <div id="map"></div>
     </div>
 
+    <div id="info-box" role="dialog" aria-labelledby="info-name" hidden>
+        <button id="info-close" class="info-close" type="button" aria-label="Close">&times;</button>
+        <div class="info-header">
+            <img id="info-image" alt="" draggable="false">
+            <div>
+                <div id="info-name"></div>
+                <span id="info-type" class="info-type"></span>
+            </div>
+        </div>
+        <div id="info-description-toggle"></div>
+        <p id="info-description" hidden></p>
+        <div id="info-lines"></div>
+        <button id="info-unlock" type="button"></button>
+    </div>
+
     <!-- TEMPORARY: reset button and confirm modal, for testing only. -->
     <button id="reset-button" type="button">RESET</button>
     <div id="reset-modal" class="modal-backdrop" hidden>
@@ -350,6 +519,8 @@
         const IMAGE_URLS = {
             'binary-star-system': "{{ static_file('images/binary_star_system.jpg') }}",
             'fulatun': "{{ static_file('images/fulatun.jpg') }}",
+            'lyrath': "{{ static_file('images/lyrath.jpg') }}",
+            'entas': "{{ static_file('images/entas.jpg') }}",
         };
         // The map is the level background at its natural size; objects are placed on
         // it by fractional position (node.x / node.y, 0 to 1), centered on the image.
@@ -360,6 +531,29 @@
         const mapEl = document.getElementById('map');
         mapEl.style.width = MAP_WIDTH + 'px';
         mapEl.style.height = MAP_HEIGHT + 'px';
+
+        // One line per dependency, from the node to what it depends on. They are built
+        // from TechTree.dependencies, so new objects get their lines automatically.
+        // The lines run center to center; the objects are drawn on top of them.
+        const SVG_NS = 'http://www.w3.org/2000/svg';
+        const linksEl = document.createElementNS(SVG_NS, 'svg');
+        linksEl.id = 'links';
+        linksEl.setAttribute('viewBox', '0 0 ' + MAP_WIDTH + ' ' + MAP_HEIGHT);
+        mapEl.appendChild(linksEl);
+        const linkEls = [];
+        TechTree.nodes.forEach(node => {
+            TechTree.dependencies(node.id).forEach(depId => {
+                const dep = TechTree.get(depId);
+                const line = document.createElementNS(SVG_NS, 'line');
+                line.setAttribute('class', 'link');
+                line.setAttribute('x1', dep.x * MAP_WIDTH);
+                line.setAttribute('y1', dep.y * MAP_HEIGHT);
+                line.setAttribute('x2', node.x * MAP_WIDTH);
+                line.setAttribute('y2', node.y * MAP_HEIGHT);
+                linksEl.appendChild(line);
+                linkEls.push({ line, nodeId: node.id, depId });
+            });
+        });
 
         const nodeEls = new Map();
         TechTree.nodes.forEach(node => {
@@ -375,8 +569,10 @@
             img.alt = node.name;
             el.querySelector('.world-node-name').textContent = node.name;
             el.addEventListener('click', event => {
-                if (TechTree.isUnlocked(node.id)) return;
-                // Unlock attempts don't also collect star dust.
+                selectNode(node.id);
+                if (TechTree.isUnlocked(node.id)) return; // unlocked objects still collect star dust
+                // Clicking a locked object shows its info and unlocks it if it can be
+                // (same as the info box button); it never also collects star dust.
                 event.stopPropagation();
                 TechTree.unlock(node.id);
             });
@@ -429,18 +625,138 @@
                 } else {
                     el.setAttribute('role', 'button');
                 }
-                const bonuses = [];
-                if (node.perClick) bonuses.push('+' + StarDust.format(node.perClick) + '/click');
-                if (node.perSecond) bonuses.push('+' + StarDust.format(node.perSecond) + '/sec');
                 el.querySelector('.world-node-status').textContent = unlocked
-                    ? bonuses.join(' ')
+                    ? benefitText(node)
                     : 'Locked - ' + StarDust.format(node.unlockCost) + ' Star Dust';
             });
+            // A line glows once both ends are unlocked. It turns gold but stays dashed
+            // ("ready") when the dependency is unlocked and the node is next in line.
+            linkEls.forEach(({ line, nodeId, depId }) => {
+                const depUnlocked = TechTree.isUnlocked(depId);
+                line.classList.toggle('active', depUnlocked && TechTree.isUnlocked(nodeId));
+                line.classList.toggle('ready', depUnlocked && !TechTree.isUnlocked(nodeId));
+            });
             nodesInitialized = true;
+            renderInfo();
         }
 
+        // Short benefit summary for an object, by type.
+        const fmt = StarDust.format;
+        function benefitText(node) {
+            switch (node.type) {
+                case TechTree.TYPES.BASE:
+                    return '+' + fmt(node.perClick) + '/click';
+                case TechTree.TYPES.GENERATOR:
+                    return '+' + fmt(node.perSecond * TechTree.efficiency(node.id)) + '/sec';
+                case TechTree.TYPES.EVOLUTION:
+                    return '×' + fmt(node.efficiency) + ' efficiency';
+                default:
+                    return '';
+            }
+        }
+
+        // Info box: details for the object that was last clicked. Its structure is
+        // built once per selection and only text is refreshed afterwards, so the
+        // Unlock button isn't replaced under the player's finger while star dust ticks.
+        const infoBoxEl = document.getElementById('info-box');
+        const infoImageEl = document.getElementById('info-image');
+        const infoNameEl = document.getElementById('info-name');
+        const infoTypeEl = document.getElementById('info-type');
+        const infoDescriptionEl = document.getElementById('info-description');
+        const infoDescriptionToggleEl = document.getElementById('info-description-toggle');
+        const infoLinesEl = document.getElementById('info-lines');
+        const infoUnlockEl = document.getElementById('info-unlock');
+        let selectedId = null;
+        let shownInfoHtml = null;
+        let descriptionOpen = false;
+
+        const escapeHtml = text => text.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+        const percent = fraction => parseFloat((fraction * 100).toFixed(1)) + '%';
+
+        function infoLinesHtml(node) {
+            const types = TechTree.TYPES;
+            const lines = [];
+            if (node.type === types.BASE) {
+                lines.push('<p>Benefit: +' + fmt(node.perClick) + ' per click/tap</p>');
+            } else if (node.type === types.GENERATOR) {
+                const efficiency = TechTree.efficiency(node.id);
+                lines.push('<p>Benefit: +' + fmt(node.perSecond * efficiency) + ' per second</p>');
+                lines.push('<p class="info-sub">Base rate ' + fmt(node.perSecond) + '/sec × ' + fmt(efficiency) + ' efficiency</p>');
+                const evolutions = TechTree.evolutionsOf(node.id);
+                if (evolutions.length) {
+                    lines.push('<p>Evolutions</p><ul>' + evolutions.map(evo => {
+                        const done = TechTree.isUnlocked(evo.id);
+                        return '<li class="' + (done ? 'done' : 'locked') + '">' + (done ? '✓ ' : '') +
+                            escapeHtml(evo.name) + ' – ×' + fmt(evo.efficiency) + ' efficiency</li>';
+                    }).join('') + '</ul>');
+                }
+            } else if (node.type === types.EVOLUTION) {
+                const generator = TechTree.get(node.generator);
+                lines.push('<p>Benefit 1: ×' + fmt(node.efficiency) + ' efficiency for ' + escapeHtml(generator.name) + '</p>');
+                lines.push('<p>Benefit 2: upgrades your tap by ' + percent(TechTree.generatorShare(node.generator)) +
+                    ', the share of all generator production that ' + escapeHtml(generator.name) + ' makes</p>');
+            }
+            return lines.join('');
+        }
+
+        function renderInfo() {
+            const node = selectedId && TechTree.get(selectedId);
+            infoBoxEl.hidden = !node;
+            if (!node) return;
+            const hasDescription = !!node.description;
+            infoDescriptionToggleEl.hidden = !hasDescription;
+            infoDescriptionToggleEl.textContent = (descriptionOpen ? '▾' : '▸') + ' Description (click to ' + (descriptionOpen ? 'hide' : 'show') + ')';
+            infoDescriptionEl.hidden = !(hasDescription && descriptionOpen);
+            const html = infoLinesHtml(node);
+            if (html !== shownInfoHtml) {
+                infoLinesEl.innerHTML = html;
+                shownInfoHtml = html;
+            }
+            const unlocked = TechTree.isUnlocked(node.id);
+            infoUnlockEl.hidden = unlocked;
+            if (unlocked) return;
+            const missing = TechTree.missingRequirements(node.id);
+            infoUnlockEl.textContent = missing.length
+                ? 'Requires ' + missing.map(req => req.name).join(', ')
+                : 'Unlock – ' + fmt(node.unlockCost) + ' Star Dust';
+            infoUnlockEl.disabled = !TechTree.canUnlock(node.id);
+        }
+
+        function selectNode(id) {
+            const node = TechTree.get(id);
+            // Each newly selected object starts with its description closed; clicking the
+            // same unlocked object again (to collect star dust) leaves it as it is.
+            if (id !== selectedId) descriptionOpen = false;
+            selectedId = id;
+            shownInfoHtml = null;
+            nodeEls.forEach((el, nodeId) => el.classList.toggle('selected', nodeId === id));
+            infoImageEl.src = IMAGE_URLS[id];
+            infoNameEl.textContent = node.name;
+            infoTypeEl.textContent = node.type;
+            infoDescriptionEl.textContent = node.description || '';
+            infoTypeEl.className = 'info-type ' + node.type;
+            renderInfo();
+        }
+
+        function closeInfo() {
+            selectedId = null;
+            nodeEls.forEach(el => el.classList.remove('selected'));
+            renderInfo();
+        }
+
+        document.getElementById('info-close').addEventListener('click', closeInfo);
+        infoUnlockEl.addEventListener('click', () => { if (selectedId) TechTree.unlock(selectedId); });
+        // Clicks in the info box never collect star dust. Clicking the box itself (but
+        // not its buttons) opens or closes the description.
+        infoBoxEl.addEventListener('click', event => {
+            event.stopPropagation();
+            if (event.target.closest('button')) return;
+            descriptionOpen = !descriptionOpen;
+            renderInfo();
+        });
+
         const BASE_PER_CLICK = 1;
-        const perClick = () => BASE_PER_CLICK + TechTree.perClick();
+        const perClick = () => (BASE_PER_CLICK + TechTree.perClick()) * TechTree.tapMultiplier();
         const amountEl = document.getElementById('star-dust-amount');
         const lifetimeEl = document.getElementById('star-dust-lifetime');
         const perClickEl = document.getElementById('star-dust-per-click');
@@ -479,7 +795,10 @@
             if (event.target === resetModal) closeResetModal();
         });
         document.addEventListener('keydown', event => {
-            if (event.key === 'Escape') closeResetModal();
+            if (event.key === 'Escape') {
+                closeResetModal();
+                closeInfo();
+            }
         });
 
         // Camera: drag to pan, mouse wheel to zoom. The map always covers the whole

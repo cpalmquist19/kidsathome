@@ -1,7 +1,15 @@
 // Tech tree for Life on an Exoplanet Clicker, level one.
-// Each node is an object that appears on the world screen:
-//   perClick     - Star Dust added to every click once unlocked
-//   perSecond    - Star Dust it generates each second once unlocked
+// Each node is an object that appears on the world screen. Every node has a type:
+//   BASE      - perClick: Star Dust added to every click/tap once unlocked
+//   GENERATOR - perSecond: Star Dust it makes each second once unlocked. Its
+//               rate is multiplied by the efficiency of every unlocked EVOLUTION
+//               attached to it.
+//   EVOLUTION - generator: id of the GENERATOR it is attached to
+//               efficiency: multiplier applied to that generator's rate (they stack)
+//               It also upgrades the tap by the generator's share of all generator
+//               production (see tapMultiplier). Needs its generator unlocked first.
+// Fields shared by every node:
+//   description  - flavor text shown in the info box
 //   unlockCost   - Star Dust spent to unlock it
 //   startsUnlocked - unlocked from the beginning (the root of the tree)
 //   x, y         - position on the map as a fraction of its width/height (0 to 1)
@@ -10,13 +18,15 @@
 // Unlocked state has its own storage key, like StarDust.
 const TechTree = (() => {
     const STORAGE_KEY = 'lifeOnExoplanet.techTree';
+    const TYPES = { BASE: 'BASE', GENERATOR: 'GENERATOR', EVOLUTION: 'EVOLUTION' };
 
     const nodes = [
         {
             id: 'binary-star-system',
             name: 'Binary Star System',
+            type: TYPES.BASE,
+            description: 'Two suns, one blazing white and one cooler cyan, circle each other and light the whole system. Everything here begins with their glow.',
             perClick: 1,
-            perSecond: 0,
             unlockCost: 10,
             startsUnlocked: false,
             x: 0.5,
@@ -26,12 +36,40 @@ const TechTree = (() => {
         {
             id: 'fulatun',
             name: 'Fulatun',
+            type: TYPES.BASE,
+            description: 'A banded world wrapped in bright stripes of cloud, swept by storms that churn in every color the twin suns can paint.',
             perClick: 4,
-            perSecond: 0,
             unlockCost: 100,
             startsUnlocked: false,
             x: 0.65,
             y: 0.38,
+            size: 96,
+            requires: ['binary-star-system'],
+        },
+        {
+            id: 'lyrath',
+            name: 'Lyrath',
+            type: TYPES.BASE,
+            description: 'A world of glowing electric-blue rock veined with golden-green deposits, wrapped in a faint luminous haze.',
+            perClick: 10,
+            unlockCost: 500,
+            startsUnlocked: false,
+            x: 0.647,
+            y: 0.683,
+            size: 96,
+            requires: ['binary-star-system'],
+        },
+        {
+            // Up and to the left of the binary star system.
+            id: 'entas',
+            name: 'Entas',
+            type: TYPES.BASE,
+            description: 'A gas giant of swirling rainbow bands, its cloud tops glowing neon green, pink and gold as great storms roll around the planet.',
+            perClick: 25,
+            unlockCost: 1000,
+            startsUnlocked: false,
+            x: 0.3675,
+            y: 0.365,
             size: 96,
             requires: ['binary-star-system'],
         },
@@ -71,8 +109,21 @@ const TechTree = (() => {
         return unlocked.has(id);
     }
 
+    // Ids of the nodes this one depends on (an EVOLUTION also depends on its generator).
+    function dependencies(id) {
+        const node = get(id);
+        if (!node) return [];
+        const ids = node.type === TYPES.EVOLUTION ? [node.generator, ...node.requires] : node.requires;
+        return [...new Set(ids)].filter(get);
+    }
+
+    // Nodes that must be unlocked before this one.
+    function missingRequirements(id) {
+        return dependencies(id).filter(reqId => !isUnlocked(reqId)).map(get);
+    }
+
     function requirementsMet(node) {
-        return node.requires.every(isUnlocked);
+        return missingRequirements(node.id).length === 0;
     }
 
     function canUnlock(id) {
@@ -98,14 +149,47 @@ const TechTree = (() => {
         notify();
     }
 
-    // Total Star Dust added to each click by every unlocked node.
+    // Total Star Dust added to each click by every unlocked BASE node.
     function perClick() {
-        return nodes.reduce((sum, node) => sum + (isUnlocked(node.id) ? node.perClick || 0 : 0), 0);
+        return nodes.reduce((sum, node) => sum + (node.type === TYPES.BASE && isUnlocked(node.id) ? node.perClick || 0 : 0), 0);
     }
 
-    // Total Star Dust per second from every unlocked node.
+    // The EVOLUTION nodes attached to a generator, unlocked or not.
+    function evolutionsOf(generatorId) {
+        return nodes.filter(node => node.type === TYPES.EVOLUTION && node.generator === generatorId);
+    }
+
+    // Combined multiplier from the unlocked evolutions attached to a generator.
+    function efficiency(generatorId) {
+        return evolutionsOf(generatorId)
+            .reduce((mult, node) => mult * (isUnlocked(node.id) ? node.efficiency || 1 : 1), 1);
+    }
+
+    // Star Dust per second from one generator (0 until it is unlocked).
+    function production(id) {
+        const node = get(id);
+        if (!node || node.type !== TYPES.GENERATOR || !isUnlocked(id)) return 0;
+        return (node.perSecond || 0) * efficiency(id);
+    }
+
+    // Total Star Dust per second from every unlocked GENERATOR.
     function perSecond() {
-        return nodes.reduce((sum, node) => sum + (isUnlocked(node.id) ? node.perSecond || 0 : 0), 0);
+        return nodes.reduce((sum, node) => sum + production(node.id), 0);
+    }
+
+    // The fraction (0 to 1) of all generator production that one generator makes.
+    function generatorShare(id) {
+        const total = perSecond();
+        return total > 0 ? production(id) / total : 0;
+    }
+
+    // Each unlocked EVOLUTION upgrades the tap by its generator's share of all
+    // generator production, so the tap is worth 1 + the sum of those shares.
+    function tapMultiplier() {
+        return nodes.reduce((mult, node) => {
+            if (node.type !== TYPES.EVOLUTION || !isUnlocked(node.id)) return mult;
+            return mult + generatorShare(node.generator);
+        }, 1);
     }
 
     // Adds the Star Dust generated over `seconds` of play time.
@@ -122,14 +206,22 @@ const TechTree = (() => {
     load();
 
     return {
+        TYPES,
         nodes,
         get,
         isUnlocked,
+        dependencies,
+        missingRequirements,
         canUnlock,
         unlock,
         reset,
         perClick,
         perSecond,
+        evolutionsOf,
+        efficiency,
+        production,
+        generatorShare,
+        tapMultiplier,
         tick,
         onChange,
     };
