@@ -611,6 +611,14 @@
                 left: IMAGE_LEFT + (IMAGE_WIDTH - 1920) / 2,
                 top: IMAGE_TOP + IMAGE_HEIGHT,
             },
+            {
+                // The reef area, directly to the left of the one-celled area.
+                image: "{{ static_file('images/life_on_exoplanet_area_3_background.jpg') }}",
+                width: 1920,
+                height: 1280,
+                left: IMAGE_LEFT + (IMAGE_WIDTH - 1920) / 2 - 1920,
+                top: IMAGE_TOP + IMAGE_HEIGHT,
+            },
         ];
         mapEl.style.backgroundImage = AREAS.map(area => 'url("' + area.image + '")').join(', ');
         mapEl.style.backgroundSize = AREAS.map(area => area.width + 'px ' + area.height + 'px').join(', ');
