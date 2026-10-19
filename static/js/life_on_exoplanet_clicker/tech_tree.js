@@ -47,6 +47,7 @@ const TechTree = (() => {
             x: 0.65,
             y: 0.38,
             requires: ['binary-star-system'],
+            scale: .5
         },
         {
             id: 'lyrath',
@@ -59,6 +60,7 @@ const TechTree = (() => {
             x: 0.647,
             y: 0.683,
             requires: ['binary-star-system'],
+            scale: .5
         },
         {
             // Up and to the left of the binary star system.
@@ -72,6 +74,7 @@ const TechTree = (() => {
             x: 0.3675,
             y: 0.365,
             requires: ['binary-star-system'],
+            scale: .5
         },
         {
             // Down and to the left of the binary star system, mirroring Lyrath.
@@ -86,6 +89,20 @@ const TechTree = (() => {
             y: 0.683,
             requires: ['binary-star-system'],
             scale: 1
+        },
+        {
+            // A moon of Rooth, down and to its left.
+            id: 'ubonae',
+            name: 'Ubonae',
+            type: TYPES.BASE,
+            description: 'A small moon of pale blue rock freckled with glowing yellow-green craters, circling Rooth in a halo of cold light.',
+            perClick: 100,
+            unlockCost: 5000,
+            startsUnlocked: false,
+            x: 0.27,
+            y: 0.8,
+            requires: ['rooth'],
+            scale: .5
         },
     ];
 

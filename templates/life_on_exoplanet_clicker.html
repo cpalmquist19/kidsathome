@@ -384,6 +384,28 @@
             display: none;
         }
 
+        /* TEMPORARY: test buttons that add Star Dust, above the reset button. */
+        #test-buttons {
+            position: fixed;
+            left: 16px;
+            bottom: 60px;
+            z-index: 100;
+            display: flex;
+            gap: 8px;
+        }
+        #test-buttons button {
+            padding: 8px 12px;
+            border: 1px solid #8ad0ff;
+            border-radius: 6px;
+            background: #1565c0;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #test-buttons button:hover {
+            background: #1e88e5;
+        }
+
         /* TEMPORARY: reset button and confirm modal, for testing only. */
         #reset-button {
             position: fixed;
@@ -457,9 +479,9 @@
             .hud-large {
                 min-width: 0;
             }
-            /* Clear of the reset button in the bottom-left corner. */
+            /* Clear of the test and reset buttons in the bottom-left corner. */
             #info-box {
-                bottom: 64px;
+                bottom: 108px;
             }
         }
     </style>
@@ -500,6 +522,13 @@
         <button id="info-unlock" type="button"></button>
     </div>
 
+    <!-- TEMPORARY: test buttons that add Star Dust, for testing only. -->
+    <div id="test-buttons">
+        <button type="button" data-amount="1000">+1K</button>
+        <button type="button" data-amount="100000">+100K</button>
+        <button type="button" data-amount="10000000">+10M</button>
+    </div>
+
     <!-- TEMPORARY: reset button and confirm modal, for testing only. -->
     <button id="reset-button" type="button">RESET</button>
     <div id="reset-modal" class="modal-backdrop" hidden>
@@ -522,6 +551,7 @@
             'lyrath': "{{ static_file('images/lyrath.jpg') }}",
             'entas': "{{ static_file('images/entas.jpg') }}",
             'rooth': "{{ static_file('images/rooth.jpg') }}",
+            'ubonae': "{{ static_file('images/ubonae.jpg') }}",
         };
         // The map is the level background at its natural size; objects are placed on
         // it by fractional position (node.x / node.y, 0 to 1), centered on the image.
@@ -781,6 +811,10 @@
         // Unlocked objects auto-generate star dust.
         const TICK_MS = 200;
         setInterval(() => TechTree.tick(TICK_MS / 1000), TICK_MS);
+        // TEMPORARY: test buttons that add Star Dust, for testing only.
+        document.querySelectorAll('#test-buttons button').forEach(button => {
+            button.addEventListener('click', () => StarDust.add(Number(button.dataset.amount)));
+        });
         // TEMPORARY: reset button with a confirm modal, for testing only.
         const resetModal = document.getElementById('reset-modal');
         const closeResetModal = () => { resetModal.hidden = true; };
