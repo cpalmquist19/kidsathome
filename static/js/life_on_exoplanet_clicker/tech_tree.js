@@ -8,6 +8,7 @@
 //               efficiency: multiplier applied to that generator's rate (they stack)
 //               It also upgrades the tap by the generator's share of all generator
 //               production (see tapMultiplier). Needs its generator unlocked first.
+// GENERATOR images are drawn as circles, and their scale is 1.
 // Fields shared by every node:
 //   description  - flavor text shown in the info box
 //   unlockCost   - Star Dust spent to unlock it
@@ -116,7 +117,35 @@ const TechTree = (() => {
             x: 0.353,
             y: 1.3,
             requires: ['rooth'],
-            scale: .5
+            scale: 1
+        },
+        {
+            // In the ocean area, in the bottom right corner of its image with room to spare.
+            id: 'bathyopolisk',
+            name: 'Bathyopolisk',
+            type: TYPES.BASE,
+            description: 'The first lifeform on the planet of Rooth. The lone cell settled on the seabed and became a towering sponge, its countless pores drinking in the sea. It has no eyes and no mind, but it is alive, and everything that follows will grow from it.',
+            perClick: 500,
+            unlockCost: 25000,
+            startsUnlocked: false,
+            x: -0.2443,
+            y: 4.8176,
+            requires: ['the-cells-arrival'],
+            scale: 1
+        },
+        {
+            // In the ocean area, up and to the left of Bathyopolisk.
+            id: 'small-ocean-life',
+            name: 'Small Ocean Life',
+            type: TYPES.GENERATOR,
+            description: 'Glimmerfrills, with violet bodies and plumes tipped in glowing gold and blue, crawl over the Bathyopolisk while pale Tidewisps drift through the dark water around them. They are tiny, and there are endless numbers of them. They graze, breed and die, and every one returns a little star dust to the sea.',
+            perSecond: 500,
+            unlockCost: 50000,
+            startsUnlocked: false,
+            x: -0.4829,
+            y: 4.522,
+            requires: ['bathyopolisk'],
+            scale: 1
         },
     ];
 
@@ -158,6 +187,13 @@ const TechTree = (() => {
 
     function isUnlocked(id) {
         return unlocked.has(id);
+    }
+
+    // The node unlocked most recently (the set keeps unlock order, and it is saved in
+    // that order), or null if nothing is unlocked.
+    function lastUnlocked() {
+        const ids = [...unlocked];
+        return ids.length ? get(ids[ids.length - 1]) : null;
     }
 
     // Ids of the nodes this one depends on (an EVOLUTION also depends on its generator).
@@ -262,6 +298,7 @@ const TechTree = (() => {
         get,
         scale,
         isUnlocked,
+        lastUnlocked,
         dependencies,
         missingRequirements,
         canUnlock,

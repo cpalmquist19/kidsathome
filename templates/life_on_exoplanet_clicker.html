@@ -135,6 +135,10 @@
             object-fit: cover;
             display: block;
         }
+        /* Generators are round. */
+        .world-node.type-generator .world-object {
+            border-radius: 50%;
+        }
         /* The labels sit on a dark backing with a text outline so they stay readable
            over any area background. */
         .world-node-name,
@@ -245,13 +249,51 @@
             from { opacity: 1; transform: translate(0, 0) scale(1); }
             to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.2); }
         }
+        /* Once a second each unlocked generator sends out a ring and a "+N" over itself
+           to show it is producing. */
+        .generator-pulse {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: var(--node-size);
+            height: var(--node-size);
+            box-sizing: border-box;
+            border: 3px solid #ffd86b;
+            border-radius: 50%;
+            box-shadow: 0 0 14px #ffd86b, inset 0 0 14px #ffd86b;
+            pointer-events: none;
+            animation: generator-pulse 1s ease-out forwards;
+        }
+        @keyframes generator-pulse {
+            from { opacity: 0.9; transform: scale(1); }
+            to { opacity: 0; transform: scale(1.35); }
+        }
+        .generator-popup {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            z-index: 5;
+            pointer-events: none;
+            font-weight: bold;
+            font-size: 1.6rem;
+            color: #ffd86b;
+            text-shadow: 0 0 6px #000, 0 1px 2px #000;
+            white-space: nowrap;
+            animation: generator-popup 1.4s ease-out forwards;
+        }
+        @keyframes generator-popup {
+            from { opacity: 1; transform: translate(-50%, 0); }
+            to { opacity: 0; transform: translate(-50%, -70px); }
+        }
         @media (prefers-reduced-motion: reduce) {
             .world-node.locked .world-object,
             .world-object.pop,
+            .generator-pulse,
             .celebration-ring,
             .celebration-particle {
                 animation: none;
             }
+            .generator-pulse,
             .celebration-ring,
             .celebration-particle {
                 display: none;
@@ -569,6 +611,8 @@
             'rooth': "{{ static_file('images/rooth.jpg') }}",
             'ubonae': "{{ static_file('images/ubonae.jpg') }}",
             'the-cells-arrival': "{{ static_file('images/the_cells_arrival.jpg') }}",
+            'bathyopolisk': "{{ static_file('images/bathyopolisk.webp') }}",
+            'small-ocean-life': "{{ static_file('images/small_ocean_life.webp') }}",
         };
         // The level background image keeps its natural size and sits in the center of
         // a world WORLD_SIZE times larger in each direction. Objects are placed by
@@ -612,11 +656,12 @@
                 top: IMAGE_TOP + IMAGE_HEIGHT,
             },
             {
-                // The reef area, directly to the left of the one-celled area.
+                // The ocean (reef) area, 4x its image size. It keeps its top and right edges
+                // against level one and the one-celled area, and grows left and down.
                 image: "{{ static_file('images/life_on_exoplanet_area_3_background.jpg') }}",
-                width: 1920,
-                height: 1280,
-                left: IMAGE_LEFT + (IMAGE_WIDTH - 1920) / 2 - 1920,
+                width: 1920 * 4,
+                height: 1280 * 4,
+                left: IMAGE_LEFT + (IMAGE_WIDTH - 1920) / 2 - 1920 * 4,
                 top: IMAGE_TOP + IMAGE_HEIGHT,
             },
         ];
@@ -650,7 +695,7 @@
         const nodeEls = new Map();
         TechTree.nodes.forEach(node => {
             const el = document.createElement('div');
-            el.className = 'world-node';
+            el.className = 'world-node type-' + node.type.toLowerCase();
             const size = TechTree.scale(node.id) * BASE_NODE_SIZE;
             el.style.setProperty('--node-size', size + 'px');
             el.style.left = (nodeX(node) - size / 2) + 'px';
@@ -767,7 +812,7 @@
 
         function infoLinesHtml(node) {
             const types = TechTree.TYPES;
-            const lines = [];
+            const lines = ['<p>Cost: ' + fmt(node.unlockCost) + ' Star Dust</p>'];
             if (node.type === types.BASE) {
                 lines.push('<p>Benefit: +' + fmt(node.perClick) + ' per click/tap</p>');
             } else if (node.type === types.GENERATOR) {
@@ -871,6 +916,23 @@
         // Unlocked objects auto-generate star dust.
         const TICK_MS = 200;
         setInterval(() => TechTree.tick(TICK_MS / 1000), TICK_MS);
+        // Once a second, each unlocked generator shows what it just made.
+        setInterval(() => {
+            TechTree.nodes.forEach(node => {
+                const amount = TechTree.production(node.id);
+                if (amount <= 0) return;
+                const el = nodeEls.get(node.id);
+                const pulse = document.createElement('div');
+                pulse.className = 'generator-pulse';
+                const popup = document.createElement('div');
+                popup.className = 'generator-popup';
+                popup.textContent = '+' + StarDust.format(amount);
+                el.appendChild(pulse);
+                el.appendChild(popup);
+                // Removed on a timer, not animationend, since reduced motion turns the ring's animation off.
+                setTimeout(() => { pulse.remove(); popup.remove(); }, 1500);
+            });
+        }, 1000);
         // TEMPORARY: test buttons that add Star Dust, for testing only.
         document.querySelectorAll('#test-buttons button').forEach(button => {
             button.addEventListener('click', () => StarDust.add(Number(button.dataset.amount)));
@@ -913,10 +975,13 @@
             mapEl.style.transform = 'translate(' + camX + 'px, ' + camY + 'px) scale(' + camScale + ')';
         }
 
-        // Start centered on the map.
+        // Start centered on the last unlocked object, or on the map if nothing is unlocked.
         camScale = 1;
-        camX = (innerWidth - MAP_WIDTH * camScale) / 2;
-        camY = (innerHeight - MAP_HEIGHT * camScale) / 2;
+        const focusNode = TechTree.lastUnlocked();
+        const focusX = focusNode ? nodeX(focusNode) : MAP_WIDTH / 2;
+        const focusY = focusNode ? nodeY(focusNode) : MAP_HEIGHT / 2;
+        camX = innerWidth / 2 - focusX * camScale;
+        camY = innerHeight / 2 - focusY * camScale;
         applyCamera();
         addEventListener('resize', applyCamera);
 
