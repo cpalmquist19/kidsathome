@@ -583,6 +583,8 @@
     <!-- TEMPORARY: test buttons that add Star Dust, for testing only. -->
     <div id="test-buttons">
         <button type="button" data-amount="1000">+1K</button>
+        <button type="button" data-amount="20000">+20K</button>
+        <button type="button" data-amount="50000">+50K</button>
         <button type="button" data-amount="100000">+100K</button>
         <button type="button" data-amount="10000000">+10M</button>
     </div>
@@ -613,6 +615,8 @@
             'the-cells-arrival': "{{ static_file('images/the_cells_arrival.jpg') }}",
             'bathyopolisk': "{{ static_file('images/bathyopolisk.webp') }}",
             'small-ocean-life': "{{ static_file('images/small_ocean_life.webp') }}",
+            'araragrathish': "{{ static_file('images/araragrathish.webp') }}",
+            'katarith-monzamene':"{{ static_file('images/katarith_monzamene.webp') }}",
         };
         // The level background image keeps its natural size and sits in the center of
         // a world WORLD_SIZE times larger in each direction. Objects are placed by
@@ -784,7 +788,7 @@
                 case TechTree.TYPES.BASE:
                     return '+' + fmt(node.perClick) + '/click';
                 case TechTree.TYPES.GENERATOR:
-                    return '+' + fmt(node.perSecond * TechTree.efficiency(node.id)) + '/sec';
+                    return '+' + fmt(TechTree.production(node.id)) + '/sec (×' + TechTree.count(node.id) + ')';
                 case TechTree.TYPES.EVOLUTION:
                     return '×' + fmt(node.efficiency) + ' efficiency';
                 default:
@@ -812,13 +816,16 @@
 
         function infoLinesHtml(node) {
             const types = TechTree.TYPES;
-            const lines = ['<p>Cost: ' + fmt(node.unlockCost) + ' Star Dust</p>'];
+            const owned = TechTree.count(node.id);
+            const cost = owned ? TechTree.nextCost(node.id) : node.unlockCost;
+            const lines = ['<p>' + (owned ? 'Next copy: ' : 'Cost: ') + fmt(cost) + ' Star Dust</p>'];
             if (node.type === types.BASE) {
                 lines.push('<p>Benefit: +' + fmt(node.perClick) + ' per click/tap</p>');
             } else if (node.type === types.GENERATOR) {
                 const efficiency = TechTree.efficiency(node.id);
-                lines.push('<p>Benefit: +' + fmt(node.perSecond * efficiency) + ' per second</p>');
-                lines.push('<p class="info-sub">Base rate ' + fmt(node.perSecond) + '/sec × ' + fmt(efficiency) + ' efficiency</p>');
+                if (owned) lines.push('<p>Owned: ' + owned + '</p>');
+                lines.push('<p>Benefit: +' + fmt(node.perSecond * Math.max(owned, 1) * efficiency) + ' per second</p>');
+                lines.push('<p class="info-sub">' + fmt(node.perSecond) + '/sec each × ' + Math.max(owned, 1) + ' owned × ' + fmt(efficiency) + ' efficiency</p>');
                 const evolutions = TechTree.evolutionsOf(node.id);
                 if (evolutions.length) {
                     lines.push('<p>Evolutions</p><ul>' + evolutions.map(evo => {
@@ -850,7 +857,14 @@
                 shownInfoHtml = html;
             }
             const unlocked = TechTree.isUnlocked(node.id);
-            infoUnlockEl.hidden = unlocked;
+            // An unlocked generator keeps its button, to buy more copies.
+            const repeatable = unlocked && node.type === TechTree.TYPES.GENERATOR;
+            infoUnlockEl.hidden = unlocked && !repeatable;
+            if (repeatable) {
+                infoUnlockEl.textContent = 'Buy another – ' + fmt(TechTree.nextCost(node.id)) + ' Star Dust';
+                infoUnlockEl.disabled = !TechTree.canBuyAnother(node.id);
+                return;
+            }
             if (unlocked) return;
             const missing = TechTree.missingRequirements(node.id);
             infoUnlockEl.textContent = missing.length
@@ -882,7 +896,11 @@
         }
 
         document.getElementById('info-close').addEventListener('click', closeInfo);
-        infoUnlockEl.addEventListener('click', () => { if (selectedId) TechTree.unlock(selectedId); });
+        infoUnlockEl.addEventListener('click', () => {
+            if (!selectedId) return;
+            if (TechTree.isUnlocked(selectedId)) TechTree.buyAnother(selectedId);
+            else TechTree.unlock(selectedId);
+        });
         // Clicks in the info box never collect star dust. Clicking the box itself (but
         // not its buttons) opens or closes the description.
         infoBoxEl.addEventListener('click', event => {

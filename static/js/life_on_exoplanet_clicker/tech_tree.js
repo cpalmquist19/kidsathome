@@ -1,9 +1,12 @@
 // Tech tree for Life on an Exoplanet Clicker, level one.
 // Each node is an object that appears on the world screen. Every node has a type:
 //   BASE      - perClick: Star Dust added to every click/tap once unlocked
-//   GENERATOR - perSecond: Star Dust it makes each second once unlocked. Its
-//               rate is multiplied by the efficiency of every unlocked EVOLUTION
+//   GENERATOR - perSecond: Star Dust each copy makes each second once unlocked. It can
+//               be bought again and again, and the copies add up (count × perSecond).
+//               The total is multiplied by the efficiency of every unlocked EVOLUTION
 //               attached to it.
+//               costGrowth: each copy bought makes the next cost this many times as
+//               much (unlockCost × costGrowth^copies owned). Defaults to 1 (flat cost).
 //   EVOLUTION - generator: id of the GENERATOR it is attached to
 //               efficiency: multiplier applied to that generator's rate (they stack)
 //               It also upgrades the tap by the generator's share of all generator
@@ -131,7 +134,7 @@ const TechTree = (() => {
             x: -0.2443,
             y: 4.8176,
             requires: ['the-cells-arrival'],
-            scale: 1
+            scale: .5
         },
         {
             // In the ocean area, up and to the left of Bathyopolisk.
@@ -141,22 +144,64 @@ const TechTree = (() => {
             description: 'Glimmerfrills, with violet bodies and plumes tipped in glowing gold and blue, crawl over the Bathyopolisk while pale Tidewisps drift through the dark water around them. They are tiny, and there are endless numbers of them. They graze, breed and die, and every one returns a little star dust to the sea.',
             perSecond: 500,
             unlockCost: 50000,
+            costGrowth: 1.15,
             startsUnlocked: false,
             x: -0.4829,
             y: 4.522,
             requires: ['bathyopolisk'],
             scale: 1
         },
+        {
+            // In the ocean area, between Small Ocean Life and Katarith Monzamene.
+            id: 'araragrathish',
+            name: 'Araragrathish',
+            type: TYPES.EVOLUTION,
+            description: 'A long, glass-clear body dotted with points of blue-green light, and rows of white feathered fronds on either side that ripple it through the dark water. It is the first thing on Rooth to swim with a purpose, and it drifts through the swarms of tiny life, stirring them to grow.',
+            generator: 'small-ocean-life',
+            efficiency: 1.3,
+            unlockCost: 67000,
+            startsUnlocked: false,
+            x: -0.617,
+            y: 4.522,
+            requires: ['small-ocean-life'],
+            scale: .5
+        },
+        {
+            // In the ocean area, to the left of Araragrathish.
+            id: 'katarith-monzamene',
+            name: 'Katarith Monzamene',
+            type: TYPES.EVOLUTION,
+            description: 'The first creature on Rooth with a heart. Its shaggy coat of weed drifts in the current, and through its glass-clear belly the glow of lungs, heart and gut can be seen. It hunts the swarms of Glimmerfrills and Tidewisps, and the swarms thrive on it.',
+            generator: 'small-ocean-life',
+            efficiency: 1.3141592653589793,
+            unlockCost: 83000,
+            startsUnlocked: false,
+            x: -0.75,
+            y: 4.522,
+            requires: ['araragrathish'],
+            scale: .5
+        },
     ];
 
     const unlocked = new Set(nodes.filter(node => node.startsUnlocked).map(node => node.id));
+    // Copies owned of each GENERATOR (an unlocked generator without an entry owns one).
+    const copies = new Map();
     const listeners = [];
 
+    // Saved as { unlocked: [ids in unlock order], copies: { generatorId: count } }.
+    // Older saves were just the array of unlocked ids.
     function load() {
         try {
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-            if (Array.isArray(saved)) {
-                saved.forEach(id => { if (get(id)) unlocked.add(id); });
+            const ids = Array.isArray(saved) ? saved : saved && saved.unlocked;
+            if (Array.isArray(ids)) {
+                ids.forEach(id => { if (get(id)) unlocked.add(id); });
+            }
+            if (saved && saved.copies) {
+                Object.entries(saved.copies).forEach(([id, count]) => {
+                    const node = get(id);
+                    if (node && node.type === TYPES.GENERATOR && unlocked.has(id) && count > 1) copies.set(id, Math.floor(count));
+                });
             }
         } catch (e) {
             // Storage unavailable or corrupt - keep the defaults.
@@ -165,7 +210,10 @@ const TechTree = (() => {
 
     function save() {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify([...unlocked]));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                unlocked: [...unlocked],
+                copies: Object.fromEntries(copies),
+            }));
         } catch (e) {
             // Storage unavailable - the game still works for this session.
         }
@@ -228,9 +276,37 @@ const TechTree = (() => {
         return true;
     }
 
+    // Copies of a GENERATOR owned (0 until it is unlocked).
+    function count(id) {
+        const node = get(id);
+        if (!node || node.type !== TYPES.GENERATOR || !isUnlocked(id)) return 0;
+        return copies.get(id) || 1;
+    }
+
+    // Star Dust the next copy of an unlocked GENERATOR costs.
+    function nextCost(id) {
+        const node = get(id);
+        return Math.ceil(node.unlockCost * Math.pow(node.costGrowth || 1, count(id)));
+    }
+
+    function canBuyAnother(id) {
+        return count(id) > 0 && StarDust.canAfford(nextCost(id));
+    }
+
+    // Buys one more copy of an unlocked GENERATOR.
+    function buyAnother(id) {
+        if (!canBuyAnother(id)) return false;
+        if (!StarDust.spend(nextCost(id))) return false;
+        copies.set(id, count(id) + 1);
+        save();
+        notify();
+        return true;
+    }
+
     // Back to the starting state: only the nodes that start unlocked.
     function reset() {
         unlocked.clear();
+        copies.clear();
         nodes.filter(node => node.startsUnlocked).forEach(node => unlocked.add(node.id));
         save();
         notify();
@@ -252,11 +328,12 @@ const TechTree = (() => {
             .reduce((mult, node) => mult * (isUnlocked(node.id) ? node.efficiency || 1 : 1), 1);
     }
 
-    // Star Dust per second from one generator (0 until it is unlocked).
+    // Star Dust per second from one generator: its copies add up, then the evolutions
+    // multiply the total (0 until it is unlocked).
     function production(id) {
         const node = get(id);
         if (!node || node.type !== TYPES.GENERATOR || !isUnlocked(id)) return 0;
-        return (node.perSecond || 0) * efficiency(id);
+        return (node.perSecond || 0) * count(id) * efficiency(id);
     }
 
     // Total Star Dust per second from every unlocked GENERATOR.
@@ -303,6 +380,10 @@ const TechTree = (() => {
         missingRequirements,
         canUnlock,
         unlock,
+        count,
+        nextCost,
+        canBuyAnother,
+        buyAnother,
         reset,
         perClick,
         perSecond,
