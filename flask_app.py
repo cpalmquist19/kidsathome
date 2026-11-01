@@ -599,6 +599,10 @@ def tier_maker():
 def rarities_game():
     return render_template('rarities_game.html', current_user=current_user)
 
+@app.route('/creature_fighters')
+def creature_fighters():
+    return render_template('creature_fighters.html', current_user=current_user)
+
 @app.route('/ocean_depth_game')
 def ocean_depth_game():
     effects_dir = os.path.join(app.static_folder, 'sound', 'effects')
