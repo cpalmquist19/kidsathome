@@ -14,6 +14,11 @@
   renderer.outputEncoding = THREE.sRGBEncoding;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x9ed9cb);
+  new THREE.TextureLoader().load('/static/img/creature_fighters/sky.png', tex => {
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    tex.encoding = THREE.sRGBEncoding;
+    scene.background = tex;
+  });
   scene.fog = new THREE.Fog(0xaddbcc, 55, 145);
   const camera = new THREE.PerspectiveCamera(65, 1, .1, 220);
   scene.add(new THREE.HemisphereLight(0xe6f8d1, 0x526b3a, .85));
@@ -202,7 +207,7 @@
       next.play(); current = next; currentName = name; return true;
     }
     mixer.addEventListener('finished', e => { if (e.action === current && kindOf(currentName) === 'once') play(idleName, .3); });
-    return { names: Object.keys(actions), actions, play, update: dt => mixer.update(dt), get current() { return currentName; } };
+    return { root, label: '', names: Object.keys(actions), actions, play, update: dt => mixer.update(dt), get current() { return currentName; } };
   }
   window.creatureAnimators = animators;   // handy from the browser console: creatureAnimators[0].play('lunge_bite')
   if (window.CF_ASSETS && CF_ASSETS.wyrmling && THREE.GLTFLoader) {
@@ -231,8 +236,26 @@
         const holder = new THREE.Group(); holder.rotation.y = Math.PI;   // model faces +z; creatures face -z
         model.scale.multiplyScalar(s); model.position.y = -minY * s;   // feet rest exactly on the ground
         holder.add(model); g.children.slice().forEach(c => c.visible = false); g.add(holder);
-        if (clips.length) { const anim = createAnimator(model, clips); anim.play(idleClip.name, 0); anim.actions[idleClip.name].time = i * idleClip.duration * .37; animators.push(anim); }
+        if (clips.length) { const anim = createAnimator(model, clips); anim.play(idleClip.name, 0); anim.actions[idleClip.name].time = i * idleClip.duration * .37; anim.label = 'Wyrmling'; animators.push(anim); }
       });
+    }, undefined, () => {});
+  }
+  // Irithigrib: a single imported model placed near the start point. Change IRITHIGRIB_HEIGHT / the position to adjust it.
+  if (window.CF_ASSETS && CF_ASSETS.irithigrib && THREE.GLTFLoader) {
+    new THREE.GLTFLoader().load(CF_ASSETS.irithigrib, gltf => {
+      const IRITHIGRIB_HEIGHT = 3, model = gltf.scene;
+      model.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
+      model.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(model), size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+      const s = IRITHIGRIB_HEIGHT / size.y;
+      model.scale.setScalar(s); model.position.set(-center.x * s, -box.min.y * s, -center.z * s);   // centered, feet on the ground
+      const holder = new THREE.Group(); holder.position.set(4, 0, 2); holder.rotation.y = Math.PI * .85;   // turned to face the start point
+      holder.add(model); scene.add(holder);
+      // Listed in the animation panel even with no clips, so Tab can still select it.
+      const clips = gltf.animations || [];
+      const anim = clips.length ? createAnimator(model, clips) : { root: model, names: [], actions: {}, play: () => false, update: () => {}, current: null };
+      if (clips.length) anim.play((clips.find(c => /^idle/i.test(c.name)) || clips[0]).name, 0);
+      anim.label = 'Irithigrib'; animators.push(anim);
     }, undefined, () => {});
   }
   const player={ground:0,x:0,z:10,y:1.7,vertical:0,yaw:0,pitch:0}; const keys=new Set(); let locked=false, started=false;
@@ -243,27 +266,35 @@
   animPanel.addEventListener('pointerdown', e => e.stopPropagation());
   animPanel.addEventListener('click', e => e.stopPropagation());
   document.body.appendChild(animPanel);
-  let panelNames = '';
+  let panelNames = '', selected = null;   // selected = name of the model type whose animations the panel shows (Tab cycles types)
+  // Models are grouped by type (all wyrmlings are one type, Irithigrib is another). Tab cycles types; clips play on every model of the type.
+  const modelTypes = () => [...new Set(animators.map(x => x.label))];
   function refreshAnimPanel() {
-    const a = animators[0], names = a ? a.names.join('|') : '';
-    if (names !== panelNames) {   // rebuild the buttons only when the clip list changes
-      panelNames = names; animPanel.textContent = '';
+    const types = modelTypes(); if (!types.includes(selected)) selected = types[0] || null;
+    const group = animators.filter(x => x.label === selected), a = group[0];
+    const key = selected + '#' + (a ? a.names.join('|') : '') + '#' + types.length;
+    if (key !== panelNames) {   // rebuild the buttons only when the model type or clip list changes
+      panelNames = key; animPanel.textContent = '';
       const title = document.createElement('div'); title.style.cssText = 'font-weight:700;letter-spacing:.04em;margin-bottom:2px';
-      title.textContent = a ? 'ANIMATIONS (Esc frees mouse)' : 'Creature models loading…'; animPanel.appendChild(title);
+      title.textContent = a ? 'Model ' + (types.indexOf(selected) + 1) + '/' + types.length + ': ' + selected + '  (Tab = next model)' : 'Creature models loading…'; animPanel.appendChild(title);
       if (a) a.names.forEach((n, i) => {
         const btn = document.createElement('button'); btn.type = 'button'; btn.dataset.clip = n; btn.textContent = (i < 9 ? (i + 1) + '  ' : '') + n;
         btn.style.cssText = 'text-align:left;padding:5px 9px;border:1px solid rgba(255,255,255,.25);border-radius:6px;background:rgba(255,255,255,.08);color:inherit;font:inherit;cursor:pointer';
-        btn.addEventListener('click', () => { animators.forEach(x => x.play(n)); refreshAnimPanel(); });
+        btn.addEventListener('click', () => { group.forEach(x => x.play(n)); refreshAnimPanel(); });
         animPanel.appendChild(btn);
       });
+      if (a && !a.names.length) { const note = document.createElement('div'); note.style.opacity = '.75'; note.textContent = 'This model has no animations.'; animPanel.appendChild(note); }
     }
     animPanel.querySelectorAll('button[data-clip]').forEach(btn => { const on = a && a.current === btn.dataset.clip; btn.style.background = on ? 'rgba(88,240,200,.45)' : 'rgba(255,255,255,.08)'; });
   }
   refreshAnimPanel();
   window.addEventListener('keydown', e => {
     if (e.code === 'Backquote') { animPanel.style.display = animPanel.style.display === 'none' ? 'flex' : 'none'; return; }
-    const m = /^Digit([1-9])$/.exec(e.code); if (!m || !animators.length) return;
-    const name = animators[0].names[+m[1] - 1]; if (name) { animators.forEach(a => a.play(name)); refreshAnimPanel(); }
+    const types = modelTypes();
+    if (e.code === 'Tab') { e.preventDefault(); if (types.length) { selected = types[(types.indexOf(selected) + (e.shiftKey ? types.length - 1 : 1)) % types.length]; refreshAnimPanel(); } return; }
+    const m = /^Digit([1-9])$/.exec(e.code); if (!m) return;
+    const group = animators.filter(x => x.label === selected), name = group[0] && group[0].names[+m[1] - 1];
+    if (name) { group.forEach(x => x.play(name)); refreshAnimPanel(); }
   });
   setInterval(refreshAnimPanel, 250);
   function resize(){const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();} window.addEventListener('resize',resize);resize();
