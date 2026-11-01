@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPU Particle Benchmark - Smash Lab</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0 auto; max-width: 1100px; padding: 16px 16px 48px; background: #0b0e14; color: #d8dee9;
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 24px 0 8px; color: #9fb3d1; }
+  .muted { color: #7f8aa0; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: 5px 8px; border-bottom: 1px solid #1d2433; text-align: left; vertical-align: top; }
+  th { color: #9fb3d1; font-weight: 600; }
+  td.k { color: #7f8aa0; white-space: nowrap; width: 1%; }
+  .ok { color: #6fd08c; } .bad { color: #ff7a7a; } .warn { color: #f0c060; }
+  button { background: #2a6df4; color: #fff; border: 0; border-radius: 6px; padding: 9px 16px; font-size: 14px; cursor: pointer; margin-right: 8px; }
+  button:disabled { opacity: .5; cursor: default; }
+  #stage { background: #000; border: 1px solid #1d2433; border-radius: 6px; overflow: hidden; width: 100%; max-width: 640px; aspect-ratio: 16 / 9; margin: 12px 0; }
+  #stage canvas { width: 100%; height: 100%; display: block; }
+  pre { background: #10141d; border: 1px solid #1d2433; border-radius: 6px; padding: 10px; overflow: auto; max-height: 240px; font-size: 12px; }
+  .scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>GPU particle benchmark</h1>
+<div class="muted">Smash Lab tech-stack test. Keep this tab visible and in the foreground while it runs (about 1–2 minutes).
+  It compares three ways to run an impact-debris particle cloud: WebGL2 analytic, WebGL2 stateful, and WebGPU compute.</div>
+
+<h2>Device report</h2>
+<div class="scroll"><table id="report"><tbody></tbody></table></div>
+
+<h2>Run</h2>
+<button id="run">Run benchmark</button><button id="copy" disabled>Copy results JSON</button>
+<span id="status" class="muted"></span>
+<div id="stage"></div>
+
+<h2>Results <span class="muted" style="font-weight:400">(frames per second · 95th-percentile frame time)</span></h2>
+<div class="scroll"><table id="results"><thead></thead><tbody></tbody></table></div>
+<div id="summary" style="margin-top:12px"></div>
+
+<h2>Raw data</h2>
+<pre id="json"></pre>
+
+<script>
+'use strict';
+const W = 1280, H = 720, SIZE = 1.0;      // fixed render resolution so devices are comparable
+const params = new URLSearchParams(location.search);
+const COUNTS = (params.get('counts') || '100000,250000,500000,1000000,2000000,4000000').split(',').map(Number);
+const WARM = +(params.get('warm') || 600), DUR = +(params.get('dur') || 1500);
+const $ = id => document.getElementById(id);
+const results = { when: new Date().toISOString(), device: {}, counts: COUNTS, rows: [], summary: {}, errors: [] };
+const MODES = [
+  { id: 'gl-analytic', label: 'WebGL2 · analytic (no state)', make: modeGLAnalytic },
+  { id: 'gl-stateful', label: 'WebGL2 · stateful (transform feedback)', make: modeGLStateful },
+  { id: 'gpu-compute', label: 'WebGPU · stateful (compute)', make: modeGPUCompute },
+];
+const fmt = n => n >= 1e6 ? (n / 1e6) + 'M' : (n / 1e3) + 'k';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function setStatus(t) { $('status').textContent = t; }
+
+// ---------------------------------------------------------------- shared helpers
+function makeInit(n) {                          // identical start state for the two stateful modes
+  const pos = new Float32Array(n * 4), vel = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) {
+    const z = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, s = Math.sqrt(1 - z * z);
+    const dx = s * Math.cos(a), dy = s * Math.sin(a), dz = z;
+    const r = Math.cbrt(Math.random()) * 0.8, life = 2 + Math.random() * 2, sp = 0.4 + Math.random() * 0.8, o = i * 4;
+    pos[o] = dx * r; pos[o + 1] = dy * r; pos[o + 2] = dz * r; pos[o + 3] = Math.random() * life;
+    vel[o] = dx * sp; vel[o + 1] = dy * sp; vel[o + 2] = dz * sp; vel[o + 3] = life;
+  }
+  return { pos, vel };
+}
+function newCanvas(stage) {
+  const c = document.createElement('canvas'); c.width = W; c.height = H; stage.replaceChildren(c); return c;
+}
+
+// ---------------------------------------------------------------- WebGL2 shaders
+const GLSL_RND = `
+float rnd(uint x) { x ^= x >> 16u; x *= 0x7feb352du; x ^= x >> 15u; x *= 0x846ca68bu; x ^= x >> 16u; return float(x) * (1.0 / 4294967295.0); }`;
+
+const VS_ANALYTIC = `#version 300 es
+precision highp float;
+uniform float uTime; uniform vec2 uRes; uniform float uSize;
+out vec2 vUV; out float vAge;
+${GLSL_RND}
+void main() {
+  uint id = uint(gl_InstanceID);
+  float r0 = rnd(id * 3u + 1u), r1 = rnd(id * 3u + 2u), r2 = rnd(id * 3u + 3u);
+  float z = r0 * 2.0 - 1.0, a = r1 * 6.2831853, s = sqrt(1.0 - z * z);
+  vec3 dir = vec3(s * cos(a), s * sin(a), z);
+  float speed = 0.4 + r2 * 0.8, life = 2.0 + r0 * 2.0;
+  float t = mod(uTime + r1 * life, life);
+  vec3 p = dir * speed * (1.0 - exp(-1.5 * t)) / 1.5 + vec3(0.0, -0.15 * t * t, 0.0);
+  vec2 c = vec2(float(gl_VertexID & 1), float(gl_VertexID >> 1)) * 2.0 - 1.0;
+  float w = max(3.0 - p.z, 0.5);
+  vec2 ndc = vec2(p.x * (uRes.y / uRes.x), p.y) * (2.0 / w) + c * uSize * 2.0 / uRes;
+  gl_Position = vec4(ndc, 0.0, 1.0); vUV = c; vAge = t / life;
+}`;
+
+const VS_UPDATE = `#version 300 es
+precision highp float;
+layout(location = 0) in vec4 aPos; layout(location = 1) in vec4 aVel;
+uniform float uDt; uniform uint uFrame;
+out vec4 vPos; out vec4 vVel;
+${GLSL_RND}
+void main() {
+  vec3 p = aPos.xyz, v = aVel.xyz; float age = aPos.w + uDt; float life = aVel.w;
+  vec3 acc = -p * 0.6 + vec3(-p.z, 0.0, p.x) * 0.5;
+  v = (v + acc * uDt) * (1.0 - 0.2 * uDt);
+  p += v * uDt;
+  if (age > life) {
+    uint id = uint(gl_VertexID) + uFrame * 2654435761u;
+    float r0 = rnd(id * 3u + 1u), r1 = rnd(id * 3u + 2u), r2 = rnd(id * 3u + 3u);
+    float z = r0 * 2.0 - 1.0, a = r1 * 6.2831853, s = sqrt(1.0 - z * z);
+    vec3 d = vec3(s * cos(a), s * sin(a), z);
+    p = d * 0.05; v = d * (0.4 + r2 * 0.8); age = 0.0;
+  }
+  vPos = vec4(p, age); vVel = vec4(v, life);
+}`;
+
+const VS_RENDER = `#version 300 es
+precision highp float;
+layout(location = 0) in vec4 aPos;
+uniform vec2 uRes; uniform float uSize;
+out vec2 vUV; out float vAge;
+void main() {
+  vec2 c = vec2(float(gl_VertexID & 1), float(gl_VertexID >> 1)) * 2.0 - 1.0;
+  float w = max(3.0 - aPos.z, 0.5);
+  vec2 ndc = vec2(aPos.x * (uRes.y / uRes.x), aPos.y) * (2.0 / w) + c * uSize * 2.0 / uRes;
+  gl_Position = vec4(ndc, 0.0, 1.0); vUV = c; vAge = clamp(aPos.w / 3.0, 0.0, 1.0);
+}`;
+
+const FS_PARTICLE = `#version 300 es
+precision mediump float;
+in vec2 vUV; in float vAge; out vec4 o;
+void main() {
+  float d = length(vUV); if (d > 1.0) discard;
+  float a = 1.0 - smoothstep(0.0, 1.0, d);
+  vec3 col = mix(vec3(1.0, 0.65, 0.25), vec3(0.9, 0.15, 0.05), vAge);
+  o = vec4(col * a * 0.08, 1.0);
+}`;
+const FS_NOOP = `#version 300 es
+precision mediump float; out vec4 o; void main() { o = vec4(0.0); }`;
+
+function glCreate(stage) {
+  const canvas = newCanvas(stage);
+  const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+  if (!gl) throw new Error('WebGL2 not available');
+  gl.viewport(0, 0, W, H); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); gl.clearColor(0.02, 0.02, 0.04, 1);
+  return gl;
+}
+function glProgram(gl, vsSrc, fsSrc, tfVaryings) {
+  const mk = (type, src) => {
+    const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error('GLSL: ' + gl.getShaderInfoLog(sh));
+    return sh;
+  };
+  const p = gl.createProgram();
+  gl.attachShader(p, mk(gl.VERTEX_SHADER, vsSrc)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, fsSrc));
+  if (tfVaryings) gl.transformFeedbackVaryings(p, tfVaryings, gl.SEPARATE_ATTRIBS);
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error('GLSL link: ' + gl.getProgramInfoLog(p));
+  return p;
+}
+function glClose(gl) { const e = gl.getExtension('WEBGL_lose_context'); if (e) e.loseContext(); }
+
+// ---------------------------------------------------------------- mode 1: WebGL2 analytic (stateless)
+async function modeGLAnalytic(stage) {
+  const gl = glCreate(stage);
+  const prog = glProgram(gl, VS_ANALYTIC, FS_PARTICLE);
+  const uTime = gl.getUniformLocation(prog, 'uTime'), uRes = gl.getUniformLocation(prog, 'uRes'), uSize = gl.getUniformLocation(prog, 'uSize');
+  const vao = gl.createVertexArray();
+  return {
+    build(count) {
+      let f = 0;
+      return {
+        frame() {
+          gl.clear(gl.COLOR_BUFFER_BIT); gl.useProgram(prog); gl.bindVertexArray(vao);
+          gl.uniform1f(uTime, (f++) / 60); gl.uniform2f(uRes, W, H); gl.uniform1f(uSize, SIZE);
+          gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
+        },
+        async dispose() { gl.finish(); },
+      };
+    },
+    async close() { glClose(gl); },
+  };
+}
+
+// ---------------------------------------------------------------- mode 2: WebGL2 stateful (transform feedback)
+async function modeGLStateful(stage) {
+  const gl = glCreate(stage);
+  const upd = glProgram(gl, VS_UPDATE, FS_NOOP, ['vPos', 'vVel']);
+  const ren = glProgram(gl, VS_RENDER, FS_PARTICLE);
+  const uDt = gl.getUniformLocation(upd, 'uDt'), uFrame = gl.getUniformLocation(upd, 'uFrame');
+  const uRes = gl.getUniformLocation(ren, 'uRes'), uSize = gl.getUniformLocation(ren, 'uSize');
+  return {
+    build(count) {
+      const init = makeInit(count);
+      const buf = (data) => {
+        const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b);
+        if (data) gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_COPY); else gl.bufferData(gl.ARRAY_BUFFER, count * 16, gl.DYNAMIC_COPY);
+        return b;
+      };
+      const sets = [{ pos: buf(init.pos), vel: buf(init.vel) }, { pos: buf(null), vel: buf(null) }];
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
+      const vaoU = sets.map(s => {
+        const v = gl.createVertexArray(); gl.bindVertexArray(v);
+        gl.bindBuffer(gl.ARRAY_BUFFER, s.pos); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, s.vel); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
+        return v;
+      });
+      const vaoR = sets.map(s => {
+        const v = gl.createVertexArray(); gl.bindVertexArray(v);
+        gl.bindBuffer(gl.ARRAY_BUFFER, s.pos); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(0, 1);
+        return v;
+      });
+      gl.bindVertexArray(null); gl.bindBuffer(gl.ARRAY_BUFFER, null);
+      const tf = sets.map(s => {
+        const t = gl.createTransformFeedback(); gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, t);
+        gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, s.pos); gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 1, s.vel);
+        return t;
+      });
+      gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null);
+      let cur = 0, fr = 0;
+      return {
+        frame() {
+          const i = cur, j = 1 - cur;
+          gl.useProgram(upd); gl.uniform1f(uDt, 1 / 60); gl.uniform1ui(uFrame, fr++);
+          gl.bindVertexArray(vaoU[i]); gl.enable(gl.RASTERIZER_DISCARD);
+          gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, tf[j]); gl.beginTransformFeedback(gl.POINTS);
+          gl.drawArrays(gl.POINTS, 0, count);
+          gl.endTransformFeedback(); gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null);
+          gl.disable(gl.RASTERIZER_DISCARD);
+          gl.clear(gl.COLOR_BUFFER_BIT); gl.useProgram(ren);
+          gl.uniform2f(uRes, W, H); gl.uniform1f(uSize, SIZE);
+          gl.bindVertexArray(vaoR[j]); gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
+          cur = j;
+        },
+        async dispose() {
+          gl.finish(); gl.bindVertexArray(null);
+          sets.forEach(s => { gl.deleteBuffer(s.pos); gl.deleteBuffer(s.vel); });
+          vaoU.concat(vaoR).forEach(v => gl.deleteVertexArray(v)); tf.forEach(t => gl.deleteTransformFeedback(t));
+        },
+      };
+    },
+    async close() { glClose(gl); },
+  };
+}
+
+// ---------------------------------------------------------------- mode 3: WebGPU compute (stateful)
+const WGSL_COMPUTE = `
+struct Params { dt: f32, frame: u32, count: u32, pad: u32 };
+@group(0) @binding(0) var<storage, read_write> pos: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read_write> vel: array<vec4<f32>>;
+@group(0) @binding(2) var<uniform> P: Params;
+fn rnd(x0: u32) -> f32 {
+  var x = x0;
+  x = x ^ (x >> 16u); x = x * 0x7feb352du; x = x ^ (x >> 15u); x = x * 0x846ca68bu; x = x ^ (x >> 16u);
+  return f32(x) * (1.0 / 4294967295.0);
+}
+@compute @workgroup_size(256)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let i = gid.x;
+  if (i >= P.count) { return; }
+  var p = pos[i].xyz; var v = vel[i].xyz; var age = pos[i].w + P.dt; let life = vel[i].w;
+  let acc = -p * 0.6 + vec3<f32>(-p.z, 0.0, p.x) * 0.5;
+  v = (v + acc * P.dt) * (1.0 - 0.2 * P.dt);
+  p = p + v * P.dt;
+  if (age > life) {
+    let id = i + P.frame * 2654435761u;
+    let r0 = rnd(id * 3u + 1u); let r1 = rnd(id * 3u + 2u); let r2 = rnd(id * 3u + 3u);
+    let z = r0 * 2.0 - 1.0; let a = r1 * 6.2831853; let s = sqrt(1.0 - z * z);
+    let d = vec3<f32>(s * cos(a), s * sin(a), z);
+    p = d * 0.05; v = d * (0.4 + r2 * 0.8); age = 0.0;
+  }
+  pos[i] = vec4<f32>(p, age);
+  vel[i] = vec4<f32>(v, life);
+}`;
+const WGSL_RENDER = `
+struct U { res: vec2<f32>, size: f32, pad: f32 };
+@group(0) @binding(0) var<storage, read> pos: array<vec4<f32>>;
+@group(0) @binding(1) var<uniform> u: U;
+struct VOut { @builtin(position) p: vec4<f32>, @location(0) uv: vec2<f32>, @location(1) age: f32 };
+@vertex
+fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VOut {
+  let c = vec2<f32>(f32(vi & 1u), f32(vi >> 1u)) * 2.0 - 1.0;
+  let q = pos[ii];
+  let w = max(3.0 - q.z, 0.5);
+  let ndc = vec2<f32>(q.x * (u.res.y / u.res.x), q.y) * (2.0 / w) + c * u.size * 2.0 / u.res;
+  var o: VOut;
+  o.p = vec4<f32>(ndc, 0.0, 1.0); o.uv = c; o.age = clamp(q.w / 3.0, 0.0, 1.0);
+  return o;
+}
+@fragment
+fn fs(inp: VOut) -> @location(0) vec4<f32> {
+  let d = length(inp.uv);
+  if (d > 1.0) { discard; }
+  let a = 1.0 - smoothstep(0.0, 1.0, d);
+  let col = mix(vec3<f32>(1.0, 0.65, 0.25), vec3<f32>(0.9, 0.15, 0.05), inp.age);
+  return vec4<f32>(col * a * 0.08, 1.0);
+}`;
+
+async function modeGPUCompute(stage) {
+  if (!navigator.gpu) throw new Error('WebGPU not available in this browser/page');
+  const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+  if (!adapter) throw new Error('No WebGPU adapter');
+  const device = await adapter.requestDevice();
+  device.addEventListener('uncapturederror', e => { results.errors.push('WebGPU: ' + e.error.message); });
+  const canvas = newCanvas(stage);
+  const ctx = canvas.getContext('webgpu');
+  const format = navigator.gpu.getPreferredCanvasFormat();
+  ctx.configure({ device, format, alphaMode: 'opaque' });
+  const mkModule = async (code, label) => {
+    const m = device.createShaderModule({ code, label });
+    const info = await m.getCompilationInfo();
+    const errs = info.messages.filter(x => x.type === 'error');
+    if (errs.length) throw new Error('WGSL ' + label + ': ' + errs.map(x => `${x.lineNum}:${x.linePos} ${x.message}`).join(' | '));
+    return m;
+  };
+  const cMod = await mkModule(WGSL_COMPUTE, 'compute'), rMod = await mkModule(WGSL_RENDER, 'render');
+  const cPipe = device.createComputePipeline({ layout: 'auto', compute: { module: cMod, entryPoint: 'main' } });
+  const blend = { color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' }, alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' } };
+  const rPipe = device.createRenderPipeline({
+    layout: 'auto',
+    vertex: { module: rMod, entryPoint: 'vs' },
+    fragment: { module: rMod, entryPoint: 'fs', targets: [{ format, blend }] },
+    primitive: { topology: 'triangle-strip' },
+  });
+  const rUniform = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  device.queue.writeBuffer(rUniform, 0, new Float32Array([W, H, SIZE, 0]));
+  return {
+    build(count) {
+      const init = makeInit(count);
+      const mk = (data) => {
+        const b = device.createBuffer({ size: count * 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+        device.queue.writeBuffer(b, 0, data); return b;
+      };
+      const posB = mk(init.pos), velB = mk(init.vel);
+      const pBuf = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      const pAB = new ArrayBuffer(16), pF = new Float32Array(pAB), pU = new Uint32Array(pAB);
+      pF[0] = 1 / 60; pU[2] = count;
+      const cBG = device.createBindGroup({ layout: cPipe.getBindGroupLayout(0), entries: [
+        { binding: 0, resource: { buffer: posB } }, { binding: 1, resource: { buffer: velB } }, { binding: 2, resource: { buffer: pBuf } }] });
+      const rBG = device.createBindGroup({ layout: rPipe.getBindGroupLayout(0), entries: [
+        { binding: 0, resource: { buffer: posB } }, { binding: 1, resource: { buffer: rUniform } }] });
+      let fr = 0;
+      return {
+        frame() {
+          pU[1] = fr++; device.queue.writeBuffer(pBuf, 0, pAB);
+          const enc = device.createCommandEncoder();
+          const cp = enc.beginComputePass(); cp.setPipeline(cPipe); cp.setBindGroup(0, cBG);
+          cp.dispatchWorkgroups(Math.ceil(count / 256)); cp.end();
+          const rp = enc.beginRenderPass({ colorAttachments: [{
+            view: ctx.getCurrentTexture().createView(), clearValue: { r: 0.02, g: 0.02, b: 0.04, a: 1 }, loadOp: 'clear', storeOp: 'store' }] });
+          rp.setPipeline(rPipe); rp.setBindGroup(0, rBG); rp.draw(4, count); rp.end();
+          device.queue.submit([enc.finish()]);
+        },
+        async dispose() {
+          // Cleanup problems must not invalidate a finished measurement.
+          try { await device.queue.onSubmittedWorkDone(); } catch (_) {}
+          try { posB.destroy(); velB.destroy(); pBuf.destroy(); } catch (_) {}
+        },
+      };
+    },
+    async close() { try { device.destroy(); } catch (_) {} },
+    _keepAlive: [adapter, device, ctx],   // hold references so nothing is garbage-collected mid-run
+  };
+}
+
+// ---------------------------------------------------------------- measuring
+function measure(step) {
+  return new Promise(resolve => {
+    let start = 0, last = 0, done = false; const deltas = [];
+    const finish = aborted => { if (done) return; done = true; clearTimeout(guard); resolve({ deltas, aborted }); };
+    const guard = setTimeout(() => finish(true), WARM + DUR + 8000);   // tab hidden / throttled
+    function tick(t) {
+      if (done) return;
+      if (!start) { start = last = t; requestAnimationFrame(tick); return; }
+      step();
+      const dt = t - last; last = t;
+      const el = t - start;
+      if (el > WARM) deltas.push(dt);
+      if (el > WARM + DUR) { finish(false); return; }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+function stats(d) {
+  if (d.length < 5) return null;
+  const s = [...d].sort((a, b) => a - b), q = p => s[Math.min(s.length - 1, Math.floor(p * s.length))];
+  const mean = d.reduce((a, b) => a + b, 0) / d.length;
+  return { fps: 1000 / mean, med: q(0.5), p95: q(0.95), max: s[s.length - 1] };
+}
+
+// ---------------------------------------------------------------- device report
+async function deviceReport() {
+  const d = { userAgent: navigator.userAgent, screen: `${screen.width}x${screen.height} @ ${devicePixelRatio}x`,
+              cpuCores: navigator.hardwareConcurrency, secureContext: isSecureContext };
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2');
+    if (!gl) d.webgl2 = 'NOT available';
+    else {
+      const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+      d.webgl2 = 'available';
+      d.glRenderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+      d.glMaxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+      d.glExtensions = ['EXT_color_buffer_float', 'EXT_disjoint_timer_query_webgl2', 'EXT_clip_control', 'KHR_parallel_shader_compile']
+        .filter(n => gl.getExtension(n)).join(', ') || 'none of the ones we check';
+      d.softwareRendering = /swiftshader|llvmpipe|software|basic render/i.test(String(d.glRenderer));
+      glClose(gl);
+    }
+  } catch (e) { d.webgl2 = 'error: ' + e.message; }
+  if (!navigator.gpu) d.webgpu = 'NOT available (navigator.gpu missing' + (isSecureContext ? ')' : '; page is not a secure context)');
+  else {
+    try {
+      const a = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+      if (!a) d.webgpu = 'API present but NO adapter returned';
+      else {
+        const info = a.info || (a.requestAdapterInfo ? await a.requestAdapterInfo() : {});
+        d.webgpu = 'available';
+        d.gpuAdapter = [info.vendor, info.architecture, info.device, info.description].filter(Boolean).join(' / ') || '(hidden by browser)';
+        d.gpuFallbackAdapter = !!(a.isFallbackAdapter || info.isFallbackAdapter);
+        d.gpuFeatures = ['timestamp-query', 'shader-f16'].filter(f => a.features.has(f)).join(', ') || 'none of the ones we check';
+        d.gpuMaxStorageBindingMB = Math.round(a.limits.maxStorageBufferBindingSize / 1048576);
+        d.gpuMaxBufferMB = Math.round(a.limits.maxBufferSize / 1048576);
+        d.gpuMaxWorkgroupInvocations = a.limits.maxComputeInvocationsPerWorkgroup;
+      }
+    } catch (e) { d.webgpu = 'error: ' + e.message; }
+  }
+  return d;
+}
+function renderReport(d) {
+  const tb = $('report').tBodies[0]; tb.replaceChildren();
+  for (const [k, v] of Object.entries(d)) {
+    const tr = tb.insertRow(); const a = tr.insertCell(), b = tr.insertCell();
+    a.className = 'k'; a.textContent = k; b.textContent = String(v);
+    if (/NOT|no adapter|error/i.test(String(v))) b.className = 'bad';
+    if ((k === 'softwareRendering' || k === 'gpuFallbackAdapter') && v) { b.className = 'warn'; b.textContent += '  (not a real GPU - results will be misleading)'; }
+  }
+}
+
+// ---------------------------------------------------------------- results table + summary
+function classify(row, refMs) { return row.med <= refMs * 1.2 && row.p95 <= refMs * 1.75; }
+function refMsNow() { const m = results.rows.filter(r => r.med).map(r => r.med); return m.length ? Math.min(...m) : null; }
+function renderResults() {
+  const ref = refMsNow();
+  const thead = $('results').tHead; thead.replaceChildren();
+  const hr = thead.insertRow(); hr.insertCell().outerHTML = '<th>Approach</th>';
+  COUNTS.forEach(c => hr.insertCell().outerHTML = `<th>${fmt(c)}</th>`);
+  const tb = $('results').tBodies[0]; tb.replaceChildren();
+  for (const m of MODES) {
+    const tr = tb.insertRow(); tr.insertCell().textContent = m.label;
+    const unavailable = results.rows.find(r => r.mode === m.id && r.unavailable);
+    COUNTS.forEach(c => {
+      const td = tr.insertCell();
+      const r = results.rows.find(x => x.mode === m.id && x.count === c);
+      if (unavailable && c === COUNTS[0]) { td.colSpan = COUNTS.length; td.className = 'bad'; td.textContent = 'Unavailable: ' + unavailable.error; }
+      else if (unavailable) { td.remove(); }
+      else if (!r) td.innerHTML = '<span class="muted">–</span>';
+      else if (r.aborted) { td.className = 'warn'; td.textContent = 'aborted (tab hidden?)'; }
+      else if (r.error) { td.className = 'bad'; td.textContent = 'error'; td.title = r.error; }
+      else { td.className = classify(r, ref) ? 'ok' : 'bad'; td.textContent = `${r.fps.toFixed(0)} fps · ${r.p95.toFixed(1)} ms`; }
+    });
+  }
+}
+function summarize() {
+  const ref = refMsNow(); const lines = []; results.summary = { refreshHzEstimate: ref ? Math.round(1000 / ref) : null, maxFullRate: {} };
+  for (const m of MODES) {
+    const rows = results.rows.filter(r => r.mode === m.id && r.med).sort((a, b) => a.count - b.count);
+    let best = 0; for (const r of rows) { if (classify(r, ref)) best = r.count; else break; }
+    const un = results.rows.find(r => r.mode === m.id && r.unavailable);
+    results.summary.maxFullRate[m.id] = un ? 'unavailable' : best;
+    lines.push(`<tr><td>${m.label}</td><td class="${un ? 'bad' : best ? 'ok' : 'bad'}">${un ? 'unavailable' : best ? fmt(best) + ' particles' : 'below ' + fmt(COUNTS[0])}</td></tr>`);
+  }
+  $('summary').innerHTML = `<b>Highest particle count that held full frame rate</b> <span class="muted">(display ≈ ${results.summary.refreshHzEstimate} Hz, ${W}x${H}, 2 px particles, additive blend)</span>` +
+    `<table style="max-width:560px">${lines.join('')}</table>`;
+}
+
+// ---------------------------------------------------------------- orchestration
+async function runAll() {
+  $('run').disabled = true; $('copy').disabled = true; results.rows = []; results.errors = [];
+  for (const m of MODES) {
+    setStatus(`Starting ${m.label}…`);
+    let mode;
+    try { mode = await m.make($('stage')); }
+    catch (e) { results.rows.push({ mode: m.id, count: COUNTS[0], unavailable: true, error: e.message }); renderResults(); continue; }
+    for (const count of COUNTS) {
+      setStatus(`${m.label} - ${fmt(count)} particles…`);
+      let inst, row = { mode: m.id, count };
+      try {
+        inst = mode.build(count);
+        const { deltas, aborted } = await measure(() => inst.frame());
+        const st = stats(deltas);
+        if (aborted || !st) row.aborted = true; else Object.assign(row, st);
+        await inst.dispose();
+      } catch (e) { row.error = e.message; results.errors.push(`${m.id}@${count}: ${e.message}`); }
+      results.rows.push(row); renderResults();
+      await sleep(150);
+      const ref = refMsNow();
+      if (row.error || row.aborted || (row.med && ref && row.med > Math.max(45, ref * 3))) break;   // far past usable - skip bigger steps
+    }
+    await mode.close(); await sleep(150);
+  }
+  renderResults(); summarize();
+  $('json').textContent = JSON.stringify(results, null, 1);
+  setStatus('Done.'); $('run').disabled = false; $('copy').disabled = false;
+  document.body.dataset.done = '1'; window.__results = results; window.__done = true;
+}
+
+(async () => {
+  results.device = await deviceReport(); renderReport(results.device); renderResults();
+  $('run').onclick = runAll;
+  $('copy').onclick = async () => { try { await navigator.clipboard.writeText($('json').textContent); setStatus('Copied.'); } catch (_) { setStatus('Copy failed - select the raw data below.'); } };
+  $('json').textContent = JSON.stringify(results.device, null, 1);
+  window.__ready = true;
+  if (params.get('auto') === '1') runAll();
+})();
+</script>
+</body>
+</html>

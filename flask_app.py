@@ -405,6 +405,14 @@ def matter_eater():
 def unieat():
     return render_template('unieat.html')
 
+@app.route('/smash_lab')
+def smash_lab():
+    return render_template('smash_lab.html')
+
+@app.route('/numbers_vs_operations')
+def numbers_vs_operations():
+    return render_template('numbers_vs_operations.html')
+
 @app.route('/gravity_lab')
 def gravity_lab():
     return render_template('gravity_lab.html')

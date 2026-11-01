@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Numbers VS. Operations - Kids at Home</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+  body { color: #eafcff; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #sphere { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: pointer; }
+  #labels { position: fixed; left: 0; right: 0; bottom: 5vh; text-align: center; pointer-events: none; padding: 0 5vw; }
+  #boss-name { font-size: clamp(26px, 5vw, 54px); font-weight: 700; letter-spacing: .02em; text-shadow: 0 0 24px rgba(90, 220, 255, .35); transition: color .1s; }
+  #boss-name.flash { color: #ffe9a8; text-shadow: 0 0 24px rgba(255, 200, 80, .5); }
+  #boss-sub { margin-top: 6px; font: 400 clamp(13px, 1.7vw, 18px) ui-monospace, Menlo, Consolas, monospace; color: #7fb4c4; word-break: break-word; }
+  #boss-meta { margin-top: 6px; font: 400 12px ui-monospace, Menlo, Consolas, monospace; color: #4a6670; }
+  #boss-count { margin-top: 10px; min-height: 1.4em; font: 600 clamp(16px, 2.2vw, 24px) ui-monospace, Menlo, Consolas, monospace; color: #ffd479; opacity: 0; transition: opacity .35s; }
+  #hud { position: fixed; left: 16px; top: 14px; pointer-events: none; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  #hud-op { font-size: clamp(16px, 2.2vw, 24px); font-weight: 700; color: #ffd479; }
+  #hud-rule { margin-top: 2px; font-size: 12px; color: #7a8a90; }
+  #hud-v { margin-top: 10px; font-size: clamp(15px, 2vw, 22px); color: #bfeeff; word-break: break-all; max-width: 60vw; }
+  #hud-tick { margin-top: 2px; font-size: 12px; color: #4a6670; min-height: 1.2em; }
+  #hud-mode { position: fixed; right: 16px; top: 14px; font: 400 12px ui-monospace, Menlo, Consolas, monospace; color: #6b8790; cursor: pointer; text-transform: uppercase; letter-spacing: .08em; padding: 4px 8px; border: 1px solid #1d2c31; border-radius: 6px; background: transparent; }
+  #hud-mode:hover { color: #bfeeff; border-color: #3b5a64; }
+  #timer { display: none; position: fixed; left: 0; right: 0; top: 0; height: 5px; background: #0b1316; }
+  #timer-fill { height: 100%; background: linear-gradient(90deg, #ff6a5c, #ffd479); transform-origin: left center; transform: scaleX(1); }
+  #toast { position: fixed; left: 50%; top: 16%; transform: translate(-50%, -8px); opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; padding: 10px 18px; border-radius: 10px; font: 600 clamp(14px, 1.8vw, 20px) ui-monospace, Menlo, Consolas, monospace; background: rgba(10, 22, 27, .85); color: #bfeeff; border: 1px solid #28434d; text-align: center; max-width: 90vw; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #toast.gold { color: #ffe9a8; border-color: #7a6320; }
+  #toast.red { color: #ffb4a8; border-color: #6e2c26; }
+  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 14px; background: rgba(0, 0, 0, .86); text-align: center; padding: 20px; }
+  .overlay h1 { margin: 0; font-size: clamp(28px, 6vw, 56px); letter-spacing: .02em; text-shadow: 0 0 24px rgba(90, 220, 255, .35); }
+  .overlay p { margin: 0; max-width: 560px; color: #7fb4c4; font-size: clamp(14px, 1.7vw, 17px); line-height: 1.5; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .row span { color: #4a6670; font: 400 12px ui-monospace, Menlo, Consolas, monospace; text-transform: uppercase; letter-spacing: .1em; min-width: 90px; }
+  .overlay button { font: 600 15px system-ui, sans-serif; color: #9fc6d2; background: #0b1519; border: 1px solid #28434d; border-radius: 8px; padding: 10px 20px; cursor: pointer; }
+  .overlay button.on { color: #04141a; background: #7fe0ff; border-color: #7fe0ff; }
+  .overlay button.go { color: #2a1d00; background: #ffd479; border-color: #ffd479; padding: 12px 34px; font-size: 17px; }
+  .overlay button.quiet { background: transparent; border-color: #1d2c31; color: #5d7983; font-weight: 400; }
+  #hint { position: fixed; left: 12px; bottom: 8px; font: 400 11px ui-monospace, Menlo, Consolas, monospace; color: #34454c; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="sphere" data-src="{{ static_file('data/numbers_vs_operations/named_numbers.json') }}" aria-label="A sphere of digits showing the current number"></canvas>
+<div id="labels" aria-live="polite">
+  <div id="boss-name"></div>
+  <div id="boss-sub"></div>
+  <div id="boss-meta"></div>
+  <div id="boss-count"></div>
+</div>
+<div id="timer"><div id="timer-fill"></div></div>
+<div id="hud" aria-live="off">
+  <div id="hud-op"></div>
+  <div id="hud-rule"></div>
+  <div id="hud-v"></div>
+  <div id="hud-tick"></div>
+</div>
+<button id="hud-mode" type="button" title="Menu (Esc)"></button>
+<div id="toast" role="status"></div>
+<div id="menu" class="overlay">
+  <h1>Numbers VS. Operations</h1>
+  <p>Every fight your number starts at 1. Your operation keeps hitting. If you do enough damage you can destroy many bosses at once.</p>
+  <div class="row"><span>Hits</span><button id="opt-active" type="button">Active (click)</button><button id="opt-idle" type="button">Idle (automatic)</button></div>
+  <div class="row"><span>Timer</span><button id="opt-easy" type="button">Easy (no timer)</button><button id="opt-hard" type="button">Hard (timed)</button></div>
+  <button id="btn-go" class="go" type="button">Start</button>
+  <button id="btn-new" class="quiet" type="button">New game</button>
+</div>
+<div id="win" class="overlay">
+  <h1>&infin;</h1>
+  <p>You reached infinity. Every named number is behind you.</p>
+  <button id="btn-again" class="go" type="button">Play again</button>
+</div>
+<div id="hint">click / space = hit (active mode) &middot; drag to spin &middot; Esc menu &middot; H hides this</div>
+<noscript>Numbers VS. Operations needs JavaScript.</noscript>
+<script src="{{ static_file('js/numbers_vs_operations/sphere.js') }}"></script>
+<script src="{{ static_file('js/numbers_vs_operations/names.js') }}"></script>
+<script src="{{ static_file('js/numbers_vs_operations/engine.js') }}"></script>
+<script src="{{ static_file('js/numbers_vs_operations/main.js') }}"></script>
+</body>
+</html>
