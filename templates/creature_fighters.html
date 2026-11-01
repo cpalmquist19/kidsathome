@@ -14,10 +14,25 @@
         .eyebrow { color: #d4c585; font: bold .72rem Arial, sans-serif; letter-spacing: .25em; text-transform: uppercase; }
         h1 { font-size: clamp(2.5rem, 7vw, 5.5rem); line-height: .95; margin: 1rem 0; letter-spacing: -.035em; text-shadow: 0 3px 24px #10271d; }
         #overlay p { max-width: 440px; line-height: 1.6; color: #e3e9d0; }
-        #enter { margin-top: 1.5rem; padding: 1rem 2rem; border: 1px solid #e9cf8b; background: #dfbe72; border-radius: 3px; color: #253a29; font: bold .78rem Arial, sans-serif; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+        #modes { display: flex; gap: 14px; margin-top: 1.5rem; flex-wrap: wrap; justify-content: center; }
+        #fight { padding: 1rem 2rem; border: 1px solid #e9cf8b; background: transparent; border-radius: 3px; color: #f4d996; font: bold .78rem Arial, sans-serif; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+        #fight:hover { background: rgba(223,190,114,.18); }
+        #enter { padding: 1rem 2rem; border: 1px solid #e9cf8b; background: #dfbe72; border-radius: 3px; color: #253a29; font: bold .78rem Arial, sans-serif; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
         #enter:hover { background: #f4d996; } #enter:disabled { opacity: .5; cursor: default; }
+        #actionbar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); display: none; gap: 3px; padding: 5px; z-index: 6; user-select: none;
+            background: linear-gradient(#3a2e22, #1d1610); border: 2px solid #6b5334; border-radius: 4px;
+            box-shadow: 0 0 0 1px #0d0905, inset 0 0 0 1px rgba(255,214,140,.18), 0 4px 14px rgba(0,0,0,.65); }
+        #actionbar.show { display: flex; }
+        .slot { position: relative; width: 48px; height: 48px; border-radius: 3px; cursor: pointer; padding: 0;
+            background: radial-gradient(circle at 50% 35%, #2b2218, #0f0b07 75%); border: 1px solid #040302;
+            box-shadow: inset 0 0 0 2px #4d3b25, inset 0 0 8px rgba(0,0,0,.9), 0 0 0 1px #7a5f3a; }
+        .slot:hover { box-shadow: inset 0 0 0 2px #c9a24e, inset 0 0 10px rgba(255,200,90,.25), 0 0 0 1px #e6c273; }
+        .slot:active { transform: translateY(1px); filter: brightness(1.25); }
+        .slot img { position: absolute; inset: 2px; width: calc(100% - 4px); height: calc(100% - 4px); object-fit: contain; pointer-events: none; }
+        .slot .key { z-index: 1; position: absolute; top: 2px; left: 4px; color: #f4e7c4; font: bold 11px Arial, sans-serif; text-shadow: 0 0 3px #000, 1px 1px 1px #000; pointer-events: none; }
+        @media (max-width: 760px) { #actionbar { bottom: 74px; } .slot { width: 32px; height: 32px; } .slot .key { font-size: 9px; top: 1px; left: 3px; } }
         #back { position: fixed; top: 20px; left: 22px; color: #fff5d7; text-decoration: none; z-index: 20; font: bold .75rem Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; text-shadow: 0 1px 6px #000; }
-        #hud { position: fixed; left: 22px; bottom: 20px; color: #fff5d7; font: .75rem Arial, sans-serif; line-height: 1.6; z-index: 5; text-shadow: 0 1px 5px #000; pointer-events: none; }
+        #hud { position: fixed; left: 22px; bottom: 84px; color: #fff5d7; font: .75rem Arial, sans-serif; line-height: 1.6; z-index: 5; text-shadow: 0 1px 5px #000; pointer-events: none; }
         #zone { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); color: #fff5d7; font: bold .7rem Arial, sans-serif; letter-spacing: .2em; text-transform: uppercase; text-shadow: 0 1px 6px #000; z-index: 5; white-space: nowrap; pointer-events: none; }
         #touch-controls { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 6; gap: 6px; grid-template-columns: repeat(3, 48px); }
         #touch-controls button { width: 48px; height: 48px; border: 1px solid #ffffff77; border-radius: 8px; background: #17352ba8; color: white; font-size: 1.2rem; touch-action: none; }
@@ -29,20 +44,35 @@
     <canvas id="scene" aria-label="A 3D prehistoric crater to explore"></canvas>
     <a id="back" href="/">&#8592; All games</a>
     <div id="zone">The Sunken Crater</div>
-    <div id="hud">WASD or arrow keys to move &middot; Mouse to look<br>Shift to run &middot; Space to jump &middot; Esc to release mouse<br>On touch: drag to look and use the arrows</div>
+    <div id="hud">WASD or arrow keys to move &middot; Mouse to look<br>Shift to run &middot; Space to jump &middot; F to fly (Space up, C down) &middot; F5 first/third person (scroll to zoom) &middot; Esc to release mouse<br>On touch: drag to look and use the arrows</div>
     <div id="touch-controls" aria-label="Movement controls">
         <button class="up" data-key="KeyW" aria-label="Move forward">&#9650;</button>
         <button class="left" data-key="KeyA" aria-label="Move left">&#9664;</button>
         <button data-key="KeyS" aria-label="Move backward">&#9660;</button>
         <button data-key="KeyD" aria-label="Move right">&#9654;</button>
     </div>
+    <div id="actionbar" aria-label="Action bar">
+        <button class="slot" type="button" aria-label="Slot 1"><span class="key">1</span></button>
+        <button class="slot" type="button" aria-label="Slot 2"><span class="key">2</span></button>
+        <button class="slot" type="button" aria-label="Slot 3"><span class="key">3</span></button>
+        <button class="slot" type="button" aria-label="Slot 4"><span class="key">4</span></button>
+        <button class="slot" type="button" aria-label="Slot 5"><span class="key">5</span></button>
+        <button class="slot" type="button" aria-label="Slot 6"><span class="key">6</span></button>
+        <button class="slot" type="button" aria-label="Slot 7"><span class="key">7</span></button>
+        <button class="slot" type="button" aria-label="Slot 8"><span class="key">8</span></button>
+        <button class="slot" type="button" aria-label="Slot 9"><span class="key">9</span></button>
+        <button class="slot" type="button" aria-label="Slot 0"><span class="key">0</span></button>
+    </div>
     <div id="overlay">
         <span class="eyebrow">A Creature Fighters exploration demo</span>
         <h1>The Sunken<br>Crater</h1>
         <p id="status">Step into a forgotten valley of giant ferns, glowing crystals, and curious creatures.</p>
-        <button id="enter" type="button">Explore the crater &nbsp; &#8594;</button>
+        <div id="modes">
+            <button id="fight" type="button">Creature Fights</button>
+            <button id="enter" type="button">Explore Mode</button>
+        </div>
     </div>
-    <script>window.CF_ASSETS = { ground: "{{ static_file('img/creature_fighters/ground_seamless.jpg') }}", rock: "{{ static_file('img/creature_fighters/rock.png') }}", bark: "{{ static_file('img/creature_fighters/bark.png') }}", cliff: "{{ static_file('img/creature_fighters/cliff.png') }}", volcano: "{{ static_file('img/creature_fighters/volcano.png') }}", crystal: "{{ static_file('img/creature_fighters/crystal.png') }}", volcanoModel: "{{ static_file('img/creature_fighters/cinderpeak.glb') }}", wyrmling: "{{ static_file('img/creature_fighters/wyrmling_animated.glb') }}", irithigrib: "{{ static_file('img/creature_fighters/irithigrib_animated.glb') }}" };</script>
+    <script>window.CF_ASSETS = { ground: "{{ static_file('img/creature_fighters/ground_seamless.jpg') }}", rock: "{{ static_file('img/creature_fighters/rock.png') }}", bark: "{{ static_file('img/creature_fighters/bark.png') }}", cliff: "{{ static_file('img/creature_fighters/cliff.png') }}", volcano: "{{ static_file('img/creature_fighters/volcano.png') }}", crystal: "{{ static_file('img/creature_fighters/crystal.png') }}", volcanoModel: "{{ static_file('img/creature_fighters/cinderpeak.glb') }}", wyrmling: "{{ static_file('img/creature_fighters/wyrmling_animated.glb') }}", sky: "{{ static_file('img/creature_fighters/cf_skybox.jpg') }}", lemora: "{{ static_file('img/creature_fighters/lemora_animated_with_effects.glb') }}", irithigrib: "{{ static_file('img/creature_fighters/irithigrib_animated.glb') }}" };</script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
     <script src="{{ static_file('js/creature_fighters/scene.js') }}"></script>

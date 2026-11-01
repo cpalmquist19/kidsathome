@@ -14,11 +14,34 @@
   renderer.outputEncoding = THREE.sRGBEncoding;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x9ed9cb);
-  new THREE.TextureLoader().load('/static/img/creature_fighters/sky.png', tex => {
-    tex.mapping = THREE.EquirectangularReflectionMapping;
-    tex.encoding = THREE.sRGBEncoding;
-    scene.background = tex;
+  // Sky dome: r128 can't use an equirectangular texture as scene.background, so wrap the image on an inside-out sphere that follows the camera.
+  const skyDome = new THREE.Mesh(new THREE.SphereGeometry(200, 48, 24), new THREE.MeshBasicMaterial({color: 0xffffff, side: THREE.BackSide, fog: false, depthWrite: false}));
+  skyDome.renderOrder = -1; skyDome.frustumCulled = false; skyDome.visible = false; scene.add(skyDome);
+  if (window.CF_ASSETS && CF_ASSETS.sky) new THREE.TextureLoader().load(CF_ASSETS.sky, tex => {
+    // The image's left and right edges don't match, which shows as a vertical seam on the dome. Pull both edges of every row
+    // toward their shared average color, fading out over SEAM_BLEND of the width, so the wrap-around joins smoothly.
+    const SEAM_BLEND = .15, img = tex.image, cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
+    const cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
+    try {
+      const W = cv.width, H = cv.height, band = Math.round(W * SEAM_BLEND), data = cx.getImageData(0, 0, W, H), d = data.data;
+      for (let y = 0; y < H; y++) {
+        const row = y * W * 4, L = row, R = row + (W - 1) * 4;
+        for (let c = 0; c < 3; c++) {
+          const a = d[L + c], b = d[R + c], avg = (a + b) / 2;
+          for (let x = 0; x < band; x++) {
+            const k = 1 - x / band, w = k * k * (3 - 2 * k);   // smooth falloff from the edge
+            const li = row + x * 4 + c, ri = row + (W - 1 - x) * 4 + c;
+            d[li] = Math.max(0, Math.min(255, d[li] + (avg - a) * w));
+            d[ri] = Math.max(0, Math.min(255, d[ri] + (avg - b) * w));
+          }
+        }
+      }
+      cx.putImageData(data, 0, 0);
+      tex = new THREE.CanvasTexture(cv);
+    } catch (e) { /* if pixels can't be read, fall back to the raw image */ }
+    tex.encoding = THREE.sRGBEncoding; skyDome.material.map = tex; skyDome.material.needsUpdate = true; skyDome.visible = true; sky.visible = false;   // hide the old painted-gradient sphere (defined below) once the image is ready
   });
+
   scene.fog = new THREE.Fog(0xaddbcc, 55, 145);
   const camera = new THREE.PerspectiveCamera(65, 1, .1, 220);
   scene.add(new THREE.HemisphereLight(0xe6f8d1, 0x526b3a, .85));
@@ -115,6 +138,7 @@
   function groundHeight(x,z){ if(!volcanoMeshes.length) return 0; rayOrigin.set(x,200,z); downRay.set(rayOrigin,rayDir); const hit=downRay.intersectObjects(volcanoMeshes,false)[0]; return hit?Math.max(0,hit.point.y):0; }
   for(let i=0;i<7;i++){const b=mesh(new THREE.IcosahedronGeometry(1.5+rand()*2,0),mat(0xa4b8a3,{transparent:true,opacity:.45}),-5+(rand()-.5)*4,27+i*2.5,-62); b.scale.set(1.4,1,1); procedural.push(b);}
   // Imported Cinderpeak volcano replaces the procedural one. The model's own ash plain is hidden because the scene has its own ground.
+  let volcanoFx = null;   // set once the volcano loads; called every frame with the time step
   if (window.CF_ASSETS && CF_ASSETS.volcanoModel && THREE.GLTFLoader) {
     new THREE.GLTFLoader().load(CF_ASSETS.volcanoModel, gltf => {
       const model = gltf.scene; let cone = null;
@@ -141,6 +165,55 @@
       }
       model.position.set(-c.x, -baseY - .04, -c.z); holder.position.set(-5, 0, -62);
       scene.add(holder); holder.updateMatrixWorld(true);
+      // Crater effects: rising smoke/ash puffs, occasional embers, and a flickering lava glow. Tune the constants below.
+      const lava = []; model.traverse(o => { if (o.name === 'LavaLake') lava.push(o); });
+      const cb = new THREE.Box3().setFromObject(lava[0] || cone || model), crater = cb.getCenter(new THREE.Vector3());
+      if (!lava.length) crater.y = cb.max.y; else crater.y = cb.max.y + .3;
+      const softTexture = (stops) => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+        stops.forEach(([t, col]) => g.addColorStop(t, col)); x.fillStyle = g; x.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t; };
+      const smokeTex = softTexture([[0, 'rgba(255,255,255,.9)'], [.5, 'rgba(255,255,255,.45)'], [1, 'rgba(255,255,255,0)']]);
+      const emberTex = softTexture([[0, 'rgba(255,255,230,1)'], [.35, 'rgba(255,170,60,.9)'], [1, 'rgba(255,80,0,0)']]);
+      const SMOKE_COUNT = 28, SMOKE_LIFE = 9, SMOKE_RISE = 4.2, EMBER_COUNT = 26, EMBER_RATE = 3;   // embers per second on average
+      const smoke = [], embers = [], r = Math.random;
+      for (let i = 0; i < SMOKE_COUNT; i++) {
+        const m = new THREE.SpriteMaterial({map: smokeTex, color: 0x6b625c, transparent: true, depthWrite: false, opacity: 0});
+        const sp = new THREE.Sprite(m); sp.visible = false; scene.add(sp); smoke.push({sp, age: r() * SMOKE_LIFE, life: SMOKE_LIFE * (.8 + r() * .4), vx: 0, vz: 0, spin: 0});
+      }
+      const resetSmoke = (p, fresh) => {
+        p.age = 0; p.life = SMOKE_LIFE * (.8 + r() * .4); p.vx = (r() - .3) * .9; p.vz = (r() - .5) * .9;   // gentle drift to one side, like wind
+        p.sp.position.set(crater.x + (r() - .5) * 5, crater.y, crater.z + (r() - .5) * 5); p.size0 = 3 + r() * 2;
+      };
+      smoke.forEach(p => { const a = p.age; resetSmoke(p); p.age = a % p.life; });   // stagger so the column is already full at the start
+      for (let i = 0; i < EMBER_COUNT; i++) {
+        const m = new THREE.SpriteMaterial({map: emberTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, opacity: 0});
+        const sp = new THREE.Sprite(m); sp.visible = false; scene.add(sp); embers.push({sp, age: 99, life: 1, v: new THREE.Vector3()});
+      }
+      const glow = new THREE.PointLight(0xff6a1f, 2, 42, 1.6); glow.position.set(crater.x, crater.y + 1.5, crater.z); scene.add(glow);
+      let t = 0;
+      volcanoFx = dt => {
+        t += dt;
+        smoke.forEach(p => {
+          p.age += dt; if (p.age > p.life) resetSmoke(p);
+          const k = p.age / p.life, sp = p.sp;
+          sp.visible = true; sp.position.x += p.vx * dt; sp.position.z += p.vz * dt; sp.position.y += SMOKE_RISE * (1 - k * .5) * dt;
+          sp.scale.setScalar(p.size0 * (1 + k * 3.2));
+          sp.material.opacity = Math.min(1, k * 8) * (1 - k) * .55;      // fade in at the vent, fade out as it rises
+          sp.material.color.setRGB(.42 + .2 * k, .38 + .2 * k, .36 + .2 * k);   // dark fresh ash, paler as it thins
+        });
+        for (let n = Math.random() < EMBER_RATE * dt ? 1 : 0, i = 0; n && i < embers.length; i++) {
+          const e = embers[i]; if (e.age < e.life) continue;
+          e.age = 0; e.life = 1.6 + r() * 1.6; e.sp.visible = true;
+          e.sp.position.set(crater.x + (r() - .5) * 4, crater.y + .5, crater.z + (r() - .5) * 4);
+          e.v.set((r() - .5) * 5, 7 + r() * 7, (r() - .5) * 5); e.sp.scale.setScalar(.35 + r() * .35); break;
+        }
+        embers.forEach(e => {
+          if (e.age >= e.life) { e.sp.visible = false; return; }
+          e.age += dt; e.v.y -= 7 * dt; e.sp.position.addScaledVector(e.v, dt);
+          e.sp.material.opacity = Math.max(0, 1 - e.age / e.life) * (.7 + .3 * Math.sin(e.age * 40));   // fade out while twinkling
+        });
+        glow.intensity = 2 + Math.sin(t * 7.3) * .5 + Math.sin(t * 17.1 + 1.3) * .35 + Math.sin(t * 3.1) * .4;   // lava flicker
+        lava.forEach(o => { const m = o.material; if (m && m.emissive) m.emissiveIntensity = 1 + .35 * Math.sin(t * 2.4) + .15 * Math.sin(t * 6.1); });
+      };
       procedural.forEach(o => scene.remove(o));
     }, undefined, () => {});
   }
@@ -187,6 +260,45 @@
     return g;
   }
   const creatures=[creature(-7,-14,1, .4),creature(12,-28,.7,-.7)];
+  // Bounds of a posed model: a plain Box3 ignores the skeleton, so measure each skinned vertex after the bones move it.
+  function measurePosedBox(root) {
+    const box = new THREE.Box3(), v = new THREE.Vector3();
+    root.traverse(o => {
+      if (o.isSkinnedMesh) {
+        o.skeleton.update(); const p = o.geometry.attributes.position, step = Math.max(1, Math.floor(p.count / 4000));
+        for (let i = 0; i < p.count; i += step) { v.fromBufferAttribute(p, i); o.boneTransform(i, v); box.expandByPoint(v.applyMatrix4(o.matrixWorld)); }
+      } else if (o.isMesh) box.union(new THREE.Box3().setFromObject(o));
+    });
+    return box;
+  }
+  // Action-bar portraits: render a small picture of each model (in its idle pose) and put it in its slot. Slot 0 is the first button.
+  // Playable models: action-bar button index -> {name, template (untouched clone), clips, scale, original (world instance to hide while played)}.
+  const avatarRegistry = {};
+  let thumbRenderer = null;
+  function makeThumb(source, clips, slot, name) {
+    try {
+      const button = document.querySelectorAll('#actionbar .slot')[slot]; if (!button) return;
+      if (!thumbRenderer) {
+        thumbRenderer = new THREE.WebGLRenderer({alpha: true, antialias: true, preserveDrawingBuffer: true});
+        thumbRenderer.setSize(128, 128, false); thumbRenderer.outputEncoding = THREE.sRGBEncoding; thumbRenderer.setClearColor(0x000000, 0);
+      }
+      const ts = new THREE.Scene(), clone = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(source) : source.clone();
+      clone.position.set(0, 0, 0); clone.rotation.set(0, 0, 0); clone.scale.set(1, 1, 1);
+      ts.add(clone); ts.add(new THREE.HemisphereLight(0xffffff, 0x556655, 1.1));
+      const key = new THREE.DirectionalLight(0xfff0d0, 1.3); key.position.set(3, 5, 4); ts.add(key);
+      const idle = (clips || []).find(c => /^idle/i.test(c.name)) || (clips || [])[0];
+      if (idle) { const mx = new THREE.AnimationMixer(clone); mx.clipAction(idle).play(); mx.update(0); }
+      clone.updateMatrixWorld(true);
+      const box = measurePosedBox(clone);
+      const sphere = box.getBoundingSphere(new THREE.Sphere());
+      const cam = new THREE.PerspectiveCamera(30, 1, .01, 1000);
+      const dist = sphere.radius / Math.sin(THREE.MathUtils.degToRad(15)) * .72;   // box-sphere overestimates, so frame a bit tighter
+      cam.position.copy(sphere.center).add(new THREE.Vector3(.75, .4, 1).normalize().multiplyScalar(dist)); cam.lookAt(sphere.center);
+      thumbRenderer.render(ts, cam);
+      const img = document.createElement('img'); img.src = thumbRenderer.domElement.toDataURL('image/png'); img.alt = name; img.draggable = false;
+      button.appendChild(img); button.title = name;
+    } catch (e) { /* a missing portrait just leaves the slot empty */ }
+  }
   // Swap the placeholder shapes for the imported wyrmling model (each creature gets its own skinned clone).
   // Animation controller: one per creature. play(name) cross-fades into a clip. Loops (idle, walk, fly) repeat, "die" holds its
   // last frame, and every other clip plays once and then fades back to idle. The AI system can drive creatures through play().
@@ -195,7 +307,7 @@
     const mixer = new THREE.AnimationMixer(root), actions = {};
     clips.forEach(c => { actions[c.name] = mixer.clipAction(c); });
     const idleName = (clips.find(c => /^idle/i.test(c.name)) || clips[0]).name;
-    const kindOf = name => /die/i.test(name) ? 'hold' : /^(idle|walk|fly)$/i.test(name) ? 'loop' : 'once';
+    const kindOf = name => /die/i.test(name) ? 'hold' : /^(idle|walk|run|fly)$/i.test(name) ? 'loop' : 'once';
     let current = null, currentName = null;
     function play(name, fade = .25) {
       const next = actions[name]; if (!next) return false;
@@ -206,7 +318,7 @@
       if (current && current !== next) current.crossFadeTo(next, fade, false); else next.fadeIn(fade);
       next.play(); current = next; currentName = name; return true;
     }
-    mixer.addEventListener('finished', e => { if (e.action === current && kindOf(currentName) === 'once') play(idleName, .3); });
+    mixer.addEventListener('finished', e => { if (e.action === current && kindOf(currentName) === 'once') play(currentName === 'take_off' && actions.fly ? 'fly' : idleName, .3); });   // take_off flows into fly
     return { root, label: '', names: Object.keys(actions), actions, play, update: dt => mixer.update(dt), get current() { return currentName; } };
   }
   window.creatureAnimators = animators;   // handy from the browser console: creatureAnimators[0].play('lunge_bite')
@@ -216,6 +328,7 @@
       const clips = gltf.animations || [], idleClip = clips.find(c => /^idle/i.test(c.name)) || clips[0];
       if (idleClip) { const m0 = new THREE.AnimationMixer(gltf.scene); m0.clipAction(idleClip).play(); m0.update(0); }   // measure the idle pose
       gltf.scene.updateMatrixWorld(true);
+      makeThumb(gltf.scene, clips, 1, 'Wyrmling');
       // Lowest point of the posed model. A plain bounding box ignores the skeleton, which can leave the creature floating or sunk.
       let minY = Infinity; const tmp = new THREE.Vector3();
       gltf.scene.traverse(o => {
@@ -230,6 +343,7 @@
       const FOREBODY_MODEL_LENGTH = 2.0, ONE_INCH_PX = 96, VIEW_DISTANCE = 4;
       const pxPerUnitAtOne = window.innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
       const s = (ONE_INCH_PX * VIEW_DISTANCE / pxPerUnitAtOne) / FOREBODY_MODEL_LENGTH;
+      avatarRegistry[1] = {name: 'Wyrmling', template: cloneModel(gltf.scene), clips, scale: s, original: null};
       creatures.forEach((g, i) => {
         const model = cloneModel(gltf.scene);   // always clone the untouched original so the scaling isn't applied twice
         model.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
@@ -240,26 +354,97 @@
       });
     }, undefined, () => {});
   }
-  // Irithigrib: a single imported model placed near the start point. Change IRITHIGRIB_HEIGHT / the position to adjust it.
-  if (window.CF_ASSETS && CF_ASSETS.irithigrib && THREE.GLTFLoader) {
-    new THREE.GLTFLoader().load(CF_ASSETS.irithigrib, gltf => {
-      const IRITHIGRIB_HEIGHT = 3, model = gltf.scene;
+  // Single imported showcase models placed near the start point. Change height / x / z / turn (radians) to adjust each one.
+  function placeShowcase(url, label, height, x, z, turn, slot) {
+    if (!url || !THREE.GLTFLoader) return;
+    new THREE.GLTFLoader().load(url, gltf => {
+      const model = gltf.scene;
       model.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
       model.updateMatrixWorld(true);
+      makeThumb(model, gltf.animations, slot, label);   // before scaling, so the portrait uses the untouched model
+      const template = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(model) : model.clone();
       const box = new THREE.Box3().setFromObject(model), size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
-      const s = IRITHIGRIB_HEIGHT / size.y;
+      const s = height / size.y;
       model.scale.setScalar(s); model.position.set(-center.x * s, -box.min.y * s, -center.z * s);   // centered, feet on the ground
-      const holder = new THREE.Group(); holder.position.set(4, 0, 2); holder.rotation.y = Math.PI * .85;   // turned to face the start point
+      const holder = new THREE.Group(); holder.position.set(x, 0, z); holder.rotation.y = turn;
       holder.add(model); scene.add(holder);
+      avatarRegistry[slot] = {name: label, template, clips: gltf.animations || [], scale: s, original: holder};
       // Listed in the animation panel even with no clips, so Tab can still select it.
       const clips = gltf.animations || [];
       const anim = clips.length ? createAnimator(model, clips) : { root: model, names: [], actions: {}, play: () => false, update: () => {}, current: null };
       if (clips.length) anim.play((clips.find(c => /^idle/i.test(c.name)) || clips[0]).name, 0);
-      anim.label = 'Irithigrib'; animators.push(anim);
+      anim.label = label; animators.push(anim);
     }, undefined, () => {});
   }
-  const player={ground:0,x:0,z:10,y:1.7,vertical:0,yaw:0,pitch:0}; const keys=new Set(); let locked=false, started=false;
-  // Animation test panel: click a button (or press 1-9) to play that clip on every creature. ` (backtick) shows or hides it.
+  if (window.CF_ASSETS) {
+    placeShowcase(CF_ASSETS.irithigrib, 'Irithigrib', 3, 4, 2, Math.PI * .85, 2);    // turned to face the start point
+    placeShowcase(CF_ASSETS.lemora, 'Lemora', 23.4, -12, -4, -Math.PI * .85, 3);
+  }
+  let eyeHeight = 1.7, avatar = null, thirdPerson = false, camZoom = .4;   // camZoom: third-person distance as a fraction of the model's size; the scroll wheel changes it   // F5 toggles third-person (only while playing as a model)
+    // avatar = the model the player currently controls (null = free camera)
+  window.cfDebug=()=>({y:player.y,ground:player.ground,eye:eyeHeight,flying,vertical:player.vertical});   // console helper
+  const player={ground:0,x:0,z:10,y:1.7,vertical:0,yaw:0,pitch:0}; const keys=new Set(); let locked=false, started=false, flying=false;   // F toggles flying: look to steer, W/S move along the view, Space up, C down
+  // Playing as a model: the camera sits at the model's head, and the model walks/runs/idles with the player.
+  function clearAvatar() {
+    if (!avatar) return;
+    scene.remove(avatar.holder); const i = animators.indexOf(avatar.anim); if (i >= 0) animators.splice(i, 1);
+    if (avatar.entry.original) avatar.entry.original.visible = true;
+    avatar = null; eyeHeight = 1.7; camera.near = .1; camera.updateProjectionMatrix();
+  }
+  function switchAvatar(index) {
+    const entry = avatarRegistry[index]; if (!entry || (avatar && avatar.entry === entry)) return;
+    clearAvatar();
+    const clone = THREE.SkeletonUtils ? THREE.SkeletonUtils.clone(entry.template) : entry.template.clone();
+    clone.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
+    const clips = entry.clips, anim = clips.length ? createAnimator(clone, clips) : null;
+    if (anim) { anim.label = entry.name; anim.play((clips.find(c => /^idle/i.test(c.name)) || clips[0]).name, 0); anim.update(0); }
+    clone.updateMatrixWorld(true);
+    const box = measurePosedBox(clone), center = box.getCenter(new THREE.Vector3()), head = new THREE.Vector3();
+    // Head position: a bone/node named "head", else the average of the eye nodes, else the top of the model.
+    let headNode = null; const eyes = [];
+    clone.traverse(o => { if (!headNode && /^head$/i.test(o.name)) headNode = o; if (/^eye_[lr]\d?$/i.test(o.name)) eyes.push(o); });
+    if (headNode) headNode.getWorldPosition(head);
+    else if (eyes.length) { const q = new THREE.Vector3(); eyes.forEach(e => head.add(e.getWorldPosition(q))); head.divideScalar(eyes.length); }
+    else head.set(center.x, box.max.y, center.z);
+    head.y += (box.max.y - box.min.y) * HEAD_LIFT;   // a head joint sits at the base of the skull; eyes are a little higher
+    // The model's front is whichever way its head lies from its middle (found automatically, so any model orientation works).
+    let fx = head.x - center.x, fz = head.z - center.z; if (Math.hypot(fx, fz) < 1e-3) { fx = 0; fz = 1; }
+    // Put the camera just ahead of the snout tip, at head height, so the model's own face is not in the way.
+    const flen = Math.hypot(fx, fz) || 1, ux = fx / flen, uz = fz / flen; let tip = 0;
+    [box.min.x, box.max.x].forEach(x => [box.min.z, box.max.z].forEach(z => { tip = Math.max(tip, (x - center.x) * ux + (z - center.z) * uz); }));
+    const span = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
+    const sc = entry.scale; clone.scale.setScalar(sc); clone.position.set(-center.x * sc, -box.min.y * sc, -center.z * sc);
+    const holder = new THREE.Group(); holder.add(clone); scene.add(holder);
+    if (entry.original) entry.original.visible = false;   // the world copy of this creature becomes the player
+    if (anim) animators.push(anim);
+    avatar = {entry, holder, anim, angle: Math.atan2(fx, fz), headForward: (Math.max(tip, flen) + span * .03) * sc, size: span * sc, state: 'idle'};
+    eyeHeight = (head.y - box.min.y) * sc;
+    camera.near = Math.min(.1, eyeHeight * .04); camera.updateProjectionMatrix();   // small creatures need a closer near plane
+    player.y = player.ground + eyeHeight; player.vertical = 0;
+    document.querySelectorAll('#actionbar .slot').forEach((b, i) => b.classList.toggle('active', i === index));
+  }
+  const HEAD_LIFT = .04;
+  // Called every frame: put the model under the player and pick walk / run / idle from how they are moving.
+  function syncAvatar(moving, running) {
+    if (!avatar) return;
+    avatar.holder.position.set(player.x, player.y - eyeHeight, player.z);
+    avatar.holder.rotation.y = player.yaw + Math.PI - avatar.angle;
+    if (avatar.anim) {
+      const an = avatar.anim, names = an.names, cur = an.current, loops = /^(idle|walk|run|fly)$/i;
+      // A clip picked from the panel / hotkeys is "pinned": attacks play out, and looping clips (fly, idle...) stay until you start or stop moving.
+      if (avatar.pin) {
+        if (cur === avatar.pin) { if (!loops.test(cur) || moving === avatar.pinMoving) return; avatar.pin = null; }
+        else if (avatar.pin === 'take_off' && cur === 'fly') { avatar.pin = 'fly'; avatar.pinMoving = moving; return; }
+        else avatar.pin = null;
+      }
+      const want = flying && names.includes('fly') ? 'fly' : moving ? (running && names.includes('run') ? 'run' : 'walk') : 'idle';
+      if (want !== cur && names.includes(want) && (!cur || loops.test(cur) || (/^die$/i.test(cur) && moving))) an.play(want);
+    }
+  }
+  const slotButtons = document.querySelectorAll('#actionbar .slot');
+  slotButtons.forEach((b, i) => b.addEventListener('click', () => switchAvatar(i)));
+  window.switchAvatar = switchAvatar;   // handy from the browser console
+  // Animation test panel: click a button to play that clip on every creature. ` (backtick) shows or hides it.
   // While the mouse is captured for looking around, press Esc to get the cursor back before clicking.
   const animPanel = document.createElement('div');
   animPanel.style.cssText = 'position:fixed;right:14px;bottom:14px;padding:10px;background:rgba(10,20,20,.72);color:#e8fff6;font:12px/1.4 system-ui,sans-serif;border-radius:10px;z-index:20;display:flex;flex-direction:column;gap:5px;min-width:150px';
@@ -268,19 +453,24 @@
   document.body.appendChild(animPanel);
   let panelNames = '', selected = null;   // selected = name of the model type whose animations the panel shows (Tab cycles types)
   // Models are grouped by type (all wyrmlings are one type, Irithigrib is another). Tab cycles types; clips play on every model of the type.
+  // Hotkeys for the panel's clips (top 1-9/0 keys pick the model you play as, so clips use these letters): button N -> key.
+  const ANIM_KEYS = ['KeyQ', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'KeyG', 'KeyH', 'KeyJ'];
+  // While playing as a model, panel clips go to that model only; otherwise to every model of the selected type.
+  const pinClip = name => { if (avatar) { avatar.pin = name; avatar.pinMoving = ['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].some(c => keys.has(c)); } };
+  const animGroup = () => avatar && avatar.anim && avatar.entry.name === selected ? [avatar.anim] : animators.filter(x => x.label === selected);
   const modelTypes = () => [...new Set(animators.map(x => x.label))];
   function refreshAnimPanel() {
-    const types = modelTypes(); if (!types.includes(selected)) selected = types[0] || null;
-    const group = animators.filter(x => x.label === selected), a = group[0];
-    const key = selected + '#' + (a ? a.names.join('|') : '') + '#' + types.length;
+    const types = modelTypes(); if (avatar) selected = avatar.entry.name; if (!types.includes(selected)) selected = types[0] || null;
+    const group = animGroup(), a = group[0];
+    const key = selected + '#' + (a ? a.names.join('|') : '') + '#' + types.length + '#' + (avatar ? 'p' : '');
     if (key !== panelNames) {   // rebuild the buttons only when the model type or clip list changes
       panelNames = key; animPanel.textContent = '';
       const title = document.createElement('div'); title.style.cssText = 'font-weight:700;letter-spacing:.04em;margin-bottom:2px';
-      title.textContent = a ? 'Model ' + (types.indexOf(selected) + 1) + '/' + types.length + ': ' + selected + '  (Tab = next model)' : 'Creature models loading…'; animPanel.appendChild(title);
+      title.textContent = a ? (avatar ? 'Playing as ' + selected : 'Model ' + (types.indexOf(selected) + 1) + '/' + types.length + ': ' + selected + '  (Tab = next model)') : 'Creature models loading…'; animPanel.appendChild(title);
       if (a) a.names.forEach((n, i) => {
-        const btn = document.createElement('button'); btn.type = 'button'; btn.dataset.clip = n; btn.textContent = (i < 9 ? (i + 1) + '  ' : '') + n;
+        const btn = document.createElement('button'); btn.type = 'button'; btn.dataset.clip = n; btn.textContent = (ANIM_KEYS[i] ? ANIM_KEYS[i].slice(3) + '  ' : '') + n;
         btn.style.cssText = 'text-align:left;padding:5px 9px;border:1px solid rgba(255,255,255,.25);border-radius:6px;background:rgba(255,255,255,.08);color:inherit;font:inherit;cursor:pointer';
-        btn.addEventListener('click', () => { group.forEach(x => x.play(n)); refreshAnimPanel(); });
+        btn.addEventListener('click', () => { pinClip(n); animGroup().forEach(x => x.play(n)); refreshAnimPanel(); });
         animPanel.appendChild(btn);
       });
       if (a && !a.names.length) { const note = document.createElement('div'); note.style.opacity = '.75'; note.textContent = 'This model has no animations.'; animPanel.appendChild(note); }
@@ -289,16 +479,24 @@
   }
   refreshAnimPanel();
   window.addEventListener('keydown', e => {
+    if (e.code === 'F5') { e.preventDefault(); if (started) thirdPerson = !thirdPerson; return; }   // F5 switches first/third person instead of reloading
+    if (e.code === 'KeyF' && started) { flying = !flying; player.vertical = 0; return; }
     if (e.code === 'Backquote') { animPanel.style.display = animPanel.style.display === 'none' ? 'flex' : 'none'; return; }
+    if (started) { const m = /^Digit(\d)$/.exec(e.code); if (m) { switchAvatar((+m[1] + 9) % 10); return; } }   // number keys pick the model you play as (slot 1..0)
+    if (animPanel.style.display === 'none') return;   // panel hidden: Tab does nothing
     const types = modelTypes();
-    if (e.code === 'Tab') { e.preventDefault(); if (types.length) { selected = types[(types.indexOf(selected) + (e.shiftKey ? types.length - 1 : 1)) % types.length]; refreshAnimPanel(); } return; }
-    const m = /^Digit([1-9])$/.exec(e.code); if (!m) return;
-    const group = animators.filter(x => x.label === selected), name = group[0] && group[0].names[+m[1] - 1];
-    if (name) { group.forEach(x => x.play(name)); refreshAnimPanel(); }
+    const ai = ANIM_KEYS.indexOf(e.code);
+    if (ai >= 0 && !e.ctrlKey && !e.metaKey) { const g = animGroup(), name = g[0] && g[0].names[ai]; if (name) { pinClip(name); g.forEach(x => x.play(name)); refreshAnimPanel(); } return; }
+    if (e.code === 'Tab') { e.preventDefault(); if (types.length && !avatar) { selected = types[(types.indexOf(selected) + (e.shiftKey ? types.length - 1 : 1)) % types.length]; refreshAnimPanel(); } return; }
   });
+  // Scroll wheel zooms the third-person camera in and out.
+  window.addEventListener('wheel', e => { if (!started || !avatar || !thirdPerson) return; e.preventDefault(); camZoom = Math.min(2, Math.max(.08, camZoom * Math.exp(e.deltaY * .0012))); }, {passive: false});
   setInterval(refreshAnimPanel, 250);
   function resize(){const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();} window.addEventListener('resize',resize);resize();
-  enter.addEventListener('click',()=>{started=true;overlay.hidden=true;if(canvas.requestPointerLock && !('ontouchstart' in window)) canvas.requestPointerLock();});
+  // Creature Fights is a placeholder for now; Explore Mode (the Enter button) starts the existing game.
+  const fightButton = document.getElementById('fight');
+  if (fightButton) fightButton.addEventListener('click', () => { status.textContent = 'Creature Fights is coming soon. Try Explore Mode for now!'; });
+  enter.addEventListener('click',()=>{started=true;overlay.hidden=true;const bar=document.getElementById('actionbar');if(bar)bar.classList.add('show');if(canvas.requestPointerLock && !('ontouchstart' in window)) canvas.requestPointerLock();});
   document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;});
   canvas.addEventListener('click',()=>{if(started && !locked && canvas.requestPointerLock && !('ontouchstart' in window)) canvas.requestPointerLock();});
   document.addEventListener('mousemove',e=>{if(locked){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch-e.movementY*.002));}});
@@ -307,11 +505,17 @@
   let touchX=null;canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')touchX=e.clientX;});canvas.addEventListener('pointermove',e=>{if(e.pointerType==='touch' && touchX!==null){player.yaw-=(e.clientX-touchX)*.008;touchX=e.clientX;}});canvas.addEventListener('pointerup',()=>touchX=null);canvas.addEventListener('pointercancel',()=>touchX=null);
   document.querySelectorAll('[data-key]').forEach(button=>{const key=button.dataset.key;button.addEventListener('pointerdown',e=>{e.preventDefault();button.setPointerCapture(e.pointerId);keys.add(key);}); ['pointerup','pointercancel','lostpointercapture'].forEach(type=>button.addEventListener(type,()=>keys.delete(key)));});
   let previous=performance.now(); function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-previous)/1000,.05);previous=now;
-    if(started){const forward=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0), strafe=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);const length=Math.hypot(forward,strafe)||1;const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')?15:9)*dt/length;player.x+=(-Math.sin(player.yaw)*forward+Math.cos(player.yaw)*strafe)*speed;player.z+=(-Math.cos(player.yaw)*forward-Math.sin(player.yaw)*strafe)*speed;const distance=Math.hypot(player.x,player.z);if(distance>68){player.x*=68/distance;player.z*=68/distance;} if(!volcanoMeshes.length){const vx=player.x-volcanoBlock.x,vz=player.z-volcanoBlock.z,vd=Math.hypot(vx,vz);if(vd<volcanoBlock.r){const k=volcanoBlock.r/(vd||1);player.x=volcanoBlock.x+(vd?vx*k:volcanoBlock.r);player.z=volcanoBlock.z+(vd?vz*k:0);}}
-      player.ground+=(groundHeight(player.x,player.z)-player.ground)*Math.min(1,dt*18);const floor=1.7+player.ground;
-      if(keys.has('Space')&&player.y<=floor+.02){player.vertical=7;}player.vertical-=18*dt;player.y=Math.max(floor,player.y+player.vertical*dt);if(player.y<=floor)player.vertical=0;}
-    animators.forEach(a=>a.update(dt));
-    camera.position.set(player.x,player.y,player.z);camera.rotation.order='YXZ';camera.rotation.set(player.pitch,player.yaw,0);renderer.render(scene,camera);
+    if(started){const forward=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0), strafe=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);const length=Math.hypot(forward,strafe)||1;const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')?(flying?30:15):(flying?18:9))*dt/length, fp=flying?Math.cos(player.pitch):1;player.x+=(-Math.sin(player.yaw)*forward*fp+Math.cos(player.yaw)*strafe)*speed;player.z+=(-Math.cos(player.yaw)*forward*fp-Math.sin(player.yaw)*strafe)*speed;if(flying)player.y+=Math.sin(player.pitch)*forward*speed;const distance=Math.hypot(player.x,player.z);if(distance>68){player.x*=68/distance;player.z*=68/distance;} if(!volcanoMeshes.length){const vx=player.x-volcanoBlock.x,vz=player.z-volcanoBlock.z,vd=Math.hypot(vx,vz);if(vd<volcanoBlock.r){const k=volcanoBlock.r/(vd||1);player.x=volcanoBlock.x+(vd?vx*k:volcanoBlock.r);player.z=volcanoBlock.z+(vd?vz*k:0);}}
+      player.ground+=(groundHeight(player.x,player.z)-player.ground)*Math.min(1,dt*18);const floor=eyeHeight+player.ground;
+      if(flying){player.vertical=0;player.y+=((keys.has('Space')?1:0)-(keys.has('KeyC')?1:0))*(keys.has('ShiftLeft')||keys.has('ShiftRight')?24:14)*dt;player.y=Math.min(150,Math.max(floor,player.y));}
+      else{if(keys.has('Space')&&player.y<=floor+.02){player.vertical=7;}player.vertical-=18*dt;player.y=Math.max(floor,player.y+player.vertical*dt);if(player.y<=floor)player.vertical=0;}}
+    if(started){syncAvatar(keys.has('KeyW')||keys.has('KeyS')||keys.has('KeyA')||keys.has('KeyD')||keys.has('ArrowUp')||keys.has('ArrowDown')||keys.has('ArrowLeft')||keys.has('ArrowRight'),keys.has('ShiftLeft')||keys.has('ShiftRight'));}
+    animators.forEach(a=>a.update(dt)); if(volcanoFx)volcanoFx(dt);
+    if(avatar&&thirdPerson){   // orbit behind the model: look where the player looks, stand back along that line
+      const cp=Math.cos(player.pitch),fx=-Math.sin(player.yaw)*cp,fy=Math.sin(player.pitch),fz=-Math.cos(player.yaw)*cp,dist=Math.max(avatar.size*camZoom,.6);
+      const ty=player.y-eyeHeight*.15; camera.position.set(player.x-fx*dist,Math.max(player.ground+.15,ty-fy*dist),player.z-fz*dist);
+    } else camera.position.set(player.x+(avatar?-Math.sin(player.yaw)*avatar.headForward:0),player.y,player.z+(avatar?-Math.cos(player.yaw)*avatar.headForward:0));
+    camera.rotation.order='YXZ';camera.rotation.set(player.pitch,player.yaw,0);skyDome.position.copy(camera.position);renderer.render(scene,camera);
   } requestAnimationFrame(frame);
 })();
 
