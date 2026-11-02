@@ -34,22 +34,41 @@
         #back { position: fixed; top: 20px; left: 22px; color: #fff5d7; text-decoration: none; z-index: 20; font: bold .75rem Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; text-shadow: 0 1px 6px #000; }
         #hud { position: fixed; left: 22px; bottom: 84px; color: #fff5d7; font: .75rem Arial, sans-serif; line-height: 1.6; z-index: 5; text-shadow: 0 1px 5px #000; pointer-events: none; }
         #zone { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); color: #fff5d7; font: bold .7rem Arial, sans-serif; letter-spacing: .2em; text-transform: uppercase; text-shadow: 0 1px 6px #000; z-index: 5; white-space: nowrap; pointer-events: none; }
-        #touch-controls { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 6; gap: 6px; grid-template-columns: repeat(3, 48px); }
-        #touch-controls button { width: 48px; height: 48px; border: 1px solid #ffffff77; border-radius: 8px; background: #17352ba8; color: white; font-size: 1.2rem; touch-action: none; }
+        /* Mobile controls: everything below shows only on touch devices (coarse pointer). */
+        #touch-controls, #touch-actions { display: none; position: fixed; bottom: 22px; z-index: 6; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+        #touch-controls { left: 18px; gap: 6px; grid-template-columns: repeat(3, 54px); }
+        #touch-actions { right: 16px; gap: 8px; grid-template-columns: repeat(2, 58px); }
+        #touch-controls button, #touch-actions button { border: 1px solid #ffffff77; border-radius: 10px; background: #17352bc4; color: #fff5d7; font: bold .68rem Arial, sans-serif; letter-spacing: .04em; touch-action: none; padding: 0; }
+        #touch-controls button { width: 54px; height: 54px; font-size: 1.3rem; }
+        #touch-actions button { width: 58px; height: 52px; }
+        #touch-controls button:active, #touch-actions button:active, #touch-actions button.on { background: #3f7f63e0; border-color: #e9cf8b; }
         #touch-controls .up { grid-column: 2; } #touch-controls .left { grid-column: 1; }
-        @media (pointer: coarse) { #touch-controls { display: grid; } #hud { max-width: 42%; } }
+        @media (pointer: coarse) {
+            #touch-controls, #touch-actions { display: grid; }
+            #hud { display: none; }
+            #actionbar { bottom: auto; top: 44px; }
+            #modes button { padding: .9rem 1.4rem; }
+        }
     </style>
 </head>
 <body>
     <canvas id="scene" aria-label="A 3D prehistoric crater to explore"></canvas>
     <a id="back" href="/">&#8592; All games</a>
     <div id="zone">The Sunken Crater</div>
-    <div id="hud">WASD or arrow keys to move &middot; Mouse to look<br>Shift to run &middot; Space to jump &middot; F to fly (Space up, C down) &middot; F5 first/third person (scroll to zoom) &middot; Esc to release mouse<br>On touch: drag to look and use the arrows</div>
+    <div id="hud">WASD or arrow keys to move &middot; Mouse to look<br>Shift to run &middot; Space to jump &middot; F to fly (Space up, C down) &middot; F5 first/third person (scroll to zoom) &middot; Esc to release mouse</div>
     <div id="touch-controls" aria-label="Movement controls">
         <button class="up" data-key="KeyW" aria-label="Move forward">&#9650;</button>
         <button class="left" data-key="KeyA" aria-label="Move left">&#9664;</button>
         <button data-key="KeyS" aria-label="Move backward">&#9660;</button>
         <button data-key="KeyD" aria-label="Move right">&#9654;</button>
+    </div>
+    <div id="touch-actions" aria-label="Action controls">
+        <button type="button" data-key="Space" aria-label="Jump or fly up">Jump<br>/ Up</button>
+        <button type="button" data-key="KeyC" aria-label="Fly down">Down</button>
+        <button type="button" data-key="ShiftLeft" aria-label="Run">Run</button>
+        <button type="button" data-tap="KeyF" aria-label="Toggle flying">Fly</button>
+        <button type="button" data-tap="F5" aria-label="Switch first or third person">View</button>
+        <button type="button" data-tap="Backquote" aria-label="Show or hide animation panel">Anims</button>
     </div>
     <div id="actionbar" aria-label="Action bar">
         <button class="slot" type="button" aria-label="Slot 1"><span class="key">1</span></button>
@@ -72,7 +91,7 @@
             <button id="enter" type="button">Explore Mode</button>
         </div>
     </div>
-    <script>window.CF_ASSETS = { ground: "{{ static_file('img/creature_fighters/ground_seamless.jpg') }}", rock: "{{ static_file('img/creature_fighters/rock.png') }}", bark: "{{ static_file('img/creature_fighters/bark.png') }}", cliff: "{{ static_file('img/creature_fighters/cliff.png') }}", volcano: "{{ static_file('img/creature_fighters/volcano.png') }}", crystal: "{{ static_file('img/creature_fighters/crystal.png') }}", volcanoModel: "{{ static_file('img/creature_fighters/cinderpeak.glb') }}", wyrmling: "{{ static_file('img/creature_fighters/wyrmling_animated.glb') }}", sky: "{{ static_file('img/creature_fighters/cf_skybox.jpg') }}", lemora: "{{ static_file('img/creature_fighters/lemora_animated_with_effects.glb') }}", irithigrib: "{{ static_file('img/creature_fighters/irithigrib_animated.glb') }}" };</script>
+    <script>window.CF_ASSETS = { ground: "{{ static_file('img/creature_fighters/ground_seamless.jpg') }}", rock: "{{ static_file('img/creature_fighters/rock.png') }}", bark: "{{ static_file('img/creature_fighters/bark.png') }}", cliff: "{{ static_file('img/creature_fighters/cliff.png') }}", volcano: "{{ static_file('img/creature_fighters/volcano.png') }}", crystal: "{{ static_file('img/creature_fighters/crystal.png') }}", volcanoModel: "{{ static_file('img/creature_fighters/cinderpeak.glb') }}", wyrmling: "{{ static_file('img/creature_fighters/wyrmling_animated.glb') }}", sky: "{{ static_file('img/creature_fighters/cf_skybox.jpg') }}", lemora: "{{ static_file('img/creature_fighters/lemora_animated_with_effects.glb') }}", humanMage: "{{ static_file('img/creature_fighters/Steve_the_Mage.glb') }}", irithigrib: "{{ static_file('img/creature_fighters/irithigrib_animated.glb') }}" };</script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
     <script src="{{ static_file('js/creature_fighters/scene.js') }}"></script>

@@ -355,10 +355,12 @@
     }, undefined, () => {});
   }
   // Single imported showcase models placed near the start point. Change height / x / z / turn (radians) to adjust each one.
-  function placeShowcase(url, label, height, x, z, turn, slot) {
+  let defaultAvatarSlot = null;   // slot played automatically when the game starts
+  function placeShowcase(url, label, height, x, z, turn, slot, makeDefault, facing) {
     if (!url || !THREE.GLTFLoader) return;
     new THREE.GLTFLoader().load(url, gltf => {
       const model = gltf.scene;
+      const strays = []; model.traverse(o => { if (/^Icosphere/i.test(o.name)) strays.push(o); }); strays.forEach(o => o.parent && o.parent.remove(o));   // Steve's file has a leftover 2-unit sphere around his feet
       model.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
       model.updateMatrixWorld(true);
       makeThumb(model, gltf.animations, slot, label);   // before scaling, so the portrait uses the untouched model
@@ -368,22 +370,26 @@
       model.scale.setScalar(s); model.position.set(-center.x * s, -box.min.y * s, -center.z * s);   // centered, feet on the ground
       const holder = new THREE.Group(); holder.position.set(x, 0, z); holder.rotation.y = turn;
       holder.add(model); scene.add(holder);
-      avatarRegistry[slot] = {name: label, template, clips: gltf.animations || [], scale: s, original: holder};
+      avatarRegistry[slot] = {name: label, template, clips: gltf.animations || [], scale: s, original: holder, facing};
       // Listed in the animation panel even with no clips, so Tab can still select it.
       const clips = gltf.animations || [];
       const anim = clips.length ? createAnimator(model, clips) : { root: model, names: [], actions: {}, play: () => false, update: () => {}, current: null };
       if (clips.length) anim.play((clips.find(c => /^idle/i.test(c.name)) || clips[0]).name, 0);
       anim.label = label; animators.push(anim);
+      if (makeDefault) { defaultAvatarSlot = slot; if (started && !avatar) switchAvatar(slot); }
     }, undefined, () => {});
   }
   if (window.CF_ASSETS) {
     placeShowcase(CF_ASSETS.irithigrib, 'Irithigrib', 3, 4, 2, Math.PI * .85, 2);    // turned to face the start point
+    placeShowcase(CF_ASSETS.humanMage, 'Steve the Mage', 1.8, 0, 6, 0, 0, true, 0);   // last arg: which way the model's front points (0 = +z, PI = -z)    // default human model, slot 1
     placeShowcase(CF_ASSETS.lemora, 'Lemora', 23.4, -12, -4, -Math.PI * .85, 3);
   }
   let eyeHeight = 1.7, avatar = null, thirdPerson = false, camZoom = .4;   // camZoom: third-person distance as a fraction of the model's size; the scroll wheel changes it   // F5 toggles third-person (only while playing as a model)
     // avatar = the model the player currently controls (null = free camera)
   window.cfDebug=()=>({y:player.y,ground:player.ground,eye:eyeHeight,flying,vertical:player.vertical});   // console helper
-  const player={ground:0,x:0,z:10,y:1.7,vertical:0,yaw:0,pitch:0}; const keys=new Set(); let locked=false, started=false, flying=false;   // F toggles flying: look to steer, W/S move along the view, Space up, C down
+  const player={ground:0,x:0,z:10,y:1.7,vertical:0,yaw:0,pitch:0,face:0};   // yaw/pitch = camera angles; face = the way the character points and walks
+  const mouse={left:false,right:false};   // WoW-style mouse: hold left to orbit the camera, right to turn the character, both to run forward
+   const keys=new Set(); let locked=false, started=false, flying=false;   // F toggles flying: look to steer, W/S move along the view, Space up, C down
   // Playing as a model: the camera sits at the model's head, and the model walks/runs/idles with the player.
   function clearAvatar() {
     if (!avatar) return;
@@ -409,6 +415,7 @@
     head.y += (box.max.y - box.min.y) * HEAD_LIFT;   // a head joint sits at the base of the skull; eyes are a little higher
     // The model's front is whichever way its head lies from its middle (found automatically, so any model orientation works).
     let fx = head.x - center.x, fz = head.z - center.z; if (Math.hypot(fx, fz) < 1e-3) { fx = 0; fz = 1; }
+    if (entry.facing != null) { fx = Math.sin(entry.facing); fz = Math.cos(entry.facing); }   // explicit front direction (radians from +z) for models whose head sits right above their middle
     // Put the camera just ahead of the snout tip, at head height, so the model's own face is not in the way.
     const flen = Math.hypot(fx, fz) || 1, ux = fx / flen, uz = fz / flen; let tip = 0;
     [box.min.x, box.max.x].forEach(x => [box.min.z, box.max.z].forEach(z => { tip = Math.max(tip, (x - center.x) * ux + (z - center.z) * uz); }));
@@ -428,7 +435,7 @@
   function syncAvatar(moving, running) {
     if (!avatar) return;
     avatar.holder.position.set(player.x, player.y - eyeHeight, player.z);
-    avatar.holder.rotation.y = player.yaw + Math.PI - avatar.angle;
+    avatar.holder.rotation.y = player.face + Math.PI - avatar.angle;
     if (avatar.anim) {
       const an = avatar.anim, names = an.names, cur = an.current, loops = /^(idle|walk|run|fly)$/i;
       // A clip picked from the panel / hotkeys is "pinned": attacks play out, and looping clips (fly, idle...) stay until you start or stop moving.
@@ -451,12 +458,20 @@
   animPanel.addEventListener('pointerdown', e => e.stopPropagation());
   animPanel.addEventListener('click', e => e.stopPropagation());
   document.body.appendChild(animPanel);
+  if (window.matchMedia && matchMedia('(pointer: coarse)').matches) { animPanel.style.cssText += ';display:none;right:auto;left:10px;top:92px;bottom:auto;max-height:52vh;overflow-y:auto'; }   // phones: hidden until the Anims button, and out of the way of the controls
   let panelNames = '', selected = null;   // selected = name of the model type whose animations the panel shows (Tab cycles types)
   // Models are grouped by type (all wyrmlings are one type, Irithigrib is another). Tab cycles types; clips play on every model of the type.
   // Hotkeys for the panel's clips (top 1-9/0 keys pick the model you play as, so clips use these letters): button N -> key.
   const ANIM_KEYS = ['KeyQ', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'KeyG', 'KeyH', 'KeyJ'];
   // While playing as a model, panel clips go to that model only; otherwise to every model of the selected type.
-  const pinClip = name => { if (avatar) { avatar.pin = name; avatar.pinMoving = ['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].some(c => keys.has(c)); } };
+  // Flight clips drive real flight: take_off climbs and starts flying, fly/fly_attack keep you airborne, land comes back down.
+  const flightClip = name => {
+    if (!avatar) return;
+    if (/^take_off$/i.test(name)) { flying = true; player.vertical = 0; avatar.climb = player.y + Math.max(avatar.size * 2, 3); }
+    else if (/^(fly|fly_attack)$/i.test(name)) flying = true;
+    else if (/^land$/i.test(name)) { flying = false; avatar.climb = null; }
+  };
+  const pinClip = name => { flightClip(name); if (avatar) { avatar.pin = name; avatar.pinMoving = ['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].some(c => keys.has(c)); } };
   const animGroup = () => avatar && avatar.anim && avatar.entry.name === selected ? [avatar.anim] : animators.filter(x => x.label === selected);
   const modelTypes = () => [...new Set(animators.map(x => x.label))];
   function refreshAnimPanel() {
@@ -496,20 +511,41 @@
   // Creature Fights is a placeholder for now; Explore Mode (the Enter button) starts the existing game.
   const fightButton = document.getElementById('fight');
   if (fightButton) fightButton.addEventListener('click', () => { status.textContent = 'Creature Fights is coming soon. Try Explore Mode for now!'; });
-  enter.addEventListener('click',()=>{started=true;overlay.hidden=true;const bar=document.getElementById('actionbar');if(bar)bar.classList.add('show');if(canvas.requestPointerLock && !('ontouchstart' in window)) canvas.requestPointerLock();});
-  document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;});
-  canvas.addEventListener('click',()=>{if(started && !locked && canvas.requestPointerLock && !('ontouchstart' in window)) canvas.requestPointerLock();});
-  document.addEventListener('mousemove',e=>{if(locked){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch-e.movementY*.002));}});
+  enter.addEventListener('click',()=>{started=true;if(defaultAvatarSlot!==null&&!avatar)switchAvatar(defaultAvatarSlot);overlay.hidden=true;const bar=document.getElementById('actionbar');if(bar)bar.classList.add('show');});
+  // Mouse like WoW: the cursor stays free (so the action bar is clickable). Hold the LEFT button and drag to orbit the camera without
+  // turning the character; hold the RIGHT button and drag to turn the character and camera together; hold both to run forward.
+  const anyDrag=()=>mouse.left||mouse.right;
+  const grab=()=>{if(canvas.requestPointerLock && !('ontouchstart' in window)){try{canvas.requestPointerLock();}catch(_){}}};   // hides the cursor while dragging and puts it back afterwards
+  const release=()=>{if(document.pointerLockElement)document.exitPointerLock();};
+  canvas.addEventListener('mousedown',e=>{if(!started)return;if(e.button===0)mouse.left=true;else if(e.button===2)mouse.right=true;else return;e.preventDefault();grab();});
+  document.addEventListener('mouseup',e=>{if(e.button===0)mouse.left=false;else if(e.button===2)mouse.right=false;if(!anyDrag())release();});
+  window.addEventListener('blur',()=>{mouse.left=mouse.right=false;release();});
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
+  document.addEventListener('mousemove',e=>{if(started&&anyDrag()){player.yaw-=e.movementX*.0035;player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch-e.movementY*.0035));}});
   window.addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();keys.add(e.code);});
   window.addEventListener('keyup',e=>keys.delete(e.code)); window.addEventListener('blur',()=>keys.clear());
-  let touchX=null;canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')touchX=e.clientX;});canvas.addEventListener('pointermove',e=>{if(e.pointerType==='touch' && touchX!==null){player.yaw-=(e.clientX-touchX)*.008;touchX=e.clientX;}});canvas.addEventListener('pointerup',()=>touchX=null);canvas.addEventListener('pointercancel',()=>touchX=null);
+  // Touch look: one finger drags to turn (left/right) and tilt (up/down); two fingers pinching zooms the third-person camera.
+  const touches=new Map(); let pinch=0;
+  canvas.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){const [a,b]=[...touches.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y);}});
+  canvas.addEventListener('pointermove',e=>{const t=touches.get(e.pointerId);if(!t)return;const dx=e.clientX-t.x,dy=e.clientY-t.y;t.x=e.clientX;t.y=e.clientY;
+    if(touches.size===1){player.yaw-=dx*.008;player.face=player.yaw;player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch-dy*.006));}
+    else if(touches.size===2&&pinch){const [a,b]=[...touches.values()],d=Math.hypot(a.x-b.x,a.y-b.y)||1;if(avatar&&thirdPerson)camZoom=Math.min(2,Math.max(.08,camZoom*pinch/d));pinch=d;}});
+  const endTouch=e=>{touches.delete(e.pointerId);pinch=0;};['pointerup','pointercancel'].forEach(t=>canvas.addEventListener(t,endTouch));
+  // One-tap buttons (Fly, View, Anims) send the same key press the keyboard would.
+  document.querySelectorAll('[data-tap]').forEach(button=>button.addEventListener('pointerdown',e=>{e.preventDefault();const code=button.dataset.tap;window.dispatchEvent(new KeyboardEvent('keydown',{code}));window.dispatchEvent(new KeyboardEvent('keyup',{code}));}));
   document.querySelectorAll('[data-key]').forEach(button=>{const key=button.dataset.key;button.addEventListener('pointerdown',e=>{e.preventDefault();button.setPointerCapture(e.pointerId);keys.add(key);}); ['pointerup','pointercancel','lostpointercapture'].forEach(type=>button.addEventListener(type,()=>keys.delete(key)));});
   let previous=performance.now(); function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-previous)/1000,.05);previous=now;
-    if(started){const forward=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0), strafe=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);const length=Math.hypot(forward,strafe)||1;const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')?(flying?30:15):(flying?18:9))*dt/length, fp=flying?Math.cos(player.pitch):1;player.x+=(-Math.sin(player.yaw)*forward*fp+Math.cos(player.yaw)*strafe)*speed;player.z+=(-Math.cos(player.yaw)*forward*fp-Math.sin(player.yaw)*strafe)*speed;if(flying)player.y+=Math.sin(player.pitch)*forward*speed;const distance=Math.hypot(player.x,player.z);if(distance>68){player.x*=68/distance;player.z*=68/distance;} if(!volcanoMeshes.length){const vx=player.x-volcanoBlock.x,vz=player.z-volcanoBlock.z,vd=Math.hypot(vx,vz);if(vd<volcanoBlock.r){const k=volcanoBlock.r/(vd||1);player.x=volcanoBlock.x+(vd?vx*k:volcanoBlock.r);player.z=volcanoBlock.z+(vd?vz*k:0);}}
+    if(started){
+      const bothRun=mouse.left&&mouse.right, firstP=!(avatar&&thirdPerson);
+      const keyMove=keys.has('KeyW')||keys.has('KeyS')||keys.has('KeyA')||keys.has('KeyD')||keys.has('ArrowUp')||keys.has('ArrowDown')||keys.has('ArrowLeft')||keys.has('ArrowRight')||bothRun;
+      if(bothRun||mouse.right||firstP) player.face=player.yaw;   // right-drag / first person: the character turns with the camera
+      else if(keyMove&&!mouse.left){let d=player.face-player.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));player.yaw+=d*Math.min(1,dt*8);}   // moving swings the camera back behind the character
+      const yaw=player.face;
+      const forward=(keys.has('KeyW')||keys.has('ArrowUp')||bothRun?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0), strafe=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);const length=Math.hypot(forward,strafe)||1;const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')?(flying?30:15):(flying?18:9))*dt/length, fp=flying?Math.cos(player.pitch):1;player.x+=(-Math.sin(yaw)*forward*fp+Math.cos(yaw)*strafe)*speed;player.z+=(-Math.cos(yaw)*forward*fp-Math.sin(yaw)*strafe)*speed;if(flying)player.y+=Math.sin(player.pitch)*forward*speed;const distance=Math.hypot(player.x,player.z);if(distance>68){player.x*=68/distance;player.z*=68/distance;} if(!volcanoMeshes.length){const vx=player.x-volcanoBlock.x,vz=player.z-volcanoBlock.z,vd=Math.hypot(vx,vz);if(vd<volcanoBlock.r){const k=volcanoBlock.r/(vd||1);player.x=volcanoBlock.x+(vd?vx*k:volcanoBlock.r);player.z=volcanoBlock.z+(vd?vz*k:0);}}
       player.ground+=(groundHeight(player.x,player.z)-player.ground)*Math.min(1,dt*18);const floor=eyeHeight+player.ground;
-      if(flying){player.vertical=0;player.y+=((keys.has('Space')?1:0)-(keys.has('KeyC')?1:0))*(keys.has('ShiftLeft')||keys.has('ShiftRight')?24:14)*dt;player.y=Math.min(150,Math.max(floor,player.y));}
+      if(flying){player.vertical=0;if(avatar&&avatar.climb!=null){const d=avatar.climb-player.y;if(d>.01)player.y+=Math.min(d,Math.max(avatar.size*2,3)/1.2*dt);else avatar.climb=null;}player.y+=((keys.has('Space')?1:0)-(keys.has('KeyC')?1:0))*(keys.has('ShiftLeft')||keys.has('ShiftRight')?24:14)*dt;player.y=Math.min(150,Math.max(floor,player.y));}
       else{if(keys.has('Space')&&player.y<=floor+.02){player.vertical=7;}player.vertical-=18*dt;player.y=Math.max(floor,player.y+player.vertical*dt);if(player.y<=floor)player.vertical=0;}}
-    if(started){syncAvatar(keys.has('KeyW')||keys.has('KeyS')||keys.has('KeyA')||keys.has('KeyD')||keys.has('ArrowUp')||keys.has('ArrowDown')||keys.has('ArrowLeft')||keys.has('ArrowRight'),keys.has('ShiftLeft')||keys.has('ShiftRight'));}
+    if(started){syncAvatar(mouse.left&&mouse.right||keys.has('KeyW')||keys.has('KeyS')||keys.has('KeyA')||keys.has('KeyD')||keys.has('ArrowUp')||keys.has('ArrowDown')||keys.has('ArrowLeft')||keys.has('ArrowRight'),keys.has('ShiftLeft')||keys.has('ShiftRight'));}
     animators.forEach(a=>a.update(dt)); if(volcanoFx)volcanoFx(dt);
     if(avatar&&thirdPerson){   // orbit behind the model: look where the player looks, stand back along that line
       const cp=Math.cos(player.pitch),fx=-Math.sin(player.yaw)*cp,fy=Math.sin(player.pitch),fz=-Math.cos(player.yaw)*cp,dist=Math.max(avatar.size*camZoom,.6);
