@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Matter Eater</title>
     <style>
         html, body {
@@ -15,7 +15,56 @@
         }
         canvas {
             display: block;
+            touch-action: none; /* no page scrolling/zooming while playing on a tablet */
         }
+        body {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        /* --- Touch controls (iPad / tablets / phones) --- */
+        #touch-controls { display: none; }
+        body.touch #touch-controls { display: block; }
+        #joystick {
+            position: fixed;
+            left: 28px;
+            bottom: 28px;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.07);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            touch-action: none;
+        }
+        #joystick-knob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 66px;
+            height: 66px;
+            margin: -33px 0 0 -33px;
+            border-radius: 50%;
+            background: rgba(255, 214, 74, 0.5);
+            border: 2px solid rgba(255, 214, 74, 0.95);
+            pointer-events: none;
+        }
+        #run-btn {
+            position: fixed;
+            right: 32px;
+            bottom: 48px;
+            width: 108px;
+            height: 108px;
+            border-radius: 50%;
+            font: 800 22px system-ui, sans-serif;
+            color: #ffd64a;
+            background: rgba(40, 30, 0, 0.6);
+            border: 3px solid rgba(255, 214, 74, 0.85);
+            touch-action: none;
+        }
+        #run-btn.on { background: rgba(255, 214, 74, 0.9); color: #2a1f00; }
+        body.touch #hint { top: 46px; bottom: auto; }
+        body.touch #restart { bottom: 210px; }
         .hud {
             position: fixed;
             left: 16px;
@@ -64,6 +113,31 @@
             text-shadow: 0 0 18px rgba(255, 244, 168, 0.8), 0 2px 4px rgba(0, 0, 0, 0.7);
         }
         #toast span { font: 15px system-ui, sans-serif; color: rgba(255, 255, 255, 0.7); }
+
+        /* Big restart prompt, shown only while you're at a dead end */
+        #restart {
+            position: fixed;
+            left: 50%;
+            bottom: 70px;
+            transform: translateX(-50%);
+            max-width: calc(100vw - 32px);
+            padding: 12px 26px;
+            border: 2px solid #ffd64a;
+            border-radius: 14px;
+            background: rgba(40, 30, 0, 0.85);
+            color: #ffd64a;
+            text-align: center;
+            cursor: pointer;
+            display: none;
+            animation: restart-pulse 1.2s ease-in-out infinite;
+        }
+        #restart.show { display: block; }
+        #restart b { display: block; font: 800 clamp(18px, 3vw, 26px) system-ui, sans-serif; }
+        #restart span { display: block; margin-top: 4px; font: 14px system-ui, sans-serif; color: rgba(255, 240, 200, 0.85); }
+        @keyframes restart-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 214, 74, 0.4); }
+            50% { box-shadow: 0 0 28px rgba(255, 214, 74, 0.9); }
+        }
         #info-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
         #info-swatch {
             flex: none;
@@ -100,8 +174,13 @@
 <body>
     <canvas id="game"></canvas>
     <div id="stats" class="hud"></div>
-    <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click lighter things to make them orbit you &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &middot; click anything to learn about it</div>
+    <div id="hint" class="hud">WASD to move (hold Shift to run) &middot; scroll to zoom &middot; right-click to orbit (lighter things orbit you, you orbit heavier things) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &middot; click anything to learn about it</div>
     <div id="toast"><b></b><span></span></div>
+    <button id="restart" type="button"><b>Press R to start over as a quark</b><span></span></button>
+    <div id="touch-controls">
+        <div id="joystick" aria-label="Move"><div id="joystick-knob"></div></div>
+        <button id="run-btn" type="button" aria-label="Run">RUN</button>
+    </div>
     <div id="info">
         <div id="info-head">
             <div id="info-swatch"></div>
@@ -1137,6 +1216,7 @@
             // Spread the atoms that were already around across the bigger world,
             // keeping clear of the area you'll see once the camera zooms out
             const zoomAfter = 0.4;
+            playerOrbit = null;
             for (const p of free) {
                 delete p.orbit; // orbiting is a subatomic/atomic-world thing
                 if (p !== bondingWith) [p.x, p.y] = spawnPoint(p.r, zoomAfter);
@@ -1338,9 +1418,67 @@
                 keys.add(k);
                 e.preventDefault();
             }
+            if (k === 'shift') keys.add('shift'); // hold Shift to run
         });
         window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
         window.addEventListener('blur', () => keys.clear());
+
+        // --- Touch controls: joystick to move, hold RUN to run ---
+        const touchMove = { x: 0, y: 0, active: false };
+        let touchRun = false;
+        const joystick = document.getElementById('joystick');
+        const knob = document.getElementById('joystick-knob');
+        const runBtn = document.getElementById('run-btn');
+        let joyPointer = null;
+
+        function joyUpdate(e) {
+            const r = joystick.getBoundingClientRect();
+            let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+            const max = r.width / 2 - 12;
+            const d = Math.hypot(dx, dy);
+            if (d > max) { dx *= max / d; dy *= max / d; }
+            knob.style.transform = `translate(${dx}px, ${dy}px)`;
+            touchMove.x = dx / max;
+            touchMove.y = dy / max;
+            touchMove.active = true;
+        }
+        function joyEnd(e) {
+            if (e.pointerId !== joyPointer) return;
+            joyPointer = null;
+            touchMove.active = false;
+            touchMove.x = touchMove.y = 0;
+            knob.style.transform = '';
+        }
+        joystick.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            joyPointer = e.pointerId;
+            try { joystick.setPointerCapture(e.pointerId); } catch (err) { /* keep working without capture */ }
+            joyUpdate(e);
+        });
+        joystick.addEventListener('pointermove', (e) => { if (e.pointerId === joyPointer) joyUpdate(e); });
+        joystick.addEventListener('pointerup', joyEnd);
+        joystick.addEventListener('pointercancel', joyEnd);
+
+        const setRun = (on) => { touchRun = on; runBtn.classList.toggle('on', on); };
+        runBtn.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            try { runBtn.setPointerCapture(e.pointerId); } catch (err) { /* keep working without capture */ }
+            setRun(true);
+        });
+        runBtn.addEventListener('pointerup', () => setRun(false));
+        runBtn.addEventListener('pointercancel', () => setRun(false));
+        runBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Show the touch controls on touch screens (or as soon as someone touches)
+        function enableTouchControls() {
+            if (document.body.classList.contains('touch')) return;
+            document.body.classList.add('touch');
+            document.getElementById('hint').innerHTML =
+                'Joystick to move &middot; hold RUN to run &middot; pinch to zoom &middot; tap anything to learn about it &middot; long-press to orbit &middot; quarks &rarr; proton &rarr; atom &rarr; molecules';
+            document.querySelector('#restart b').textContent = 'Tap here to start over as a quark';
+        }
+        if (window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) enableTouchControls();
+        window.addEventListener('touchstart', enableTouchControls, { passive: true });
 
         // =====================================================================
         // Update
@@ -1380,13 +1518,25 @@
             if (keys.has('w')) iy -= 1;
             if (keys.has('s')) iy += 1;
 
-            // When zoomed out, move faster so you cross the screen at the same pace
-            const speedScale = 1 / camera.zoom;
-            const maxSpeed = PLAYER.maxSpeed * speedScale;
-            if (ix || iy) {
+            // When zoomed out, move faster so you cross the screen at the same pace.
+            // Holding Shift runs at more than double speed.
+            const RUN_BOOST = 2.5;
+            // The touch joystick works like WASD, but pushing it partway goes slower
+            let push = 1;
+            if (touchMove.active && !(ix || iy)) {
+                ix = touchMove.x; iy = touchMove.y;
+                push = Math.min(1, Math.hypot(ix, iy));
+                if (push < 0.12) { ix = iy = 0; } // small dead zone in the middle
+            }
+            const running = keys.has('shift') || touchRun;
+            const speedScale = (running ? RUN_BOOST : 1) / camera.zoom;
+            const maxSpeed = PLAYER.maxSpeed * speedScale * Math.max(push, 0.35);
+            if (playerOrbit) {
+                // You're orbiting something: WASD does nothing until you let go
+            } else if (ix || iy) {
                 const len = Math.hypot(ix, iy);
-                player.vx += (ix / len) * PLAYER.accel * speedScale * dt;
-                player.vy += (iy / len) * PLAYER.accel * speedScale * dt;
+                player.vx += (ix / len) * PLAYER.accel * speedScale * push * dt;
+                player.vy += (iy / len) * PLAYER.accel * speedScale * push * dt;
             } else {
                 const f = Math.exp(-PLAYER.friction * dt);
                 player.vx *= f;
@@ -1466,6 +1616,7 @@
                 q.y += q.vy * dt;
                 keepInWorld(q);
             }
+            if (playerOrbit) orbitAroundTarget(dt);
             if (player.spin !== undefined) player.spin += player.spinSpeed * dt;
 
             if (forming) {
@@ -1512,6 +1663,7 @@
                 const p = free[i];
                 if (!p) continue; // the list shrank (e.g. subatomic particles vanished on entering molecule scale)
                 if (p.orbit) continue; // orbiting things never touch you
+                if (playerOrbit && p === playerOrbit.target) continue; // nor does what you orbit
                 const near = bounds.extent + p.r;
                 if (Math.abs(p.x - bounds.cx) > near || Math.abs(p.y - bounds.cy) > near) continue;
                 if (p.chem) { chemContact(p); continue; }
@@ -1555,7 +1707,13 @@
             }
 
             // --- Camera follows the player (the middle of your molecule) ---
-            const focus = stage === 'molecule' ? clusterBounds() : { cx: player.x, cy: player.y, extent: Math.max(player.r, bounds.extent) };
+            let focus = stage === 'molecule' ? clusterBounds() : { cx: player.x, cy: player.y, extent: Math.max(player.r, bounds.extent) };
+            if (playerOrbit) {
+                // While orbiting, hold the camera on what you're orbiting so
+                // the view stays steady and you circle around the middle
+                const t = playerOrbit.target;
+                focus = { cx: t.x, cy: t.y, extent: playerOrbitDistance(bounds) + bounds.extent };
+            }
             const t = 1 - Math.exp(-camera.follow * dt);
             camera.x += (focus.cx - camera.x) * t;
             camera.y += (focus.cy - camera.y) * t;
@@ -1805,6 +1963,12 @@
                 ctx.arc(orbitBounds.cx, orbitBounds.cy, orbitDistance(p, orbitBounds), 0, Math.PI * 2);
                 ctx.stroke();
             }
+            if (playerOrbit) { // your path around what you're orbiting
+                ctx.strokeStyle = 'rgba(255, 230, 150, 0.25)';
+                ctx.beginPath();
+                ctx.arc(playerOrbit.target.x, playerOrbit.target.y, playerOrbitDistance(orbitBounds), 0, Math.PI * 2);
+                ctx.stroke();
+            }
 
             // Free particles (only the ones on screen)
             const margin = 90 / z;
@@ -1866,6 +2030,217 @@
                 ctx.stroke();
                 ctx.setLineDash([]);
             }
+
+            // Screen-space overlay: pointer to the next useful thing
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            // Goal pointer (yellow "___ this way" arrows) is turned off for now.
+            // The code is kept below; uncomment this line to bring it back.
+            // drawGoalPointer(w, h, z, time);
+
+            // The "Press R / Tap here to start over" prompt still needs checking
+            if (--restartCheckFrame <= 0) { updateRestartPrompt(); restartCheckFrame = 15; }
+            drawLongPressRing(time);
+        }
+        let restartCheckFrame = 0;
+
+        // =====================================================================
+        // Goal pointer: a yellow arrow at the edge of the screen pointing to
+        // the nearest thing you can use next. 1 chevron = close, 2 = medium,
+        // 3 = far.
+        // =====================================================================
+        let goal = null;
+        let goalCheckFrame = 0;
+
+        // Can any atom of this free atom/molecule still make a bond?
+        function hasOpenBond(layout) {
+            if (layout.open === undefined) {
+                layout.open = layout.Zs.some((Z, i) => valenceOf(Z) - layout.deg[i] > 0);
+            }
+            return layout.open;
+        }
+
+        // Can you still bond with anything right now?
+        function youCanBond() {
+            if (stage === 'molecule') {
+                return cluster.length < MAX_MOLECULE_ATOMS && cluster.some(m => valenceOf(m.Z) - m.deg > 0);
+            }
+            return player.type.kind === 'atom' && player.atom.E === player.atom.Z && valenceOf(player.atom.Z) > 0;
+        }
+
+        function isUseful(p) {
+            if (p.orbit) return false;
+            if (p.chem) return youCanBond() && hasOpenBond(p.layout) &&
+                (stage !== 'molecule' || cluster.length + p.layout.Zs.length <= MAX_MOLECULE_ATOMS);
+            if (isQuarkKind(p.type)) return canJoin(p).ok;
+            const check = canAbsorb(p);
+            return !!(check && check.ok);
+        }
+
+        // How good is grabbing p? Higher = leads somewhere; tiny = dead end.
+        // Returns { score, note } where note explains the choice.
+        const DEAD_END = 0.05;
+        function goalScore(p, ctxInfo) {
+            // --- Quarks: aim for a proton or neutron (the only way to atoms) ---
+            if (isQuarkKind(p.type)) {
+                if (p.type.kind === 'antiquark') return { score: DEAD_END }; // makes a meson: dead end
+                const flavors = [...cluster.map(q => q.type.sym), p.type.sym];
+                const ups = flavors.filter(f => f === 'u').length, downs = flavors.filter(f => f === 'd').length;
+                if (ups + downs === flavors.length && ups <= 2 && downs <= 2) {
+                    const n = flavors.length;
+                    const makes = n === 3 ? (ups === 2 ? 'a proton' : 'a neutron') : null;
+                    return { score: 5, note: makes ? `makes ${makes}!` : 'on the way to a proton or neutron' };
+                }
+                return { score: DEAD_END }; // exotic baryon: can't build atoms
+            }
+            // --- Atoms and molecules: keep open bonds to grow, or finish a new named molecule ---
+            if (p.chem) {
+                const theirOpen = p.layout.Zs.reduce((s, Z, i) => s + Math.max(0, valenceOf(Z) - p.layout.deg[i]), 0);
+                const open = Math.min(6, ctxInfo.yourOpen + theirOpen - 2);
+                const result = MOLECULE_BY_FORMULA[hillFormula([...ctxInfo.yourZs, ...p.layout.Zs])];
+                let score = open, note = open > 0 ? `${open} open bond${open === 1 ? '' : 's'} to keep growing` : null;
+                if (result) {
+                    score += discovered.has(result[0]) ? 0.3 : 2;
+                    note = `makes ${result[1]}${discovered.has(result[0]) ? '' : ' (new!)'}`;
+                }
+                if (open <= 0) score *= 0.6; // finishes your molecule: nothing left to add
+                return { score: Math.max(score, DEAD_END), note };
+            }
+            // --- Protons, neutrons, alphas, electrons: growing your atom always keeps options open ---
+            return { score: 3 };
+        }
+
+        function findGoal() {
+            const b = clusterBounds();
+            const bondable = youCanBond();
+            // Collect what you could use, nearest first
+            const options = [];
+            for (const p of free) {
+                if (p.chem && !bondable) continue;
+                if (!isUseful(p)) continue;
+                options.push({ p, d: Math.hypot(p.x - b.cx, p.y - b.cy) });
+            }
+            if (!options.length) return null;
+            options.sort((a, c) => a.d - c.d);
+
+            const ctxInfo = {};
+            if (bondable) {
+                ctxInfo.yourZs = stage === 'molecule' ? cluster.map(m => m.Z) : [player.atom.Z];
+                ctxInfo.yourOpen = stage === 'molecule'
+                    ? cluster.reduce((s, m) => s + Math.max(0, valenceOf(m.Z) - m.deg), 0)
+                    : valenceOf(player.atom.Z);
+            }
+            // Best value for the distance: a great option a bit farther away
+            // beats a dead end right next to you
+            let best = null, bestCost = Infinity;
+            for (const o of options.slice(0, 40)) {
+                const { score, note } = goalScore(o.p, ctxInfo);
+                const cost = (o.d + 300) / score;
+                if (cost < bestCost) { bestCost = cost; best = o.p; best.goalNote = note; }
+            }
+            return best;
+        }
+
+        function goalLabel(p) {
+            let name = p.type.name;
+            if (p.color && isQuarkKind(p.type)) name = `${colorName(p.color)} ${name.toLowerCase()}`;
+            name = name.charAt(0).toUpperCase() + name.slice(1) + ' this way';
+            return p.goalNote ? `${name} (${p.goalNote})` : name;
+        }
+
+        // --- Dead ends: show a big "press R" prompt while you're stuck ---
+        const restartEl = document.getElementById('restart');
+        function deadEndReason() {
+            if (player.type.kind === 'hadron' && !player.atom) {
+                return `${aOrAn(player.type.name).replace(/^a/, 'A')} ${player.type.name} can't build atoms`;
+            }
+            if (stage !== 'molecule' && player.atom && player.atom.Z === MAX_Z && player.atom.E === MAX_Z) {
+                return 'You reached oganesson, the end of the periodic table!';
+            }
+            if (stage === 'molecule') {
+                if (cluster.length >= MAX_MOLECULE_ATOMS) return 'Your molecule is as big as it can get!';
+                if (!youCanBond()) return 'Your molecule is complete: no open bonds left!';
+            }
+            return null;
+        }
+        let shownDeadEnd;
+        function updateRestartPrompt() {
+            const reason = deadEndReason();
+            if (reason === shownDeadEnd) return;
+            shownDeadEnd = reason;
+            restartEl.classList.toggle('show', !!reason);
+            if (reason) restartEl.querySelector('span').textContent = reason;
+        }
+        restartEl.addEventListener('click', () => location.reload());
+
+        function drawGoalPointer(w, h, z, time) {
+            // Re-pick the goal a few times a second (or right away if it's gone)
+            if (--goalCheckFrame <= 0 || (goal && !free.includes(goal)) || (goal && !isUseful(goal))) {
+                goal = findGoal();
+                goalCheckFrame = 15;
+                updateRestartPrompt();
+            }
+            if (!goal) return;
+
+            // Where the goal is on screen
+            const sx = (goal.x - view.x) * z, sy = (goal.y - view.y) * z;
+            const pad = goal.r * z;
+            if (sx > -pad && sx < w + pad && sy > -pad && sy < h + pad) return; // it's visible already
+
+            // Ray from the screen center to the goal, clipped to the screen edge
+            const cx = w / 2, cy = h / 2;
+            const dx = sx - cx, dy = sy - cy;
+            // Keep clear of the stats line at the top and the hint at the bottom
+            const isTouch = document.body.classList.contains('touch');
+            const side = 44, top = isTouch ? 100 : 70, bottom = isTouch ? 200 : 90; // stay clear of the joystick/RUN button
+            const scale = Math.min(
+                (w / 2 - side) / Math.max(Math.abs(dx), 0.001),
+                (dy < 0 ? h / 2 - top : h / 2 - bottom) / Math.max(Math.abs(dy), 0.001));
+            const ex = cx + dx * scale, ey = cy + dy * scale;
+            const ang = Math.atan2(dy, dx);
+            const ux = Math.cos(ang), uy = Math.sin(ang);
+
+            // How far, in screens
+            const screens = Math.hypot(dx, dy) / (Math.max(w, h) / 2);
+            const count = screens < 2 ? 1 : screens < 5 ? 2 : 3;
+
+            const pulse = 0.75 + Math.sin(time / 220) * 0.25;
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.shadowColor = 'rgba(255, 210, 60, 0.8)';
+            ctx.shadowBlur = 10;
+            for (let k = 0; k < count; k++) {
+                const px = ex - ux * k * 11, py = ey - uy * k * 11;
+                ctx.save();
+                ctx.translate(px, py);
+                ctx.rotate(ang);
+                ctx.beginPath();
+                ctx.moveTo(-6, -10);
+                ctx.lineTo(4, 0);
+                ctx.lineTo(-6, 10);
+                ctx.strokeStyle = `rgba(255, 214, 74, ${pulse - k * 0.12})`;
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.restore();
+
+            // Label, tucked inside the arrow and kept on screen
+            const text = goalLabel(goal);
+            ctx.font = 'bold 13px system-ui, sans-serif';
+            const tw = ctx.measureText(text).width;
+            // Step back from the arrow far enough that the text never covers it
+            const back = 16 + count * 11 + Math.abs(ux) * tw / 2 + Math.abs(uy) * 6;
+            let lx = ex - ux * back, ly = ey - uy * back;
+            lx = Math.max(tw / 2 + 8, Math.min(w - tw / 2 - 8, lx));
+            ly = Math.max(16, Math.min(h - 16, ly));
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.strokeText(text, lx, ly);
+            ctx.fillStyle = 'rgb(255, 214, 74)';
+            ctx.fillText(text, lx, ly);
         }
 
         // =====================================================================
@@ -1981,6 +2356,7 @@
 
         const toWorld = (e) => [view.x + e.clientX / view.zoom, view.y + e.clientY / view.zoom];
         canvas.addEventListener('click', (e) => {
+            if (performance.now() < ignoreClickUntil) return; // this "click" was really a long-press or pinch
             let p = particleAt(...toWorld(e));
             if (p && p.chemMember) p = player; // any atom of your molecule shows the whole molecule
             if (p) showInfo(p); else hideInfo();
@@ -2009,12 +2385,141 @@
             };
         }
 
+        // --- You orbiting something heavier ---
+        let playerOrbit = null; // { target, angle, speed, dir }
+
+        function playerOrbitDistance(b) {
+            return playerOrbit.target.r + b.extent + 40;
+        }
+
+        function startPlayerOrbit(target) {
+            const b = clusterBounds();
+            playerOrbit = {
+                target,
+                angle: Math.atan2(b.cy - target.y, b.cx - target.x),
+                speed: 160,
+                dir: Math.random() < 0.5 ? 1 : -1,
+            };
+        }
+
+        // Each step: carry your whole group (and everything orbiting you)
+        // around the target, moving along with it wherever it drifts
+        function orbitAroundTarget(dt) {
+            const t = playerOrbit.target;
+            if (!free.includes(t)) { playerOrbit = null; return; } // it's gone
+            const b = clusterBounds();
+            const dist = playerOrbitDistance(b);
+            const o = playerOrbit;
+            o.angle += (o.speed / dist) * o.dir * dt;
+            const dx = t.x + Math.cos(o.angle) * dist - b.cx;
+            const dy = t.y + Math.sin(o.angle) * dist - b.cy;
+            const vx = t.vx - Math.sin(o.angle) * o.speed * o.dir;
+            const vy = t.vy + Math.cos(o.angle) * o.speed * o.dir;
+            for (const q of cluster) {
+                q.x += dx; q.y += dy;
+                q.vx = vx; q.vy = vy;
+            }
+        }
+
+        function stopPlayerOrbit() {
+            playerOrbit = null; // you keep your orbit speed and drift off, then WASD works again
+        }
+
         canvas.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            const p = particleAt(...toWorld(e));
+            // Some tablets also send a contextmenu on long-press; the touch code handles that itself
+            if (canvasTouches.size > 0 || performance.now() < ignoreClickUntil) return;
+            orbitActionAt(e.clientX, e.clientY);
+        });
+
+        // =====================================================================
+        // Touch gestures on the game: long-press = orbit (like right-click),
+        // two-finger pinch = zoom (like the scroll wheel)
+        // =====================================================================
+        const LONG_PRESS_MS = 500;
+        const canvasTouches = new Map(); // pointerId -> { x, y }
+        let longPress = null;            // { x, y, start, timer }
+        let pinchDist = null;
+        let ignoreClickUntil = 0;
+
+        function cancelLongPress() {
+            if (longPress) clearTimeout(longPress.timer);
+            longPress = null;
+        }
+        function twoFingerDistance() {
+            const [a, b] = [...canvasTouches.values()];
+            return Math.hypot(a.x - b.x, a.y - b.y);
+        }
+
+        canvas.addEventListener('pointerdown', (e) => {
+            if (e.pointerType !== 'touch') return;
+            canvasTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (canvasTouches.size === 1) {
+                const x = e.clientX, y = e.clientY;
+                longPress = {
+                    x, y, start: performance.now(),
+                    timer: setTimeout(() => {
+                        longPress = null;
+                        ignoreClickUntil = performance.now() + 600; // don't also treat it as a tap
+                        if (navigator.vibrate) navigator.vibrate(25);
+                        orbitActionAt(x, y);
+                    }, LONG_PRESS_MS),
+                };
+            } else {
+                cancelLongPress();
+                if (canvasTouches.size === 2) pinchDist = twoFingerDistance();
+            }
+        });
+        canvas.addEventListener('pointermove', (e) => {
+            if (!canvasTouches.has(e.pointerId)) return;
+            canvasTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (longPress && Math.hypot(e.clientX - longPress.x, e.clientY - longPress.y) > 14) cancelLongPress();
+            if (canvasTouches.size === 2 && pinchDist) {
+                const d = twoFingerDistance();
+                userZoom = Math.max(0.1, Math.min(8, userZoom * d / pinchDist));
+                pinchDist = d;
+                ignoreClickUntil = performance.now() + 400;
+            }
+        });
+        const endCanvasTouch = (e) => {
+            if (!canvasTouches.has(e.pointerId)) return;
+            canvasTouches.delete(e.pointerId);
+            cancelLongPress();
+            if (canvasTouches.size < 2) pinchDist = null;
+        };
+        canvas.addEventListener('pointerup', endCanvasTouch);
+        canvas.addEventListener('pointercancel', endCanvasTouch);
+
+        // A ring that fills up under your finger while you long-press
+        function drawLongPressRing(time) {
+            if (!longPress) return;
+            const t = Math.min(1, (performance.now() - longPress.start) / LONG_PRESS_MS);
+            if (t < 0.15) return; // don't flash it on quick taps
+            ctx.save();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(255, 214, 74, 0.25)';
+            ctx.beginPath();
+            ctx.arc(longPress.x, longPress.y, 34, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(255, 214, 74, 0.95)';
+            ctx.beginPath();
+            ctx.arc(longPress.x, longPress.y, 34, -Math.PI / 2, -Math.PI / 2 + t * Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Right-click / long-press: make something orbit you, or orbit it yourself
+        function orbitActionAt(clientX, clientY) {
+            const p = particleAt(...toWorld({ clientX, clientY }));
             if (!p || cluster.includes(p)) return;
             if (stage === 'molecule') {
                 floatText(p, 'Orbiting only works in the subatomic and atomic world');
+                return;
+            }
+            if (playerOrbit && playerOrbit.target === p) {
+                stopPlayerOrbit();
+                p.msgUntil = 0;
+                floatText(p, 'You let go! WASD to move');
                 return;
             }
             if (p.orbit) {
@@ -2023,14 +2528,18 @@
                 return;
             }
             const name = p.type.name.toLowerCase();
-            if (p.type.mass < yourMass()) {
+            const mine = yourMass();
+            p.msgUntil = 0;
+            if (p.type.mass < mine) {
                 startOrbit(p);
-                p.msgUntil = 0;
                 floatText(p, `The ${name} is orbiting you!`);
+            } else if (p.type.mass > mine) {
+                startPlayerOrbit(p);
+                floatText(p, `You're orbiting the ${name}! Right-click it again to let go`);
             } else {
-                floatText(p, `Too heavy! The ${name} is heavier than you`);
+                floatText(p, `Same mass as you, so neither of you orbits`);
             }
-        });
+        }
 
         canvas.addEventListener('mousemove', (e) => {
             canvas.style.cursor = particleAt(...toWorld(e)) ? 'pointer' : 'default';
