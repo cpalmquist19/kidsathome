@@ -174,7 +174,7 @@
 <body>
     <canvas id="game"></canvas>
     <div id="stats" class="hud"></div>
-    <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click to orbit (lighter things orbit you, you orbit heavier things) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &middot; click anything to learn about it</div>
+    <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click to orbit (lighter things orbit you, you orbit heavier things) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &rarr; dust &rarr; planets &rarr; star &middot; click anything to learn about it</div>
     <div id="toast"><b></b><span></span></div>
     <button id="restart" type="button"><b>Press R to start over as a quark</b><span></span></button>
     <div id="touch-controls">
@@ -454,6 +454,7 @@
 
         // Replace particles you've used up, somewhere off screen
         function replenish() {
+            if (stage === 'dust') return; // the dust world refills itself as you move (manageDust)
             if (atomsAppeared) spawnChem(3);
             if (stage === 'molecule') return; // subatomic particles are gone at molecule scale
             const counts = new Map();
@@ -1238,9 +1239,7 @@
             if (valenceOf(pZ) === 0) return { ok: false, reason: `${ELEMENTS[pZ - 1][1]} is a noble gas, it doesn't bond` };
             if (valenceOf(cZ) - (c.deg || 0) <= 0) return { ok: false, reason: `That ${ELEMENTS[cZ - 1][0]} has no free bonds left, touch with another atom` };
             if (valenceOf(pZ) - p.layout.deg[i] <= 0) return { ok: false, reason: `That ${ELEMENTS[pZ - 1][0]} is all bonded up, touch a different atom` };
-            if (stage === 'molecule' && cluster.length + p.layout.Zs.length > MAX_MOLECULE_ATOMS) {
-                return { ok: false, reason: 'Your molecule is as big as it can get!' };
-            }
+            // No size limit here: reaching MAX_MOLECULE_ATOMS turns you into a dust grain
             return { ok: true };
         }
 
@@ -1368,8 +1367,477 @@
             for (const m of cluster) drawAtomBall(m.Z, m.x, m.y);
         }
 
+        // =====================================================================
+        // Space dust: a molecule as big as it can get becomes a dust grain.
+        // Eat dust smaller than you to grow: dust clump, pebble, rock,
+        // boulder, asteroid, dwarf planet, rocky planet, gas giant, and
+        // finally a star. Things show up once you're big enough to see them,
+        // because new things are always made at sizes close to yours.
+        //
+        // Real sizes go from about a thousandth of a millimeter to hundreds of
+        // thousands of kilometers, so sizes on screen are squished: each
+        // thing's real size is worked out from its size on screen the same way.
+        // =====================================================================
+        const DUST = {
+            count: 170,      // how many grains, pebbles and rocks are around you
+            screenR: 55,     // how many screen pixels across you look, however big you get
+            startSize: 1e-6, // you start about 1 micrometer across (a thousandth of a millimeter)
+            goalSize: 10,    // the squish: you're 10 m across (an asteroid)
+            goalGrowth: 300, // ...when you've grown 300× bigger on screen
+        };
+        const DUST_EXP = Math.log(DUST.goalSize / DUST.startSize) / Math.log(DUST.goalGrowth);
+        let dust = null; // { r0, tier, won, timer, bgX, bgY } once you're dust
+
+        const DUST_TIERS = [
+            { min: 0, name: 'Dust grain', label: 'Space dust',
+              desc: 'A speck of space dust, made of trillions of molecules stuck together. Space dust is mostly tiny bits of rock, carbon and ice, made by old stars. It\'s the raw material for new planets!' },
+            { min: 1e-4, name: 'Dust clump', label: 'Space dust',
+              desc: 'When dust grains bump into each other gently, they stick together into fluffy clumps, a bit like the dust bunnies under your bed. This is how planets get started!' },
+            { min: 0.01, name: 'Pebble', label: 'Space rock',
+              desc: 'A lump of rock and ice about the size of a marble. Around a young star, huge swarms of pebbles drift through the dusty disk where planets are forming.' },
+            { min: 0.1, name: 'Rock', label: 'Space rock',
+              desc: 'A space rock about as big as a football. When a rock this size hits Earth\'s air, it burns up as a super bright shooting star called a fireball.' },
+            { min: 1, name: 'Boulder', label: 'Space rock',
+              desc: 'A boulder as big as a car or even a house. Bigger things have stronger gravity, so a boulder can pull smaller rocks and dust toward it.' },
+            { min: 10, name: 'Asteroid', label: 'Asteroid',
+              desc: 'A rocky little world floating through space! Most asteroids in our solar system orbit the Sun between Mars and Jupiter, in the asteroid belt. They\'re leftovers from when the planets formed, 4.6 billion years ago.',
+              toast: 'A rocky little world! Keep growing to become a planet' },
+            { min: 9e5, name: 'Dwarf planet', label: 'Dwarf planet',
+              desc: 'A world big enough that its own gravity squeezed it into a ball, like Pluto and Ceres. It isn\'t a full planet because it hasn\'t cleared the other stuff out of its path around its star.',
+              toast: 'Your gravity squeezed you into a ball, like Pluto' },
+            { min: 4e6, name: 'Rocky planet', label: 'Planet',
+              desc: 'A planet made of rock and metal, like Mercury, Venus, Earth and Mars. Rocky planets form close to their star, where it\'s too warm for lots of ice and gas to stick around.',
+              toast: 'A world of rock and metal, like Earth and Mars' },
+            { min: 2.75e7, name: 'Gas giant', label: 'Planet',
+              desc: 'A giant planet made mostly of hydrogen and helium gas, like Jupiter and Saturn. A gas giant starts as a rocky planet about 10 times heavier than Earth, whose gravity is strong enough to grab a huge cloud of gas.',
+              toast: 'Your gravity grabbed a huge cloud of gas and you puffed up, like Jupiter!' },
+            { min: 6e8, name: 'Star', label: 'Star',
+              desc: 'A giant ball of super hot gas. Its own gravity squeezes its middle so hard and hot that hydrogen fuses into helium, giving off light and heat. That takes about 80 times the mass of Jupiter. Our Sun is a star!',
+              toast: 'You\'re so heavy that nuclear fusion lit up inside you. From a single quark all the way to a star!' },
+        ];
+        const T_DWARF = 6, T_ROCKY = 7, T_GAS = 8, T_STAR = 9;
+        const DUST_GRAVITY_TIER = 4; // boulders and up pull things in
+        const DUST_TYPES = DUST_TIERS.map(t => ({ id: 'dust', kind: 'dust', name: t.name, kindLabel: t.label, sym: '', info: { charge: '0', desc: t.desc } }));
+
+        const DUST_LOOKS = [
+            { ...flat('#8a7f74', '#cfc4b8', '#3a332c'), what: 'Rock (silicate minerals, like sand)', density: 2700 },
+            { ...flat('#94664a', '#e0b08f', '#432616'), what: 'Rock with lots of iron (that makes it reddish)', density: 3800 },
+            { ...flat('#5c5650', '#a39d96', '#23201c'), what: 'Carbon, a lot like soot', density: 1800 },
+            { ...flat('#a9bccc', '#eef6ff', '#4a5a6a'), what: 'Ice and rock (far from a star, water freezes)', density: 1200 },
+            { ...flat('#a08a5a', '#e6d3a0', '#4a3a1a'), what: 'Rock and metal grains', density: 4500 },
+        ];
+        // Worlds and stars look different from rocks (densities in kg/m³ are real)
+        const WORLD_LOOKS = {
+            [T_DWARF]: [
+                { base: '#b9a48c', patch: '#e8dccb', what: 'Rock and ice, like Pluto', density: 1900 },
+                { base: '#8d8a86', patch: '#a9a6a2', what: 'Rock and icy clay, like Ceres', density: 2200 },
+                { base: '#d9d4cc', patch: '#f4f1ec', what: 'Ice and rock, like Eris', density: 2500 },
+            ],
+            [T_ROCKY]: [
+                { base: '#2d64c8', patch: '#3f9a4a', clouds: true, caps: true, air: 'rgba(120, 180, 255, 0.6)', what: 'Rock and metal, with oceans and air, like Earth', density: 5500 },
+                { base: '#c1592e', patch: '#8e3a1c', caps: true, air: 'rgba(255, 170, 120, 0.3)', what: 'Rock rusted red, like Mars', density: 3900 },
+                { base: '#9a948e', patch: '#77716b', what: 'Rock around a big iron core, like Mercury', density: 5400 },
+                { base: '#e2c27a', patch: '#cfa95c', clouds: true, air: 'rgba(255, 220, 150, 0.5)', what: 'Rock under thick yellow clouds, like Venus', density: 5200 },
+            ],
+            [T_GAS]: [
+                { base: '#d8b48a', bands: ['#e9d6b8', '#c4945f', '#efe2c8', '#a8714a', '#dcc09a'], spot: '#c0533a', what: 'Hydrogen and helium gas, like Jupiter', density: 1330 },
+                { base: '#e3d29f', bands: ['#efe2b6', '#d6c07f', '#e8d7a6', '#cbb26e'], rings: 'rgba(220, 200, 150, 0.55)', what: 'Hydrogen and helium gas, with rings of ice, like Saturn', density: 690 },
+                { base: '#3e66d6', bands: ['#4a74e0', '#3557c2', '#5a84ea'], spot: '#1d3a96', what: 'Gas and ice, like Neptune', density: 1640 },
+                { base: '#8fd8e0', bands: ['#9be0e6', '#86ccd6'], rings: 'rgba(200, 240, 250, 0.3)', what: 'Gas and ice, like Uranus', density: 1270 },
+            ],
+            [T_STAR]: [
+                { base: '#ff5a2a', light: '#ffb08a', glow: '#ff6a3a', what: 'Hydrogen and helium: a cool red dwarf star, the most common kind', density: 1330 },
+                { base: '#ff9a3a', light: '#ffd09a', glow: '#ffa040', what: 'Hydrogen and helium: an orange star', density: 1330 },
+                { base: '#ffd84a', light: '#fff4c0', glow: '#ffe070', what: 'Hydrogen and helium: a yellow star like our Sun', density: 1330 },
+                { base: '#e8eeff', light: '#ffffff', glow: '#dfe6ff', what: 'Hydrogen and helium: a hot white star', density: 1330 },
+                { base: '#8fb0ff', light: '#e0eaff', glow: '#9ab8ff', what: 'Hydrogen and helium: a very hot blue star', density: 1330 },
+            ],
+        };
+        for (const list of Object.values(WORLD_LOOKS)) {
+            for (const l of list) { l.light = l.light || shade(l.base, 0.45); l.dark = l.dark || shade(l.base, -0.55); }
+        }
+        const pickDustLook = (tier) => {
+            const list = WORLD_LOOKS[tier] || DUST_LOOKS;
+            return list[Math.floor(Math.random() * list.length)];
+        };
+        // You: rock up to dwarf planet, then squeezed rock and metal, then gas.
+        // (Your mass never goes down: becoming a gas giant puffs you up instead.)
+        const playerDensity = (tier) => tier === T_ROCKY ? 5500 : tier >= T_GAS ? 1330 : 2700;
+
+        const DUST_HINT = 'WASD to move &middot; scroll to zoom &middot; eat dust smaller than you to grow (red rings are too big) &middot; right-click to orbit &middot; dust &rarr; rock &rarr; asteroid &rarr; planet &rarr; gas giant &rarr; star &middot; click anything to learn about it';
+        const DUST_HINT_TOUCH = 'Joystick to move &middot; pinch to zoom &middot; eat dust smaller than you (red rings are too big) &middot; long-press to orbit &middot; grow into a star &middot; tap anything to learn about it';
+
+        const dustRealSize = (r) => DUST.startSize * Math.pow(r / dust.r0, DUST_EXP); // meters across
+        function dustTierOf(r) {
+            const size = dustRealSize(r);
+            let i = 0;
+            while (i + 1 < DUST_TIERS.length && size >= DUST_TIERS[i + 1].min) i++;
+            return i;
+        }
+        // Real mass: a ball of its real size, as heavy as what it's made of (kg/m³)
+        const dustMassKg = (p) => (p.isPlayer ? playerDensity(dustTierOf(p.r)) : p.look.density) *
+            Math.PI / 6 * Math.pow(dustRealSize(p.r), 3);
+        const EARTH_KG = 5.972e24, JUPITER_KG = 1.898e27, SUN_KG = 1.989e30;
+        function formatMassKg(kg, short) {
+            const fmt = (n, unit, long) => `${n.toLocaleString(undefined, n < 1 ? { maximumSignificantDigits: 2 } : { maximumFractionDigits: n < 10 ? 1 : 0 })} ${unit}${long && !short ? ` (${long})` : ''}`;
+            if (kg >= 0.1 * JUPITER_KG) {
+                const suns = kg / SUN_KG;
+                return fmt(kg / JUPITER_KG, 'Jupiter masses', suns >= 0.05 ? `${suns.toLocaleString(undefined, { maximumSignificantDigits: 2 })} Suns` : '');
+            }
+            if (kg >= 0.01 * EARTH_KG) return fmt(kg / EARTH_KG, 'Earth masses');
+            const big = [[1e18, 'quintillion'], [1e15, 'quadrillion'], [1e12, 'trillion'], [1e9, 'billion'], [1e6, 'million']];
+            for (const [n, word] of big) if (kg / 1000 >= n) return fmt(kg / 1000 / n, `${word} tonnes`);
+            if (kg >= 1000) return fmt(kg / 1000, 'tonnes', 'a tonne is 1,000 kg');
+            if (kg >= 1) return fmt(kg, 'kg');
+            if (kg >= 1e-3) return fmt(kg * 1e3, 'grams');
+            if (kg >= 1e-6) return fmt(kg * 1e6, 'milligrams', 'thousandths of a gram');
+            if (kg >= 1e-9) return fmt(kg * 1e9, 'micrograms', 'millionths of a gram');
+            if (kg >= 1e-12) return fmt(kg * 1e12, 'nanograms', 'billionths of a gram');
+            return fmt(kg * 1e15, 'picograms', 'trillionths of a gram');
+        }
+        function formatSize(m) {
+            const fmt = (n, unit) => `${n.toLocaleString(undefined, { maximumFractionDigits: n < 10 ? 1 : 0 })} ${unit}`;
+            if (m < 1e-4) return fmt(m * 1e6, 'micrometers');
+            if (m < 1e-2) return fmt(m * 1e3, 'mm');
+            if (m < 1) return fmt(m * 100, 'cm');
+            if (m < 1000) return fmt(m, 'm');
+            return fmt(m / 1000, 'km');
+        }
+
+        // A random lumpy shape for a grain or rock
+        function dustShape(e) {
+            const n = 9 + Math.floor(Math.random() * 5);
+            e.lumps = Array.from({ length: n }, () => rand(0.8, 1.06));
+            e.blobs = Array.from({ length: 5 }, () => ({ a: rand(0, Math.PI * 2), d: rand(0.45, 0.58), s: rand(0.38, 0.45) }));
+            e.craters = Array.from({ length: 3 }, () => ({ a: rand(0, Math.PI * 2), d: rand(0.1, 0.5), s: rand(0.1, 0.2) }));
+            e.rot = rand(0, Math.PI * 2);
+            e.tilt = rand(-0.35, 0.35); // gas giant bands and rings
+            return e;
+        }
+
+        function makeDustEntity(r, x, y) {
+            const speed = rand(0.1, 0.6) * player.r, ang = rand(0, Math.PI * 2);
+            return dustShape({
+                dust: true, x, y, r, mass: r * r,
+                vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
+                rotSpeed: rand(-0.4, 0.4),
+                look: pickDustLook(dustTierOf(r)),
+                type: DUST_TYPES[dustTierOf(r)],
+            });
+        }
+
+        // Mostly things smaller than you (food), plus a few bigger ones to dodge
+        function dustSpawnRadius() {
+            const between = (a, b) => player.r * Math.exp(rand(Math.log(a), Math.log(b)));
+            const u = Math.random();
+            if (u < 0.5) return between(0.12, 0.4);
+            if (u < 0.88) return between(0.4, 0.92);
+            return between(1.15, 3);
+        }
+
+        // Keep the space around you full: forget things far away or far too
+        // small to matter, and add new ones just off screen
+        function manageDust(fillView) {
+            const half = Math.hypot(window.innerWidth, window.innerHeight) / 2;
+            const seen = half / camera.zoom;              // what's on screen right now
+            const usual = half * player.r / DUST.screenR; // what's on screen at normal zoom
+            const inner = fillView ? player.r * 4 : seen * 1.05;
+            const outer = Math.max(usual * 3, inner + usual);
+            for (let k = free.length - 1; k >= 0; k--) {
+                const p = free[k];
+                const d = Math.hypot(p.x - player.x, p.y - player.y);
+                if (d > outer * 1.4 || (p.r < player.r * 0.04 && d > seen)) {
+                    if (selected === p) hideInfo();
+                    free.splice(k, 1);
+                }
+            }
+            for (let missing = DUST.count - free.length; missing > 0; missing--) {
+                const r = dustSpawnRadius(), ang = rand(0, Math.PI * 2);
+                const d = Math.sqrt(rand(inner * inner, outer * outer)) + r;
+                free.push(makeDustEntity(r, player.x + Math.cos(ang) * d, player.y + Math.sin(ang) * d));
+            }
+        }
+
+        function enterDustStage() {
+            const b = clusterBounds();
+            stage = 'dust';
+            hideInfo();
+            playerOrbit = null;
+            forming = null;
+
+            // Your whole molecule becomes one grain, right where it was
+            player.x = b.cx; player.y = b.cy;
+            player.vx = player.vy = 0;
+            player.r = Math.max(b.extent, 20);
+            player.mass = player.r * player.r;
+            player.chem = false;
+            player.dust = true;
+            player.look = DUST_LOOKS[0];
+            dustShape(player);
+            cluster.length = 0;
+            cluster.push(player);
+            bonds.length = 0;
+            bondedPairs = new Set();
+            molBondOrders = [];
+            dust = { r0: player.r, tier: 0, won: false, timer: 0.2, bgX: 0, bgY: 0 };
+            player.type = DUST_TYPES[0];
+
+            // Molecules are far too small to see now: out with them, in with dust
+            free.length = 0;
+            manageDust(true);
+
+            document.getElementById('hint').innerHTML = document.body.classList.contains('touch') ? DUST_HINT_TOUCH : DUST_HINT;
+            updateStats();
+            showToast('You became a dust grain!', 'Your molecule gathered with trillions of others into a speck of space dust. Eat dust smaller than you to grow into planets, and then a star!');
+        }
+
+        // Touching dust: eat it if it's smaller than you, bump it if it's bigger
+        function dustContact(p) {
+            const dx = p.x - player.x, dy = p.y - player.y;
+            const reach = p.r + player.r;
+            if (Math.abs(dx) > reach || Math.abs(dy) > reach) return;
+            const d = Math.hypot(dx, dy) || 0.001;
+            if (d >= reach) return;
+
+            if (p.r < player.r) { eatDust(p); return; }
+
+            floatText(p, 'Too big to eat! Eat smaller ones first');
+            const nx = dx / d, ny = dy / d, overlap = reach - d;
+            const total = p.mass + player.mass;
+            p.x += nx * overlap * (player.mass / total); p.y += ny * overlap * (player.mass / total);
+            player.x -= nx * overlap * (p.mass / total); player.y -= ny * overlap * (p.mass / total);
+            const vn = (p.vx - player.vx) * nx + (p.vy - player.vy) * ny;
+            if (vn < 0) {
+                const j = -1.5 * vn / (1 / p.mass + 1 / player.mass);
+                p.vx += (j / p.mass) * nx; p.vy += (j / p.mass) * ny;
+                player.vx -= (j / player.mass) * nx; player.vy -= (j / player.mass) * ny;
+            }
+        }
+
+        function eatDust(p) {
+            const k = free.indexOf(p);
+            if (k >= 0) free.splice(k, 1);
+            if (selected === p) hideInfo();
+            player.r = Math.hypot(player.r, p.r); // you grow by the amount you ate
+            player.mass = player.r * player.r;
+
+            let tier = dustTierOf(player.r);
+            if (tier >= T_GAS && dust.tier < T_GAS) {
+                // Same mass, but gas takes up far more room than rock: puff up!
+                const grow = Math.cbrt(playerDensity(T_ROCKY) / playerDensity(T_GAS));
+                player.r *= Math.pow(grow, 1 / DUST_EXP);
+                player.mass = player.r * player.r;
+                tier = dustTierOf(player.r);
+            }
+            player.type = DUST_TYPES[tier];
+            if (tier > dust.tier) {
+                dust.tier = tier;
+                const t = DUST_TIERS[tier];
+                if (tier >= T_DWARF) player.look = pickDustLook(tier);
+                if (tier === DUST_TIERS.length - 1) dust.won = true;
+                if (t.toast) {
+                    showToast(`You became ${aOrAn(t.name)} ${t.name.toLowerCase()}!`, t.toast);
+                } else if (tier === DUST_GRAVITY_TIER) {
+                    showToast(`You're ${aOrAn(t.name)} ${t.name.toLowerCase()} now!`, 'You\'re big enough that your gravity pulls in smaller things nearby');
+                } else {
+                    showToast(`You're ${aOrAn(t.name)} ${t.name.toLowerCase()} now!`, `About ${formatSize(dustRealSize(player.r))} across`);
+                }
+            }
+            updateStats();
+            if (selected === player) showInfo(player);
+        }
+
+        function dustPath(p) {
+            const tier = dustTierOf(p.r);
+            ctx.beginPath();
+            if (tier <= 1) {
+                // Fluffy dust: little specks stuck together
+                ctx.moveTo(p.x + p.r * 0.7, p.y);
+                ctx.arc(p.x, p.y, p.r * 0.7, 0, Math.PI * 2);
+                for (const b of p.blobs) {
+                    const a = b.a + p.rot;
+                    const bx = p.x + Math.cos(a) * b.d * p.r, by = p.y + Math.sin(a) * b.d * p.r;
+                    ctx.moveTo(bx + b.s * p.r, by);
+                    ctx.arc(bx, by, b.s * p.r, 0, Math.PI * 2);
+                }
+            } else {
+                // A lumpy rock: smooth curves through bumpy points
+                const n = p.lumps.length;
+                const pt = (i) => {
+                    const a = p.rot + (i % n) / n * Math.PI * 2, rr = p.r * p.lumps[i % n];
+                    return [p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr];
+                };
+                const mid = (i) => { const [ax, ay] = pt(i), [bx, by] = pt(i + 1); return [(ax + bx) / 2, (ay + by) / 2]; };
+                ctx.moveTo(...mid(0));
+                for (let i = 1; i <= n; i++) ctx.quadraticCurveTo(...pt(i), ...mid(i));
+                ctx.closePath();
+            }
+            return tier;
+        }
+
+        // Round worlds: dwarf planets, rocky planets, gas giants and stars
+        function drawWorld(p, tier) {
+            const { x, y, r } = p, look = p.look, TAU = Math.PI * 2;
+            const circle = (cx, cy, cr) => { ctx.beginPath(); ctx.arc(cx, cy, cr, 0, TAU); };
+            if (tier === T_STAR) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                const halo = ctx.createRadialGradient(x, y, r * 0.8, x, y, r * 2.6);
+                halo.addColorStop(0, look.glow + '99');
+                halo.addColorStop(1, look.glow + '00');
+                ctx.fillStyle = halo;
+                circle(x, y, r * 2.6);
+                ctx.fill();
+                ctx.restore();
+                const g = ctx.createRadialGradient(x - r * 0.2, y - r * 0.2, r * 0.05, x, y, r);
+                g.addColorStop(0, '#ffffff');
+                g.addColorStop(0.4, look.light);
+                g.addColorStop(1, look.base);
+                ctx.fillStyle = g;
+                circle(x, y, r);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(120, 40, 0, 0.12)'; // starspots
+                for (const c of p.craters) {
+                    const a = c.a + p.rot;
+                    circle(x + Math.cos(a) * c.d * r, y + Math.sin(a) * c.d * r, c.s * r * 0.5);
+                    ctx.fill();
+                }
+                return;
+            }
+            const ring = (front) => {
+                ctx.beginPath();
+                ctx.ellipse(x, y, r * 2.1, r * 0.55, p.tilt, front ? 0 : Math.PI, front ? Math.PI : TAU);
+                ctx.strokeStyle = look.rings;
+                ctx.lineWidth = r * 0.3;
+                ctx.stroke();
+            };
+            if (look.rings) ring(false); // the back half of the rings goes behind the planet
+            ctx.save();
+            circle(x, y, r);
+            ctx.clip();
+            ctx.fillStyle = look.base;
+            ctx.fillRect(x - r, y - r, r * 2, r * 2);
+            if (look.bands) {
+                // Gas giants: stripes of clouds, slightly tilted
+                ctx.translate(x, y);
+                ctx.rotate(p.tilt);
+                let yy = -r * 1.2;
+                for (let i = 0; yy < r * 1.2; i++) {
+                    const h = r * 0.24 * p.lumps[i % p.lumps.length];
+                    ctx.fillStyle = look.bands[i % look.bands.length];
+                    ctx.fillRect(-r * 1.2, yy, r * 2.4, h + r * 0.01);
+                    yy += h;
+                }
+                if (look.spot) {
+                    ctx.fillStyle = look.spot;
+                    ctx.beginPath();
+                    ctx.ellipse(r * 0.3, r * 0.32, r * 0.2, r * 0.11, 0, 0, TAU);
+                    ctx.fill();
+                }
+            } else {
+                // Rocky worlds: land, plains or ice patches, then craters or clouds
+                ctx.fillStyle = look.patch;
+                for (const b of p.blobs) {
+                    const a = b.a + p.rot;
+                    circle(x + Math.cos(a) * b.d * r, y + Math.sin(a) * b.d * r, b.s * r * 0.8);
+                    ctx.fill();
+                }
+                ctx.fillStyle = look.clouds ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.18)';
+                for (const c of p.craters) {
+                    const a = c.a - p.rot * 1.5;
+                    circle(x + Math.cos(a) * c.d * r, y + Math.sin(a) * c.d * r, c.s * r * (look.clouds ? 1.4 : 0.8));
+                    ctx.fill();
+                }
+                if (look.caps) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                    for (const s of [-1, 1]) {
+                        ctx.beginPath();
+                        ctx.ellipse(x, y + s * r, r * 0.45, r * 0.18, 0, 0, TAU);
+                        ctx.fill();
+                    }
+                }
+            }
+            ctx.restore();
+            // Sunlight from the upper left, night side at the lower right
+            const sh = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r * 1.05);
+            sh.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+            sh.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+            sh.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+            ctx.fillStyle = sh;
+            circle(x, y, r);
+            ctx.fill();
+            if (look.air) {
+                ctx.strokeStyle = look.air;
+                ctx.lineWidth = r * 0.06;
+                circle(x, y, r * 1.02);
+                ctx.stroke();
+            }
+            if (look.rings) ring(true);
+        }
+
+        function drawDust(p) {
+            const look = p.look, r = p.r;
+            const worldTier = dustTierOf(r);
+            if (worldTier >= T_DWARF) { drawWorld(p, worldTier); drawTooBig(p); return; }
+            // The light comes from the same side for everything, however it spins
+            const g = ctx.createRadialGradient(p.x - r * 0.35, p.y - r * 0.4, r * 0.1, p.x, p.y, r * 1.1);
+            g.addColorStop(0, look.light);
+            g.addColorStop(0.5, look.base);
+            g.addColorStop(1, look.dark);
+            ctx.fillStyle = g;
+            const tier = dustPath(p);
+            ctx.fill();
+            if (tier >= 2) { // rocks have craters
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+                for (const c of p.craters) {
+                    const a = c.a + p.rot;
+                    ctx.beginPath();
+                    ctx.arc(p.x + Math.cos(a) * c.d * r, p.y + Math.sin(a) * c.d * r, c.s * r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            drawTooBig(p);
+        }
+
+        // A red ring on anything too big for you to eat
+        function drawTooBig(p) {
+            const r = p.r;
+            if (!p.isPlayer && p.r >= player.r) {
+                ctx.strokeStyle = 'rgba(255, 90, 90, 0.6)';
+                ctx.lineWidth = 2 / view.zoom;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, r + 4 / view.zoom, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        function showDustInfo(p) {
+            const t = p.type, look = p.look;
+            infoName.textContent = (p.isPlayer ? 'You! ' : '') + t.name;
+            infoKind.textContent = t.kindLabel;
+            infoSwatch.style.background = `radial-gradient(circle at 35% 30%, ${look.light}, ${look.base} 50%, ${look.dark})`;
+            infoSwatch.textContent = '';
+            infoSwatch.style.textDecoration = 'none';
+            infoFacts.replaceChildren();
+            addFact('Size', `About ${formatSize(dustRealSize(p.r))} across`);
+            addFact('Mass', formatMassKg(dustMassKg(p)));
+            addFact('Made of', look.what);
+            if (p.isPlayer) {
+                const next = DUST_TIERS[dustTierOf(p.r) + 1];
+                addFact('Next', next ? `${next.name} at ${formatSize(next.min)} across` : 'You\'re a star! That\'s the end of the line');
+            } else {
+                addFact('Can you eat it?', p.r < player.r ? 'Yes! It\'s smaller than you' : 'No, it\'s bigger than you. Grow first!');
+                const ratio = dustMassKg(p) / dustMassKg(player);
+                const times = (n) => n.toLocaleString(undefined, { maximumFractionDigits: n < 10 ? 1 : 0 });
+                addFact('vs. you', ratio >= 1 ? `${times(ratio)}× heavier` : `${times(1 / ratio)}× lighter`);
+                if (p.orbit) addFact('Status', 'Orbiting you');
+            }
+            infoDesc.textContent = t.info.desc;
+            infoEl.classList.add('open');
+        }
+
         // --- Messages ---
-        const aOrAn = (word) => /^[aeiou]/i.test(word) ? 'an' : 'a';
+        const aOrAn =(word) => /^[aeiou]/i.test(word) ? 'an' : 'a';
         const floaters = []; // little messages that float up off particles
         function floatText(p, text) {
             const now = performance.now();
@@ -1389,6 +1857,12 @@
         }
 
         function updateStats() {
+            if (stage === 'dust') {
+                const i = dustTierOf(player.r), next = DUST_TIERS[i + 1];
+                statsEl.textContent = `You are ${aOrAn(DUST_TIERS[i].name)} ${DUST_TIERS[i].name.toLowerCase()}  ·  about ${formatSize(dustRealSize(player.r))} across  ·  weighs ${formatMassKg(dustMassKg(player), true)}  ·  ` +
+                    (next ? `${next.name} at ${formatSize(next.min)}` : 'You made it all the way!');
+                return;
+            }
             if (stage === 'molecule') {
                 const t = player.type;
                 const what = t.kind === 'element' ? t.name : `${t.name}${t.known ? ` (${t.sym})` : ''}`;
@@ -1476,8 +1950,8 @@
         function enableTouchControls() {
             if (document.body.classList.contains('touch')) return;
             document.body.classList.add('touch');
-            document.getElementById('hint').innerHTML =
-                'Joystick to move &middot; pinch to zoom &middot; tap anything to learn about it &middot; long-press to orbit &middot; quarks &rarr; proton &rarr; atom &rarr; molecules';
+            document.getElementById('hint').innerHTML = stage === 'dust' ? DUST_HINT_TOUCH :
+                'Joystick to move &middot; pinch to zoom &middot; tap anything to learn about it &middot; long-press to orbit &middot; quarks &rarr; proton &rarr; atom &rarr; molecules &rarr; dust &rarr; planets &rarr; star';
             document.querySelector('#restart b').textContent = 'Tap here to start over as a quark';
         }
         if (window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) enableTouchControls();
@@ -1507,6 +1981,7 @@
         }
 
         function keepInWorld(e) {
+            if (stage === 'dust') return; // space has no walls: the dust world goes on forever
             if (e.x < e.r) { e.x = e.r; e.vx = Math.abs(e.vx); }
             if (e.x > WORLD.width - e.r) { e.x = WORLD.width - e.r; e.vx = -Math.abs(e.vx); }
             if (e.y < e.r) { e.y = e.r; e.vy = Math.abs(e.vy); }
@@ -1624,6 +2099,14 @@
             }
             if (playerOrbit) orbitAroundTarget(dt);
             if (player.spin !== undefined) player.spin += player.spinSpeed * dt;
+            if (stage === 'dust') {
+                player.rot += 0.15 * dt;
+                // the starry background slides a little as you move
+                dust.bgX += player.vx * camera.zoom * dt * 0.35;
+                dust.bgY += player.vy * camera.zoom * dt * 0.35;
+                dust.timer -= dt;
+                if (dust.timer <= 0) { manageDust(); dust.timer = 0.2; }
+            }
 
             if (forming) {
                 forming.timer -= dt;
@@ -1632,19 +2115,22 @@
 
             // --- Free particles drift ---
             // A positive nucleus or ion pulls nearby electrons toward it
-            const pullsElectrons = stage !== 'molecule' && player.atom && player.atom.E < player.atom.Z;
+            const pullsElectrons = stage === 'particles' && player.atom && player.atom.E < player.atom.Z;
+            // Once you're big enough, your gravity pulls in smaller things nearby
+            const gravity = stage === 'dust' && dustTierOf(player.r) >= DUST_GRAVITY_TIER;
             const pullRange = player.r + 220;
             const bounds = clusterBounds();
             for (const p of free) {
                 if (p.orbit) { // right-clicked: circles around you
                     const o = p.orbit;
                     const dist = orbitDistance(p, bounds);
-                    o.angle += (o.speed / dist) * o.dir * dt;
+                    const sp = o.speed * orbitScale();
+                    o.angle += (sp / dist) * o.dir * dt;
                     p.x = bounds.cx + Math.cos(o.angle) * dist;
                     p.y = bounds.cy + Math.sin(o.angle) * dist;
                     // remember the circling speed, for if you let it go
-                    p.vx = -Math.sin(o.angle) * o.speed * o.dir + player.vx;
-                    p.vy = Math.cos(o.angle) * o.speed * o.dir + player.vy;
+                    p.vx = -Math.sin(o.angle) * sp * o.dir + player.vx;
+                    p.vy = Math.cos(o.angle) * sp * o.dir + player.vy;
                     if (p.spin !== undefined) p.spin += p.spinSpeed * dt;
                     if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
                     continue;
@@ -1655,6 +2141,15 @@
                     if (d < pullRange && d > 0.001) {
                         p.vx += (dx / d) * 500 * dt;
                         p.vy += (dy / d) * 500 * dt;
+                    }
+                }
+                if (gravity && p.r < player.r) {
+                    const dx = player.x - p.x, dy = player.y - p.y;
+                    const d = Math.hypot(dx, dy), range = player.r * 5;
+                    if (d < range && d > 0.001) {
+                        const a = player.r * 3 * (1 - d / range);
+                        p.vx += (dx / d) * a * dt;
+                        p.vy += (dy / d) * a * dt;
                     }
                 }
                 p.x += p.vx * dt;
@@ -1673,6 +2168,7 @@
                 const near = bounds.extent + p.r;
                 if (Math.abs(p.x - bounds.cx) > near || Math.abs(p.y - bounds.cy) > near) continue;
                 if (p.chem) { chemContact(p); continue; }
+                if (p.dust) { dustContact(p); continue; }
                 for (const c of cluster) {
                     const dx = p.x - c.x, dy = p.y - c.y;
                     const reach = p.r + c.r;
@@ -1712,8 +2208,13 @@
                 }
             }
 
+            // A molecule as big as it can get becomes a dust grain
+            if (stage === 'molecule' && cluster.length >= MAX_MOLECULE_ATOMS) enterDustStage();
+
             // --- Camera follows the player (the middle of your molecule) ---
-            let focus = stage === 'molecule' ? clusterBounds() : { cx: player.x, cy: player.y, extent: Math.max(player.r, bounds.extent) };
+            let focus = stage === 'molecule' ? clusterBounds()
+                : stage === 'dust' ? { cx: player.x, cy: player.y, extent: player.r }
+                : { cx: player.x, cy: player.y, extent: Math.max(player.r, bounds.extent) };
             if (playerOrbit) {
                 // While orbiting, hold the camera on what you're orbiting so
                 // the view stays steady and you circle around the middle
@@ -1727,11 +2228,14 @@
             // Atoms are shown at full size (only zooming out if one won't fit).
             // Molecules are zoomed out so they look as big as your atom did.
             const screen = Math.min(window.innerWidth, window.innerHeight);
-            const autoZoom = stage === 'molecule'
+            // Dust keeps you the same size on screen however big you grow.
+            const autoZoom = stage === 'dust'
+                ? (playerOrbit ? screen * 0.4 / focus.extent : DUST.screenR / focus.extent)
+                : stage === 'molecule'
                 ? Math.max(0.02, Math.min(1, moleculeScreenR / focus.extent))
                 : Math.min(1, screen * 0.35 / focus.extent);
             // The scroll wheel scales the automatic zoom up or down
-            const targetZoom = Math.max(0.002, Math.min(8, autoZoom * userZoom));
+            const targetZoom = Math.max(stage === 'dust' ? 1e-9 : 0.002, Math.min(8, autoZoom * userZoom));
             camera.zoom += (targetZoom - camera.zoom) * (1 - Math.exp(-5 * dt));
         }
 
@@ -1871,7 +2375,8 @@
         }
 
         function drawFree(p, time) {
-            if (p.chem) drawMolecule(p);
+            if (p.dust) drawDust(p);
+            else if (p.chem) drawMolecule(p);
             else if (p.type.kind === 'nucleus') drawAlpha(p);
             else if (p.type.kind === 'atom') drawAtom(p, time);
             else if (isQuarkKind(p.type)) drawQuark(p.x, p.y, p.r, p.color, p.type.sym, p.type.bar);
@@ -1946,18 +2451,31 @@
             view.x = camX;
             view.y = camY;
             view.zoom = z;
+            if (stage === 'dust') {
+                // Endless space: the background is drawn on the screen, sliding
+                // gently as you move, with a warm glow like a dusty young solar system
+                const ox = ((dust.bgX % TILE) + TILE) % TILE, oy = ((dust.bgY % TILE) + TILE) % TILE;
+                ctx.setTransform(dpr, 0, 0, dpr, -ox * dpr, -oy * dpr);
+                ctx.fillStyle = bgPattern;
+                ctx.fillRect(ox, oy, w, h);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                ctx.fillStyle = 'rgba(150, 90, 40, 0.12)';
+                ctx.fillRect(0, 0, w, h);
+            }
             ctx.setTransform(dpr * z, 0, 0, dpr * z, -camX * dpr * z, -camY * dpr * z);
 
-            const left = Math.max(0, camX), top = Math.max(0, camY);
-            const right = Math.min(WORLD.width, camX + viewW), bottom = Math.min(WORLD.height, camY + viewH);
-            if (right > left && bottom > top) {
-                ctx.fillStyle = bgPattern;
-                ctx.fillRect(left, top, right - left, bottom - top);
-            }
+            if (stage !== 'dust') {
+                const left = Math.max(0, camX), top = Math.max(0, camY);
+                const right = Math.min(WORLD.width, camX + viewW), bottom = Math.min(WORLD.height, camY + viewH);
+                if (right > left && bottom > top) {
+                    ctx.fillStyle = bgPattern;
+                    ctx.fillRect(left, top, right - left, bottom - top);
+                }
 
-            ctx.strokeStyle = 'rgba(120, 160, 255, 0.5)';
-            ctx.lineWidth = 3 / z;
-            ctx.strokeRect(0, 0, WORLD.width, WORLD.height);
+                ctx.strokeStyle = 'rgba(120, 160, 255, 0.5)';
+                ctx.lineWidth = 3 / z;
+                ctx.strokeRect(0, 0, WORLD.width, WORLD.height);
+            }
 
             // Faint paths for things orbiting you
             const orbitBounds = clusterBounds();
@@ -1994,7 +2512,8 @@
             const flare = forming ? 1 + (1 - forming.timer / 0.8) * 2 : 1;
             const gx = cluster.reduce((s, q) => s + q.x, 0) / cluster.length;
             const gy = cluster.reduce((s, q) => s + q.y, 0) / cluster.length;
-            const glowR = stage === 'molecule'
+            const glowR = stage === 'dust' ? player.r * 1.7 * pulse
+                : stage === 'molecule'
                 ? clusterBounds().extent * 1.3 * pulse
                 : Math.max(Math.min(player.r * 3.5, player.r + 60), cluster.length > 1 ? 70 : 0) * pulse * flare;
             const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, glowR);
@@ -2159,8 +2678,11 @@
             if (player.type.kind === 'hadron' && !player.atom) {
                 return `${aOrAn(player.type.name).replace(/^a/, 'A')} ${player.type.name} can't build atoms`;
             }
-            if (stage !== 'molecule' && player.atom && player.atom.Z === MAX_Z && player.atom.E === MAX_Z) {
+            if (stage === 'particles' && player.atom && player.atom.Z === MAX_Z && player.atom.E === MAX_Z) {
                 return 'You reached oganesson, the end of the periodic table!';
+            }
+            if (stage === 'dust') {
+                return dust.won ? 'You made it from a quark all the way to a star! Keep eating, or start over' : null;
             }
             if (stage === 'molecule') {
                 if (cluster.length >= MAX_MOLECULE_ATOMS) return 'Your molecule is as big as it can get!';
@@ -2286,6 +2808,7 @@
         function showInfo(p) {
             selected = p;
             const t = p.type;
+            if (t.kind === 'dust') { showDustInfo(p); return; }
             const info = t.info || INFO[t.id];
 
             infoName.textContent = (p.isPlayer ? 'You! ' : '') + t.name;
@@ -2371,13 +2894,18 @@
         // Right-click something lighter than you to make it orbit you
         // (subatomic and atomic world only). Right-click it again to let go.
         // =====================================================================
-        function yourMass() { // in MeV/c², the same units particles use
+        function yourMass() { // in MeV/c², the same units particles use (kg for space dust)
+            if (stage === 'dust') return dustMassKg(player);
             if (player.type.kind === 'quark') return cluster.reduce((s, q) => s + q.type.mass, 0);
             return player.type.mass;
         }
 
+        // Orbit gaps and speeds are sized for the atom world; in the dust world
+        // you keep growing, so orbits grow with you
+        const orbitScale = () => stage === 'dust' ? player.r / 30 : 1;
+
         function orbitDistance(p, bounds) {
-            return bounds.extent + p.r + 30 + p.orbit.lane * 24;
+            return bounds.extent + p.r + (30 + p.orbit.lane * 24) * orbitScale();
         }
 
         function startOrbit(p) {
@@ -2395,7 +2923,7 @@
         let playerOrbit = null; // { target, angle, speed, dir }
 
         function playerOrbitDistance(b) {
-            return playerOrbit.target.r + b.extent + 40;
+            return playerOrbit.target.r + b.extent + 40 * orbitScale();
         }
 
         function startPlayerOrbit(target) {
@@ -2416,11 +2944,12 @@
             const b = clusterBounds();
             const dist = playerOrbitDistance(b);
             const o = playerOrbit;
-            o.angle += (o.speed / dist) * o.dir * dt;
+            const sp = o.speed * orbitScale();
+            o.angle += (sp / dist) * o.dir * dt;
             const dx = t.x + Math.cos(o.angle) * dist - b.cx;
             const dy = t.y + Math.sin(o.angle) * dist - b.cy;
-            const vx = t.vx - Math.sin(o.angle) * o.speed * o.dir;
-            const vy = t.vy + Math.cos(o.angle) * o.speed * o.dir;
+            const vx = t.vx - Math.sin(o.angle) * sp * o.dir;
+            const vy = t.vy + Math.cos(o.angle) * sp * o.dir;
             for (const q of cluster) {
                 q.x += dx; q.y += dy;
                 q.vx = vx; q.vy = vy;
@@ -2519,7 +3048,7 @@
             const p = particleAt(...toWorld({ clientX, clientY }));
             if (!p || cluster.includes(p)) return;
             if (stage === 'molecule') {
-                floatText(p, 'Orbiting only works in the subatomic and atomic world');
+                floatText(p, 'Orbiting only works in the subatomic and atomic world, and for space dust');
                 return;
             }
             if (playerOrbit && playerOrbit.target === p) {
@@ -2535,11 +3064,12 @@
             }
             const name = p.type.name.toLowerCase();
             const mine = yourMass();
+            const theirs = p.dust ? dustMassKg(p) : p.type.mass;
             p.msgUntil = 0;
-            if (p.type.mass < mine) {
+            if (theirs < mine) {
                 startOrbit(p);
                 floatText(p, `The ${name} is orbiting you!`);
-            } else if (p.type.mass > mine) {
+            } else if (theirs > mine) {
                 startPlayerOrbit(p);
                 floatText(p, `You're orbiting the ${name}! Right-click it again to let go`);
             } else {
@@ -2558,6 +3088,9 @@
         // =====================================================================
         // Loop (fixed physics steps so the gluon springs stay stable)
         // =====================================================================
+        // Testing shortcut: open the page with ?dust to start as a dust grain
+        if (new URLSearchParams(location.search).has('dust')) enterDustStage();
+
         const STEP = 1 / 120;
         let last = performance.now();
         let acc = 0;
