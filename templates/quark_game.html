@@ -1412,8 +1412,8 @@
               desc: 'A giant planet made mostly of hydrogen and helium gas, like Jupiter and Saturn. A gas giant starts as a rocky planet about 10 times heavier than Earth, whose gravity is strong enough to grab a huge cloud of gas.',
               toast: 'Your gravity grabbed a huge cloud of gas and you puffed up, like Jupiter!' },
             { min: 6e8, name: 'Star', label: 'Star',
-              desc: 'A giant ball of super hot gas. Its own gravity squeezes its middle so hard and hot that hydrogen fuses into helium, giving off light and heat. That takes about 80 times the mass of Jupiter. Our Sun is a star!',
-              toast: 'You\'re so heavy that nuclear fusion lit up inside you. From a single quark all the way to a star!' },
+              desc: 'A giant ball of super hot gas. Its own gravity squeezes its middle so hard and hot that hydrogen fuses into helium, giving off light and heat. That takes about 80 times the mass of Jupiter. Heavier stars burn hotter, so their color goes from red to orange, yellow, white and blue. Our Sun is a yellow star!',
+              toast: 'Nuclear fusion lit up inside you! Keep growing to change color, from red all the way to blue' },
         ];
         const T_DWARF = 6, T_ROCKY = 7, T_GAS = 8, T_STAR = 9;
         const DUST_GRAVITY_TIER = 4; // boulders and up pull things in
@@ -1445,18 +1445,36 @@
                 { base: '#3e66d6', bands: ['#4a74e0', '#3557c2', '#5a84ea'], spot: '#1d3a96', what: 'Gas and ice, like Neptune', density: 1640 },
                 { base: '#8fd8e0', bands: ['#9be0e6', '#86ccd6'], rings: 'rgba(200, 240, 250, 0.3)', what: 'Gas and ice, like Uranus', density: 1270 },
             ],
+            // A star's color comes from its mass: heavier stars burn hotter,
+            // and hotter stars look bluer. (maxSuns: up to this many Suns of mass)
             [T_STAR]: [
-                { base: '#ff5a2a', light: '#ffb08a', glow: '#ff6a3a', what: 'Hydrogen and helium: a cool red dwarf star, the most common kind', density: 1330 },
-                { base: '#ff9a3a', light: '#ffd09a', glow: '#ffa040', what: 'Hydrogen and helium: an orange star', density: 1330 },
-                { base: '#ffd84a', light: '#fff4c0', glow: '#ffe070', what: 'Hydrogen and helium: a yellow star like our Sun', density: 1330 },
-                { base: '#e8eeff', light: '#ffffff', glow: '#dfe6ff', what: 'Hydrogen and helium: a hot white star', density: 1330 },
-                { base: '#8fb0ff', light: '#e0eaff', glow: '#9ab8ff', what: 'Hydrogen and helium: a very hot blue star', density: 1330 },
+                { maxSuns: 0.45, color: 'red dwarf', base: '#ff5a2a', light: '#ffb08a', glow: '#ff6a3a', density: 1330,
+                  what: 'Hydrogen and helium: a cool red dwarf star, the most common kind of star',
+                  fact: 'The coolest, smallest kind of star. Red dwarfs burn so slowly they can shine for trillions of years!' },
+                { maxSuns: 0.8, color: 'orange star', base: '#ff9a3a', light: '#ffd09a', glow: '#ffa040', density: 1330,
+                  what: 'Hydrogen and helium: an orange star',
+                  fact: 'A bit heavier means a bit hotter, so you glow orange now' },
+                { maxSuns: 1.4, color: 'yellow star', base: '#ffd84a', light: '#fff4c0', glow: '#ffe070', density: 1330,
+                  what: 'Hydrogen and helium: a yellow star like our Sun',
+                  fact: 'Just like our Sun! Its surface is about 5,500 °C' },
+                { maxSuns: 2.1, color: 'white star', base: '#e8eeff', light: '#ffffff', glow: '#dfe6ff', density: 1330,
+                  what: 'Hydrogen and helium: a hot white star, like Sirius',
+                  fact: 'Hotter than the Sun, like Sirius, the brightest star in our night sky' },
+                { maxSuns: Infinity, color: 'blue star', base: '#8fb0ff', light: '#e0eaff', glow: '#9ab8ff', density: 1330,
+                  what: 'Hydrogen and helium: a very hot blue star, like Rigel',
+                  fact: 'The hottest kind of star, over 10,000 °C! Big blue stars burn so fast they only last a few million years' },
             ],
         };
         for (const list of Object.values(WORLD_LOOKS)) {
             for (const l of list) { l.light = l.light || shade(l.base, 0.45); l.dark = l.dark || shade(l.base, -0.55); }
         }
-        const pickDustLook = (tier) => {
+        // The star color for a star of real size `size` (meters across)
+        function starLookFor(size) {
+            const suns = WORLD_LOOKS[T_STAR][0].density * Math.PI / 6 * Math.pow(size, 3) / SUN_KG;
+            return WORLD_LOOKS[T_STAR].find(l => suns < l.maxSuns);
+        }
+        const pickDustLook = (tier, r) => {
+            if (tier === T_STAR) return starLookFor(dustRealSize(r));
             const list = WORLD_LOOKS[tier] || DUST_LOOKS;
             return list[Math.floor(Math.random() * list.length)];
         };
@@ -1521,7 +1539,7 @@
                 dust: true, x, y, r, mass: r * r,
                 vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
                 rotSpeed: rand(-0.4, 0.4),
-                look: pickDustLook(dustTierOf(r)),
+                look: pickDustLook(dustTierOf(r), r),
                 type: DUST_TYPES[dustTierOf(r)],
             });
         }
@@ -1618,7 +1636,10 @@
             const k = free.indexOf(p);
             if (k >= 0) free.splice(k, 1);
             if (selected === p) hideInfo();
-            player.r = Math.hypot(player.r, p.r); // you grow by the amount you ate
+            // You grow by the amount you ate. Stars grow slowly: their light
+            // pushes most of what falls in back out into space.
+            const keep = dustTierOf(player.r) >= T_STAR ? 0.4 : 1;
+            player.r = Math.hypot(player.r, p.r * keep);
             player.mass = player.r * player.r;
 
             let tier = dustTierOf(player.r);
@@ -1633,7 +1654,7 @@
             if (tier > dust.tier) {
                 dust.tier = tier;
                 const t = DUST_TIERS[tier];
-                if (tier >= T_DWARF) player.look = pickDustLook(tier);
+                if (tier >= T_DWARF) player.look = pickDustLook(tier, player.r);
                 if (tier === DUST_TIERS.length - 1) dust.won = true;
                 if (t.toast) {
                     showToast(`You became ${aOrAn(t.name)} ${t.name.toLowerCase()}!`, t.toast);
@@ -1641,6 +1662,13 @@
                     showToast(`You're ${aOrAn(t.name)} ${t.name.toLowerCase()} now!`, 'You\'re big enough that your gravity pulls in smaller things nearby');
                 } else {
                     showToast(`You're ${aOrAn(t.name)} ${t.name.toLowerCase()} now!`, `About ${formatSize(dustRealSize(player.r))} across`);
+                }
+            } else if (tier === T_STAR) {
+                // Stars change color as they get heavier
+                const look = starLookFor(dustRealSize(player.r));
+                if (look !== player.look) {
+                    player.look = look;
+                    showToast(`You're ${aOrAn(look.color)} ${look.color} now!`, look.fact);
                 }
             }
             updateStats();
