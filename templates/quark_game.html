@@ -65,6 +65,48 @@
         #run-btn.on { background: rgba(255, 214, 74, 0.9); color: #2a1f00; }
         body.touch #hint { top: 46px; bottom: auto; }
         body.touch #restart { bottom: 210px; }
+        body.touch #supernova { bottom: 300px; }
+
+        /* "Go supernova!" button, offered to stars of 100+ Suns (closable) */
+        #supernova {
+            position: fixed;
+            left: 50%;
+            bottom: 160px;
+            transform: translateX(-50%);
+            max-width: calc(100vw - 32px);
+            display: none;
+        }
+        #supernova.show { display: block; }
+        #supernova-go {
+            padding: 12px 48px 12px 26px;
+            border: 2px solid #ff8a3a;
+            border-radius: 14px;
+            background: rgba(50, 15, 0, 0.88);
+            color: #ffb070;
+            text-align: center;
+            cursor: pointer;
+            animation: nova-pulse 1s ease-in-out infinite;
+        }
+        #supernova-go b { display: block; font: 800 clamp(18px, 3vw, 26px) system-ui, sans-serif; }
+        #supernova-go span { display: block; margin-top: 4px; font: 14px system-ui, sans-serif; color: rgba(255, 225, 200, 0.85); }
+        #supernova-x {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: #ffb070;
+            font: 24px/1 system-ui, sans-serif;
+            cursor: pointer;
+        }
+        #supernova-x:hover { background: rgba(255, 140, 60, 0.2); }
+        @keyframes nova-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 140, 60, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(255, 140, 60, 0.95); }
+        }
         .hud {
             position: fixed;
             left: 16px;
@@ -177,6 +219,10 @@
     <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click to orbit (lighter things orbit you, you orbit heavier things) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &rarr; dust &rarr; planets &rarr; star &middot; click anything to learn about it</div>
     <div id="toast"><b></b><span></span></div>
     <button id="restart" type="button"><b>Press R to start over as a quark</b><span></span></button>
+    <div id="supernova">
+        <button id="supernova-go" type="button"><b>&#128165; Go supernova!</b><span>You're over 100 Suns: heavy enough to explode and become a black hole</span></button>
+        <button id="supernova-x" type="button" aria-label="Close">&times;</button>
+    </div>
     <div id="touch-controls">
         <div id="joystick" aria-label="Move"><div id="joystick-knob"></div></div>
         <!-- RUN button turned off for now:
@@ -1413,9 +1459,16 @@
               toast: 'Your gravity grabbed a huge cloud of gas and you puffed up, like Jupiter!' },
             { min: 6e8, name: 'Star', label: 'Star',
               desc: 'A giant ball of super hot gas. Its own gravity squeezes its middle so hard and hot that hydrogen fuses into helium, giving off light and heat. That takes about 80 times the mass of Jupiter. Heavier stars burn hotter, so their color goes from red to orange, yellow, white and blue. Our Sun is a yellow star!',
-              toast: 'Nuclear fusion lit up inside you! Keep growing to change color, from red all the way to blue' },
+              toast: 'Nuclear fusion lit up inside you! Keep growing to change color, from red to blue, and at 100 Suns you can go supernova' },
         ];
         const T_DWARF = 6, T_ROCKY = 7, T_GAS = 8, T_STAR = 9;
+
+        // After a supernova you're a black hole (not a size you can grow into)
+        const SUPERNOVA_SUNS = 100;
+        const BLACK_HOLE_TYPE = { id: 'dust', kind: 'dust', name: 'Black hole', kindLabel: 'Black hole', sym: '', info: { charge: '0',
+            desc: 'What\'s left after a giant star explodes in a supernova: its core collapses into a point so dense that nothing, not even light, can escape its gravity. The edge you can\'t come back from is called the event horizon. The glowing ring is gas swirling around faster and faster as it falls in.' } };
+        // How big the event horizon is: about 6 km across for each Sun of mass
+        const eventHorizonM = (kg) => 4 * 6.674e-11 * kg / (2.998e8 * 2.998e8);
         const DUST_GRAVITY_TIER = 4; // boulders and up pull things in
         const DUST_TYPES = DUST_TIERS.map(t => ({ id: 'dust', kind: 'dust', name: t.name, kindLabel: t.label, sym: '', info: { charge: '0', desc: t.desc } }));
 
@@ -1493,11 +1546,12 @@
             return i;
         }
         // Real mass: a ball of its real size, as heavy as what it's made of (kg/m³)
-        const dustMassKg = (p) => (p.isPlayer ? playerDensity(dustTierOf(p.r)) : p.look.density) *
+        const dustMassKg = (p) => (p.isPlayer && dust.blackHole) ? dust.bhKg : (p.isPlayer ? playerDensity(dustTierOf(p.r)) : p.look.density) *
             Math.PI / 6 * Math.pow(dustRealSize(p.r), 3);
         const EARTH_KG = 5.972e24, JUPITER_KG = 1.898e27, SUN_KG = 1.989e30;
         function formatMassKg(kg, short) {
             const fmt = (n, unit, long) => `${n.toLocaleString(undefined, n < 1 ? { maximumSignificantDigits: 2 } : { maximumFractionDigits: n < 10 ? 1 : 0 })} ${unit}${long && !short ? ` (${long})` : ''}`;
+            if (kg >= SUN_KG) return fmt(kg / SUN_KG, 'Suns');
             if (kg >= 0.1 * JUPITER_KG) {
                 const suns = kg / SUN_KG;
                 return fmt(kg / JUPITER_KG, 'Jupiter masses', suns >= 0.05 ? `${suns.toLocaleString(undefined, { maximumSignificantDigits: 2 })} Suns` : '');
@@ -1636,6 +1690,16 @@
             const k = free.indexOf(p);
             if (k >= 0) free.splice(k, 1);
             if (selected === p) hideInfo();
+            if (dust.blackHole) {
+                // Black holes keep everything that falls in
+                dust.bhKg += dustMassKg(p);
+                if (dustTierOf(p.r) === T_STAR) dust.starsEaten++;
+                player.r = Math.hypot(player.r, p.r * 0.5);
+                player.mass = player.r * player.r;
+                updateStats();
+                if (selected === player) showInfo(player);
+                return;
+            }
             // You grow by the amount you ate. Stars grow slowly: their light
             // pushes most of what falls in back out into space.
             const keep = dustTierOf(player.r) >= T_STAR ? 0.4 : 1;
@@ -1673,6 +1737,115 @@
             }
             updateStats();
             if (selected === player) showInfo(player);
+            updateSupernovaButton();
+        }
+
+        // --- Supernova: a star of 100+ Suns can explode into a black hole ---
+        const novaEl = document.getElementById('supernova');
+        function updateSupernovaButton() {
+            const kg = dustMassKg(player);
+            const ready = stage === 'dust' && !dust.blackHole && dustTierOf(player.r) === T_STAR &&
+                kg >= SUPERNOVA_SUNS * SUN_KG && (!dust.novaClosedAt || kg >= dust.novaClosedAt * 2);
+            novaEl.classList.toggle('show', ready);
+        }
+        document.getElementById('supernova-x').addEventListener('click', () => {
+            dust.novaClosedAt = dustMassKg(player); // it comes back if you get twice as heavy
+            novaEl.classList.remove('show');
+        });
+        document.getElementById('supernova-go').addEventListener('click', goSupernova);
+
+        function goSupernova() {
+            if (!dust || dust.blackHole) return;
+            const starKg = dustMassKg(player);
+            dust.nova = { born: performance.now(), x: player.x, y: player.y, r: player.r };
+            dust.blackHole = true;
+            dust.bhKg = starKg * 0.25; // most of the star is blasted into space
+            dust.starsEaten = 0;
+            player.r *= 0.6;
+            player.mass = player.r * player.r;
+            player.type = BLACK_HOLE_TYPE;
+            playerOrbit = null;
+            // The blast throws everything nearby outward
+            for (const p of free) {
+                delete p.orbit;
+                const dx = p.x - player.x, dy = p.y - player.y, d = Math.hypot(dx, dy) || 1;
+                const reach = player.r * 30;
+                if (d < reach) {
+                    const kick = player.r * 10 * (1 - d / reach);
+                    p.vx += (dx / d) * kick;
+                    p.vy += (dy / d) * kick;
+                }
+            }
+            novaEl.classList.remove('show');
+            updateRestartPrompt();
+            showToast('Supernova!', `Your star exploded! Its core collapsed into a black hole of ${formatMassKg(dust.bhKg, true)}. Eat stars to grow!`);
+            updateStats();
+            if (selected === player) showInfo(player);
+        }
+
+        // Expanding blast and a white flash
+        function drawSupernova() {
+            if (!dust || !dust.nova) return;
+            const n = dust.nova, age = (performance.now() - n.born) / 3000;
+            if (age >= 1) { dust.nova = null; return; }
+            const R = n.r * (1 + age * 18);
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            const g = ctx.createRadialGradient(n.x, n.y, R * 0.6, n.x, n.y, R);
+            g.addColorStop(0, 'rgba(255, 200, 120, 0)');
+            g.addColorStop(0.75, `rgba(255, 160, 80, ${0.75 * (1 - age)})`);
+            g.addColorStop(0.92, `rgba(140, 170, 255, ${0.6 * (1 - age)})`);
+            g.addColorStop(1, 'rgba(140, 170, 255, 0)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        function drawSupernovaFlash(w, h) {
+            if (!dust || !dust.nova) return;
+            const age = (performance.now() - dust.nova.born) / 3000;
+            if (age > 0.15) return;
+            ctx.fillStyle = `rgba(255, 250, 235, ${0.9 * (1 - age / 0.15)})`;
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        // A black hole: a black ball inside a glowing, swirling disk of gas
+        function drawBlackHole(p) {
+            const { x, y, r } = p, TAU = Math.PI * 2, tilt = p.tilt || 0.2;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            const halo = ctx.createRadialGradient(x, y, r * 0.4, x, y, r * 1.5);
+            halo.addColorStop(0, 'rgba(255, 140, 60, 0.35)');
+            halo.addColorStop(1, 'rgba(255, 140, 60, 0)');
+            ctx.fillStyle = halo;
+            ctx.beginPath();
+            ctx.arc(x, y, r * 1.5, 0, TAU);
+            ctx.fill();
+            ctx.restore();
+            const disk = (front) => {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                for (const [w, color] of [[0.5, 'rgba(255, 110, 40, 0.35)'], [0.26, 'rgba(255, 190, 90, 0.6)'], [0.09, 'rgba(255, 245, 220, 0.9)']]) {
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, r * 1.05, r * 0.38, tilt, front ? 0 : Math.PI, front ? Math.PI : TAU);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = r * w;
+                    ctx.stroke();
+                }
+                ctx.restore();
+            };
+            disk(false); // the far side of the disk, behind the hole
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(x, y, r * 0.52, 0, TAU);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 225, 180, 0.9)'; // light bent all the way around the hole
+            ctx.lineWidth = r * 0.04;
+            ctx.beginPath();
+            ctx.arc(x, y, r * 0.55, 0, TAU);
+            ctx.stroke();
+            disk(true); // the near side, in front
         }
 
         function dustPath(p) {
@@ -1805,6 +1978,7 @@
 
         function drawDust(p) {
             const look = p.look, r = p.r;
+            if (p.isPlayer && dust.blackHole) { drawBlackHole(p); return; }
             const worldTier = dustTierOf(r);
             if (worldTier >= T_DWARF) { drawWorld(p, worldTier); drawTooBig(p); return; }
             // The light comes from the same side for everything, however it spins
@@ -1841,6 +2015,20 @@
 
         function showDustInfo(p) {
             const t = p.type, look = p.look;
+            if (p.isPlayer && dust.blackHole) {
+                infoName.textContent = 'You! Black hole';
+                infoKind.textContent = t.kindLabel;
+                infoSwatch.style.background = 'radial-gradient(circle, #000 38%, #fff2d8 44%, #ff9a40 56%, #3a1606 78%)';
+                infoSwatch.textContent = '';
+                infoFacts.replaceChildren();
+                addFact('Mass', formatMassKg(dust.bhKg));
+                addFact('Event horizon', `About ${formatSize(eventHorizonM(dust.bhKg))} across`);
+                addFact('Stars eaten', dust.starsEaten);
+                addFact('Made of', 'Nobody knows! Everything inside the event horizon is hidden from us forever');
+                infoDesc.textContent = t.info.desc;
+                infoEl.classList.add('open');
+                return;
+            }
             infoName.textContent = (p.isPlayer ? 'You! ' : '') + t.name;
             infoKind.textContent = t.kindLabel;
             infoSwatch.style.background = `radial-gradient(circle at 35% 30%, ${look.light}, ${look.base} 50%, ${look.dark})`;
@@ -1852,7 +2040,7 @@
             addFact('Made of', look.what);
             if (p.isPlayer) {
                 const next = DUST_TIERS[dustTierOf(p.r) + 1];
-                addFact('Next', next ? `${next.name} at ${formatSize(next.min)} across` : 'You\'re a star! That\'s the end of the line');
+                addFact('Next', next ? `${next.name} at ${formatSize(next.min)} across` : `At ${SUPERNOVA_SUNS} Suns you can explode in a supernova and become a black hole`);
             } else {
                 addFact('Can you eat it?', p.r < player.r ? 'Yes! It\'s smaller than you' : 'No, it\'s bigger than you. Grow first!');
                 const ratio = dustMassKg(p) / dustMassKg(player);
@@ -1865,7 +2053,7 @@
         }
 
         // --- Messages ---
-        const aOrAn =(word) => /^[aeiou]/i.test(word) ? 'an' : 'a';
+        const aOrAn = (word) => /^[aeiou]/i.test(word) ? 'an' : 'a';
         const floaters = []; // little messages that float up off particles
         function floatText(p, text) {
             const now = performance.now();
@@ -1885,10 +2073,14 @@
         }
 
         function updateStats() {
+            if (stage === 'dust' && dust.blackHole) {
+                statsEl.textContent = `You are a black hole  ·  event horizon about ${formatSize(eventHorizonM(dust.bhKg))} across  ·  weighs ${formatMassKg(dust.bhKg, true)}  ·  stars eaten: ${dust.starsEaten}`;
+                return;
+            }
             if (stage === 'dust') {
                 const i = dustTierOf(player.r), next = DUST_TIERS[i + 1];
                 statsEl.textContent = `You are ${aOrAn(DUST_TIERS[i].name)} ${DUST_TIERS[i].name.toLowerCase()}  ·  about ${formatSize(dustRealSize(player.r))} across  ·  weighs ${formatMassKg(dustMassKg(player), true)}  ·  ` +
-                    (next ? `${next.name} at ${formatSize(next.min)}` : 'You made it all the way!');
+                    (next ? `${next.name} at ${formatSize(next.min)}` : dustMassKg(player) < SUPERNOVA_SUNS * SUN_KG ? `supernova at ${SUPERNOVA_SUNS} Suns` : 'heavy enough to go supernova!');
                 return;
             }
             if (stage === 'molecule') {
@@ -2584,8 +2776,11 @@
                 ctx.setLineDash([]);
             }
 
+            if (stage === 'dust') drawSupernova();
+
             // Screen-space overlay: pointer to the next useful thing
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            if (stage === 'dust') drawSupernovaFlash(w, h);
             // Goal pointer (yellow "___ this way" arrows) is turned off for now.
             // The code is kept below; uncomment this line to bring it back.
             // drawGoalPointer(w, h, z, time);
@@ -2710,6 +2905,7 @@
                 return 'You reached oganesson, the end of the periodic table!';
             }
             if (stage === 'dust') {
+                if (dust.blackHole) return 'You went supernova and became a black hole! Keep eating stars, or start over';
                 return dust.won ? 'You made it from a quark all the way to a star! Keep eating, or start over' : null;
             }
             if (stage === 'molecule') {
