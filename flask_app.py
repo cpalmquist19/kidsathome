@@ -399,7 +399,7 @@ def system_generator():
 
 @app.route('/matter_eater')
 def matter_eater():
-    return render_template('matter_eater.html')
+    return render_template('quark_game.html')
 
 @app.route('/unieat')
 def unieat():
@@ -603,6 +603,9 @@ def rarities_game():
 def creature_fighters():
     return render_template('creature_fighters.html', current_user=current_user)
 
+@app.route('/matter_eater_game')
+def matter_eater_game():
+    return render_template('matter_eater_game.html', current_user=current_user)
 @app.route('/ocean_depth_game')
 def ocean_depth_game():
     effects_dir = os.path.join(app.static_folder, 'sound', 'effects')

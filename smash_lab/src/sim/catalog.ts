@@ -21,6 +21,8 @@ interface BodySpec {
   /** Overall length in m for a long thin object (a beam); `radius` is then half its width. */
   length?: number;
   temperatureC?: number;
+  shownTemperature?: string;
+  shownEnergy?: string;
   antimatter?: boolean;
   special?: 'antiBubble' | 'strangeOrb' | 'blast';
   blastJ?: number;
@@ -35,6 +37,8 @@ export function makeBody(spec: BodySpec): Body {
   if (spec.shownRadius) body.shownRadius = spec.shownRadius;
   if (spec.length !== undefined) body.length = spec.length;
   if (spec.temperatureC !== undefined) body.temperatureC = spec.temperatureC;
+  if (spec.shownTemperature) body.shownTemperature = spec.shownTemperature;
+  if (spec.shownEnergy) body.shownEnergy = spec.shownEnergy;
   if (spec.antimatter) body.antimatter = true;
   if (spec.special) body.special = spec.special;
   if (spec.blastJ !== undefined) body.blastJ = spec.blastJ;
@@ -250,11 +254,13 @@ const SPECS: BodySpec[] = [
   { id: 'meve1', name: 'MEVE-1', emoji: '🌌', radius: 1e95, mass: 1e165, material: 'plasma', group: BU, shownMass: '10^(3 × 10¹⁰) solar masses', shownRadius: 'ω³ light-years (transfinite)', blurb: 'Its mass is 10^(3×10¹⁰) Suns and its radius is the transfinite number ω³ light-years. Smash Lab uses stand-in numbers that keep its place in the order.' },
   { id: 'phyve1', name: 'PHYVE-1-LOC', emoji: '🌌', radius: 1e100, mass: 1e170, material: 'plasma', group: BU, shownMass: '≈ 10^(3 × 10^(10¹⁰)) kg', shownRadius: '10^(10^(10¹⁰)) m', blurb: 'Its width is 10^(10^(10^10)) metres: a number with a number with ten billion digits in it. Smash Lab uses stand-in numbers that keep its place in the order.' },
   { id: 'atomicBreath', name: "Godzilla's Atomic Breath", emoji: '☢️', radius: 2.4384, mass: 0.07, material: 'plasma', group: CP, energyEv: 6.3e15 / 1.602176634e-19, length: 6437376, temperatureC: 500000, blurb: "The beam from Godzilla's 2024 film: 16 feet wide, 4,000 miles long, 500,000 °C, and only 70 grams of matter. It arrives with 6.3 petajoules, about 1.5 megatons of TNT, in one pink-white flash. Smash Lab draws the real long thin shape." },
+  { id: 'lemoraBreath', name: "Lemora's Atomic Breath", emoji: '⚡', radius: 1, mass: 0.07, material: 'plasma', group: CP, energyEv: 1e150 / 1.602176634e-19, length: 1.2e7, temperatureC: 1.416e32, shownTemperature: '1.416 × 10³² K', shownEnergy: '≈ 10^(3 × 10^(10¹⁰)) W × 837.6', blurb: "A dark electric blue beam 2 metres tall and 12,000 kilometres long, with only 70 grams of matter and a temperature of 1.416 × 10³² K. Its energy is about 10^(3 × 10^(10^10)) watts × 837.6, a number far too big to store, so Smash Lab uses a stand-in that keeps its place near the top. Smash Lab draws the real long thin shape." },
   { id: 'antiGravityOrb', name: 'Anti-Gravity Orb', emoji: '🔮', radius: 70, mass: 7.346e22, material: 'plasma', group: CP, antimatter: true, shownMass: '−7.346 × 10²² kg (−1 Moon)', blurb: 'A 70 metre ball with the mass of the Moon, but negative. Everything near it is pushed away as hard as the Moon pulls things in, and it is antimatter: where it touches ordinary matter, both vanish into pure energy.' },
   { id: 'antiBubble', name: 'Anti-Bubble', emoji: '⚫', radius: 1e-18, mass: 1e-40, material: 'plasma', group: CP, special: 'antiBubble', shownMass: '0 kg', shownRadius: 'no fixed size (it grows from nothing)', blurb: 'A bubble with no mass and no size that starts growing the moment the simulation starts. It does not move, it only expands, and anything it touches is deleted.' },
   { id: 'strangeOrb', name: 'Strange Matter Orb', emoji: '🟢', radius: 70, mass: 1e-30, material: 'plasma', group: CP, special: 'strangeOrb', shownMass: '−0 kg (no mass)', blurb: 'A green 70 metre orb with no mass. Whatever it touches turns into green strange matter, and the change spreads through all of it.' },
   { id: 'grb', name: 'Gamma-Ray Burst', emoji: '💜', radius: 2e-18, mass: 1e-40, material: 'plasma', group: CP, special: 'blast', blastKind: 'grb', blastJ: 1e47, shownMass: '1.1 × 10³⁰ kg of energy (E ÷ c²)', shownRadius: 'a jet a few degrees wide', blurb: 'A narrow jet of gamma rays from a dying giant star, the brightest explosions since the Big Bang. Counting it as if it went out in every direction it equals about 10⁴⁷ joules, as much as the Sun gives off in 10 billion years, times 100,000.' },
   { id: 'supernova', name: 'Supernova', emoji: '💥', radius: 2e-18, mass: 1e-40, material: 'plasma', group: CP, special: 'blast', blastKind: 'supernova', blastJ: 1e44, shownMass: '8 Suns of ejecta (1.6 × 10³¹ kg)', shownRadius: 'a blast that grows outward', blurb: 'A massive star blows itself apart. The blast and light carry about 10⁴⁴ joules (one "foe"), as much as the Sun makes in its whole 10 billion year life.' },
+  { id: 'gozdillaPulse', name: "Gozdilla's Thermonuclear Pulse", emoji: '☢️', radius: 2e-18, mass: 6.4196970838e13, material: 'plasma', group: CP, special: 'blast', blastKind: 'supernova', blastJ: 1.379e21 * 4.184e9, temperatureC: 15e6 - 273.15, shownMass: '64,196,970,838 metric tons (6.42 × 10¹³ kg)', shownRadius: 'a blast that grows outward', blurb: "Gozdilla's thermonuclear pulse. It releases 1.379 zettatons of TNT, about 5.8 × 10³⁰ joules, at 15,000,000 K, and goes off like a supernova: the fireball grows outward from the impact point." },
   { id: 'hypernova', name: 'Hypernova', emoji: '🌠', radius: 2e-18, mass: 1e-40, material: 'plasma', group: CP, special: 'blast', blastKind: 'hypernova', blastJ: 5e45, shownMass: '10 Suns of ejecta (2 × 10³¹ kg)', shownRadius: 'a blast that grows outward', blurb: 'A supernova about 50 times stronger, from a star that collapses into a black hole. The ejecta fly at about 22,000 km/s and the blast carries about 5 × 10⁴⁵ joules, like the 1998 hypernova SN 1998bw.' },
   { id: 'bigBang', name: 'Big Bang', emoji: '🌌', radius: 2e-18, mass: 1e-40, material: 'plasma', group: CP, special: 'blast', blastKind: 'bigBang', blastJ: 1.5e53 * 299792458 ** 2, shownMass: '1.5 × 10⁵³ kg of energy (the whole observable universe)', shownRadius: 'starts as a point and grows without end', blurb: 'The start of space and time. Its energy is the whole mass of the observable universe turned into energy, E = mc², about 1.3 × 10⁷⁰ joules.' },
 ];

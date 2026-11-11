@@ -164,8 +164,9 @@ function card(body: Body, other: Body, o: BodyOutcome, result: ImpactOutcome, la
       `Antimatter: every kilogram that touches ordinary matter turns both into ${fmtNum(2 * 8.98755e16)} J (E = 2mc²)`,
     );
   }
-  if (body.temperatureC !== undefined) factLines.unshift(`Temperature: ${body.temperatureC.toLocaleString('en-US')} °C`);
-  if (launched && body.energyEv !== undefined && body.length !== undefined) factLines.unshift(`Carries ${fmtEnergy(body.energyEv * 1.602176634e-19, body.energyEv * 1.602176634e-19 / 4.184e12)} whatever it hits`);
+  if (body.shownTemperature) factLines.unshift(`Temperature: ${body.shownTemperature}`);
+  else if (body.temperatureC !== undefined) factLines.unshift(`Temperature: ${body.temperatureC.toLocaleString('en-US')} °C`);
+  if (launched && body.energyEv !== undefined && body.length !== undefined) factLines.unshift(body.shownEnergy ? `Carries ${body.shownEnergy} whatever it hits` : `Carries ${fmtEnergy(body.energyEv * 1.602176634e-19, body.energyEv * 1.602176634e-19 / 4.184e12)} whatever it hits`);
   const facts = factLines.map((line) => `<li>${line}</li>`).join('');
   const size = body.special === 'blast' ? `releases ${fmtEnergy(body.blastJ ?? 0, (body.blastJ ?? 0) / 4.184e12)}` : body.special === 'antiBubble' ? 'no mass · no fixed size, it grows' : body.length !== undefined
     ? `${fmtLength(body.radius * 2)} wide · ${fmtLength(body.length)} long · ${fmtMass(body.mass)}`
@@ -279,7 +280,7 @@ function render(): void {
   if (blasted) {
     el('energy').innerHTML = `<span>Energy released</span><strong>${fmtEnergy(result.energyJ, result.energyKilotons)}</strong>
     <span class="combined-label">Damage</span><strong class="combined">${share}</strong>
-    <small>${projectile.special === 'blast' ? target.name : projectile.name} takes all of it.</small>`;
+    <small>${projectile.special === 'blast' ? target.name : projectile.name} takes all of it.${joined && result.merge ? ` The star survives and takes in the blast's mass, so it now weighs ${fmtMass(result.merge.mass)}.` : ''}</small>`;
   } else if (result.repelled || result.effect !== 'none') {
     const [head, label, value, note] = result.repelled
       ? ['They never touch', 'Result', 'No collision', 'The Anti-Gravity Orb pushes away anything lighter than itself, and other orbs.']

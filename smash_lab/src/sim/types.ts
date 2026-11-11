@@ -74,6 +74,9 @@ export interface Body {
   blastKind?: 'grb' | 'supernova' | 'hypernova' | 'bigBang';
   /** Temperature in °C, shown on the card. */
   temperatureC?: number;
+  /** Shown instead of the temperature or energy when the true value is too big for a double. */
+  shownTemperature?: string;
+  shownEnergy?: string;
 }
 
 /** Mechanical outcome for one body, ordered from mildest to most violent. */

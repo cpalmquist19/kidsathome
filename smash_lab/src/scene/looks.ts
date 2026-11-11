@@ -174,7 +174,7 @@ const TINT: Record<string, [string, string, string?]> = {
   westerlund1: ['#cfe0ff', '#1a2250'], perseus: ['#ffd9a0', '#46233a'], bulletCluster: ['#ffe0b0', '#3a1e48'],
   greatAttractor: ['#ffe9c4', '#301f50'], piscesCetus: ['#ffe9c4', '#251a4a'],
   ring: ['#8fe8ff', '#ff6a5a'], helix: ['#6fb8ff', '#ff9a5a'], rosette: ['#ff5a7a', '#4a2a6a'],
-  grb: ['#c8a0ff', '#6a2fd0'], supernova: ['#ffb060', '#d04010'], hypernova: ['#a0c8ff', '#2050d0'], bigBang: ['#ffffff', '#ffd9a0'], strangeOrb: ['#7dff9a', '#0a8f3c', '#caffd8'], antiBubble: ['#101018', '#000000', '#334466'], antiGravityOrb: ['#c9b6ff', '#2a0f6e', '#e8f4ff'], atomicBreath: ['#ffd9ff', '#ff4fd8', '#ff9af0'], alarastraza: ['#ffffff', '#2a1a5a'], hawkramenshon: ['#d9a0ff', '#7a2fd0'], hyperUniverse: ['#ffffff', '#301a6a'], theFelon: ['#ff9a6a', '#3a1550'],
+  grb: ['#c8a0ff', '#6a2fd0'], supernova: ['#ffb060', '#d04010'], hypernova: ['#a0c8ff', '#2050d0'], bigBang: ['#ffffff', '#ffd9a0'], strangeOrb: ['#7dff9a', '#0a8f3c', '#caffd8'], antiBubble: ['#101018', '#000000', '#334466'], antiGravityOrb: ['#c9b6ff', '#2a0f6e', '#e8f4ff'], atomicBreath: ['#ffd9ff', '#ff4fd8', '#ff9af0'], lemoraBreath: ['#2f6bff', '#0a1a8c', '#5aa8ff'],  gozdillaPulse: ['#ffb060', '#d04010'], alarastraza: ['#ffffff', '#2a1a5a'], hawkramenshon: ['#d9a0ff', '#7a2fd0'], hyperUniverse: ['#ffffff', '#301a6a'], theFelon: ['#ff9a6a', '#3a1550'],
   giganaurus: ['#ffd9a0', '#3a1e5a'], mlti183: ['#c8d8ff', '#1a2860'], ulturuas: ['#ffd0e8', '#a090ff'],
   tremendous1500: ['#ffe0a0', '#4a1a2a'], grondeo: ['#a8ffd8', '#143a3a'], mar234: ['#ffb0e0', '#40204a'],
   uuz435: ['#ffee99', '#4a3510'], meve1: ['#9ad8ff', '#10304f'], phyve1: ['#ffffff', '#4a0f3f'],

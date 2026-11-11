@@ -382,6 +382,9 @@
   if (window.CF_ASSETS) {
     placeShowcase(CF_ASSETS.irithigrib, 'Irithigrib', 3, 4, 2, Math.PI * .85, 2);    // turned to face the start point
     placeShowcase(CF_ASSETS.humanMage, 'Steve the Mage', 1.8, 0, 6, 0, 0, true, 0);   // last arg: which way the model's front points (0 = +z, PI = -z)    // default human model, slot 1
+    placeShowcase(CF_ASSETS.demon, 'Demon', 3.2, -6, 3, -Math.PI * .85, 4, false, 0);   // humanoid: front is +z
+    placeShowcase(CF_ASSETS.skeleton, 'Skeletal Warrior', 2, -3, 6, -Math.PI * .15, 5, false, 0);   // humanoid: front is +z
+    placeShowcase(CF_ASSETS.crystalGuy, 'Crystal Rock Guy', 2.6, 6, 6, Math.PI * .15, 6, false, 0);   // humanoid: front is +z
     placeShowcase(CF_ASSETS.lemora, 'Lemora', 23.4, -12, -4, -Math.PI * .85, 3);
   }
   let eyeHeight = 1.7, avatar = null, thirdPerson = false, camZoom = .4;   // camZoom: third-person distance as a fraction of the model's size; the scroll wheel changes it   // F5 toggles third-person (only while playing as a model)

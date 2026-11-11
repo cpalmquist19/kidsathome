@@ -398,7 +398,11 @@ export function resolveImpact(input: ImpactInput): ImpactOutcome {
   if (effect === 'strange') {
     // The bigger of the two stays the same size and becomes strange matter (the orb weighs nothing).
     merge = { mass: projectile.mass + target.mass, radius: Math.max(projectile.radius, target.radius), blackHole: false };
-  } else if (effect === 'deleted' || effect === 'blast') {
+  } else if (effect === 'blast') {
+    // The explosion's mass joins a star that survives it (less than half vaporized); the star stays the same size, like the beam.
+    const star = [projectile, target].find((b) => b !== blast && b.group === 'Stars');
+    merge = star && blastFraction < 0.5 && blast ? { mass: projectile.mass + target.mass, radius: star.radius, blackHole: false } : null;
+  } else if (effect === 'deleted') {
     merge = null;
   } else if (beamIntoStar) {
     const star = projectile.length !== undefined ? target : projectile;

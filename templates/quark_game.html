@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matter Eater</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #05060d;
+        }
+        canvas {
+            display: block;
+        }
+        .hud {
+            position: fixed;
+            left: 16px;
+            color: rgba(255, 255, 255, 0.6);
+            font: 14px system-ui, sans-serif;
+            pointer-events: none;
+            user-select: none;
+        }
+        #hint { bottom: 16px; }
+        #stats { top: 16px; font-size: 16px; color: rgba(255, 255, 255, 0.8); }
+
+        #info {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            width: min(320px, calc(100vw - 32px));
+            box-sizing: border-box;
+            padding: 16px 18px;
+            background: rgba(14, 16, 32, 0.92);
+            border: 1px solid rgba(140, 160, 255, 0.3);
+            border-radius: 14px;
+            color: #e6e8ff;
+            font: 14px/1.45 system-ui, sans-serif;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+        #info.open { display: block; }
+
+        #toast {
+            position: fixed;
+            left: 50%;
+            top: 22%;
+            transform: translate(-50%, -10px);
+            max-width: calc(100vw - 32px);
+            text-align: center;
+            pointer-events: none;
+            user-select: none;
+            opacity: 0;
+            transition: opacity 0.4s, transform 0.4s;
+        }
+        #toast.show { opacity: 1; transform: translate(-50%, 0); }
+        #toast b {
+            display: block;
+            font: 800 clamp(24px, 5vw, 40px) system-ui, sans-serif;
+            color: #fff;
+            text-shadow: 0 0 18px rgba(255, 244, 168, 0.8), 0 2px 4px rgba(0, 0, 0, 0.7);
+        }
+        #toast span { font: 15px system-ui, sans-serif; color: rgba(255, 255, 255, 0.7); }
+        #info-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        #info-swatch {
+            flex: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font: italic bold 17px Georgia, serif;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        }
+        #info-name { font-size: 18px; font-weight: 700; color: #fff; }
+        #info-kind { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(200, 210, 255, 0.6); }
+        #info-close {
+            margin-left: auto;
+            align-self: flex-start;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 2px;
+        }
+        #info-close:hover { color: #fff; }
+        #info-facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin-bottom: 10px; font-size: 13px; }
+        #info-facts dt { color: rgba(200, 210, 255, 0.6); }
+        #info-facts dd { margin: 0; color: #fff; }
+        #info-desc { margin: 0; color: rgba(230, 232, 255, 0.85); }
+    </style>
+</head>
+<body>
+    <canvas id="game"></canvas>
+    <div id="stats" class="hud"></div>
+    <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click lighter things to make them orbit you &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &middot; click anything to learn about it</div>
+    <div id="toast"><b></b><span></span></div>
+    <div id="info">
+        <div id="info-head">
+            <div id="info-swatch"></div>
+            <div>
+                <div id="info-name"></div>
+                <div id="info-kind"></div>
+            </div>
+            <button id="info-close" aria-label="Close">&times;</button>
+        </div>
+        <dl id="info-facts"></dl>
+        <p id="info-desc"></p>
+    </div>
+
+    <script src="{{ static_file('js/matter_eater/chem_data.js') }}"></script>
+    <script>
+    (() => {
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const statsEl = document.getElementById('stats');
+        let dpr = 1;
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // =====================================================================
+        // World
+        // =====================================================================
+        // Subatomic + atomic world (it grows again when you reach molecules)
+        const WORLD = { width: 18000, height: 18000 };
+        const rand = (a, b) => a + Math.random() * (b - a);
+
+        // =====================================================================
+        // Particle catalog
+        //
+        // Real fundamental particles are point-like, so "size" here is based
+        // on mass (log scale) relative to the up quark the player starts as.
+        // =====================================================================
+        const UP_MASS = 2.16;          // MeV/c^2
+        const PLAYER_RADIUS = 12;
+        function radiusForMass(mev) {
+            if (!mev) return 4;        // massless (photon, gluon)
+            const r = PLAYER_RADIUS * Math.pow(1.4, Math.log10(mev / UP_MASS));
+            return Math.max(4, Math.min(70, r));
+        }
+
+        // Color charge (quarks) and anti-color charge (antiquarks)
+        const COLOR_CHARGE = {
+            red:     { base: '#d8323c', light: '#ff8a8f', dark: '#7a0f16' },
+            green:   { base: '#2ea84a', light: '#8cf0a0', dark: '#0d5320' },
+            blue:    { base: '#2b4fd0', light: '#8aa2ff', dark: '#0e1f6e' },
+            antired:   { base: '#22b8c8', light: '#9af2fa', dark: '#0a5960' }, // cyan
+            antigreen: { base: '#c03aa8', light: '#f59ae4', dark: '#5a0f4c' }, // magenta
+            antiblue:  { base: '#d6b021', light: '#fff09a', dark: '#6e5508' }, // yellow
+        };
+        const COLORS = ['red', 'green', 'blue'];
+        const ANTICOLORS = ['antired', 'antigreen', 'antiblue'];
+
+        const flat = (base, light, dark) => ({ base, light, dark });
+        const LEPTON = flat('#8f6cf0', '#cdbcff', '#3a2390');
+        const ANTILEPTON = flat('#c56cf0', '#ecc4ff', '#5a2380');
+        const NEUTRINO = flat('#c8ccff', '#ffffff', '#6a70b0');
+        const ANTINEUTRINO = flat('#ffc8f0', '#ffffff', '#b06a9a');
+
+        const TYPES = [];
+        function addType(t) { TYPES.push(t); return t; }
+
+        // --- Quarks and antiquarks ---
+        const QUARKS = [
+            { id: 'up',      name: 'Up quark',      sym: 'u', mass: 2.16,   count: 40 },
+            { id: 'down',    name: 'Down quark',    sym: 'd', mass: 4.67,   count: 40 },
+            { id: 'strange', name: 'Strange quark', sym: 's', mass: 93.4,   count: 16 },
+            { id: 'charm',   name: 'Charm quark',   sym: 'c', mass: 1270,   count: 8 },
+            { id: 'bottom',  name: 'Bottom quark',  sym: 'b', mass: 4180,   count: 5 },
+            { id: 'top',     name: 'Top quark',     sym: 't', mass: 172690, count: 3 },
+        ];
+        const QUARK_BY_SYM = {};
+        for (const q of QUARKS) {
+            QUARK_BY_SYM[q.sym] = q;
+            addType({ ...q, kind: 'quark' });
+            addType({ ...q, id: 'anti' + q.id, name: 'Anti-' + q.name.toLowerCase(),
+                      bar: true, kind: 'antiquark', count: Math.ceil(q.count / 3) });
+        }
+
+        // --- Leptons ---
+        [
+            { id: 'electron', name: 'Electron', sym: 'e⁻', mass: 0.511, count: 120, look: LEPTON },
+            { id: 'positron', name: 'Positron', sym: 'e⁺', mass: 0.511, count: 10, look: ANTILEPTON },
+            { id: 'muon',     name: 'Muon',      sym: 'μ⁻', mass: 105.7, count: 12, look: LEPTON },
+            { id: 'antimuon', name: 'Antimuon',  sym: 'μ⁺', mass: 105.7, count: 5,  look: ANTILEPTON },
+            { id: 'tau',      name: 'Tau',       sym: 'τ⁻', mass: 1777,  count: 5,  look: LEPTON },
+            { id: 'antitau',  name: 'Antitau',   sym: 'τ⁺', mass: 1777,  count: 3,  look: ANTILEPTON },
+            { id: 'nue',   name: 'Electron neutrino', sym: 'νe', mass: 0, count: 30, look: NEUTRINO },
+            { id: 'numu',  name: 'Muon neutrino',     sym: 'νμ', mass: 0, count: 20, look: NEUTRINO },
+            { id: 'nutau', name: 'Tau neutrino',      sym: 'ντ', mass: 0, count: 15, look: NEUTRINO },
+            { id: 'antinue',   name: 'Electron antineutrino', sym: 'νe', bar: true, mass: 0, count: 15, look: ANTINEUTRINO },
+            { id: 'antinumu',  name: 'Muon antineutrino',     sym: 'νμ', bar: true, mass: 0, count: 10, look: ANTINEUTRINO },
+            { id: 'antinutau', name: 'Tau antineutrino',      sym: 'ντ', bar: true, mass: 0, count: 8,  look: ANTINEUTRINO },
+        ].forEach(t => addType({ ...t, kind: 'lepton', neutrino: t.look === NEUTRINO || t.look === ANTINEUTRINO }));
+
+        // --- Bosons ---
+        [
+            { id: 'photon', name: 'Photon',  sym: 'γ',  mass: 0,      count: 40, look: flat('#fff3a0', '#ffffff', '#b0a040'), fast: true },
+            { id: 'gluon',  name: 'Gluon',   sym: 'g',  mass: 0,      count: 40, look: flat('#f5ee9e', '#ffffff', '#a89a40'), fast: true },
+            { id: 'wplus',  name: 'W⁺ boson', sym: 'W⁺', mass: 80377, count: 3, look: flat('#f08a2c', '#ffd0a0', '#7a3a08') },
+            { id: 'wminus', name: 'W⁻ boson', sym: 'W⁻', mass: 80377, count: 3, look: flat('#f08a2c', '#ffd0a0', '#7a3a08') },
+            { id: 'z',      name: 'Z boson',  sym: 'Z⁰', mass: 91188, count: 3, look: flat('#e0662c', '#ffbe9a', '#702a08') },
+            { id: 'higgs',  name: 'Higgs boson', sym: 'H', mass: 125250, count: 2, kindLabel: 'Boson (gives particles mass)', look: flat('#e8c22e', '#fff3b0', '#6e5806') },
+        ].forEach(t => addType({ ...t, kind: 'boson' }));
+
+        // --- Common composite particles (hadrons) ---
+        // quarks: list of [symbol, isAnti]
+        [
+            { id: 'proton',     name: 'Proton',      sym: 'p',  mass: 938.3, count: 60, quarks: [['u'], ['u'], ['d']] },
+            { id: 'neutron',    name: 'Neutron',     sym: 'n',  mass: 939.6, count: 90, quarks: [['u'], ['d'], ['d']] },
+            { id: 'antiproton', name: 'Antiproton',  sym: 'p', bar: true, mass: 938.3, count: 3, quarks: [['u', 1], ['u', 1], ['d', 1]] },
+            { id: 'pionplus',   name: 'Pion π⁺',     sym: 'π⁺', mass: 139.6, count: 8, quarks: [['u'], ['d', 1]] },
+            { id: 'pionminus',  name: 'Pion π⁻',     sym: 'π⁻', mass: 139.6, count: 8, quarks: [['d'], ['u', 1]] },
+            { id: 'pionzero',   name: 'Pion π⁰',     sym: 'π⁰', mass: 135.0, count: 6, quarks: [['u'], ['u', 1]] },
+            { id: 'kaonplus',   name: 'Kaon K⁺',     sym: 'K⁺', mass: 493.7, count: 4, quarks: [['u'], ['s', 1]] },
+            { id: 'kaonminus',  name: 'Kaon K⁻',     sym: 'K⁻', mass: 493.7, count: 4, quarks: [['s'], ['u', 1]] },
+            { id: 'kaonzero',   name: 'Kaon K⁰',     sym: 'K⁰', mass: 497.6, count: 4, quarks: [['d'], ['s', 1]] },
+        ].forEach(t => addType({ ...t, kind: 'hadron' }));
+
+        // --- Alpha particle: a bare helium-4 nucleus (2 protons + 2 neutrons) ---
+        addType({ id: 'alpha', name: 'Alpha particle', sym: 'α', mass: 3727.4, count: 50,
+                  kind: 'nucleus', kindLabel: 'Atomic nucleus (helium-4)' });
+
+        for (const t of TYPES) t.radius = radiusForMass(t.mass);
+
+        // =====================================================================
+        // Particle facts (shown when you click a particle)
+        // =====================================================================
+        const INFO = {
+            up:      { charge: '+2/3', desc: 'The lightest quark. Two ups and a down make a proton. You started out as one of these!' },
+            down:    { charge: '−1/3', desc: 'A little heavier than up. One up and two downs make a neutron.' },
+            strange: { charge: '−1/3', desc: 'Found in cosmic rays around 1950. Particles holding it lived "strangely" long, which gave it its name. Kaons contain a strange quark.' },
+            charm:   { charge: '+2/3', desc: 'Discovered in 1974 by two different labs in the same week, an event physicists call the "November Revolution".' },
+            bottom:  { charge: '−1/3', desc: 'Also called the "beauty" quark. Discovered at Fermilab in 1977. It weighs about as much as 4½ protons.' },
+            top:     { charge: '+2/3', desc: 'The heaviest fundamental particle we know, about as heavy as a whole gold atom! It decays so fast (in about 0.0000000000000000000000005 s) that it never has time to join other quarks.' },
+            electron:  { charge: '−1', desc: 'Found around the nucleus of every atom. When electrons flow through a wire, that\'s electricity. Discovered by J.J. Thomson in 1897.' },
+            positron:  { charge: '+1', desc: 'The electron\'s antimatter twin. When a positron meets an electron they vanish in a flash of light. Hospitals use positrons in PET scans.' },
+            muon:      { charge: '−1', desc: 'A heavy cousin of the electron, about 207 times heavier. Cosmic rays make muons high in the sky, and thousands pass through your body every minute.' },
+            antimuon:  { charge: '+1', desc: 'The antimatter version of the muon, with a positive charge.' },
+            tau:       { charge: '−1', desc: 'The heaviest lepton, about 3,500 times heavier than an electron. It lasts only about 0.3 trillionths of a second before decaying.' },
+            antitau:   { charge: '+1', desc: 'The antimatter version of the tau, with a positive charge.' },
+            nue:       { charge: '0', desc: 'A ghostly particle that almost never touches anything. About 65 billion neutrinos from the Sun pass through your fingernail every second!' },
+            numu:      { charge: '0', desc: 'Made alongside muons. Neutrinos can change from one type to another as they travel, called "neutrino oscillation".' },
+            nutau:     { charge: '0', desc: 'The last neutrino to be directly detected, at Fermilab in the year 2000.' },
+            antinue:   { charge: '0', desc: 'Nuclear reactors give off enormous numbers of these. Scientists first detected neutrinos this way in 1956.' },
+            antinumu:  { charge: '0', desc: 'The antimatter partner of the muon neutrino. Particle beams of these are fired hundreds of kilometers through the Earth for experiments.' },
+            antinutau: { charge: '0', desc: 'The antimatter partner of the tau neutrino, the rarest and hardest neutrino to study.' },
+            photon: { charge: '0', desc: 'A particle of light, and the carrier of the electromagnetic force. It has no mass and always travels at the speed of light. Everything you see is photons landing in your eyes.' },
+            gluon:  { charge: '0', desc: 'Carries the strong force that glues quarks together. Those wiggly lines between your quarks are gluons! Gluons carry color charge themselves, which makes the strong force very strong.' },
+            wplus:  { charge: '+1', desc: 'Carries the weak force, which causes radioactive decay and helps the Sun shine. About 86 times heavier than a proton. Discovered at CERN in 1983.' },
+            wminus: { charge: '−1', desc: 'The negative partner of the W⁺. When a neutron decays, it turns a down quark into an up quark by giving off a W⁻.' },
+            z:      { charge: '0', desc: 'The neutral carrier of the weak force, discovered at CERN in 1983 just after the W bosons.' },
+            higgs:  { charge: '0', desc: 'Its field gives the other fundamental particles their mass. It was predicted in 1964 and finally found at CERN\'s Large Hadron Collider in 2012.' },
+            proton:     { charge: '+1', desc: 'Two up quarks and a down quark held together by gluons. Every atom has protons in its center, and the number of protons decides which element it is.' },
+            neutron:    { charge: '0', desc: 'One up quark and two down quarks. Neutrons sit with protons in the nucleus. On its own, a neutron decays in about 15 minutes.' },
+            antiproton: { charge: '−1', desc: 'An antimatter proton: two anti-up quarks and an anti-down quark. Made in particle accelerators and studied at CERN.' },
+            pionplus:   { charge: '+1', desc: 'A meson: one quark plus one antiquark. Pions help hold protons and neutrons together in the nucleus. It lasts about 26 billionths of a second.' },
+            pionminus:  { charge: '−1', desc: 'The negative pion, a down quark paired with an anti-up quark. It lasts about 26 billionths of a second.' },
+            pionzero:   { charge: '0', desc: 'A neutral pion. It decays into two photons almost instantly, in about 0.0000000000000001 seconds.' },
+            kaonplus:   { charge: '+1', desc: 'A meson containing a strange antiquark. Studying kaons showed that matter and antimatter behave slightly differently.' },
+            kaonminus:  { charge: '−1', desc: 'A meson made of a strange quark and an anti-up quark.' },
+            kaonzero:   { charge: '0', desc: 'A neutral kaon. It can flip back and forth between itself and its own antiparticle!' },
+            alpha:      { charge: '+2', desc: 'Two protons and two neutrons stuck tightly together: a helium-4 nucleus. Radioactive atoms like uranium shoot these out. Grab one to add 2 protons and 2 neutrons at once!' },
+        };
+        // Antiquarks share facts with their quark, with the charge flipped
+        for (const q of QUARKS) {
+            const base = INFO[q.id];
+            const flipped = base.charge.startsWith('+') ? '−' + base.charge.slice(1) : '+' + base.charge.slice(1);
+            INFO['anti' + q.id] = {
+                charge: flipped,
+                desc: `The antimatter twin of the ${q.name.toLowerCase()}: same mass, opposite charge. An antiquark paired with a quark makes a meson, like a pion or kaon.`,
+            };
+        }
+
+        const KIND_LABEL = {
+            quark: 'Quark', antiquark: 'Antiquark', boson: 'Boson (force carrier)',
+            hadron: 'Hadron (made of quarks)', lepton: 'Lepton',
+        };
+
+        function formatMass(t) {
+            if (!t.mass) return t.neutrino ? 'Almost zero (less than 1 eV)' : '0 (massless)';
+            return t.mass >= 1000 ? `${(t.mass / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} GeV/c²`
+                                  : `${t.mass.toLocaleString(undefined, { maximumFractionDigits: 2 })} MeV/c²`;
+        }
+
+        // How a particle's mass compares to an up quark (what you started as)
+        function compareToUp(t) {
+            if (!t.mass) {
+                // Neutrino masses are under about 0.8 eV; an up quark is 2.16 million eV
+                return t.neutrino ? 'More than 2 million× lighter' : 'No mass at all, so infinitely lighter';
+            }
+            const ratio = t.mass / UP_MASS;
+            const fmt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: n < 10 ? 1 : 0 });
+            if (ratio >= 1.05) return `${fmt(ratio)}× heavier`;
+            if (ratio <= 0.95) return `${fmt(1 / ratio)}× lighter`;
+            return 'Same mass';
+        }
+
+        // =====================================================================
+        // Entities
+        // =====================================================================
+        const isQuarkKind = (t) => t.kind === 'quark' || t.kind === 'antiquark';
+
+        function makeEntity(type, x, y) {
+            const e = {
+                type, x, y,
+                vx: 0, vy: 0,
+                r: type.radius,
+                mass: type.radius * type.radius,
+                bonded: false,
+            };
+            if (type.kind === 'quark') e.color = COLORS[Math.floor(Math.random() * 3)];
+            if (type.kind === 'antiquark') e.color = ANTICOLORS[Math.floor(Math.random() * 3)];
+            if (type.kind === 'hadron') {
+                // Baryons get red/green/blue; mesons get a color + its anticolor
+                const c = Math.floor(Math.random() * 3);
+                e.inner = type.quarks.map(([sym, anti], i) => ({
+                    sym, anti: !!anti,
+                    color: type.quarks.length === 3
+                        ? (anti ? ANTICOLORS : COLORS)[i]
+                        : (anti ? ANTICOLORS[c] : COLORS[c]),
+                }));
+                e.spin = rand(0, Math.PI * 2);
+                e.spinSpeed = rand(-0.6, 0.6);
+            }
+            if (type.kind === 'nucleus') {
+                e.spin = rand(0, Math.PI * 2);
+                e.spinSpeed = rand(-0.6, 0.6);
+            }
+            const speed = type.fast ? rand(80, 160) : rand(8, 35);
+            const ang = rand(0, Math.PI * 2);
+            e.vx = Math.cos(ang) * speed;
+            e.vy = Math.sin(ang) * speed;
+            return e;
+        }
+
+        // Player: a red up quark in the middle of the world
+        const player = makeEntity(TYPES.find(t => t.id === 'up'), WORLD.width / 2, WORLD.height / 2);
+        player.color = 'red';
+        player.vx = player.vy = 0;
+        player.bonded = true;
+        player.isPlayer = true;
+
+        const PLAYER = { accel: 1800, maxSpeed: 320, friction: 6 };
+
+        // Everything else, spread across the world
+        const free = [];
+        for (const type of TYPES) {
+            for (let i = 0; i < type.count; i++) {
+                let x, y;
+                do {
+                    x = rand(type.radius, WORLD.width - type.radius);
+                    y = rand(type.radius, WORLD.height - type.radius);
+                } while (Math.hypot(x - player.x, y - player.y) < 350);
+                free.push(makeEntity(type, x, y));
+            }
+        }
+
+        // Replace particles you've used up, somewhere off screen
+        function replenish() {
+            if (atomsAppeared) spawnChem(3);
+            if (stage === 'molecule') return; // subatomic particles are gone at molecule scale
+            const counts = new Map();
+            for (const p of free) counts.set(p.type, (counts.get(p.type) || 0) + 1);
+            for (const type of TYPES) {
+                const missing = type.count - (counts.get(type) || 0);
+                for (let i = 0; i < Math.min(missing, 5); i++) {
+                    const [x, y] = spawnPoint(type.radius);
+                    free.push(makeEntity(type, x, y));
+                }
+            }
+        }
+        setInterval(replenish, 2000);
+
+        // The player's group of bound quarks, and the gluon bonds between them
+        const cluster = [player];
+        const bonds = [];   // [a, b]
+        const BOND_GAP = 28; // space between quark surfaces along a bond
+
+        // While a finished group is forming a hadron, the gluons pull it in tight
+        function restLength(a, b) {
+            if (a.chem) return bondLength(a.r, b.r);
+            return a.r + b.r + (forming ? 8 : BOND_GAP);
+        }
+
+        function joinCluster(q, hit) {
+            q.bonded = true;
+            q.vx = hit.vx;
+            q.vy = hit.vy;
+            // Bond to the quark it touched, plus any other nearby group members
+            for (const c of cluster) {
+                const d = Math.hypot(c.x - q.x, c.y - q.y);
+                if (c === hit || d < restLength(c, q) * 1.6) bonds.push([c, q]);
+            }
+            cluster.push(q);
+            const i = free.indexOf(q);
+            if (i >= 0) free.splice(i, 1);
+            updateStats();
+            if (selected === q) showInfo(q);
+            if (isColorNeutral(cluster)) forming = { timer: 0.8 };
+        }
+
+        // =====================================================================
+        // Color-neutral rule
+        //
+        // Quarks can only stay together in groups with no overall color:
+        //   baryon = red + green + blue quarks
+        //   meson  = a quark + an antiquark of its anticolor (e.g. red + anti-red)
+        // =====================================================================
+        let forming = null; // set while a finished group is snapping into a hadron
+
+        const colorName = (c) => c.replace('anti', 'anti-');
+
+        function isColorNeutral(group) {
+            const qs = group.filter(p => p.type.kind === 'quark');
+            const as = group.filter(p => p.type.kind === 'antiquark');
+            if (qs.length === 3 && as.length === 0) return new Set(qs.map(q => q.color)).size === 3;
+            if (as.length === 3 && qs.length === 0) return new Set(as.map(q => q.color)).size === 3;
+            if (qs.length === 1 && as.length === 1) return as[0].color === 'anti' + qs[0].color;
+            return false;
+        }
+
+        // Can quark q join the player's group? Returns a reason when it can't.
+        function canJoin(q) {
+            if (forming) return { ok: false };
+            if (player.type.kind !== 'quark') {
+                const what = player.type.kind === 'atom' ? player.type.elementName : player.type.name;
+                return { ok: false, reason: `You're ${what.toLowerCase()} now, quarks can't join` };
+            }
+            if (q.type.id.endsWith('top')) {
+                return { ok: false, reason: 'Top quarks decay before they can bind!' };
+            }
+            const group = [...cluster, q];
+            const qs = group.filter(p => p.type.kind === 'quark');
+            const as = group.filter(p => p.type.kind === 'antiquark');
+
+            if (as.length === 0) {
+                const have = qs.slice(0, -1).map(p => p.color);
+                if (have.includes(q.color)) {
+                    const need = COLORS.filter(c => !have.includes(c)).join(' or ');
+                    return { ok: false, reason: `Already have ${q.color} — need ${need}` };
+                }
+                return { ok: true };
+            }
+            if (qs.length === 1 && as.length === 1) {
+                const need = 'anti' + qs[0].color;
+                if (as[0].color !== need) {
+                    return { ok: false, reason: `Your ${qs[0].color} quark needs ${colorName(need)}` };
+                }
+                return { ok: true };
+            }
+            if (as.length >= 1 && qs.length >= 2) {
+                return { ok: false, reason: 'Antiquarks pair with just one quark' };
+            }
+            return { ok: false, reason: 'Not color-neutral' };
+        }
+
+        // --- Which hadron does a set of quarks make? ---
+        const QUARK_ORDER = 'udscb';
+        const QUARK_CHARGE3 = { u: 2, c: 2, t: 2, d: -1, s: -1, b: -1 }; // in thirds
+
+        const BARYONS = {
+            uuu: { name: 'Delta baryon Δ⁺⁺', sym: 'Δ⁺⁺', mass: 1232, desc: 'Three up quarks! It has the same quarks as a proton, minus the down, and decays in a tiny fraction of a second.' },
+            uud: { id: 'proton' },
+            udd: { id: 'neutron' },
+            ddd: { name: 'Delta baryon Δ⁻', sym: 'Δ⁻', mass: 1232, desc: 'Three down quarks. A heavy, short-lived relative of the neutron.' },
+            uus: { name: 'Sigma baryon Σ⁺', sym: 'Σ⁺', mass: 1189.4, desc: 'A "strange" baryon: a proton with one down quark swapped for a strange quark.' },
+            uds: { name: 'Lambda baryon Λ⁰', sym: 'Λ⁰', mass: 1115.7, desc: 'Up, down and strange. Discovered in cosmic rays in 1950, it lasts about a ten-billionth of a second.' },
+            dds: { name: 'Sigma baryon Σ⁻', sym: 'Σ⁻', mass: 1197.4, desc: 'Two downs and a strange. A neutron with one down swapped for a strange quark.' },
+            uss: { name: 'Xi baryon Ξ⁰', sym: 'Ξ⁰', mass: 1314.9, desc: 'Two strange quarks and an up. Sometimes called a "cascade" particle because it decays in steps.' },
+            dss: { name: 'Xi baryon Ξ⁻', sym: 'Ξ⁻', mass: 1321.7, desc: 'Two strange quarks and a down. Another "cascade" particle.' },
+            sss: { name: 'Omega baryon Ω⁻', sym: 'Ω⁻', mass: 1672.5, desc: 'Three strange quarks! Physicists predicted it before finding it in 1964, which proved the quark model was right.' },
+            udc: { name: 'Charmed Lambda Λc⁺', sym: 'Λc⁺', mass: 2286.5, desc: 'Up, down and charm. One of the first "charmed" baryons ever discovered.' },
+            uuc: { name: 'Charmed Sigma Σc⁺⁺', sym: 'Σc⁺⁺', mass: 2454, desc: 'Two ups and a charm quark.' },
+            ddc: { name: 'Charmed Sigma Σc⁰', sym: 'Σc⁰', mass: 2453.8, desc: 'Two downs and a charm quark.' },
+            udb: { name: 'Bottom Lambda Λb⁰', sym: 'Λb⁰', mass: 5619.6, desc: 'Up, down and bottom. Over five times heavier than a proton.' },
+        };
+        // key: quark + antiquark flavor
+        const MESONS = {
+            uu: { id: 'pionzero' }, dd: { id: 'pionzero' },
+            ud: { id: 'pionplus' }, du: { id: 'pionminus' },
+            us: { id: 'kaonplus' }, su: { id: 'kaonminus' }, ds: { id: 'kaonzero' },
+            sd: { name: 'Anti-kaon K̄⁰', sym: 'K̄⁰', mass: 497.6, desc: 'The antiparticle of the neutral kaon: a strange quark and an anti-down.' },
+            ss: { name: 'Phi meson φ', sym: 'φ', mass: 1019.5, desc: 'A strange quark with its own antiquark.' },
+            cc: { name: 'J/psi meson J/ψ', sym: 'J/ψ', mass: 3096.9, desc: 'A charm quark and anti-charm. Its discovery in 1974 proved the charm quark was real.' },
+            bb: { name: 'Upsilon meson Υ', sym: 'Υ', mass: 9460.3, desc: 'A bottom quark and anti-bottom. Its discovery in 1977 revealed the bottom quark.' },
+            cu: { name: 'D meson D⁰', sym: 'D⁰', mass: 1864.8, desc: 'A charm quark and an anti-up.' },
+            uc: { name: 'Anti-D meson D̄⁰', sym: 'D̄⁰', mass: 1864.8, desc: 'An up quark and an anti-charm.' },
+            cd: { name: 'D meson D⁺', sym: 'D⁺', mass: 1869.7, desc: 'A charm quark and an anti-down.' },
+            dc: { name: 'D meson D⁻', sym: 'D⁻', mass: 1869.7, desc: 'A down quark and an anti-charm.' },
+            cs: { name: 'Strange D meson Ds⁺', sym: 'Ds⁺', mass: 1968.4, desc: 'A charm quark and an anti-strange.' },
+            ub: { name: 'B meson B⁺', sym: 'B⁺', mass: 5279.3, desc: 'An up quark and an anti-bottom. B mesons are studied to learn why the universe has more matter than antimatter.' },
+            bu: { name: 'B meson B⁻', sym: 'B⁻', mass: 5279.3, desc: 'A bottom quark and an anti-up.' },
+            db: { name: 'B meson B⁰', sym: 'B⁰', mass: 5279.7, desc: 'A down quark and an anti-bottom.' },
+            sb: { name: 'Strange B meson Bs⁰', sym: 'Bs⁰', mass: 5366.9, desc: 'A strange quark and an anti-bottom.' },
+        };
+
+        function formatCharge3(c3) {
+            if (c3 % 3 !== 0) return (c3 > 0 ? '+' : '−') + Math.abs(c3) + '/3';
+            const c = c3 / 3;
+            return c > 0 ? '+' + c : c < 0 ? '−' + -c : '0';
+        }
+
+        function hadronTypeFor(group) {
+            const qs = group.filter(p => p.type.kind === 'quark').map(p => p.type.sym);
+            const as = group.filter(p => p.type.kind === 'antiquark').map(p => p.type.sym);
+            const sortQ = (list) => [...list].sort((a, b) => QUARK_ORDER.indexOf(a) - QUARK_ORDER.indexOf(b)).join('');
+            const charge3 = qs.reduce((s, f) => s + QUARK_CHARGE3[f], 0) - as.reduce((s, f) => s + QUARK_CHARGE3[f], 0);
+            const quarks = [...qs.map(s => [s]), ...as.map(s => [s, 1])];
+
+            let entry, anti = false;
+            if (as.length === 0) entry = BARYONS[sortQ(qs)];
+            else if (qs.length === 0) { entry = BARYONS[sortQ(as)]; anti = true; }
+            else entry = MESONS[qs[0] + as[0]];
+
+            if (entry && entry.id && !anti) return TYPES.find(t => t.id === entry.id);
+            if (entry && entry.id === 'proton' && anti) return TYPES.find(t => t.id === 'antiproton');
+
+            const kindWord = qs.length && as.length ? 'meson' : 'baryon';
+            const base = entry && !entry.id ? entry : null;
+            const mass = base ? base.mass
+                : group.reduce((s, p) => s + p.type.mass, 0) + (kindWord === 'baryon' ? 900 : 500);
+            const type = {
+                id: 'custom',
+                kind: 'hadron',
+                name: base ? (anti ? 'Anti-' + base.name : base.name) : `Exotic ${kindWord}`,
+                sym: base ? base.sym : (kindWord === 'baryon' ? 'B' : 'M'),
+                bar: anti,
+                mass,
+                quarks,
+                info: {
+                    charge: formatCharge3(charge3),
+                    desc: base ? base.desc : `A rare ${kindWord} made of ${group.map(p => (p.type.bar ? 'anti-' : '') + p.type.sym).join(', ')}. Heavy quarks like these make very short-lived particles.`,
+                },
+            };
+            type.radius = radiusForMass(type.mass);
+            return type;
+        }
+
+        // The finished group becomes a single hadron, and you become it!
+        function formHadron() {
+            forming = null;
+            const type = hadronTypeFor(cluster);
+            const cx = cluster.reduce((s, q) => s + q.x, 0) / cluster.length;
+            const cy = cluster.reduce((s, q) => s + q.y, 0) / cluster.length;
+
+            if (selected && selected !== player && cluster.includes(selected)) selected = player;
+
+            player.inner = cluster.map(q => ({ sym: q.type.sym, anti: !!q.type.bar, color: q.color }));
+            player.type = type;
+            player.r = type.radius;
+            player.mass = type.radius * type.radius;
+            player.x = cx;
+            player.y = cy;
+            player.spin = 0;
+            player.spinSpeed = 0.4;
+            delete player.color;
+
+            cluster.length = 1;
+            bonds.length = 0;
+            updateStats();
+            if (selected === player) showInfo(player);
+
+            if (type.id === 'proton') {
+                player.atom = { Z: 1, N: 0, E: 0 };
+                showToast('You made a Proton!', 'Touch an electron to make a hydrogen atom, or a neutron to grow your nucleus');
+            } else if (type.id === 'neutron') {
+                player.atom = { Z: 0, N: 1, E: 0 };
+                showToast('You made a Neutron!', 'Touch a proton to start building an atomic nucleus');
+            } else {
+                showToast(`You made ${aOrAn(type.name)} ${type.name}!`, 'Only protons and neutrons can build atoms. Press R to try again');
+            }
+        }
+
+        // =====================================================================
+        // Atoms
+        //
+        // A proton or neutron can collect more protons and neutrons to build
+        // a nucleus, then electrons to become a neutral atom.
+        // =====================================================================
+        // Element data lives in static/js/matter_eater/chem_data.js
+        const { ELEMENTS, MOLECULES } = window.MATTER_EATER_DATA;
+        const MAX_Z = ELEMENTS.length; // 118, oganesson
+        const SHELL_CAPACITY = [2, 8, 8, 18, 18, 32, 32];
+
+        // Nuclear stability (simplified): light nuclei like about one neutron
+        // per proton, but heavy nuclei need extra neutrons to hold together
+        // against all the protons pushing each other apart.
+        const minNeutrons = (Z) => Z <= 20 ? Z - 1 : Math.floor(Z + (Z - 20) * 0.4);
+        const maxNeutrons = (Z) => Math.floor(Z * 1.6) + 1;
+
+        function periodOf(Z) {
+            const ends = [2, 10, 18, 36, 54, 86, 118];
+            return ends.findIndex(e => Z <= e) + 1;
+        }
+
+        // How big a neutral atom of element Z is: the same size as the
+        // detailed nucleus-and-electron-shells drawing of its common isotope,
+        // so atoms look the same whether you are one or bump into one.
+        const displayRadiusCache = {};
+        function atomDisplayRadius(Z) {
+            if (!displayRadiusCache[Z]) {
+                const N = Math.max(0, Math.round(ELEMENTS[Z - 1][3]) - Z);
+                displayRadiusCache[Z] = atomLayout(Z, N, Z).outer;
+            }
+            return displayRadiusCache[Z];
+        }
+        const NUCLEON_R = 9;
+        const PROTON_LOOK = flat('#e0555a', '#ffb4b4', '#7a1a1e');
+        const NEUTRON_LOOK = flat('#8e9ab0', '#e2e8f4', '#3a4458');
+
+        const SUPERSCRIPT = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+        const superNum = (n) => String(n).split('').map(d => SUPERSCRIPT[d]).join('');
+
+        function atomLayout(Z, N, E) {
+            const A = Z + N;
+            const spacing = NUCLEON_R * 1.05;
+            const nucleusR = spacing * Math.sqrt(Math.max(A - 1, 0)) + NUCLEON_R;
+            const shells = [];
+            let left = E;
+            for (let s = 0; left > 0; s++) {
+                const n = Math.min(left, SHELL_CAPACITY[s] || 18);
+                shells.push({ n, r: nucleusR + 24 + s * 24 });
+                left -= n;
+            }
+            const outer = shells.length ? shells[shells.length - 1].r + 8 : nucleusR + 2;
+            return { spacing, nucleusR, shells, outer };
+        }
+
+        function atomType(Z, N, E) {
+            const A = Z + N;
+            const [sym, elName, desc] = ELEMENTS[Z - 1];
+            let iso = `${elName}-${A}`;
+            let extra = '';
+            if (Z === 1 && A === 2) { iso = 'Deuterium (hydrogen-2)'; extra = ' Deuterium is "heavy hydrogen", with a neutron in its nucleus. Stars fuse it to make helium.'; }
+            if (Z === 1 && A === 3) { iso = 'Tritium (hydrogen-3)'; extra = ' Tritium has two neutrons and is radioactive. It glows in some watch dials.'; }
+
+            const charge = Z - E;
+            let name, kindLabel;
+            if (E === 0) {
+                name = `${iso} nucleus`;
+                kindLabel = 'Atomic nucleus';
+            } else if (charge === 0) {
+                name = `${iso} atom`;
+                kindLabel = 'Atom';
+            } else {
+                name = `${iso} ion (${sym}${charge > 1 ? superNum(charge) : ''}⁺)`;
+                kindLabel = 'Ion (missing electrons)';
+            }
+            const type = {
+                id: 'atom',
+                kind: 'atom',
+                kindLabel,
+                name,
+                elementName: elName,
+                sym,
+                mass: Z * 938.272 + N * 939.565 + E * 0.511,
+                info: { charge: formatCharge3(charge * 3), desc: desc + extra },
+            };
+            type.radius = atomLayout(Z, N, E).outer;
+            return type;
+        }
+
+        function refreshAtom() {
+            const { Z, N, E } = player.atom;
+            player.type = atomType(Z, N, E);
+            player.r = player.type.radius;
+            player.mass = player.r * player.r;
+            updateStats();
+            if (selected === player) showInfo(player);
+        }
+
+        // Can the player absorb particle p? Returns null if p isn't a building block.
+        function canAbsorb(p) {
+            const id = p.type.id;
+            if (id !== 'proton' && id !== 'neutron' && id !== 'electron' && id !== 'alpha') return null;
+            if (stage === 'molecule') return null;
+            if (!player.atom) {
+                if (player.type.kind === 'hadron' && id !== 'electron') {
+                    return { ok: false, reason: 'Only protons and neutrons can build atoms (R to restart)' };
+                }
+                return null;
+            }
+            const { Z, N, E } = player.atom;
+            const tooFewNeutrons = (z) => z > 20
+                ? 'Heavy nuclei need extra neutrons to hold together. Grab a neutron!'
+                : 'Too many protons, they push apart! Grab a neutron first';
+            if (id === 'proton' || id === 'alpha') {
+                const dz = id === 'alpha' ? 2 : 1, dn = id === 'alpha' ? 2 : 0;
+                if (Z + dz > MAX_Z) {
+                    return { ok: false, reason: Z === MAX_Z
+                        ? 'You\'re oganesson, the heaviest element there is!'
+                        : `Element ${Z + dz} doesn't exist (yet)! Grab a single proton` };
+                }
+                if (N + dn < minNeutrons(Z + dz)) return { ok: false, reason: tooFewNeutrons(Z + dz) };
+                if (N + dn > maxNeutrons(Z + dz)) return { ok: false, reason: 'Too many neutrons, it would fall apart! Grab a proton' };
+                return { ok: true };
+            }
+            if (id === 'neutron') {
+                if (Z === 0) return { ok: false, reason: 'Neutrons need a proton to stick together' };
+                if (N + 1 > maxNeutrons(Z)) return { ok: false, reason: 'Too many neutrons, it would fall apart! Grab a proton' };
+                return { ok: true };
+            }
+            if (Z === 0) return { ok: false, reason: 'A neutron has no charge to hold an electron' };
+            if (E >= Z) return { ok: false, reason: 'Already neutral, no room for another electron' };
+            return { ok: true };
+        }
+
+        function absorb(p) {
+            const i = free.indexOf(p);
+            if (i >= 0) free.splice(i, 1);
+            if (selected === p) hideInfo();
+
+            const a = player.atom;
+            const oldZ = a.Z;
+            if (p.type.id === 'proton') a.Z++;
+            else if (p.type.id === 'neutron') a.N++;
+            else if (p.type.id === 'alpha') { a.Z += 2; a.N += 2; }
+            else a.E++;
+
+            floaters.push({ x: player.x, y: player.y - player.r - 12, text: '+ ' + p.type.name.toLowerCase(), born: performance.now() });
+            refreshAtom();
+
+            const el = ELEMENTS[a.Z - 1][1];
+            const missing = a.Z - a.E;
+            if (p.type.id === 'electron' && missing === 0) {
+                const firstAtom = !atomsAppeared;
+                if (firstAtom) spawnAtomsAppear();
+                showToast(`You made ${aOrAn(el)} ${el} atom!`, firstAtom
+                    ? 'Other atoms have appeared! Touch one to bond into a molecule, or keep growing toward element 118'
+                    : 'Touch another atom to make a molecule, or grab protons and neutrons to grow');
+            } else if (a.Z !== oldZ) {
+                showToast(`You're now ${el}!`, missing > 0
+                    ? `Grab ${missing} more electron${missing > 1 ? 's' : ''} to make a neutral atom`
+                    : '');
+            }
+        }
+
+        function drawAtom(p, time) {
+            const { Z, N, E } = p.atom;
+            const A = Z + N;
+            const L = atomLayout(Z, N, E);
+            const onScreen = view.zoom; // how many screen pixels one world unit is
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+
+            // Electron shells
+            ctx.lineWidth = 1 / view.zoom;
+            ctx.strokeStyle = 'rgba(170, 150, 255, 0.22)';
+            for (const shell of L.shells) {
+                ctx.beginPath();
+                ctx.arc(0, 0, shell.r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Nucleus glow
+            const g = ctx.createRadialGradient(0, 0, 0, 0, 0, L.nucleusR * 1.8);
+            g.addColorStop(0, 'rgba(255, 180, 160, 0.35)');
+            g.addColorStop(1, 'rgba(255, 180, 160, 0)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(0, 0, L.nucleusR * 1.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Protons and neutrons packed in a sunflower spiral, outer ones drawn first
+            const showLetters = NUCLEON_R * onScreen >= 6;
+            for (let i = A - 1; i >= 0; i--) {
+                const isProton = Math.floor((i + 1) * Z / A) > Math.floor(i * Z / A);
+                const ang = i * 2.39996 + time / 4000;
+                const rad = L.spacing * Math.sqrt(i);
+                const jx = Math.sin(time / 230 + i * 1.7) * 0.8;
+                const jy = Math.cos(time / 270 + i * 2.3) * 0.8;
+                const x = Math.cos(ang) * rad + jx;
+                const y = Math.sin(ang) * rad + jy;
+                drawBall(x, y, NUCLEON_R, isProton ? PROTON_LOOK : NEUTRON_LOOK);
+                if (showLetters) drawLabel(isProton ? 'p' : 'n', x, y, 9, false, false);
+            }
+
+            // Electrons orbiting
+            for (const [si, shell] of L.shells.entries()) {
+                const speed = 1.6 / (si + 1);
+                for (let k = 0; k < shell.n; k++) {
+                    const ang = (time / 1000) * speed + (k / shell.n) * Math.PI * 2 + si * 0.7;
+                    const x = Math.cos(ang) * shell.r;
+                    const y = Math.sin(ang) * shell.r;
+                    ctx.fillStyle = 'rgba(143, 108, 240, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    drawBall(x, y, 5, LEPTON);
+                }
+            }
+            ctx.restore();
+
+            drawLabel(p.type.sym, p.x, p.y + p.r + 12, 14, false, false);
+        }
+
+        // =====================================================================
+        // Chemistry: atoms bond into molecules
+        //
+        // Each element makes its usual number of bonds (its valence):
+        // H 1, O 2, N 3, C 4, noble gases 0... Any combination that follows
+        // those rules is a molecule. Famous ones get their real names.
+        // =====================================================================
+        let stage = 'particles';   // becomes 'molecule' once you bond to another atom
+        let atomsAppeared = false; // free atoms show up after you make your first atom
+        let moleculeScreenR = 100; // how many screen pixels across your molecule should look
+        const MAX_MOLECULE_ATOMS = 200;
+
+        function groupOf(Z) {
+            if (Z === 1) return 1;
+            if (Z === 2) return 18;
+            const p = periodOf(Z);
+            const i = Z - [1, 3, 11, 19, 37, 55, 87][p - 1];
+            if (p <= 3) return i < 2 ? i + 1 : i + 11;
+            if (p <= 5) return i + 1;
+            if (i < 2) return i + 1;
+            if (i <= 16) return 3; // lanthanides and actinides
+            return i - 13;
+        }
+        const isFBlock = (Z) => (Z >= 57 && Z <= 71) || (Z >= 89 && Z <= 103);
+
+        // The usual number of bonds an atom of element Z makes
+        function valenceOf(Z) {
+            if (Z === 1) return 1;
+            const g = groupOf(Z);
+            if (g === 18) return 0;            // noble gases
+            if (g <= 2) return g;              // alkali / alkaline earth metals
+            if (g <= 12) return g === 3 ? 3 : 2; // transition metals (simplified)
+            return [3, 4, 3, 2, 1][g - 13];    // boron, carbon, nitrogen, oxygen, halogen groups
+        }
+
+        // Standard "CPK" chemistry colors, with fallbacks by element family
+        const CPK = {
+            1: '#f4f4f4', 5: '#ffb5b5', 6: '#404040', 7: '#3050f8', 8: '#ff2a2a', 9: '#90e050',
+            11: '#ab5cf2', 12: '#8aff00', 13: '#bfa6a6', 14: '#f0c8a0', 15: '#ff8000', 16: '#ffd520',
+            17: '#1ff01f', 19: '#8f40d4', 20: '#3dff00', 22: '#bfc2c7', 26: '#e06633', 27: '#f090a0',
+            28: '#50d050', 29: '#c88033', 30: '#7d80b0', 35: '#a62929', 47: '#c0c0c0', 53: '#940094',
+            79: '#ffd123', 80: '#b8b8d0', 82: '#575961', 92: '#008fff',
+        };
+        function atomColor(Z) {
+            if (CPK[Z]) return CPK[Z];
+            const g = groupOf(Z);
+            if (g === 18) return '#5ad8e8';
+            if (g === 1) return '#a65cf2';
+            if (g === 2) return '#3dbf3d';
+            if (isFBlock(Z)) return Z <= 71 ? '#70d4ff' : '#ff7aa0';
+            if (g === 17) return '#30d050';
+            if (g >= 3 && g <= 12) return '#c8a080';
+            return '#c8b0a0';
+        }
+        function rgbOf(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            return [n >> 16, (n >> 8) & 255, n & 255];
+        }
+        function shade(hex, t) { // t > 0 lightens toward white, t < 0 darkens toward black
+            const target = t > 0 ? 255 : 0, a = Math.abs(t);
+            const [r, g, b] = rgbOf(hex).map(c => Math.round(c + (target - c) * a));
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+        const brightness = (hex) => { const [r, g, b] = rgbOf(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
+
+        // Each element's ball is drawn once into a small canvas, then reused
+        const spriteCache = new Map();
+        function atomSprite(Z) {
+            if (spriteCache.has(Z)) return spriteCache.get(Z);
+            // Big atoms get a lower-resolution sprite so memory stays small
+            const R = atomDisplayRadius(Z), S = Math.min(2, 140 / R);
+            const size = Math.ceil(R * 2 * S) + 4;
+            const c = document.createElement('canvas');
+            c.width = c.height = size;
+            const t = c.getContext('2d');
+            t.scale(S, S);
+            const m = size / S / 2;
+            const base = atomColor(Z);
+            const g = t.createRadialGradient(m - R * 0.35, m - R * 0.4, R * 0.1, m, m, R);
+            g.addColorStop(0, shade(base, 0.6));
+            g.addColorStop(0.5, base);
+            g.addColorStop(1, shade(base, -0.55));
+            t.fillStyle = g;
+            t.beginPath();
+            t.arc(m, m, R, 0, Math.PI * 2);
+            t.fill();
+            const sym = ELEMENTS[Z - 1][0];
+            const fs = R * (sym.length > 1 ? 0.8 : 0.95);
+            const light = brightness(base) > 0.62;
+            t.font = `bold ${fs}px system-ui, sans-serif`;
+            t.textAlign = 'center';
+            t.textBaseline = 'middle';
+            t.lineJoin = 'round';
+            t.lineWidth = fs * 0.12;
+            t.strokeStyle = light ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.55)';
+            t.strokeText(sym, m, m + fs * 0.05);
+            t.fillStyle = light ? '#222' : '#fff';
+            t.fillText(sym, m, m + fs * 0.05);
+            const sprite = { canvas: c, half: size / S / 2 };
+            spriteCache.set(Z, sprite);
+            return sprite;
+        }
+        function drawAtomBall(Z, x, y) {
+            const s = atomSprite(Z);
+            ctx.drawImage(s.canvas, x - s.half, y - s.half, s.half * 2, s.half * 2);
+        }
+
+        // --- Formulas ---
+        const SYM_TO_Z = {};
+        ELEMENTS.forEach((e, i) => { SYM_TO_Z[e[0]] = i + 1; });
+        const SUBSCRIPT = '₀₁₂₃₄₅₆₇₈₉';
+        const prettyFormula = (f) => f.replace(/\d/g, d => SUBSCRIPT[d]);
+        const MOLECULE_BY_FORMULA = {};
+        for (const m of MOLECULES) MOLECULE_BY_FORMULA[m[0]] = m;
+
+        // Hill system: carbon, then hydrogen, then the rest alphabetically
+        function hillFormula(Zs) {
+            const counts = {};
+            for (const Z of Zs) { const s = ELEMENTS[Z - 1][0]; counts[s] = (counts[s] || 0) + 1; }
+            const syms = Object.keys(counts);
+            const order = counts.C
+                ? ['C', ...(counts.H ? ['H'] : []), ...syms.filter(s => s !== 'C' && s !== 'H').sort()]
+                : syms.sort();
+            return order.map(s => s + (counts[s] > 1 ? counts[s] : '')).join('');
+        }
+        function parseFormula(f) {
+            const Zs = [];
+            for (const [, sym, n] of f.matchAll(/([A-Z][a-z]?)(\d*)/g)) {
+                for (let i = 0; i < (n ? +n : 1); i++) Zs.push(SYM_TO_Z[sym]);
+            }
+            return Zs;
+        }
+
+        // --- Turning a formula into a ball-and-stick shape ---
+        // Atoms that make 2+ bonds form a chain/skeleton, then single-bond
+        // atoms (H, F, Cl, Na...) attach wherever there's room.
+        function buildGraph(Zs) {
+            const deg = Zs.map(() => 0);
+            const bonds = [];
+            const freeOf = (i) => valenceOf(Zs[i]) - deg[i];
+            const link = (a, b) => { bonds.push([a, b]); deg[a]++; deg[b]++; };
+            const idx = Zs.map((_, i) => i);
+            const multi = idx.filter(i => valenceOf(Zs[i]) >= 2)
+                .sort((a, b) => (Zs[b] === 6) - (Zs[a] === 6) || valenceOf(Zs[b]) - valenceOf(Zs[a]));
+            const mono = idx.filter(i => valenceOf(Zs[i]) < 2);
+            const placed = [];
+            for (const i of multi) {
+                if (placed.length) {
+                    let target = -1;
+                    for (let k = placed.length - 1; k >= 0 && target < 0; k--) if (freeOf(placed[k]) >= 2) target = placed[k];
+                    for (let k = placed.length - 1; k >= 0 && target < 0; k--) if (freeOf(placed[k]) >= 1) target = placed[k];
+                    if (target < 0) target = placed[placed.length - 1];
+                    link(target, i);
+                }
+                placed.push(i);
+            }
+            for (const i of mono) {
+                if (placed.length) {
+                    let best = -1, bestFree = 0;
+                    for (const k of placed) if (freeOf(k) > bestFree) { best = k; bestFree = freeOf(k); }
+                    if (best < 0) best = placed.reduce((a, b) => (deg[a] <= deg[b] ? a : b));
+                    link(best, i);
+                }
+                placed.push(i);
+            }
+            return { bonds, deg };
+        }
+
+        // Upgrade single bonds to double/triple where both atoms still have room
+        function bondOrders(Zs, pairBonds) {
+            const used = Zs.map(() => 0);
+            const orders = pairBonds.map(() => 1);
+            for (const [a, b] of pairBonds) { used[a]++; used[b]++; }
+            let changed = true;
+            while (changed) {
+                changed = false;
+                pairBonds.forEach(([a, b], k) => {
+                    if (orders[k] < 3 && valenceOf(Zs[a]) - used[a] > 0 && valenceOf(Zs[b]) - used[b] > 0) {
+                        orders[k]++; used[a]++; used[b]++; changed = true;
+                    }
+                });
+            }
+            return orders;
+        }
+
+        const bondLength = (ra, rb) => ra + rb + 12;
+
+        const layoutCache = new Map();
+        function moleculeLayout(formula) {
+            if (layoutCache.has(formula)) return layoutCache.get(formula);
+            const Zs = parseFormula(formula);
+            const { bonds, deg } = buildGraph(Zs);
+            const n = Zs.length;
+            const R = Zs.map(atomDisplayRadius);
+            const pos = Zs.map(() => ({ x: 0, y: 0 }));
+            for (const [a, b] of bonds) { // place each atom next to the one it bonds to
+                const ang = rand(0, Math.PI * 2), L = bondLength(R[a], R[b]);
+                pos[b].x = pos[a].x + Math.cos(ang) * L;
+                pos[b].y = pos[a].y + Math.sin(ang) * L;
+            }
+            for (let iter = 0; iter < 300; iter++) { // relax: bonds pull, atoms push apart
+                for (let i = 0; i < n; i++) {
+                    for (let j = i + 1; j < n; j++) {
+                        const dx = pos[j].x - pos[i].x, dy = pos[j].y - pos[i].y;
+                        const d = Math.hypot(dx, dy) || 0.01, D = (R[i] + R[j]) * 1.9;
+                        if (d < D) {
+                            const f = (D - d) * 0.05 / d;
+                            pos[i].x -= dx * f; pos[i].y -= dy * f;
+                            pos[j].x += dx * f; pos[j].y += dy * f;
+                        }
+                    }
+                }
+                for (const [a, b] of bonds) {
+                    const dx = pos[b].x - pos[a].x, dy = pos[b].y - pos[a].y;
+                    const d = Math.hypot(dx, dy) || 0.01;
+                    const f = (d - bondLength(R[a], R[b])) * 0.3 / d;
+                    pos[a].x += dx * f; pos[a].y += dy * f;
+                    pos[b].x -= dx * f; pos[b].y -= dy * f;
+                }
+            }
+            const cx = pos.reduce((s, p) => s + p.x, 0) / n, cy = pos.reduce((s, p) => s + p.y, 0) / n;
+            for (const p of pos) { p.x -= cx; p.y -= cy; }
+            const radius = Math.max(...pos.map((p, i) => Math.hypot(p.x, p.y) + R[i]));
+            const layout = { Zs, R, pos, bonds, deg, orders: bondOrders(Zs, bonds), radius };
+            layoutCache.set(formula, layout);
+            return layout;
+        }
+
+        function chemType(Zs, formula) {
+            const massU = Zs.reduce((s, Z) => s + ELEMENTS[Z - 1][3], 0);
+            const base = { charge: '0', massU, mass: massU * 931.494 };
+            if (Zs.length === 1) {
+                const Z = Zs[0];
+                const [sym, name, desc] = ELEMENTS[Z - 1];
+                return { ...base, id: 'element', kind: 'element', Z, sym, elementName: name,
+                         kindLabel: valenceOf(Z) === 0 ? 'Atom (noble gas)' : 'Atom',
+                         name: `${name} atom`, info: { charge: '0', desc } };
+            }
+            const known = MOLECULE_BY_FORMULA[formula];
+            return { ...base, id: 'molecule', kind: 'molecule', kindLabel: 'Molecule', formula,
+                     known: !!known, sym: prettyFormula(formula), atomCount: Zs.length,
+                     name: known ? known[1] : `Molecule ${prettyFormula(formula)}`,
+                     info: { charge: '0', desc: known ? known[2]
+                         : 'A molecule you invented! It isn\'t one of the famous molecules this game knows by name, but chemists have catalogued over 200 million different substances, so it might really exist.' } };
+        }
+        const chemTypeCache = new Map();
+        function cachedChemType(formula) {
+            if (!chemTypeCache.has(formula)) chemTypeCache.set(formula, chemType(parseFormula(formula), formula));
+            return chemTypeCache.get(formula);
+        }
+
+        function makeChemEntity(formula, x, y) {
+            const layout = moleculeLayout(formula);
+            const speed = rand(5, 25) / Math.sqrt(layout.Zs.length);
+            const ang = rand(0, Math.PI * 2);
+            return {
+                chem: true, formula, layout, type: cachedChemType(formula),
+                x, y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
+                r: layout.radius, mass: layout.radius * layout.radius,
+                rot: rand(0, Math.PI * 2), rotSpeed: rand(-0.3, 0.3) / Math.sqrt(layout.Zs.length),
+            };
+        }
+
+        // --- What's floating around (how many of each) ---
+        const COMMON_ATOMS = { H: 40, O: 20, C: 20, N: 14, He: 6, Si: 5, Cl: 5, Na: 5, S: 5, F: 4, P: 4,
+                               Fe: 4, Ca: 4, Mg: 4, K: 3, Al: 3, Ne: 2, Ar: 2, Cu: 2, Zn: 2 };
+        const ATOM_COUNTS = {};
+        ELEMENTS.forEach(([sym]) => { ATOM_COUNTS[sym] = COMMON_ATOMS[sym] || 1; }); // every element at least once
+        const MOLECULE_COUNTS = {};
+        for (const [f, , , weight] of MOLECULES) MOLECULE_COUNTS[f] = weight * 3;
+        let chemTargets = {};
+
+        // A random spot outside the view (zoomFor: the zoom the view will have)
+        function spawnPoint(r, zoomFor = view.zoom) {
+            const halfW = window.innerWidth / 2 / zoomFor + 150, halfH = window.innerHeight / 2 / zoomFor + 150;
+            let x, y, tries = 0;
+            do {
+                x = rand(r, WORLD.width - r);
+                y = rand(r, WORLD.height - r);
+            } while (++tries < 30 && Math.abs(x - camera.x) < halfW + r && Math.abs(y - camera.y) < halfH + r);
+            return [x, y];
+        }
+
+        function spawnChem(limitPerKind, zoomFor) {
+            const counts = {};
+            for (const p of free) if (p.chem) counts[p.formula] = (counts[p.formula] || 0) + 1;
+            for (const [f, want] of Object.entries(chemTargets)) {
+                const missing = Math.min(want - (counts[f] || 0), limitPerKind);
+                for (let i = 0; i < missing; i++) {
+                    const layout = moleculeLayout(f);
+                    const [x, y] = spawnPoint(layout.radius, zoomFor);
+                    free.push(makeChemEntity(f, x, y));
+                }
+            }
+        }
+
+        function spawnAtomsAppear() {
+            atomsAppeared = true;
+            chemTargets = { ...ATOM_COUNTS };
+            spawnChem(Infinity);
+        }
+
+        // You bonded with another atom: welcome to chemistry!
+        function enterMoleculeStage(bondingWith) {
+            stage = 'molecule';
+            const Z = player.atom.Z;
+            player.Z = Z;
+            player.chem = true;
+            player.deg = 0;
+            player.r = atomDisplayRadius(Z);
+            player.mass = player.r * player.r;
+
+            // At this scale, subatomic particles are far too small to see
+            for (let k = free.length - 1; k >= 0; k--) if (!free[k].chem) free.splice(k, 1);
+            if (selected && !selected.chem) hideInfo();
+
+            // Zoom out so your new molecule looks as big as your atom did,
+            // and make the world bigger to fit molecules at this scale
+            moleculeScreenR = Math.max(80, player.r * camera.zoom);
+            WORLD.width = WORLD.height = 72000;
+            chemTargets = { ...MOLECULE_COUNTS };
+            for (const [sym, n] of Object.entries(ATOM_COUNTS)) chemTargets[sym] = COMMON_ATOMS[sym] ? n * 2 : 1;
+
+            // Spread the atoms that were already around across the bigger world,
+            // keeping clear of the area you'll see once the camera zooms out
+            const zoomAfter = 0.4;
+            for (const p of free) {
+                delete p.orbit; // orbiting is a subatomic/atomic-world thing
+                if (p !== bondingWith) [p.x, p.y] = spawnPoint(p.r, zoomAfter);
+            }
+            spawnChem(Infinity, zoomAfter);
+        }
+
+        // Can the player's atom c bond with atom i of free molecule p?
+        function canBond(c, p, i) {
+            if (stage !== 'molecule') {
+                if (!player.atom || player.type.kind !== 'atom') return { ok: false };
+                if (player.atom.E < player.atom.Z) return { ok: false, reason: 'Grab electrons to become a neutral atom first' };
+            }
+            const cZ = stage === 'molecule' ? c.Z : player.atom.Z;
+            const pZ = p.layout.Zs[i];
+            if (valenceOf(cZ) === 0) return { ok: false, reason: `${ELEMENTS[cZ - 1][1]} is a noble gas, it doesn't share electrons` };
+            if (valenceOf(pZ) === 0) return { ok: false, reason: `${ELEMENTS[pZ - 1][1]} is a noble gas, it doesn't bond` };
+            if (valenceOf(cZ) - (c.deg || 0) <= 0) return { ok: false, reason: `That ${ELEMENTS[cZ - 1][0]} has no free bonds left, touch with another atom` };
+            if (valenceOf(pZ) - p.layout.deg[i] <= 0) return { ok: false, reason: `That ${ELEMENTS[pZ - 1][0]} is all bonded up, touch a different atom` };
+            if (stage === 'molecule' && cluster.length + p.layout.Zs.length > MAX_MOLECULE_ATOMS) {
+                return { ok: false, reason: 'Your molecule is as big as it can get!' };
+            }
+            return { ok: true };
+        }
+
+        function bondWith(p, i, c) {
+            if (stage !== 'molecule') enterMoleculeStage(p);
+            const cos = Math.cos(p.rot), sin = Math.sin(p.rot);
+            const members = p.layout.Zs.map((Z, k) => {
+                const q = p.layout.pos[k];
+                const r = atomDisplayRadius(Z);
+                return { Z, chem: true, chemMember: true, bonded: true, r, mass: r * r, deg: p.layout.deg[k],
+                         x: p.x + q.x * cos - q.y * sin, y: p.y + q.x * sin + q.y * cos, vx: p.vx, vy: p.vy };
+            });
+            cluster.push(...members);
+            for (const [a, b] of p.layout.bonds) bonds.push([members[a], members[b]]);
+            bonds.push([c, members[i]]);
+            c.deg = (c.deg || 0) + 1;
+            members[i].deg++;
+
+            const k = free.indexOf(p);
+            if (k >= 0) free.splice(k, 1);
+            if (selected === p) hideInfo();
+            refreshMolecule(true);
+        }
+
+        const discovered = new Set();
+        let molBondOrders = [];
+        let bondedPairs = new Set(); // which atoms in your molecule are bonded (by cluster index)
+
+        function refreshMolecule(announce) {
+            const Zs = cluster.map(m => m.Z);
+            const formula = hillFormula(Zs);
+            const prev = player.type.formula;
+            player.type = chemType(Zs, formula);
+            const index = new Map(cluster.map((m, k) => [m, k]));
+            const pairs = bonds.map(([a, b]) => [index.get(a), index.get(b)]);
+            molBondOrders = bondOrders(Zs, pairs);
+            bondedPairs = new Set(pairs.map(([a, b]) => Math.min(a, b) * 1000 + Math.max(a, b)));
+
+            const t = player.type;
+            const isNew = t.known && !discovered.has(formula);
+            if (t.known) discovered.add(formula);
+            updateStats();
+            if (selected === player) showInfo(player);
+            if (!announce || formula === prev) return;
+            if (t.known) {
+                showToast(`You made ${t.name}!`, `${prettyFormula(formula)}${isNew ? ` · new discovery! (${discovered.size} of ${MOLECULES.length})` : ''}`);
+            } else {
+                floaters.push({ x: player.x, y: player.y - player.r - 14, text: `New molecule: ${prettyFormula(formula)}`, born: performance.now() });
+            }
+        }
+
+        // Does a free molecule/atom touch the player's molecule? Bond or bump.
+        function chemContact(p) {
+            const L = p.layout;
+            const cos = Math.cos(p.rot), sin = Math.sin(p.rot);
+            for (const c of cluster) {
+                const reach0 = p.r + c.r;
+                const dx0 = p.x - c.x, dy0 = p.y - c.y;
+                if (Math.abs(dx0) > reach0 || Math.abs(dy0) > reach0 || dx0 * dx0 + dy0 * dy0 >= reach0 * reach0) continue;
+                for (let i = 0; i < L.Zs.length; i++) {
+                    const ax = p.x + L.pos[i].x * cos - L.pos[i].y * sin;
+                    const ay = p.y + L.pos[i].x * sin + L.pos[i].y * cos;
+                    const dx = ax - c.x, dy = ay - c.y;
+                    const reach = L.R[i] + c.r;
+                    if (Math.abs(dx) > reach || Math.abs(dy) > reach) continue;
+                    const d = Math.hypot(dx, dy) || 0.001;
+                    if (d >= reach) continue;
+
+                    const check = canBond(c, p, i);
+                    if (check.ok) { bondWith(p, i, c); return; }
+                    if (check.reason) floatText(p, check.reason);
+
+                    const nx = dx / d, ny = dy / d, overlap = reach - d;
+                    const total = p.mass + c.mass;
+                    p.x += nx * overlap * (c.mass / total); p.y += ny * overlap * (c.mass / total);
+                    c.x -= nx * overlap * (p.mass / total); c.y -= ny * overlap * (p.mass / total);
+                    const vn = (p.vx - c.vx) * nx + (p.vy - c.vy) * ny;
+                    if (vn < 0) {
+                        const j = -1.5 * vn / (1 / p.mass + 1 / c.mass);
+                        p.vx += (j / p.mass) * nx; p.vy += (j / p.mass) * ny;
+                        c.vx -= (j / c.mass) * nx; c.vy -= (j / c.mass) * ny;
+                    }
+                    return;
+                }
+            }
+        }
+
+        function drawBondSticks(pts, pairBonds, orders) {
+            ctx.lineCap = 'round';
+            pairBonds.forEach(([i, j], k) => {
+                const a = pts[i], b = pts[j];
+                const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+                const nx = -dy / len, ny = dx / len;
+                const order = orders[k] || 1;
+                const offs = order === 1 ? [0] : order === 2 ? [-6, 6] : [-9, 0, 9];
+                for (const o of offs) {
+                    ctx.beginPath();
+                    ctx.moveTo(a.x + nx * o, a.y + ny * o);
+                    ctx.lineTo(b.x + nx * o, b.y + ny * o);
+                    ctx.strokeStyle = '#4a4a55';
+                    ctx.lineWidth = 7;
+                    ctx.stroke();
+                    ctx.strokeStyle = '#c9cbd6';
+                    ctx.lineWidth = 3.5;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        function drawMolecule(p) {
+            const L = p.layout;
+            const cos = Math.cos(p.rot), sin = Math.sin(p.rot);
+            const pts = L.pos.map(q => ({ x: p.x + q.x * cos - q.y * sin, y: p.y + q.x * sin + q.y * cos }));
+            drawBondSticks(pts, L.bonds, L.orders);
+            for (let i = 0; i < pts.length; i++) drawAtomBall(L.Zs[i], pts[i].x, pts[i].y);
+            if (L.Zs.length > 1) {
+                const fs = Math.max(14, 11 / view.zoom);
+                drawLabel(p.type.name, p.x, p.y + p.r + fs, fs, false, false);
+            }
+        }
+
+        function drawPlayerMolecule() {
+            const index = new Map(cluster.map((m, k) => [m, k]));
+            drawBondSticks(cluster, bonds.map(([a, b]) => [index.get(a), index.get(b)]), molBondOrders);
+            for (const m of cluster) drawAtomBall(m.Z, m.x, m.y);
+        }
+
+        // --- Messages ---
+        const aOrAn = (word) => /^[aeiou]/i.test(word) ? 'an' : 'a';
+        const floaters = []; // little messages that float up off particles
+        function floatText(p, text) {
+            const now = performance.now();
+            if (p.msgUntil && now < p.msgUntil) return;
+            p.msgUntil = now + 1500;
+            floaters.push({ x: p.x, y: p.y - p.r - 10, text, born: now });
+        }
+
+        const toastEl = document.getElementById('toast');
+        let toastTimer = null;
+        function showToast(title, sub) {
+            toastEl.querySelector('b').textContent = title;
+            toastEl.querySelector('span').textContent = sub || '';
+            toastEl.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4000);
+        }
+
+        function updateStats() {
+            if (stage === 'molecule') {
+                const t = player.type;
+                const what = t.kind === 'element' ? t.name : `${t.name}${t.known ? ` (${t.sym})` : ''}`;
+                statsEl.textContent = `You are ${what}  ·  ${cluster.length} atom${cluster.length === 1 ? '' : 's'}  ·  Named molecules discovered: ${discovered.size} of ${MOLECULES.length}`;
+                return;
+            }
+            if (player.type.kind === 'atom') {
+                const { Z, N, E } = player.atom;
+                statsEl.textContent = `You are ${player.type.name}  (${Z} proton${Z === 1 ? '' : 's'}, ${N} neutron${N === 1 ? '' : 's'}, ${E} electron${E === 1 ? '' : 's'})`;
+                return;
+            }
+            if (player.type.kind === 'hadron') {
+                const made = player.inner.map(q => (q.anti ? 'anti-' : '') + q.sym).join(' ');
+                statsEl.textContent = `You are a ${player.type.name}  (${made})`;
+                return;
+            }
+            const names = cluster.map(q => `${q.type.bar ? 'anti-' : ''}${q.type.sym} (${colorName(q.color)})`).join(', ');
+            statsEl.textContent = `Quarks bound: ${names}`;
+        }
+        updateStats();
+
+        // =====================================================================
+        // Input
+        // =====================================================================
+        const keys = new Set();
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if ('wasd'.includes(k) && k.length === 1) {
+                keys.add(k);
+                e.preventDefault();
+            }
+        });
+        window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+        window.addEventListener('blur', () => keys.clear());
+
+        // =====================================================================
+        // Update
+        // =====================================================================
+        const camera = { x: player.x, y: player.y, follow: 8, zoom: 1 };
+
+        // Scroll wheel zoom: multiplies the automatic zoom (1 = automatic)
+        let userZoom = 1;
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            userZoom *= Math.exp(-e.deltaY * 0.0015);
+            userZoom = Math.max(0.1, Math.min(8, userZoom));
+        }, { passive: false });
+
+        // Center of the player's group and how far it reaches
+        function clusterBounds() {
+            let cx = 0, cy = 0;
+            for (const q of cluster) { cx += q.x; cy += q.y; }
+            cx /= cluster.length; cy /= cluster.length;
+            let extent = 0;
+            for (const q of cluster) extent = Math.max(extent, Math.hypot(q.x - cx, q.y - cy) + q.r);
+            return { cx, cy, extent };
+        }
+
+        function keepInWorld(e) {
+            if (e.x < e.r) { e.x = e.r; e.vx = Math.abs(e.vx); }
+            if (e.x > WORLD.width - e.r) { e.x = WORLD.width - e.r; e.vx = -Math.abs(e.vx); }
+            if (e.y < e.r) { e.y = e.r; e.vy = Math.abs(e.vy); }
+            if (e.y > WORLD.height - e.r) { e.y = WORLD.height - e.r; e.vy = -Math.abs(e.vy); }
+        }
+
+        function step(dt) {
+            // --- Player input ---
+            let ix = 0, iy = 0;
+            if (keys.has('a')) ix -= 1;
+            if (keys.has('d')) ix += 1;
+            if (keys.has('w')) iy -= 1;
+            if (keys.has('s')) iy += 1;
+
+            // When zoomed out, move faster so you cross the screen at the same pace
+            const speedScale = 1 / camera.zoom;
+            const maxSpeed = PLAYER.maxSpeed * speedScale;
+            if (ix || iy) {
+                const len = Math.hypot(ix, iy);
+                player.vx += (ix / len) * PLAYER.accel * speedScale * dt;
+                player.vy += (iy / len) * PLAYER.accel * speedScale * dt;
+            } else {
+                const f = Math.exp(-PLAYER.friction * dt);
+                player.vx *= f;
+                player.vy *= f;
+            }
+
+            // --- Gluon bonds act like springs ---
+            const K = 60, DAMP = 8;
+            for (const [a, b] of bonds) {
+                const dx = b.x - a.x, dy = b.y - a.y;
+                const d = Math.hypot(dx, dy) || 0.001;
+                const nx = dx / d, ny = dy / d;
+                const stretch = d - restLength(a, b);
+                const relV = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+                const f = (K * stretch + DAMP * relV) * dt;
+                const wa = a.isPlayer ? 0.35 : 1;  // player is steered, so it's pulled less
+                a.vx += nx * f * wa; a.vy += ny * f * wa;
+                b.vx -= nx * f;      b.vy -= ny * f;
+            }
+
+            // Atoms in a molecule that aren't bonded push each other away,
+            // which spreads the molecule into its shape
+            if (stage === 'molecule') {
+                for (let i = 0; i < cluster.length; i++) {
+                    for (let j = i + 1; j < cluster.length; j++) {
+                        if (bondedPairs.has(i * 1000 + j)) continue;
+                        const a = cluster[i], b = cluster[j];
+                        const dx = b.x - a.x, dy = b.y - a.y;
+                        const D = (a.r + b.r) * 1.9;
+                        if (Math.abs(dx) > D || Math.abs(dy) > D) continue;
+                        const d = Math.hypot(dx, dy) || 0.001;
+                        if (d >= D) continue;
+                        const f = (D - d) * 25 * dt / d;
+                        const wa = a.isPlayer ? 0.35 : 1;
+                        a.vx -= dx * f * wa; a.vy -= dy * f * wa;
+                        b.vx += dx * f;      b.vy += dy * f;
+                    }
+                }
+            }
+
+            // Bound quarks shouldn't overlap each other
+            for (let i = 0; i < cluster.length; i++) {
+                for (let j = i + 1; j < cluster.length; j++) {
+                    const a = cluster[i], b = cluster[j];
+                    let dx = b.x - a.x, dy = b.y - a.y;
+                    if (Math.abs(dx) + Math.abs(dy) < 0.01) { dx = rand(-1, 1); dy = rand(-1, 1); } // exactly stacked: pick a direction
+                    const d = Math.hypot(dx, dy) || 0.001;
+                    const min = a.r + b.r + 6;
+                    if (d < min) {
+                        const push = (min - d) / 2, nx = dx / d, ny = dy / d;
+                        a.x -= nx * push; a.y -= ny * push;
+                        b.x += nx * push; b.y += ny * push;
+                    }
+                }
+            }
+
+            // Followers drift to a stop when nothing pulls them, and can never
+            // go wildly faster than you (keeps a stretched bond from flinging them)
+            const followerDrag = Math.exp(-1.5 * dt);
+            const followerMax = maxSpeed * 2.5;
+            for (const q of cluster) {
+                if (q.isPlayer) continue;
+                q.vx *= followerDrag; q.vy *= followerDrag;
+                const s = Math.hypot(q.vx, q.vy);
+                if (s > followerMax) { q.vx *= followerMax / s; q.vy *= followerMax / s; }
+            }
+
+            // Player speed cap
+            const speed = Math.hypot(player.vx, player.vy);
+            if (speed > maxSpeed) {
+                player.vx *= maxSpeed / speed;
+                player.vy *= maxSpeed / speed;
+            }
+
+            for (const q of cluster) {
+                q.x += q.vx * dt;
+                q.y += q.vy * dt;
+                keepInWorld(q);
+            }
+            if (player.spin !== undefined) player.spin += player.spinSpeed * dt;
+
+            if (forming) {
+                forming.timer -= dt;
+                if (forming.timer <= 0) formHadron();
+            }
+
+            // --- Free particles drift ---
+            // A positive nucleus or ion pulls nearby electrons toward it
+            const pullsElectrons = stage !== 'molecule' && player.atom && player.atom.E < player.atom.Z;
+            const pullRange = player.r + 220;
+            const bounds = clusterBounds();
+            for (const p of free) {
+                if (p.orbit) { // right-clicked: circles around you
+                    const o = p.orbit;
+                    const dist = orbitDistance(p, bounds);
+                    o.angle += (o.speed / dist) * o.dir * dt;
+                    p.x = bounds.cx + Math.cos(o.angle) * dist;
+                    p.y = bounds.cy + Math.sin(o.angle) * dist;
+                    // remember the circling speed, for if you let it go
+                    p.vx = -Math.sin(o.angle) * o.speed * o.dir + player.vx;
+                    p.vy = Math.cos(o.angle) * o.speed * o.dir + player.vy;
+                    if (p.spin !== undefined) p.spin += p.spinSpeed * dt;
+                    if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
+                    continue;
+                }
+                if (pullsElectrons && p.type.id === 'electron') {
+                    const dx = player.x - p.x, dy = player.y - p.y;
+                    const d = Math.hypot(dx, dy);
+                    if (d < pullRange && d > 0.001) {
+                        p.vx += (dx / d) * 500 * dt;
+                        p.vy += (dy / d) * 500 * dt;
+                    }
+                }
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                if (p.spin !== undefined) p.spin += p.spinSpeed * dt;
+                if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
+                keepInWorld(p);
+            }
+
+            // --- Collisions between the player's group and free particles ---
+            for (let i = free.length - 1; i >= 0; i--) {
+                const p = free[i];
+                if (!p) continue; // the list shrank (e.g. subatomic particles vanished on entering molecule scale)
+                if (p.orbit) continue; // orbiting things never touch you
+                const near = bounds.extent + p.r;
+                if (Math.abs(p.x - bounds.cx) > near || Math.abs(p.y - bounds.cy) > near) continue;
+                if (p.chem) { chemContact(p); continue; }
+                for (const c of cluster) {
+                    const dx = p.x - c.x, dy = p.y - c.y;
+                    const reach = p.r + c.r;
+                    if (Math.abs(dx) > reach || Math.abs(dy) > reach) continue;
+                    const d = Math.hypot(dx, dy) || 0.001;
+                    if (d >= reach) continue;
+
+                    if (isQuarkKind(p.type)) {
+                        const check = canJoin(p);
+                        if (check.ok) {
+                            joinCluster(p, c);
+                            break;
+                        }
+                        if (check.reason) floatText(p, check.reason);
+                    } else if (c === player) {
+                        const check = canAbsorb(p);
+                        if (check && check.ok) {
+                            absorb(p);
+                            break;
+                        }
+                        if (check && check.reason) floatText(p, check.reason);
+                    }
+
+                    // Everything else (and quarks that don't fit) just bumps
+                    const nx = dx / d, ny = dy / d, overlap = reach - d;
+                    const total = p.mass + c.mass;
+                    p.x += nx * overlap * (c.mass / total);
+                    p.y += ny * overlap * (c.mass / total);
+                    c.x -= nx * overlap * (p.mass / total);
+                    c.y -= ny * overlap * (p.mass / total);
+                    const vn = (p.vx - c.vx) * nx + (p.vy - c.vy) * ny;
+                    if (vn < 0) {
+                        const j = -1.5 * vn / (1 / p.mass + 1 / c.mass);
+                        p.vx += (j / p.mass) * nx; p.vy += (j / p.mass) * ny;
+                        c.vx -= (j / c.mass) * nx; c.vy -= (j / c.mass) * ny;
+                    }
+                }
+            }
+
+            // --- Camera follows the player (the middle of your molecule) ---
+            const focus = stage === 'molecule' ? clusterBounds() : { cx: player.x, cy: player.y, extent: Math.max(player.r, bounds.extent) };
+            const t = 1 - Math.exp(-camera.follow * dt);
+            camera.x += (focus.cx - camera.x) * t;
+            camera.y += (focus.cy - camera.y) * t;
+
+            // Atoms are shown at full size (only zooming out if one won't fit).
+            // Molecules are zoomed out so they look as big as your atom did.
+            const screen = Math.min(window.innerWidth, window.innerHeight);
+            const autoZoom = stage === 'molecule'
+                ? Math.max(0.02, Math.min(1, moleculeScreenR / focus.extent))
+                : Math.min(1, screen * 0.35 / focus.extent);
+            // The scroll wheel scales the automatic zoom up or down
+            const targetZoom = Math.max(0.002, Math.min(8, autoZoom * userZoom));
+            camera.zoom += (targetZoom - camera.zoom) * (1 - Math.exp(-5 * dt));
+        }
+
+        // =====================================================================
+        // Drawing helpers
+        // =====================================================================
+        function drawBall(x, y, r, look, alpha = 1) {
+            const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+            g.addColorStop(0, look.light);
+            g.addColorStop(0.45, look.base);
+            g.addColorStop(1, look.dark);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+
+        function drawLabel(text, x, y, size, bar, serif) {
+            ctx.font = `${serif ? 'italic bold' : 'bold'} ${size}px ${serif ? 'Georgia, "Times New Roman", serif' : 'system-ui, sans-serif'}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = Math.max(2, size * 0.14);
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+            ctx.strokeText(text, x, y);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(text, x, y);
+            if (bar) {
+                const w = ctx.measureText(text).width;
+                const by = y - size * 0.55;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+                ctx.beginPath(); ctx.moveTo(x - w / 2, by); ctx.lineTo(x + w / 2, by); ctx.stroke();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = Math.max(1, size * 0.08);
+                ctx.beginPath(); ctx.moveTo(x - w / 2, by); ctx.lineTo(x + w / 2, by); ctx.stroke();
+            }
+        }
+
+        function drawQuark(x, y, r, color, sym, bar) {
+            drawBall(x, y, r, COLOR_CHARGE[color]);
+            if (r >= 5) drawLabel(sym, x, y + r * 0.05, r * 1.2, bar, true);
+        }
+
+        // Wavy gluon line between two balls, like a spring
+        function drawGluon(ax, ay, ar, bx, by, br, time, width) {
+            const dx = bx - ax, dy = by - ay;
+            const d = Math.hypot(dx, dy);
+            if (d < ar + br + 2) return;
+            const nx = dx / d, ny = dy / d;
+            const px = -ny, py = nx;
+            const start = ar * 0.85, end = d - br * 0.85;
+            const len = end - start;
+            const waves = Math.max(2, Math.round(len / (width * 3.2)));
+            const amp = width * 1.3;
+            const phase = time / 120;
+
+            ctx.beginPath();
+            for (let s = 0; s <= len; s += 1.5) {
+                const off = Math.sin((s / len) * waves * Math.PI * 2 - phase) * amp;
+                const x = ax + nx * (start + s) + px * off;
+                const y = ay + ny * (start + s) + py * off;
+                if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#a8963a';
+            ctx.lineWidth = width + 1.5;
+            ctx.stroke();
+            ctx.strokeStyle = '#fff4a8';
+            ctx.lineWidth = width;
+            ctx.stroke();
+        }
+
+        function drawHadron(p, time) {
+            // Gray "bag" holding its quarks, like the proton picture
+            const g = ctx.createRadialGradient(p.x, p.y, p.r * 0.2, p.x, p.y, p.r);
+            g.addColorStop(0, 'rgba(190, 190, 200, 0.55)');
+            g.addColorStop(1, 'rgba(120, 120, 135, 0.35)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(220, 220, 235, 0.35)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            const n = p.inner.length;
+            const qr = p.r * (n === 3 ? 0.3 : 0.34);
+            const dist = p.r * (n === 3 ? 0.5 : 0.48);
+            const pts = p.inner.map((q, i) => {
+                const a = p.spin + (i / n) * Math.PI * 2 - Math.PI / 2;
+                return { x: p.x + Math.cos(a) * dist, y: p.y + Math.sin(a) * dist, q };
+            });
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    drawGluon(pts[i].x, pts[i].y, qr, pts[j].x, pts[j].y, qr, time, Math.max(1, qr * 0.18));
+                }
+            }
+            for (const pt of pts) drawQuark(pt.x, pt.y, qr, pt.q.color, pt.q.sym, pt.q.anti);
+
+            drawLabel(p.type.sym, p.x, p.y + p.r + 10, 12, p.type.bar, false);
+        }
+
+        function drawSimple(p, time) {
+            const look = p.type.look;
+            if (p.type.neutrino || p.type.fast) {
+                // Tiny particles get a soft glow so they're visible
+                const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
+                glow.addColorStop(0, look.base + '88');
+                glow.addColorStop(1, look.base + '00');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            drawBall(p.x, p.y, p.r, look);
+            if (p.r >= 14) {
+                drawLabel(p.type.sym, p.x, p.y, Math.min(p.r * 0.85, 34), p.type.bar, false);
+            } else {
+                ctx.globalAlpha = 0.75;
+                drawLabel(p.type.sym, p.x + p.r + 9, p.y - p.r - 4, 10, p.type.bar, false);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function drawAlpha(p) {
+            const nr = p.r * 0.42;
+            for (let i = 0; i < 4; i++) {
+                const a = p.spin + i * Math.PI / 2;
+                const x = p.x + Math.cos(a) * nr * 0.75, y = p.y + Math.sin(a) * nr * 0.75;
+                drawBall(x, y, nr, i % 2 ? NEUTRON_LOOK : PROTON_LOOK);
+            }
+            drawLabel('α', p.x, p.y + p.r + 8, 12, false, false);
+        }
+
+        function drawFree(p, time) {
+            if (p.chem) drawMolecule(p);
+            else if (p.type.kind === 'nucleus') drawAlpha(p);
+            else if (p.type.kind === 'atom') drawAtom(p, time);
+            else if (isQuarkKind(p.type)) drawQuark(p.x, p.y, p.r, p.color, p.type.sym, p.type.bar);
+            else if (p.type.kind === 'hadron') drawHadron(p, time);
+            else drawSimple(p, time);
+        }
+
+        // =====================================================================
+        // Background texture (one tile, repeated across the world)
+        // =====================================================================
+        const TILE = 512;
+        function makeBackgroundTile() {
+            const tile = document.createElement('canvas');
+            tile.width = TILE;
+            tile.height = TILE;
+            const t = tile.getContext('2d');
+            t.fillStyle = '#0a0c18';
+            t.fillRect(0, 0, TILE, TILE);
+
+            let seed = 1337;
+            const srand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+            for (let i = 0; i < 14; i++) {
+                const x = srand() * TILE, y = srand() * TILE, r = 40 + srand() * 90;
+                const g = t.createRadialGradient(x, y, 0, x, y, r);
+                const hue = 220 + srand() * 60;
+                g.addColorStop(0, `hsla(${hue}, 50%, 25%, 0.18)`);
+                g.addColorStop(1, `hsla(${hue}, 50%, 25%, 0)`);
+                t.fillStyle = g;
+                for (const ox of [-TILE, 0, TILE]) {
+                    for (const oy of [-TILE, 0, TILE]) {
+                        t.beginPath();
+                        t.arc(x + ox, y + oy, r, 0, Math.PI * 2);
+                        t.fill();
+                    }
+                }
+            }
+            for (let i = 0; i < 260; i++) {
+                const x = srand() * TILE, y = srand() * TILE;
+                const s = srand() < 0.9 ? 1 : 2;
+                t.fillStyle = `rgba(180, 190, 255, ${0.08 + srand() * 0.25})`;
+                t.fillRect(x, y, s, s);
+            }
+            t.strokeStyle = 'rgba(120, 140, 255, 0.07)';
+            t.lineWidth = 1;
+            const stepPx = TILE / 4;
+            for (let i = 0; i <= TILE; i += stepPx) {
+                t.beginPath();
+                t.moveTo(i + 0.5, 0); t.lineTo(i + 0.5, TILE);
+                t.moveTo(0, i + 0.5); t.lineTo(TILE, i + 0.5);
+                t.stroke();
+            }
+            return tile;
+        }
+        const bgPattern = ctx.createPattern(makeBackgroundTile(), 'repeat');
+
+        // =====================================================================
+        // Draw
+        // =====================================================================
+        function draw(time) {
+            const w = window.innerWidth, h = window.innerHeight;
+
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.fillStyle = '#020207';
+            ctx.fillRect(0, 0, w, h);
+
+            // World view: zoomed around the camera
+            const z = camera.zoom;
+            const viewW = w / z, viewH = h / z;
+            const camX = camera.x - viewW / 2;
+            const camY = camera.y - viewH / 2;
+            view.x = camX;
+            view.y = camY;
+            view.zoom = z;
+            ctx.setTransform(dpr * z, 0, 0, dpr * z, -camX * dpr * z, -camY * dpr * z);
+
+            const left = Math.max(0, camX), top = Math.max(0, camY);
+            const right = Math.min(WORLD.width, camX + viewW), bottom = Math.min(WORLD.height, camY + viewH);
+            if (right > left && bottom > top) {
+                ctx.fillStyle = bgPattern;
+                ctx.fillRect(left, top, right - left, bottom - top);
+            }
+
+            ctx.strokeStyle = 'rgba(120, 160, 255, 0.5)';
+            ctx.lineWidth = 3 / z;
+            ctx.strokeRect(0, 0, WORLD.width, WORLD.height);
+
+            // Faint paths for things orbiting you
+            const orbitBounds = clusterBounds();
+            ctx.strokeStyle = 'rgba(180, 200, 255, 0.12)';
+            ctx.lineWidth = 1.5 / z;
+            for (const p of free) {
+                if (!p.orbit) continue;
+                ctx.beginPath();
+                ctx.arc(orbitBounds.cx, orbitBounds.cy, orbitDistance(p, orbitBounds), 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Free particles (only the ones on screen)
+            const margin = 90 / z;
+            for (const p of free) {
+                if (p.x + p.r + margin < camX || p.x - p.r - margin > camX + viewW ||
+                    p.y + p.r + margin < camY || p.y - p.r - margin > camY + viewH) continue;
+                drawFree(p, time);
+            }
+
+            // Player's group: gluon bonds first, then the quarks on top
+            if (stage !== 'molecule') {
+                for (const [a, b] of bonds) drawGluon(a.x, a.y, a.r, b.x, b.y, b.r, time, 4);
+            }
+
+            // Glow around you (flares up while a hadron is forming)
+            const pulse = 1 + Math.sin(time / 250) * 0.06;
+            const flare = forming ? 1 + (1 - forming.timer / 0.8) * 2 : 1;
+            const gx = cluster.reduce((s, q) => s + q.x, 0) / cluster.length;
+            const gy = cluster.reduce((s, q) => s + q.y, 0) / cluster.length;
+            const glowR = stage === 'molecule'
+                ? clusterBounds().extent * 1.3 * pulse
+                : Math.max(Math.min(player.r * 3.5, player.r + 60), cluster.length > 1 ? 70 : 0) * pulse * flare;
+            const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, glowR);
+            glow.addColorStop(0, `rgba(255, 255, 255, ${forming ? 0.5 : 0.25})`);
+            glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(gx, gy, glowR, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (stage === 'molecule') drawPlayerMolecule();
+            else for (const q of cluster) drawFree(q, time);
+
+            // Floating messages (kept readable when zoomed out)
+            const now = performance.now();
+            for (let i = floaters.length - 1; i >= 0; i--) {
+                const f = floaters[i];
+                const age = (now - f.born) / 1500;
+                if (age >= 1) { floaters.splice(i, 1); continue; }
+                ctx.globalAlpha = 1 - age * age;
+                drawLabel(f.text, f.x, f.y - age * 30 / z, 13 / z, false, false);
+                ctx.globalAlpha = 1;
+            }
+
+            // Ring around the particle you clicked
+            if (selected) {
+                let sx = selected.x, sy = selected.y, sr = selected.r;
+                if (selected === player && stage === 'molecule') {
+                    const b = clusterBounds();
+                    sx = b.cx; sy = b.cy; sr = b.extent;
+                }
+                const rr = Math.max(sr, 6) + (7 + Math.sin(time / 200) * 2) / z;
+                ctx.setLineDash([6 / z, 5 / z]);
+                ctx.lineDashOffset = -time / 40 / z;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+                ctx.lineWidth = 2 / z;
+                ctx.beginPath();
+                ctx.arc(sx, sy, rr, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        // =====================================================================
+        // Click a particle to learn about it
+        // =====================================================================
+        const view = { x: 0, y: 0, zoom: 1 };
+        let selected = null;
+        const infoEl = document.getElementById('info');
+        const infoSwatch = document.getElementById('info-swatch');
+        const infoName = document.getElementById('info-name');
+        const infoKind = document.getElementById('info-kind');
+        const infoFacts = document.getElementById('info-facts');
+        const infoDesc = document.getElementById('info-desc');
+
+        function particleAt(wx, wy) {
+            // Bound quarks are drawn on top, so check them first.
+            // Tiny particles get a bigger click target.
+            let best = null, bestD = Infinity;
+            for (const list of [cluster, free]) {
+                for (const p of list) {
+                    const d = Math.hypot(p.x - wx, p.y - wy);
+                    if (d <= Math.max(p.r, 14 / view.zoom) && d < bestD) { best = p; bestD = d; }
+                }
+                if (best) return best;
+            }
+            return null;
+        }
+
+        function addFact(label, value) {
+            const dt = document.createElement('dt');
+            dt.textContent = label;
+            const dd = document.createElement('dd');
+            dd.textContent = value;
+            infoFacts.append(dt, dd);
+        }
+
+        function showInfo(p) {
+            selected = p;
+            const t = p.type;
+            const info = t.info || INFO[t.id];
+
+            infoName.textContent = (p.isPlayer ? 'You! ' : '') + t.name;
+            let kind = t.kindLabel || KIND_LABEL[t.kind];
+            if (t.kind === 'lepton' && t.look === ANTILEPTON) kind = 'Antilepton';
+            if (t.neutrino) kind = t.bar ? 'Antineutrino (lepton)' : 'Neutrino (lepton)';
+            infoKind.textContent = kind;
+
+            const look = p.color ? COLOR_CHARGE[p.color] : (t.look || { base: '#888', light: '#bbb', dark: '#333' });
+            infoSwatch.style.background = `radial-gradient(circle at 35% 30%, ${look.light}, ${look.base} 50%, ${look.dark})`;
+            if (t.kind === 'hadron') infoSwatch.style.background = 'radial-gradient(circle at 35% 30%, #d0d0d8, #8a8a98)';
+            if (t.kind === 'atom') infoSwatch.style.background = 'radial-gradient(circle at 50% 50%, #e0555a 0 30%, #5a4aa0 34%, #2a2160)';
+            if (t.kind === 'nucleus') infoSwatch.style.background = 'radial-gradient(circle at 35% 30%, #ffb4b4, #e0555a 50%, #7a1a1e)';
+            if (t.kind === 'element') {
+                const c = atomColor(t.Z);
+                infoSwatch.style.background = `radial-gradient(circle at 35% 30%, ${shade(c, 0.6)}, ${c} 50%, ${shade(c, -0.55)})`;
+            }
+            if (t.kind === 'molecule') {
+                const Zs = p === player ? cluster.map(m => m.Z) : p.layout.Zs;
+                const [c1, c2] = [atomColor(Zs[0]), atomColor(Zs.find(Z => Z !== Zs[0]) || Zs[0])];
+                infoSwatch.style.background = `linear-gradient(135deg, ${c1} 0 50%, ${c2} 50%)`;
+            }
+            infoSwatch.textContent = t.kind === 'molecule' ? '' : t.sym.replace(/[⁺⁻⁰]/g, '');
+            infoSwatch.style.textDecoration = t.bar ? 'overline' : 'none';
+            infoSwatch.style.color = t.kind === 'element' && brightness(atomColor(t.Z)) > 0.62 ? '#222' : '#fff';
+
+            infoFacts.replaceChildren();
+            if (t.kind === 'element') {
+                const v = valenceOf(t.Z);
+                addFact('Symbol', t.sym);
+                addFact('Element', `${t.elementName} (element #${t.Z})`);
+                addFact('Mass', `${t.massU.toLocaleString(undefined, { maximumFractionDigits: 3 })} atomic mass units`);
+                addFact('Bonds it makes', v === 0 ? 'None (noble gases don\'t share)' : v);
+            } else if (t.kind === 'molecule') {
+                addFact('Formula', t.sym);
+                addFact('Atoms', t.atomCount);
+                addFact('Mass', `${t.massU.toLocaleString(undefined, { maximumFractionDigits: 2 })} atomic mass units`);
+                if (p === player) {
+                    const freeBonds = cluster.reduce((s, m) => s + Math.max(0, valenceOf(m.Z) - m.deg), 0);
+                    addFact('Open bonds', freeBonds ? `${freeBonds} (room to grow)` : '0 (complete!)');
+                }
+            } else {
+                addFact('Symbol', (t.bar ? 'anti-' : '') + t.sym);
+            }
+            if (t.kind === 'element' || t.kind === 'molecule') {
+                // mass already shown above
+            } else if (t.kind === 'atom') {
+                const { Z, N, E } = p.atom;
+                addFact('Element', `${t.elementName} (element #${Z})`);
+                addFact('Protons', Z);
+                addFact('Neutrons', N);
+                addFact('Electrons', E);
+                addFact('Mass', `About ${Z + N} atomic mass unit${Z + N === 1 ? '' : 's'}`);
+            } else {
+                addFact('Mass', formatMass(t));
+            }
+            addFact('vs. up quark', compareToUp(t));
+            addFact('Charge', info.charge);
+            if (p.color) addFact('Color charge', p.color.replace('anti', 'anti-'));
+            if (t.kind === 'hadron') {
+                addFact('Made of', p.inner.map(q => (q.anti ? 'anti-' : '') + QUARK_BY_SYM[q.sym].name.toLowerCase()).join(' + '));
+            }
+            if (t.kind === 'nucleus') addFact('Made of', '2 protons + 2 neutrons');
+            if (p.bonded && !p.isPlayer && !p.chem) addFact('Status', 'Bound to you by gluons');
+
+            infoDesc.textContent = info.desc;
+            infoEl.classList.add('open');
+        }
+
+        function hideInfo() {
+            selected = null;
+            infoEl.classList.remove('open');
+        }
+
+        const toWorld = (e) => [view.x + e.clientX / view.zoom, view.y + e.clientY / view.zoom];
+        canvas.addEventListener('click', (e) => {
+            let p = particleAt(...toWorld(e));
+            if (p && p.chemMember) p = player; // any atom of your molecule shows the whole molecule
+            if (p) showInfo(p); else hideInfo();
+        });
+        // =====================================================================
+        // Right-click something lighter than you to make it orbit you
+        // (subatomic and atomic world only). Right-click it again to let go.
+        // =====================================================================
+        function yourMass() { // in MeV/c², the same units particles use
+            if (player.type.kind === 'quark') return cluster.reduce((s, q) => s + q.type.mass, 0);
+            return player.type.mass;
+        }
+
+        function orbitDistance(p, bounds) {
+            return bounds.extent + p.r + 30 + p.orbit.lane * 24;
+        }
+
+        function startOrbit(p) {
+            const b = clusterBounds();
+            const lanes = free.filter(q => q.orbit).length;
+            p.orbit = {
+                angle: Math.atan2(p.y - b.cy, p.x - b.cx),
+                lane: lanes % 4,
+                speed: 140,               // how fast it travels around you
+                dir: Math.random() < 0.5 ? 1 : -1,
+            };
+        }
+
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const p = particleAt(...toWorld(e));
+            if (!p || cluster.includes(p)) return;
+            if (stage === 'molecule') {
+                floatText(p, 'Orbiting only works in the subatomic and atomic world');
+                return;
+            }
+            if (p.orbit) {
+                delete p.orbit; // let it fly off along its orbit
+                floatText(p, 'Let go!');
+                return;
+            }
+            const name = p.type.name.toLowerCase();
+            if (p.type.mass < yourMass()) {
+                startOrbit(p);
+                p.msgUntil = 0;
+                floatText(p, `The ${name} is orbiting you!`);
+            } else {
+                floatText(p, `Too heavy! The ${name} is heavier than you`);
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            canvas.style.cursor = particleAt(...toWorld(e)) ? 'pointer' : 'default';
+        });
+        document.getElementById('info-close').addEventListener('click', hideInfo);
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') hideInfo();
+            if (e.key.toLowerCase() === 'r' && player.type.kind !== 'quark') location.reload();
+        });
+        // =====================================================================
+        // Loop (fixed physics steps so the gluon springs stay stable)
+        // =====================================================================
+        const STEP = 1 / 120;
+        let last = performance.now();
+        let acc = 0;
+        function frame(now) {
+            acc += Math.min((now - last) / 1000, 0.1);
+            last = now;
+            while (acc >= STEP) {
+                step(STEP);
+                acc -= STEP;
+            }
+            draw(now);
+            requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+    })();
+    </script>
+</body>
+</html>
