@@ -174,12 +174,14 @@
 <body>
     <canvas id="game"></canvas>
     <div id="stats" class="hud"></div>
-    <div id="hint" class="hud">WASD to move (hold Shift to run) &middot; scroll to zoom &middot; right-click to orbit (lighter things orbit you, you orbit heavier things) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &middot; click anything to learn about it</div>
+    <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click to orbit (lighter things orbit you, you orbit heavier things) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &middot; click anything to learn about it</div>
     <div id="toast"><b></b><span></span></div>
     <button id="restart" type="button"><b>Press R to start over as a quark</b><span></span></button>
     <div id="touch-controls">
         <div id="joystick" aria-label="Move"><div id="joystick-knob"></div></div>
+        <!-- RUN button turned off for now:
         <button id="run-btn" type="button" aria-label="Run">RUN</button>
+        -->
     </div>
     <div id="info">
         <div id="info-head">
@@ -1428,7 +1430,7 @@
         let touchRun = false;
         const joystick = document.getElementById('joystick');
         const knob = document.getElementById('joystick-knob');
-        const runBtn = document.getElementById('run-btn');
+        // const runBtn = document.getElementById('run-btn'); // RUN button turned off for now
         let joyPointer = null;
 
         function joyUpdate(e) {
@@ -1459,22 +1461,23 @@
         joystick.addEventListener('pointerup', joyEnd);
         joystick.addEventListener('pointercancel', joyEnd);
 
-        const setRun = (on) => { touchRun = on; runBtn.classList.toggle('on', on); };
-        runBtn.addEventListener('pointerdown', (e) => {
-            e.preventDefault();
-            try { runBtn.setPointerCapture(e.pointerId); } catch (err) { /* keep working without capture */ }
-            setRun(true);
-        });
-        runBtn.addEventListener('pointerup', () => setRun(false));
-        runBtn.addEventListener('pointercancel', () => setRun(false));
-        runBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+        // RUN button turned off for now (the button is commented out in the HTML too).
+        // const setRun = (on) => { touchRun = on; runBtn.classList.toggle('on', on); };
+        // runBtn.addEventListener('pointerdown', (e) => {
+        //     e.preventDefault();
+        //     try { runBtn.setPointerCapture(e.pointerId); } catch (err) { /* keep working without capture */ }
+        //     setRun(true);
+        // });
+        // runBtn.addEventListener('pointerup', () => setRun(false));
+        // runBtn.addEventListener('pointercancel', () => setRun(false));
+        // runBtn.addEventListener('contextmenu', (e) => e.preventDefault());
 
         // Show the touch controls on touch screens (or as soon as someone touches)
         function enableTouchControls() {
             if (document.body.classList.contains('touch')) return;
             document.body.classList.add('touch');
             document.getElementById('hint').innerHTML =
-                'Joystick to move &middot; hold RUN to run &middot; pinch to zoom &middot; tap anything to learn about it &middot; long-press to orbit &middot; quarks &rarr; proton &rarr; atom &rarr; molecules';
+                'Joystick to move &middot; pinch to zoom &middot; tap anything to learn about it &middot; long-press to orbit &middot; quarks &rarr; proton &rarr; atom &rarr; molecules';
             document.querySelector('#restart b').textContent = 'Tap here to start over as a quark';
         }
         if (window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) enableTouchControls();
@@ -1528,7 +1531,10 @@
                 push = Math.min(1, Math.hypot(ix, iy));
                 if (push < 0.12) { ix = iy = 0; } // small dead zone in the middle
             }
-            const running = keys.has('shift') || touchRun;
+            // Running (Shift / RUN button) is turned off for now. To bring it back,
+            // swap these two lines (and uncomment the RUN button code above).
+            // const running = keys.has('shift') || touchRun;
+            const running = false;
             const speedScale = (running ? RUN_BOOST : 1) / camera.zoom;
             const maxSpeed = PLAYER.maxSpeed * speedScale * Math.max(push, 0.35);
             if (playerOrbit) {
