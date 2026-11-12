@@ -156,26 +156,43 @@
         }
         #toast span { font: 15px system-ui, sans-serif; color: rgba(255, 255, 255, 0.7); }
 
-        /* Big restart prompt, shown only while you're at a dead end */
+        /* Big restart prompt, shown only while you're at a dead end (closable) */
         #restart {
             position: fixed;
             left: 50%;
             bottom: 70px;
             transform: translateX(-50%);
             max-width: calc(100vw - 32px);
-            padding: 12px 26px;
+            display: none;
+        }
+        #restart.show { display: block; }
+        #restart-go {
+            width: 100%;
+            padding: 12px 48px 12px 26px;
             border: 2px solid #ffd64a;
             border-radius: 14px;
             background: rgba(40, 30, 0, 0.85);
             color: #ffd64a;
             text-align: center;
             cursor: pointer;
-            display: none;
             animation: restart-pulse 1.2s ease-in-out infinite;
         }
-        #restart.show { display: block; }
         #restart b { display: block; font: 800 clamp(18px, 3vw, 26px) system-ui, sans-serif; }
         #restart span { display: block; margin-top: 4px; font: 14px system-ui, sans-serif; color: rgba(255, 240, 200, 0.85); }
+        #restart-x {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: #ffd64a;
+            font: 24px/1 system-ui, sans-serif;
+            cursor: pointer;
+        }
+        #restart-x:hover { background: rgba(255, 214, 74, 0.2); }
         @keyframes restart-pulse {
             0%, 100% { box-shadow: 0 0 10px rgba(255, 214, 74, 0.4); }
             50% { box-shadow: 0 0 28px rgba(255, 214, 74, 0.9); }
@@ -218,7 +235,10 @@
     <div id="stats" class="hud"></div>
     <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click to orbit (lighter things orbit you, you orbit heavier things) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &rarr; dust &rarr; planets &rarr; star &middot; click anything to learn about it</div>
     <div id="toast"><b></b><span></span></div>
-    <button id="restart" type="button"><b>Press R to start over as a quark</b><span></span></button>
+    <div id="restart">
+        <button id="restart-go" type="button"><b>Press R to start over as a quark</b><span></span></button>
+        <button id="restart-x" type="button" aria-label="Close">&times;</button>
+    </div>
     <div id="supernova">
         <button id="supernova-go" type="button"><b>&#128165; Go supernova!</b><span>You're over 100 Suns: heavy enough to explode and become a black hole</span></button>
         <button id="supernova-x" type="button" aria-label="Close">&times;</button>
@@ -1672,6 +1692,7 @@
             if (d >= reach) return;
 
             if (p.r < player.r) { eatDust(p); return; }
+            if (dust.blackHole) { tearApart(p); return; }
 
             floatText(p, 'Too big to eat! Eat smaller ones first');
             const nx = dx / d, ny = dy / d, overlap = reach - d;
@@ -1686,6 +1707,25 @@
             }
         }
 
+        // Black holes don't care how big something is: tides rip anything that
+        // comes close into a stream of gas that spirals in, bit by bit
+        function tearApart(p) {
+            const before = p.r, kgBefore = dustMassKg(p);
+            if (dustTierOf(before) === T_STAR) p.wasStar = true;
+            p.r *= 0.98;
+            p.mass = p.r * p.r;
+            dust.bhKg += kgBefore - dustMassKg(p);
+            // Grow by the stripped part, the same way as eating it whole
+            player.r = Math.sqrt(player.r * player.r + 0.25 * (before * before - p.r * p.r));
+            player.mass = player.r * player.r;
+            // Its gas gets dragged along with you
+            p.vx += (player.vx - p.vx) * 0.05;
+            p.vy += (player.vy - p.vy) * 0.05;
+            floatText(p, p.wasStar ? 'Tearing the star apart!' : 'Tearing it apart!');
+            updateStats();
+            if (selected === player) showInfo(player);
+        }
+
         function eatDust(p) {
             const k = free.indexOf(p);
             if (k >= 0) free.splice(k, 1);
@@ -1693,7 +1733,7 @@
             if (dust.blackHole) {
                 // Black holes keep everything that falls in
                 dust.bhKg += dustMassKg(p);
-                if (dustTierOf(p.r) === T_STAR) dust.starsEaten++;
+                if (p.wasStar || dustTierOf(p.r) === T_STAR) dust.starsEaten++;
                 player.r = Math.hypot(player.r, p.r * 0.5);
                 player.mass = player.r * player.r;
                 updateStats();
@@ -2363,11 +2403,15 @@
                         p.vy += (dy / d) * 500 * dt;
                     }
                 }
-                if (gravity && p.r < player.r) {
+                // A black hole is tiny for its mass, so it goes by real mass, not size
+                const pulled = gravity && (dust.blackHole ? dustMassKg(p) < dust.bhKg : p.r < player.r);
+                if (pulled) {
                     const dx = player.x - p.x, dy = player.y - p.y;
                     const d = Math.hypot(dx, dy), range = player.r * 5;
-                    if (d < range && d > 0.001) {
-                        const a = player.r * 3 * (1 - d / range);
+                    // Measure from its edge, so a big star's center can be far away
+                    const gap = dust.blackHole ? Math.max(d - p.r, 0) : d;
+                    if (gap < range && d > 0.001) {
+                        const a = player.r * 3 * (1 - gap / range);
                         p.vx += (dx / d) * a * dt;
                         p.vy += (dy / d) * a * dt;
                     }
@@ -2914,15 +2958,20 @@
             }
             return null;
         }
-        let shownDeadEnd;
+        let shownDeadEnd, closedDeadEnd;
         function updateRestartPrompt() {
             const reason = deadEndReason();
             if (reason === shownDeadEnd) return;
             shownDeadEnd = reason;
-            restartEl.classList.toggle('show', !!reason);
+            // Once closed, it stays away until a different dead end comes up
+            restartEl.classList.toggle('show', !!reason && reason !== closedDeadEnd);
             if (reason) restartEl.querySelector('span').textContent = reason;
         }
-        restartEl.addEventListener('click', () => location.reload());
+        document.getElementById('restart-go').addEventListener('click', () => location.reload());
+        document.getElementById('restart-x').addEventListener('click', () => {
+            closedDeadEnd = shownDeadEnd;
+            restartEl.classList.remove('show');
+        });
 
         function drawGoalPointer(w, h, z, time) {
             // Re-pick the goal a few times a second (or right away if it's gone)
@@ -3306,7 +3355,10 @@
         });
         document.getElementById('info-close').addEventListener('click', hideInfo);
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') hideInfo();
+            if (e.key === 'Escape') {
+                hideInfo();
+                if (restartEl.classList.contains('show')) document.getElementById('restart-x').click();
+            }
             if (e.key.toLowerCase() === 'r' && player.type.kind !== 'quark') location.reload();
         });
         // =====================================================================
