@@ -2217,6 +2217,17 @@
         if (window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) enableTouchControls();
         window.addEventListener('touchstart', enableTouchControls, { passive: true });
 
+        // Swiping in from the screen edge on an iPad goes "back" and throws the
+        // game away. Keep an extra history entry so back just lands here again.
+        // (Browsers skip entries added before the player touches the page, so
+        // add it on the first touch/click.)
+        function guardBack() {
+            window.removeEventListener('pointerdown', guardBack, true);
+            history.pushState({ matterEater: true }, '');
+        }
+        window.addEventListener('pointerdown', guardBack, true);
+        window.addEventListener('popstate', () => history.pushState({ matterEater: true }, ''));
+
         // =====================================================================
         // Update
         // =====================================================================
