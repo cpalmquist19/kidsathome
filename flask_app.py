@@ -343,6 +343,14 @@ def static_file(filename):
 def inject_static_file_helper():
     return {'static_file': static_file}
 
+# Pages carry inline game code, so make browsers check for a new copy every
+# time (versioned static files above keep their long cache)
+@app.after_request
+def no_cache_html(response):
+    if response.mimetype == 'text/html' and 'Cache-Control' not in response.headers:
+        response.headers['Cache-Control'] = 'no-cache, must-revalidate'
+    return response
+
 def get_runtime_environment():
     """
     Get environment based on current request context.
