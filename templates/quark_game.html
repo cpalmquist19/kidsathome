@@ -64,48 +64,76 @@
         }
         #run-btn.on { background: rgba(255, 214, 74, 0.9); color: #2a1f00; }
         body.touch #hint { top: 46px; bottom: auto; }
-        body.touch #restart { bottom: 210px; }
-        body.touch #supernova { bottom: 300px; }
 
-        /* "Go supernova!" button, offered to stars of 100+ Suns (closable) */
-        #supernova {
+        /* Small corner buttons: start over, and go supernova when you can */
+        #corner {
             position: fixed;
-            left: 50%;
-            bottom: 160px;
-            transform: translateX(-50%);
-            max-width: calc(100vw - 32px);
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 8px;
+            z-index: 5;
+        }
+        #corner button {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font: 700 13px system-ui, sans-serif;
+            cursor: pointer;
+            white-space: nowrap;
+            touch-action: manipulation;
+        }
+        #restart {
+            border: 1px solid rgba(255, 214, 74, 0.45);
+            background: rgba(40, 30, 0, 0.55);
+            color: rgba(255, 214, 74, 0.85);
+        }
+        #restart:hover { background: rgba(80, 60, 0, 0.7); }
+        #restart.stuck { animation: restart-pulse 1.6s ease-in-out infinite; color: #ffd64a; border-color: #ffd64a; }
+        #restart.armed { background: #ffd64a; color: #2a1f00; animation: none; }
+        #supernova {
             display: none;
+            border: 1px solid #ff8a3a;
+            background: rgba(50, 15, 0, 0.7);
+            color: #ffb070;
+            animation: nova-pulse 1.4s ease-in-out infinite;
         }
         #supernova.show { display: block; }
-        #supernova-go {
-            padding: 12px 48px 12px 26px;
-            border: 2px solid #ff8a3a;
-            border-radius: 14px;
-            background: rgba(50, 15, 0, 0.88);
-            color: #ffb070;
-            text-align: center;
-            cursor: pointer;
-            animation: nova-pulse 1s ease-in-out infinite;
+        #dev-btn { display: none; border: 1px dashed #7ef; background: rgba(0, 40, 50, 0.6); color: #7ef; }
+        body.dev #dev-btn { display: block; }
+        #dev-panel {
+            position: fixed;
+            top: 48px;
+            right: 12px;
+            z-index: 6;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            border: 1px dashed #7ef;
+            border-radius: 12px;
+            background: rgba(0, 20, 28, 0.92);
         }
-        #supernova-go b { display: block; font: 800 clamp(18px, 3vw, 26px) system-ui, sans-serif; }
-        #supernova-go span { display: block; margin-top: 4px; font: 14px system-ui, sans-serif; color: rgba(255, 225, 200, 0.85); }
-        #supernova-x {
-            position: absolute;
-            top: 6px;
-            right: 8px;
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: 50%;
-            background: transparent;
-            color: #ffb070;
-            font: 24px/1 system-ui, sans-serif;
+        #dev-panel.open { display: flex; }
+        #dev-panel b { font: 700 11px system-ui, sans-serif; color: #7ef; letter-spacing: 0.08em; }
+        #dev-panel button {
+            padding: 6px 12px;
+            border: 1px solid rgba(120, 230, 255, 0.4);
+            border-radius: 8px;
+            background: rgba(0, 60, 80, 0.6);
+            color: #cff;
+            font: 13px system-ui, sans-serif;
+            text-align: left;
             cursor: pointer;
+            touch-action: manipulation;
         }
-        #supernova-x:hover { background: rgba(255, 140, 60, 0.2); }
+        #dev-panel button:hover { background: rgba(0, 90, 120, 0.8); }
+        @keyframes restart-pulse {
+            0%, 100% { box-shadow: 0 0 4px rgba(255, 214, 74, 0.3); }
+            50% { box-shadow: 0 0 14px rgba(255, 214, 74, 0.8); }
+        }
         @keyframes nova-pulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(255, 140, 60, 0.4); }
-            50% { box-shadow: 0 0 30px rgba(255, 140, 60, 0.95); }
+            0%, 100% { box-shadow: 0 0 4px rgba(255, 140, 60, 0.4); }
+            50% { box-shadow: 0 0 14px rgba(255, 140, 60, 0.9); }
         }
         .hud {
             position: fixed;
@@ -116,11 +144,12 @@
             user-select: none;
         }
         #hint { bottom: 16px; }
-        #stats { top: 16px; font-size: 16px; color: rgba(255, 255, 255, 0.8); }
+        #stats { top: 16px; font-size: 16px; color: rgba(255, 255, 255, 0.8); max-width: calc(100vw - 260px); }
+        body.touch #hint { max-width: calc(100vw - 260px); }
 
         #info {
             position: fixed;
-            top: 16px;
+            top: 52px;
             right: 16px;
             width: min(320px, calc(100vw - 32px));
             box-sizing: border-box;
@@ -156,47 +185,6 @@
         }
         #toast span { font: 15px system-ui, sans-serif; color: rgba(255, 255, 255, 0.7); }
 
-        /* Big restart prompt, shown only while you're at a dead end (closable) */
-        #restart {
-            position: fixed;
-            left: 50%;
-            bottom: 70px;
-            transform: translateX(-50%);
-            max-width: calc(100vw - 32px);
-            display: none;
-        }
-        #restart.show { display: block; }
-        #restart-go {
-            width: 100%;
-            padding: 12px 48px 12px 26px;
-            border: 2px solid #ffd64a;
-            border-radius: 14px;
-            background: rgba(40, 30, 0, 0.85);
-            color: #ffd64a;
-            text-align: center;
-            cursor: pointer;
-            animation: restart-pulse 1.2s ease-in-out infinite;
-        }
-        #restart b { display: block; font: 800 clamp(18px, 3vw, 26px) system-ui, sans-serif; }
-        #restart span { display: block; margin-top: 4px; font: 14px system-ui, sans-serif; color: rgba(255, 240, 200, 0.85); }
-        #restart-x {
-            position: absolute;
-            top: 6px;
-            right: 8px;
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: 50%;
-            background: transparent;
-            color: #ffd64a;
-            font: 24px/1 system-ui, sans-serif;
-            cursor: pointer;
-        }
-        #restart-x:hover { background: rgba(255, 214, 74, 0.2); }
-        @keyframes restart-pulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(255, 214, 74, 0.4); }
-            50% { box-shadow: 0 0 28px rgba(255, 214, 74, 0.9); }
-        }
         #info-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
         #info-swatch {
             flex: none;
@@ -235,13 +223,21 @@
     <div id="stats" class="hud"></div>
     <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click to orbit (lighter things orbit you, you orbit heavier things) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &rarr; dust &rarr; planets &rarr; star &middot; click anything to learn about it</div>
     <div id="toast"><b></b><span></span></div>
-    <div id="restart">
-        <button id="restart-go" type="button"><b>Press R to start over as a quark</b><span></span></button>
-        <button id="restart-x" type="button" aria-label="Close">&times;</button>
+    <div id="corner">
+        <button id="supernova" type="button" title="You're over 100 Suns: explode and become a black hole">&#128165; Go supernova</button>
+        <button id="restart" type="button" title="Start over as a quark (R)">&#8634; Start over</button>
+        <button id="dev-btn" type="button" title="Dev test powers (local only)">DEV</button>
     </div>
-    <div id="supernova">
-        <button id="supernova-go" type="button"><b>&#128165; Go supernova!</b><span>You're over 100 Suns: heavy enough to explode and become a black hole</span></button>
-        <button id="supernova-x" type="button" aria-label="Close">&times;</button>
+    <div id="dev-panel">
+        <b>DEV POWERS (local only)</b>
+        <button type="button" data-dev="dust">Dust grain</button>
+        <button type="button" data-dev="planet">Rocky planet</button>
+        <button type="button" data-dev="gas">Gas giant</button>
+        <button type="button" data-dev="star">Star (1 Sun)</button>
+        <button type="button" data-dev="bluestar">Blue star (10 Suns)</button>
+        <button type="button" data-dev="nova">Supernova-ready (110 Suns)</button>
+        <button type="button" data-dev="blackhole">Black hole now</button>
+        <button type="button" data-dev="double">&times;2 mass</button>
     </div>
     <div id="touch-controls">
         <div id="joystick" aria-label="Move"><div id="joystick-knob"></div></div>
@@ -1692,7 +1688,7 @@
             if (d >= reach) return;
 
             if (p.r < player.r) { eatDust(p); return; }
-            if (dust.blackHole) { tearApart(p); return; }
+            if (dust.blackHole) { catchInBlackHole(p); return; }
 
             floatText(p, 'Too big to eat! Eat smaller ones first');
             const nx = dx / d, ny = dy / d, overlap = reach - d;
@@ -1707,23 +1703,35 @@
             }
         }
 
-        // Black holes don't care how big something is: tides rip anything that
-        // comes close into a stream of gas that spirals in, bit by bit
-        function tearApart(p) {
+        // Black holes don't care how big something is: once anything touches,
+        // it's caught for good. Tides stretch it into gas that spirals in.
+        function catchInBlackHole(p) {
+            if (p.falling) return;
+            p.falling = true;
+            delete p.orbit;
+            if (playerOrbit && playerOrbit.target === p) playerOrbit = null;
+            if (dustTierOf(p.r) === T_STAR) p.wasStar = true;
+            p.msgUntil = 0;
+            floatText(p, p.wasStar ? 'Tearing the star apart!' : 'Tearing it apart!');
+        }
+
+        // Each step something caught spirals toward the middle and gets
+        // stripped; you grow by what's stripped, the same as eating it whole
+        function fallIntoBlackHole(p, dt) {
+            const pull = Math.min(1, 3 * dt);
+            p.x += (player.x - p.x) * pull;
+            p.y += (player.y - p.y) * pull;
+            p.vx = player.vx; p.vy = player.vy;
+            p.rotSpeed = (p.rotSpeed || 0) + 3 * dt; // spins up as it falls in
             const before = p.r, kgBefore = dustMassKg(p);
-            if (dustTierOf(before) === T_STAR) p.wasStar = true;
-            p.r *= 0.98;
+            p.r *= Math.exp(-1.8 * dt);
             p.mass = p.r * p.r;
             dust.bhKg += kgBefore - dustMassKg(p);
-            // Grow by the stripped part, the same way as eating it whole
             player.r = Math.sqrt(player.r * player.r + 0.25 * (before * before - p.r * p.r));
             player.mass = player.r * player.r;
-            // Its gas gets dragged along with you
-            p.vx += (player.vx - p.vx) * 0.05;
-            p.vy += (player.vy - p.vy) * 0.05;
-            floatText(p, p.wasStar ? 'Tearing the star apart!' : 'Tearing it apart!');
+            if (p.r < player.r) eatDust(p);
+            else if (selected === player) showInfo(player);
             updateStats();
-            if (selected === player) showInfo(player);
         }
 
         function eatDust(p) {
@@ -1785,14 +1793,14 @@
         function updateSupernovaButton() {
             const kg = dustMassKg(player);
             const ready = stage === 'dust' && !dust.blackHole && dustTierOf(player.r) === T_STAR &&
-                kg >= SUPERNOVA_SUNS * SUN_KG && (!dust.novaClosedAt || kg >= dust.novaClosedAt * 2);
+                kg >= SUPERNOVA_SUNS * SUN_KG;
             novaEl.classList.toggle('show', ready);
+            if (ready && !dust.novaTold) {
+                dust.novaTold = true; // tell them once; after that the small button just waits
+                showToast('You can go supernova!', "You're over 100 Suns. Tap 💥 Go supernova (top right) whenever you're ready, or keep growing");
+            }
         }
-        document.getElementById('supernova-x').addEventListener('click', () => {
-            dust.novaClosedAt = dustMassKg(player); // it comes back if you get twice as heavy
-            novaEl.classList.remove('show');
-        });
-        document.getElementById('supernova-go').addEventListener('click', goSupernova);
+        novaEl.addEventListener('click', goSupernova);
 
         function goSupernova() {
             if (!dust || dust.blackHole) return;
@@ -2044,7 +2052,7 @@
         // A red ring on anything too big for you to eat
         function drawTooBig(p) {
             const r = p.r;
-            if (!p.isPlayer && p.r >= player.r) {
+            if (!p.isPlayer && p.r >= player.r && !dust.blackHole) {
                 ctx.strokeStyle = 'rgba(255, 90, 90, 0.6)';
                 ctx.lineWidth = 2 / view.zoom;
                 ctx.beginPath();
@@ -2212,7 +2220,6 @@
             document.body.classList.add('touch');
             document.getElementById('hint').innerHTML = stage === 'dust' ? DUST_HINT_TOUCH :
                 'Joystick to move &middot; pinch to zoom &middot; tap anything to learn about it &middot; long-press to orbit &middot; quarks &rarr; proton &rarr; atom &rarr; molecules &rarr; dust &rarr; planets &rarr; star';
-            document.querySelector('#restart b').textContent = 'Tap here to start over as a quark';
         }
         if (window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) enableTouchControls();
         window.addEventListener('touchstart', enableTouchControls, { passive: true });
@@ -2391,7 +2398,14 @@
             const gravity = stage === 'dust' && dustTierOf(player.r) >= DUST_GRAVITY_TIER;
             const pullRange = player.r + 220;
             const bounds = clusterBounds();
-            for (const p of free) {
+            for (let i = free.length - 1; i >= 0; i--) {
+                const p = free[i];
+                if (p.falling) {
+                    if (p.spin !== undefined) p.spin += p.spinSpeed * dt;
+                    if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
+                    fallIntoBlackHole(p, dt);
+                    continue;
+                }
                 if (p.orbit) { // right-clicked: circles around you
                     const o = p.orbit;
                     const dist = orbitDistance(p, bounds);
@@ -2414,8 +2428,8 @@
                         p.vy += (dy / d) * 500 * dt;
                     }
                 }
-                // A black hole is tiny for its mass, so it goes by real mass, not size
-                const pulled = gravity && (dust.blackHole ? dustMassKg(p) < dust.bhKg : p.r < player.r);
+                // Nothing gets away from a black hole: it pulls in everything, any size
+                const pulled = gravity && (dust.blackHole || p.r < player.r);
                 if (pulled) {
                     const dx = player.x - p.x, dy = player.y - p.y;
                     const d = Math.hypot(dx, dy), range = player.r * 5;
@@ -2439,7 +2453,7 @@
                 const p = free[i];
                 if (!p) continue; // the list shrank (e.g. subatomic particles vanished on entering molecule scale)
                 if (p.orbit) continue; // orbiting things never touch you
-                if (playerOrbit && p === playerOrbit.target) continue; // nor does what you orbit
+                if (playerOrbit && p === playerOrbit.target && !(stage === 'dust' && dust.blackHole)) continue; // nor does what you orbit (unless you're a black hole)
                 const near = bounds.extent + p.r;
                 if (Math.abs(p.x - bounds.cx) > near || Math.abs(p.y - bounds.cy) > near) continue;
                 if (p.chem) { chemContact(p); continue; }
@@ -2969,19 +2983,30 @@
             }
             return null;
         }
-        let shownDeadEnd, closedDeadEnd;
+        // The small corner button glows while you're stuck. Real dead ends get
+        // one toast saying why; tap twice to start over (so a stray tap is safe).
+        let shownDeadEnd = null;
         function updateRestartPrompt() {
             const reason = deadEndReason();
             if (reason === shownDeadEnd) return;
             shownDeadEnd = reason;
-            // Once closed, it stays away until a different dead end comes up
-            restartEl.classList.toggle('show', !!reason && reason !== closedDeadEnd);
-            if (reason) restartEl.querySelector('span').textContent = reason;
+            restartEl.classList.toggle('stuck', !!reason);
+            restartEl.title = reason ? `${reason} (R to start over)` : 'Start over as a quark (R)';
+            if (reason && stage !== 'dust') {
+                const say = () => showToast(reason, 'Tap ↺ Start over (top right) to play again as a quark');
+                if (toastEl.classList.contains('show')) setTimeout(say, 4200); else say();
+            }
         }
-        document.getElementById('restart-go').addEventListener('click', () => location.reload());
-        document.getElementById('restart-x').addEventListener('click', () => {
-            closedDeadEnd = shownDeadEnd;
-            restartEl.classList.remove('show');
+        let restartArmed = null;
+        restartEl.addEventListener('click', () => {
+            if (restartArmed) { location.reload(); return; }
+            restartEl.classList.add('armed');
+            restartEl.textContent = 'Tap again to start over';
+            restartArmed = setTimeout(() => {
+                restartArmed = null;
+                restartEl.classList.remove('armed');
+                restartEl.textContent = '↺ Start over';
+            }, 3000);
         });
 
         function drawGoalPointer(w, h, z, time) {
@@ -3368,7 +3393,6 @@
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 hideInfo();
-                if (restartEl.classList.contains('show')) document.getElementById('restart-x').click();
             }
             if (e.key.toLowerCase() === 'r' && player.type.kind !== 'quark') location.reload();
         });
@@ -3377,6 +3401,68 @@
         // =====================================================================
         // Testing shortcut: open the page with ?dust to start as a dust grain
         if (new URLSearchParams(location.search).has('dust')) enterDustStage();
+
+        // --- Dev test powers: only on this computer or the home network ---
+        const IS_LOCAL = location.protocol === 'file:' ||
+            /^(localhost|127\.\d+\.\d+\.\d+|\[?::1\]?|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|.*\.local)$/.test(location.hostname);
+        if (IS_LOCAL) {
+            document.body.classList.add('dev');
+            const devPanel = document.getElementById('dev-panel');
+            document.getElementById('dev-btn').addEventListener('click', () => devPanel.classList.toggle('open'));
+
+            // Mass of a star with this many Suns -> its real size (meters across)
+            const starSize = (suns) => Math.cbrt(suns * SUN_KG * 6 / (Math.PI * 1330));
+
+            // Jump straight to being this big (real meters across) in the dust world
+            function devBecome(size) {
+                if (stage !== 'dust') enterDustStage();
+                if (dust.blackHole) return;
+                player.r = dust.r0 * Math.pow(size / DUST.startSize, 1 / DUST_EXP);
+                player.mass = player.r * player.r;
+                const tier = dustTierOf(player.r);
+                dust.tier = tier; // already "puffed up" if it's gas, so no double puff
+                dust.won = tier === DUST_TIERS.length - 1;
+                player.type = DUST_TYPES[tier];
+                player.look = tier >= T_DWARF ? pickDustLook(tier, player.r) : DUST_LOOKS[0];
+                playerOrbit = null;
+                free.length = 0;      // new neighbors to match your new size
+                manageDust(true);
+                if (selected) hideInfo();
+                updateStats();
+                updateSupernovaButton();
+                showToast(`DEV: ${player.type.name}`, `About ${formatSize(dustRealSize(player.r))} across, ${formatMassKg(dustMassKg(player), true)}`);
+            }
+
+            const DEV_POWERS = {
+                dust: () => devBecome(DUST.startSize),
+                planet: () => devBecome(1.3e7),   // about Earth
+                gas: () => devBecome(1.4e8),      // about Jupiter
+                star: () => devBecome(starSize(1)),
+                bluestar: () => devBecome(starSize(10)),
+                nova: () => devBecome(starSize(110)),
+                blackhole: () => {
+                    if (!dust || !dust.blackHole) { devBecome(starSize(110)); goSupernova(); }
+                },
+                double: () => {
+                    if (stage !== 'dust') enterDustStage();
+                    if (dust.blackHole) {
+                        dust.bhKg *= 2;
+                        player.r *= Math.SQRT2;
+                        player.mass = player.r * player.r;
+                        free.length = 0;
+                        manageDust(true);
+                        updateStats();
+                        if (selected === player) showInfo(player);
+                    } else {
+                        devBecome(dustRealSize(player.r) * Math.cbrt(2));
+                    }
+                },
+            };
+            devPanel.addEventListener('click', (e) => {
+                const power = e.target.closest('button')?.dataset.dev;
+                if (power) DEV_POWERS[power]();
+            });
+        }
 
         const STEP = 1 / 120;
         let last = performance.now();
