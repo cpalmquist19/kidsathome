@@ -539,7 +539,75 @@
         addType({ id: 'alpha', name: 'Alpha particle', sym: 'α', mass: 3727.4, count: 50,
                   kind: 'nucleus', kindLabel: 'Atomic nucleus (helium-4)' });
 
+        // --- Tachyons: hypothetical particles that always go faster than light.
+        // Nobody has ever found one, so they only exist with physics off. ---
+        const TACHYON = addType({
+            id: 'tachyon', name: 'Tachyon', sym: 'T', kind: 'hypothetical', count: 12,
+            mass: 0, offOnly: true, ftl: true,
+            kindLabel: 'Hypothetical particle (physics off only)',
+            look: flat('#b46cff', '#f2dcff', '#4a1a8a'),
+            massLabel: 'Imaginary! (a number times √−1, which no real thing has)',
+            compareLabel: "Can't compare: its mass is imaginary",
+            info: {
+                charge: '0',
+                desc: 'A make-believe particle that always travels faster than light. The math says its mass would have to be "imaginary", and the weirdest part: a tachyon speeds up as it loses energy! Scientists have searched for them, but none has ever been found.',
+            },
+        });
+
+        // --- More hypothetical particles: ideas scientists have come up with to
+        // explain things the Standard Model can't, like dark matter and gravity.
+        // None has been found yet, so like tachyons they only exist with physics off.
+        // (Their masses are mostly unknown: the sizes are the game's best guesses.)
+        const hypo = (base) => flat(base, shade(base, 0.5), shade(base, -0.55));
+        const UNKNOWN_MASS = { massLabel: 'Unknown: nobody knows yet!', compareLabel: 'Nobody knows yet' };
+        [
+            { id: 'axion', name: 'Axion', sym: 'a', mass: 1e-11, count: 5, look: hypo('#e86fb0'), ghost: true,
+              massLabel: 'Maybe 50 billion times lighter than an electron', compareLabel: 'Maybe 200 billion× lighter',
+              desc: 'A super-light particle dreamed up in 1977 to explain a puzzle about the strong force. Axions might be the invisible dark matter that holds galaxies together. Experiments use giant magnets to try to turn axions into light.' },
+            { id: 'dilaton', name: 'Dilaton', sym: 'D', mass: 1000, count: 4, look: hypo('#4fc9b4'), ...UNKNOWN_MASS,
+              desc: 'Comes from string theory, the idea that every particle is a tiny vibrating string. The dilaton would control how strong all the forces of nature are.' },
+            { id: 'graviton', name: 'Graviton', sym: 'G', mass: 0, count: 6, look: hypo('#ffd95a'), fast: true,
+              desc: 'The particle that would carry gravity, the way photons carry light. Gravity is so weak that catching even one graviton might be impossible, even with a detector as big as Jupiter!' },
+            { id: 'graviphoton', name: 'Graviphoton', sym: 'Gγ', mass: 500, count: 4, look: hypo('#ff9f4a'), ...UNKNOWN_MASS,
+              desc: 'A cousin of the graviton from theories with an extra dimension of space, curled up too tiny to see. It would carry a new force a bit like electricity and magnetism.' },
+            { id: 'sterile', name: 'Sterile neutrino', sym: 'νs', mass: 0.007, count: 5, look: hypo('#c9cfff'), ghost: true,
+              massLabel: 'Maybe about 70 times lighter than an electron', compareLabel: 'About 300 times lighter',
+              desc: 'A shy neutrino that ignores every force except gravity. Regular neutrinos are already ghostly; sterile ones would be even more so. They might explain why neutrinos have mass, and might even be dark matter.' },
+            { id: 'neutralino', name: 'Neutralino', sym: 'χ⁰', mass: 1e5, count: 4, look: hypo('#6a70a8'), ghost: true,
+              massLabel: 'Maybe 100 times heavier than a proton, or more', compareLabel: 'Maybe 50,000× heavier',
+              desc: 'Supersymmetry says every particle has a heavier "superpartner". The lightest neutral one, the neutralino, is a favorite guess for dark matter: heavy, invisible, and it never decays.' },
+            { id: 'chargino', name: 'Chargino', sym: 'χ⁺', mass: 1.2e5, count: 3, look: hypo('#c0563f'), charge: '+1',
+              massLabel: 'Maybe 100 times heavier than a proton, or more', compareLabel: 'Maybe 50,000× heavier',
+              desc: 'Another superpartner from supersymmetry, but with an electric charge. The Large Hadron Collider has searched hard for charginos, but hasn\'t found any yet.' },
+            { id: 'darkphoton', name: 'Dark photon', sym: "A'", mass: 20, count: 5, look: hypo('#5b3fa8'), ghost: true, ...UNKNOWN_MASS,
+              desc: 'A hidden version of the photon that would carry a force only dark matter feels. Once in a while it might turn into a regular photon, and that is how scientists hope to spot one.' },
+            { id: 'millicharged', name: 'Millicharged particle', sym: 'mχ', mass: 50, count: 4, look: hypo('#8fd65a'), charge: '+0.001', ...UNKNOWN_MASS,
+              desc: 'A particle with a teeny-tiny electric charge, maybe a thousand times smaller than an electron\'s. Scientists hunt for them with detectors hidden behind thick walls of rock.' },
+            { id: 'uhdm', name: 'Ultraheavy dark matter', sym: 'X', mass: 1.2e22, count: 2, look: hypo('#3a3d5c'), ghost: true,
+              massLabel: 'Maybe as heavy as a speck of dust: about 13 quintillion protons', compareLabel: 'Maybe 6 sextillion× heavier',
+              desc: 'What if dark matter came in giant particles, each as heavy as a speck of dust? There would be so few of them that they would almost never hit a detector. Scientists try to feel them with super-sensitive floating magnets.' },
+            { id: 'inflaton', name: 'Inflaton', sym: 'ϕ', mass: 1e16, count: 2, look: hypo('#ff5d5d'),
+              massLabel: 'Maybe 10 trillion times heavier than a proton', compareLabel: 'Maybe 5 quadrillion× heavier',
+              desc: 'Right after the Big Bang, the universe may have ballooned from smaller than an atom to bigger than a grapefruit in a tiny fraction of a second. This is called cosmic inflation, and the inflaton would be the particle that made it happen.' },
+            { id: 'curvaton', name: 'Curvaton', sym: 'σ', mass: 1e6, count: 3, look: hypo('#ff8fbf'), ...UNKNOWN_MASS,
+              desc: 'A helper to the inflaton. It might have made the tiny lumps in the early universe that later grew into galaxies, stars and planets.' },
+            { id: 'majoron', name: 'Majoron', sym: 'J', mass: 1e-9, count: 4, look: hypo('#6f9cff'),
+              massLabel: 'Very light, maybe almost nothing', compareLabel: 'Far, far lighter',
+              desc: 'Linked to the puzzle of why neutrinos have mass. It would exist if neutrinos are their own antiparticles, an idea from the physicist Ettore Majorana.' },
+            { id: 'monopole', name: 'Magnetic monopole', sym: 'M', mass: 1e19, count: 2, look: hypo('#d93a3a'),
+              massLabel: 'Maybe 10 quadrillion times heavier than a proton', compareLabel: 'Maybe 5 quintillion× heavier',
+              desc: 'Every magnet has a north and a south pole. Cut one in half and you get two smaller magnets, each still with both! A magnetic monopole would be a lone north or a lone south pole. Many theories say they should exist, but none has ever been found.' },
+            { id: 'anyon', name: 'Anyon', sym: 'any', mass: 0.5, count: 4, look: hypo('#bff05a'),
+              massLabel: 'Depends on the material it lives in', compareLabel: 'Depends on the material',
+              desc: 'Anyons can only exist in a perfectly flat, two-dimensional world, like inside super-thin layers of material. Scientists have actually seen signs of them there, but only as "quasiparticles": lots of electrons acting together like one particle.' },
+        ].forEach(({ desc, charge, ...t }) => addType({
+            ...t, kind: 'hypothetical', offOnly: true,
+            kindLabel: 'Hypothetical particle (physics off only)',
+            info: { charge: charge || '0', desc },
+        }));
+
         for (const t of TYPES) t.radius = radiusForMass(t.mass);
+        TACHYON.radius = 6;
 
         // The Ocamathron: a giant made-up particle that only exists with physics
         // off, one at a time. It shines like a blue star, and its light pushes
@@ -664,7 +732,7 @@
                 e.spin = rand(0, Math.PI * 2);
                 e.spinSpeed = rand(-0.6, 0.6);
             }
-            const speed = type.fast ? rand(80, 160) : rand(8, 35);
+            const speed = type.ftl ? rand(500, 800) : type.fast ? rand(80, 160) : rand(8, 35);
             const ang = rand(0, Math.PI * 2);
             e.vx = Math.cos(ang) * speed;
             e.vy = Math.sin(ang) * speed;
@@ -683,6 +751,7 @@
         // Everything else, spread across the world
         const free = [];
         for (const type of TYPES) {
+            if (type.offOnly && physicsOn) continue; // tachyons: physics off only
             for (let i = 0; i < type.count; i++) {
                 let x, y;
                 do {
@@ -695,6 +764,17 @@
 
         // Replace particles you've used up, somewhere off screen
         const findOcamathron = () => free.find(p => p.type === OCAMATHRON);
+        // Real physics on: hypothetical things like tachyons vanish
+        function removeOffOnly() {
+            if (!physicsOn) return;
+            for (let k = free.length - 1; k >= 0; k--) {
+                if (!free[k].type || !free[k].type.offOnly) continue;
+                if (selected === free[k]) hideInfo();
+                if (playerOrbit && playerOrbit.target === free[k]) playerOrbit = null;
+                free.splice(k, 1);
+            }
+        }
+
         function manageOcamathron() {
             const oc = findOcamathron();
             if (physicsOn || !(stage === 'particles' || stage === 'molecule') || player.type === OCAMATHRON) {
@@ -748,6 +828,7 @@
                 counts.set(q.type, counts.get(q.type) - 1);
             }
             for (const type of TYPES) {
+                if (type.offOnly && physicsOn) continue; // tachyons: physics off only
                 const missing = type.count - (counts.get(type) || 0);
                 for (let i = 0; i < Math.min(missing, 5); i++) {
                     const [x, y] = spawnPoint(type.radius);
@@ -3009,7 +3090,7 @@
             // swap these two lines (and uncomment the RUN button code above).
             // const running = keys.has('shift') || touchRun;
             const running = false;
-            const speedScale = (running ? RUN_BOOST : 1) / camera.zoom;
+            const speedScale = (running ? RUN_BOOST : 1) * (player.type.ftl ? 2.5 : 1) / camera.zoom; // tachyons are faster than light
             const maxSpeed = PLAYER.maxSpeed * speedScale * Math.max(push, 0.35);
             if (playerOrbit) {
                 // You're orbiting something: WASD does nothing until you let go
@@ -3447,7 +3528,23 @@
 
         function drawSimple(p, time) {
             const look = p.type.look;
-            if (p.type.neutrino || p.type.fast) {
+            if (p.type.ftl) {
+                // A long glowing streak behind it: it's going faster than light
+                const sp = Math.hypot(p.vx, p.vy) || 1;
+                const len = Math.max(30, Math.min(160, sp * 0.18));
+                const tx = p.x - p.vx / sp * len, ty = p.y - p.vy / sp * len;
+                const trail = ctx.createLinearGradient(tx, ty, p.x, p.y);
+                trail.addColorStop(0, look.base + '00');
+                trail.addColorStop(1, look.light + 'dd');
+                ctx.strokeStyle = trail;
+                ctx.lineCap = 'round';
+                ctx.lineWidth = p.r * 1.6;
+                ctx.beginPath();
+                ctx.moveTo(tx, ty);
+                ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+            }
+            if (p.type.neutrino || p.type.fast || p.type.ftl) {
                 // Tiny particles get a soft glow so they're visible
                 const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
                 glow.addColorStop(0, look.base + '88');
@@ -3457,7 +3554,7 @@
                 ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
                 ctx.fill();
             }
-            drawBall(p.x, p.y, p.r, look);
+            drawBall(p.x, p.y, p.r, look, p.type.ghost ? 0.45 : 1); // dark matter is see-through
             if (p.r >= 14) {
                 drawLabel(p.type.sym, p.x, p.y, Math.min(p.r * 0.85, 34), p.type.bar, false);
             } else if (nameShown(p)) {
@@ -4346,12 +4443,14 @@
             showPhysicsButton();
             if (stage === 'molecule') refreshMolecule(false);
             const wasOcamathron = physicsOn && player.type === OCAMATHRON;
-            if (wasOcamathron) becomeParticle(TYPES.find(t => t.id === 'up'), 'red', true);
+            const wasTachyon = physicsOn && player.type === TACHYON;
+            if (wasOcamathron || wasTachyon) becomeParticle(TYPES.find(t => t.id === 'up'), 'red', true);
             manageOcamathron();
+            removeOffOnly();
             updateSupernovaButton();
             updateRestartPrompt();
-            if (wasOcamathron) {
-                showToast('Real physics ON', "The Ocamathron can't exist with real physics, so you're an up quark again");
+            if (wasOcamathron || wasTachyon) {
+                showToast('Real physics ON', `${wasTachyon ? 'Tachyons' : 'The Ocamathron'} can't exist with real physics, so you're an up quark again`);
             } else if (announce) {
                 showToast(physicsOn ? 'Real physics ON' : 'Physics OFF!', physicsOn
                     ? 'Only real, stable molecules and real orbits, following the rules of nature'
@@ -4468,6 +4567,7 @@
                 ['Force carriers (bosons)', t => t.kind === 'boson'],
                 ['Made of quarks (hadrons)', t => t.kind === 'hadron'],
                 ['Atomic nucleus', t => t.kind === 'nucleus'],
+                ['Hypothetical particles (never confirmed)', t => t.kind === 'hypothetical'],
                 ['Mystery particle', t => t === OCAMATHRON],
             ];
             const ball = (look) => `radial-gradient(circle at 35% 30%, ${look.light}, ${look.base} 50%, ${look.dark})`;
