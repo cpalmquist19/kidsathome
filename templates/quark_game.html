@@ -775,6 +775,11 @@
             }
         }
 
+        // There's always exactly 1 Ocamathron in the subatomic, atomic and molecule
+        // levels. If one dies, a new one shows up a few seconds later somewhere random.
+        const OCAMATHRON_RESPAWN_MS = 4000;
+        let lastOc = null;         // the Ocamathron we spawned, to notice when it dies
+        let ocRespawnAt = 0;       // when a replacement may appear (0 = right away)
         function manageOcamathron() {
             const oc = findOcamathron();
             if (physicsOn || !(stage === 'particles' || stage === 'molecule') || player.type === OCAMATHRON) {
@@ -782,10 +787,17 @@
                     free.splice(free.indexOf(oc), 1);
                     if (selected === oc) hideInfo();
                 }
+                lastOc = null; ocRespawnAt = 0; // not a death: one comes back right away later
                 return;
             }
-            if (oc) return; // only one at a time
-            // Somewhere off screen and well away from you
+            if (oc) { lastOc = oc; return; } // only one at a time
+            if (lastOc) { // it died: wait a few seconds before the next one
+                lastOc = null;
+                ocRespawnAt = performance.now() + OCAMATHRON_RESPAWN_MS;
+            }
+            if (performance.now() < ocRespawnAt) return;
+            ocRespawnAt = 0;
+            // A random spot on the map, off screen and well away from you
             let x, y, tries = 0;
             do { [x, y] = spawnPoint(OCAMATHRON.radius); }
             while (++tries < 30 && Math.hypot(x - player.x, y - player.y) < OCAMATHRON.radius * (OCAMATHRON_REACH + 2));
@@ -794,7 +806,9 @@
             e.drawR = OCAMATHRON.radius * (OCAMATHRON_REACH + 0.2);
             e.vx *= 0.4; e.vy *= 0.4;
             free.push(e);
+            lastOc = e;
         }
+        setInterval(manageOcamathron, 500); // notice deaths quickly (replenish only runs every 2s)
 
         function replenish() {
             manageOcamathron();
