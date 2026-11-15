@@ -94,9 +94,26 @@
         #physics:hover { background: rgba(0, 70, 35, 0.75); }
         #physics.off { border-color: #ff6ad5; background: rgba(60, 0, 50, 0.65); color: #ff9ae4; }
         #physics.off:hover { background: rgba(90, 0, 75, 0.8); }
+        #pulse-btn {
+            display: none;
+            border: 1px solid #bcd2ff;
+            background: rgba(30, 50, 120, 0.75);
+            color: #e6eeff;
+            animation: pulse-glow 1.2s ease-in-out infinite;
+        }
+        body.is-ocamathron #pulse-btn { display: block; }
+        #pulse-btn.charging { animation: none; opacity: 0.55; cursor: default; }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 6px rgba(150, 185, 255, 0.5); }
+            50% { box-shadow: 0 0 18px rgba(190, 215, 255, 1); }
+        }
         #pick-btn { display: none; border: 1px solid #ff6ad5; background: rgba(60, 0, 50, 0.65); color: #ff9ae4; }
         #pick-btn:hover { background: rgba(90, 0, 75, 0.8); }
         body.physics-off #pick-btn { display: block; }
+        #merge-btn { display: none; border: 1px solid #7fe0c8; background: rgba(0, 50, 45, 0.65); color: #a8f5e2; }
+        #merge-btn:hover { background: rgba(0, 80, 70, 0.8); }
+        #merge-btn.off { border-color: rgba(200, 200, 210, 0.5); background: rgba(40, 40, 50, 0.65); color: #c8c8d4; }
+        body.physics-off #merge-btn { display: block; }
         body.menu-open #corner, body.menu-open #stats, body.menu-open #hint, body.menu-open #touch-controls { visibility: hidden; }
 
         /* Main menu and particle picker */
@@ -337,6 +354,8 @@
     <div id="toast"><b></b><span></span></div>
     <div id="corner">
         <button id="physics" type="button">&#9883; Real physics: ON</button>
+        <button id="pulse-btn" type="button" title="Blast the whole map away from you (Space)">&#128165; Hyper Pulse</button>
+        <button id="merge-btn" type="button">&#129522; Merging: ON</button>
         <button id="pick-btn" type="button" title="Start over as any particle you like">&#127922; Pick a particle</button>
         <button id="supernova" type="button" title="You're over 100 Suns: explode and become a black hole">&#128165; Go supernova</button>
         <button id="restart" type="button" title="Start over as a quark (R)">&#8634; Start over</button>
@@ -418,6 +437,10 @@
         // Real physics OFF: anything goes. Merge with anything, orbit anything.
         const PHYSICS_KEY = 'matterEaterPhysics';
         let physicsOn = true;
+        // Physics off: you can also turn merging off, and just bounce off things
+        const MERGE_KEY = 'matterEaterMerge';
+        let mergeOn = true;
+        try { mergeOn = localStorage.getItem(MERGE_KEY) !== 'off'; } catch (err) { /* keep the default */ }
         try { physicsOn = localStorage.getItem(PHYSICS_KEY) !== 'off'; } catch (err) { /* keep the default */ }
 
         // =====================================================================
@@ -517,6 +540,25 @@
                   kind: 'nucleus', kindLabel: 'Atomic nucleus (helium-4)' });
 
         for (const t of TYPES) t.radius = radiusForMass(t.mass);
+
+        // The Ocamathron: a giant made-up particle that only exists with physics
+        // off, one at a time. It shines like a blue star, and its light pushes
+        // grouped particles apart if you come within 2.5× its width.
+        const OCAMATHRON = {
+            id: 'ocamathron', name: 'Ocamathron', sym: 'Oc', kind: 'mystery',
+            kindLabel: 'Mystery particle (physics off only)',
+            mass: 9.84672e27 * UP_MASS, // 9.84672 octillion up quarks
+            look: flat('#8fb0ff', '#e0eaff', '#2c4a9a'), glow: '#9ab8ff',
+            massLabel: '9.84672 octillion up quarks (about 38 grams, a bit less than a golf ball!)',
+            compareLabel: '9.84672 octillion× heavier',
+            info: {
+                charge: '0',
+                desc: 'A giant mystery particle that only exists when physics is off. It weighs as much as 9.84672 octillion up quarks and blazes like a blue star. Its light is so strong that if you come within 2.5 times its width, it pushes everything away and tears grouped particles apart: protons, neutrons, kaons and atoms get blasted back into the pieces they were made of! Its attack, the Hyper Pulse, does that to the whole map at once.',
+            },
+        };
+        OCAMATHRON.radius = 5 * TYPES.find(t => t.id === 'top').radius;
+        const OCAMATHRON_REACH = 2.5 * 2; // 2.5× its diameter, measured from its middle, in radii
+        const OCAMATHRON_PUSH = 1600;     // how hard its light pushes things out of the circle
 
         // =====================================================================
         // Particle facts (shown when you click a particle)
@@ -652,12 +694,59 @@
         }
 
         // Replace particles you've used up, somewhere off screen
+        const findOcamathron = () => free.find(p => p.type === OCAMATHRON);
+        function manageOcamathron() {
+            const oc = findOcamathron();
+            if (physicsOn || !(stage === 'particles' || stage === 'molecule') || player.type === OCAMATHRON) {
+                if (oc) {
+                    free.splice(free.indexOf(oc), 1);
+                    if (selected === oc) hideInfo();
+                }
+                return;
+            }
+            if (oc) return; // only one at a time
+            // Somewhere off screen and well away from you
+            let x, y, tries = 0;
+            do { [x, y] = spawnPoint(OCAMATHRON.radius); }
+            while (++tries < 30 && Math.hypot(x - player.x, y - player.y) < OCAMATHRON.radius * (OCAMATHRON_REACH + 2));
+            const e = makeEntity(OCAMATHRON, x, y);
+            e.huge = true; // too big to merge with
+            e.drawR = OCAMATHRON.radius * (OCAMATHRON_REACH + 0.2);
+            e.vx *= 0.4; e.vy *= 0.4;
+            free.push(e);
+        }
+
         function replenish() {
+            manageOcamathron();
             if (stage === 'dust') return; // the dust world refills itself as you move (manageDust)
             if (atomsAppeared) spawnChem(3);
+            if (stage === 'molecule') {
+                // The Ocamathron breaks molecules into lots of atoms: forget extras far off screen
+                const counts = {};
+                for (const q of free) if (q.chem) counts[q.formula] = (counts[q.formula] || 0) + 1;
+                const halfW = window.innerWidth / 2 / view.zoom + 300, halfH = window.innerHeight / 2 / view.zoom + 300;
+                for (let k = free.length - 1; k >= 0; k--) {
+                    const q = free[k];
+                    if (!q.chem || q.orbit || q === selected) continue;
+                    if (counts[q.formula] <= Math.max(4, (chemTargets[q.formula] || 0) * 2)) continue;
+                    if (Math.abs(q.x - camera.x) < halfW && Math.abs(q.y - camera.y) < halfH) continue;
+                    free.splice(k, 1);
+                    counts[q.formula]--;
+                }
+            }
             if (stage === 'molecule') return; // subatomic particles are gone at molecule scale
             const counts = new Map();
             for (const p of free) counts.set(p.type, (counts.get(p.type) || 0) + 1);
+            // The Ocamathron breaks things into lots of pieces: don't let them pile up forever
+            const halfW = window.innerWidth / 2 / view.zoom + 300, halfH = window.innerHeight / 2 / view.zoom + 300;
+            for (let k = free.length - 1; k >= 0; k--) {
+                const q = free[k];
+                const extra = (counts.get(q.type) || 0) - q.type.count * 2;
+                if (extra <= 0 || q.chem || q.orbit || q === selected) continue;
+                if (Math.abs(q.x - camera.x) < halfW && Math.abs(q.y - camera.y) < halfH) continue;
+                free.splice(k, 1);
+                counts.set(q.type, counts.get(q.type) - 1);
+            }
             for (const type of TYPES) {
                 const missing = type.count - (counts.get(type) || 0);
                 for (let i = 0; i < Math.min(missing, 5); i++) {
@@ -1101,6 +1190,313 @@
             }
         }
 
+        // =====================================================================
+        // Hyper Pulse: the Ocamathron's attack. A shockwave races out across the
+        // whole map: everything it passes is blasted away from you, and anything
+        // made of more than one particle is torn apart.
+        // =====================================================================
+        const PULSE_SPEED = 6000;     // how fast the shockwave spreads (world units per second)
+        const PULSE_COOLDOWN = 4000;  // ms before you can pulse again
+        const PULSE_KICK = [380, 560];
+        let pulse = null;             // { x, y, r, born, maxR } while a shockwave is spreading
+        let pulseReadyAt = 0;
+        const pulseBtn = document.getElementById('pulse-btn');
+
+        function hyperPulse() {
+            if (player.type !== OCAMATHRON || physicsOn || !(stage === 'particles' || stage === 'molecule') || isPaused()) return;
+            const now = performance.now();
+            if (now < pulseReadyAt) return;
+            pulseReadyAt = now + PULSE_COOLDOWN;
+            const corners = [[0, 0], [WORLD.width, 0], [0, WORLD.height], [WORLD.width, WORLD.height]];
+            pulse = {
+                x: player.x, y: player.y, r: player.r, born: now,
+                maxR: Math.max(...corners.map(([cx, cy]) => Math.hypot(cx - player.x, cy - player.y))) + 400,
+            };
+            playerOrbit = null;
+            if (navigator.vibrate) navigator.vibrate([40, 30, 80]);
+            showToast('HYPER PULSE!', 'A shockwave blasts across the whole map, tearing everything apart');
+        }
+        pulseBtn.addEventListener('click', (e) => { e.currentTarget.blur(); hyperPulse(); });
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && player.type === OCAMATHRON && !isPaused()) { e.preventDefault(); hyperPulse(); }
+        });
+
+        // Each step the shockwave grows. Anything inside it that it hasn't hit
+        // yet gets hit (so nothing can slip past it), and so do the pieces.
+        function spreadPulse(dt) {
+            pulse.r += PULSE_SPEED * dt;
+            const r2 = pulse.r * pulse.r;
+            for (let i = free.length - 1; i >= 0; i--) {
+                const q = free[i];
+                if (!q || q.falling || q.pulseHit === pulse) continue;
+                const dx = q.x - pulse.x, dy = q.y - pulse.y, d2 = dx * dx + dy * dy;
+                if (d2 >= r2) continue;
+                q.pulseHit = pulse;
+                delete q.orbit; // nothing keeps orbiting through that
+                const before = free.length;
+                if (tearFree(q, pulse, 8, PULSE_KICK, true)) {
+                    for (let k = before - 1; k < free.length; k++) free[k].pulseHit = pulse; // its pieces were already blasted
+                    continue;
+                }
+                const d = Math.sqrt(d2) || 1, sp = rand(PULSE_KICK[0], PULSE_KICK[1]);
+                q.vx = dx / d * sp; q.vy = dy / d * sp;
+            }
+            if (pulse.r > pulse.maxR) pulse = null;
+        }
+
+        // The shockwave: a blazing blue-white ring with fainter echoes behind it
+        function drawPulse(time) {
+            if (!pulse) return;
+            const { x, y, r } = pulse, TAU = Math.PI * 2, z = view.zoom;
+            const fade = Math.max(0, 1 - r / pulse.maxR);
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            // Bright core where it started, fading fast
+            const age = (performance.now() - pulse.born) / 1000;
+            if (age < 1) {
+                const core = ctx.createRadialGradient(x, y, 0, x, y, player.r * (2 + age * 6));
+                core.addColorStop(0, `rgba(240, 248, 255, ${0.9 * (1 - age)})`);
+                core.addColorStop(1, 'rgba(140, 180, 255, 0)');
+                ctx.fillStyle = core;
+                ctx.beginPath();
+                ctx.arc(x, y, player.r * (2 + age * 6), 0, TAU);
+                ctx.fill();
+            }
+            // The wave front
+            const w = Math.max(90, r * 0.07);
+            const g = ctx.createRadialGradient(x, y, Math.max(0, r - w), x, y, r + w * 0.25);
+            g.addColorStop(0, 'rgba(100, 140, 255, 0)');
+            g.addColorStop(0.6, `rgba(130, 170, 255, ${0.3 * fade + 0.1})`);
+            g.addColorStop(0.9, `rgba(235, 245, 255, ${0.8 * fade + 0.2})`);
+            g.addColorStop(1, 'rgba(160, 200, 255, 0)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(x, y, r + w * 0.25, 0, TAU);
+            ctx.arc(x, y, Math.max(0, r - w), 0, TAU, true);
+            ctx.fill();
+            // Crackling streaks along the front
+            ctx.strokeStyle = `rgba(220, 235, 255, ${0.7 * fade + 0.2})`;
+            ctx.lineWidth = Math.max(2, 3 / z);
+            ctx.beginPath();
+            const n = 72;
+            for (let k = 0; k < n; k++) {
+                const a = (k / n) * TAU + Math.sin(time / 90 + k) * 0.02;
+                const len = w * (0.4 + 0.6 * Math.abs(Math.sin(time / 70 + k * 1.7)));
+                ctx.moveTo(x + Math.cos(a) * (r - len), y + Math.sin(a) * (r - len));
+                ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+            }
+            ctx.stroke();
+            // Echo rings
+            for (const [k, alpha] of [[0.82, 0.35], [0.62, 0.2], [0.42, 0.1]]) {
+                ctx.strokeStyle = `rgba(160, 195, 255, ${alpha * fade})`;
+                ctx.lineWidth = Math.max(2, 5 / z);
+                ctx.beginPath();
+                ctx.arc(x, y, r * k, 0, TAU);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        // A white-blue flash over the whole screen as it fires
+        function drawPulseFlash(w, h) {
+            if (!pulse) return;
+            const age = (performance.now() - pulse.born) / 1000;
+            if (age > 0.35) return;
+            ctx.fillStyle = `rgba(215, 230, 255, ${0.75 * (1 - age / 0.35)})`;
+            ctx.fillRect(0, 0, w, h);
+        }
+        // The screen shakes for a moment
+        function pulseShake(time) {
+            if (!pulse) return [0, 0];
+            const age = (performance.now() - pulse.born) / 1000;
+            if (age > 0.7) return [0, 0];
+            const amp = 22 * (1 - age / 0.7) / view.zoom;
+            return [Math.sin(time * 0.11) * amp, Math.cos(time * 0.13) * amp];
+        }
+        function updatePulseButton() {
+            if (player.type !== OCAMATHRON) return;
+            const wait = pulseReadyAt - performance.now();
+            pulseBtn.classList.toggle('charging', wait > 0);
+            const text = wait > 0 ? `💥 Charging… ${Math.ceil(wait / 1000)}` : '💥 Hyper Pulse';
+            if (pulseBtn.textContent !== text) pulseBtn.textContent = text;
+        }
+
+        // What a free particle is made of, or null if it's just one particle
+        function piecesOfFree(q) {
+            if (q.chem) { // an atom: protons, neutrons and electrons
+                const out = [];
+                const add = (id, n) => { for (let i = 0; i < n; i++) out.push({ type: TYPES.find(t => t.id === id) }); };
+                for (const Z of q.layout.Zs) {
+                    add('proton', Z); add('neutron', Math.max(0, Math.round(ELEMENTS[Z - 1][3]) - Z)); add('electron', Z);
+                }
+                return out;
+            }
+            if (q.type.kind === 'hadron' && q.inner) return q.inner.map(c => ({ type: quarkTypeOf(c.sym, c.anti), color: c.color }));
+            if (q.type.kind === 'nucleus') return ['proton', 'proton', 'neutron', 'neutron'].map(id => ({ type: TYPES.find(t => t.id === id) }));
+            return null;
+        }
+
+        // Break a free particle into its pieces, flung away from the Ocamathron
+        // Break pieces all the way down: protons and neutrons into their quarks
+        function downToSingles(pieces) {
+            const out = [];
+            for (const piece of pieces) {
+                const t = piece.type;
+                if (t.kind === 'hadron' && t.quarks) {
+                    t.quarks.forEach(([sym, anti], i) => out.push({ type: quarkTypeOf(sym, !!anti), color: (anti ? ANTICOLORS : COLORS)[i % 3] }));
+                } else if (t.kind === 'nucleus') {
+                    out.push(...downToSingles(['proton', 'proton', 'neutron', 'neutron'].map(id => ({ type: TYPES.find(x => x.id === id) }))));
+                } else {
+                    out.push(piece);
+                }
+            }
+            return out;
+        }
+
+        // Is any atom of free molecule q inside the circle around oc?
+        function moleculeTouches(q, oc, reach) {
+            const cos = Math.cos(q.rot), sin = Math.sin(q.rot);
+            return q.layout.pos.some((lp, i) => {
+                const x = q.x + lp.x * cos - lp.y * sin, y = q.y + lp.x * sin + lp.y * cos;
+                return Math.hypot(x - oc.x, y - oc.y) - q.layout.R[i] < reach;
+            });
+        }
+
+        // Molecule world: a molecule breaks into its atoms (single atoms stay whole;
+        // their protons and electrons are far too small to see at this size)
+        function tearMolecule(q, oc, speed) {
+            if (!q.chem || q.layout.Zs.length < 2) return false;
+            free.splice(free.indexOf(q), 1);
+            if (selected === q) hideInfo();
+            if (playerOrbit && playerOrbit.target === q) playerOrbit = null;
+            const cos = Math.cos(q.rot), sin = Math.sin(q.rot);
+            q.layout.Zs.slice(0, 40).forEach((Z, i) => {
+                const lp = q.layout.pos[i];
+                const x = q.x + lp.x * cos - lp.y * sin, y = q.y + lp.x * sin + lp.y * cos;
+                const e = makeChemEntity(ELEMENTS[Z - 1][0], x, y);
+                let ux = x - oc.x, uy = y - oc.y;
+                const ul = Math.hypot(ux, uy) || 1;
+                const sp = rand(speed[0], speed[1]);
+                e.vx = ux / ul * sp + rand(-40, 40); e.vy = uy / ul * sp + rand(-40, 40);
+                free.push(e);
+            });
+            return true;
+        }
+
+        function tearFree(q, oc, maxPieces = 24, speed = [180, 340], allTheWay = false) {
+            if (stage === 'molecule') return tearMolecule(q, oc, speed);
+            let pieces = piecesOfFree(q);
+            if (!pieces) return false;
+            if (allTheWay) pieces = downToSingles(pieces);
+            free.splice(free.indexOf(q), 1);
+            if (selected === q) hideInfo();
+            if (playerOrbit && playerOrbit.target === q) playerOrbit = null;
+            let ux = q.x - oc.x, uy = q.y - oc.y;
+            const ul = Math.hypot(ux, uy) || 1;
+            ux /= ul; uy /= ul;
+            // Big atoms have hundreds of pieces: most of them are blown far away
+            // (a random handful, so a big atom still leaves some of each kind)
+            const keep = pieces.length <= maxPieces ? pieces
+                : pieces.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).slice(0, maxPieces).map(x => x[1]);
+            for (const piece of keep) {
+                const e = makeEntity(piece.type, q.x, q.y);
+                if (piece.color) e.color = piece.color;
+                const a = rand(-0.9, 0.9), sp = rand(speed[0], speed[1]);
+                const dx = ux * Math.cos(a) - uy * Math.sin(a), dy = ux * Math.sin(a) + uy * Math.cos(a);
+                e.x = q.x + dx * rand(0, q.r);
+                e.y = q.y + dy * rand(0, q.r);
+                e.vx = dx * sp; e.vy = dy * sp;
+                free.push(e);
+            }
+            return true;
+        }
+
+        // Molecule world: your molecule comes apart into single atoms, and anything
+        // stuck to it comes loose. You keep being one of your atoms.
+        function blastMolecule(oc, ux, uy) {
+            if (cluster.length <= 1 && !stuck.length) return false;
+            const released = stuck.splice(0); // stuck molecules come loose as they are
+            for (const m of cluster) {
+                if (m === player) continue;
+                released.push(makeChemEntity(ELEMENTS[m.Z - 1][0], m.x, m.y));
+            }
+            const before = player.type.name;
+            cluster.length = 1;
+            bonds.length = 0;
+            player.deg = 0;
+            for (const e of released) {
+                let dx = e.x - oc.x, dy = e.y - oc.y;
+                const d = Math.hypot(dx, dy) || 1, sp = rand(200, 360);
+                e.vx = dx / d * sp + rand(-50, 50); e.vy = dy / d * sp + rand(-50, 50);
+                free.push(e);
+            }
+            player.vx = ux * 300; player.vy = uy * 300;
+            refreshMolecule(false);
+            if (selected === player) showInfo(player);
+            showToast('The Ocamathron blasted your molecule apart!', `Its light broke your ${lowerName(before)} into single atoms. Build molecules farther away from it!`);
+            return true;
+        }
+
+        // The Ocamathron's light breaks whatever you're made of into its pieces:
+        // a group comes unstuck, a proton becomes quarks, an atom becomes
+        // protons, neutrons and electrons. Returns false if there's nothing to break.
+        const quarkTypeOf = (sym, anti) => TYPES.find(t => t.id === (anti ? 'anti' : '') + QUARK_BY_SYM[sym].id);
+        function blastApart(oc) {
+            const b = clusterBounds();
+            let ux = b.cx - oc.x, uy = b.cy - oc.y;
+            const ul = Math.hypot(ux, uy) || 1;
+            ux /= ul; uy /= ul;
+            if (stage === 'molecule') return blastMolecule(oc, ux, uy);
+            const released = [];    // entities already in the world (a group coming unstuck)
+            let pieces = [];        // [{ type, color }]: the first one becomes you
+            if (cluster.length > 1) { // anything that was joining you comes unstuck...
+                forming = null;
+                bonds.length = 0;
+                for (const q of cluster) if (q !== player) { q.bonded = false; released.push(q); }
+                cluster.length = 1;
+            }
+            // ...and you break into your own pieces, if you're made of more than one
+            if (player.parts) {
+                pieces = player.parts.slice();
+            } else if (player.type.kind === 'hadron' && player.inner) {
+                pieces = player.inner.map(q => ({ type: quarkTypeOf(q.sym, q.anti), color: q.color }));
+            } else if (player.atom && player.type.kind === 'atom') {
+                const { Z, N, E } = player.atom;
+                if (Z + N === 1 && E === 0) { // a bare proton or neutron
+                    const nucleon = TYPES.find(t => t.id === (Z ? 'proton' : 'neutron'));
+                    pieces = nucleon.quarks.map(([sym], i) => ({ type: quarkTypeOf(sym, false), color: COLORS[i] }));
+                } else {
+                    const add = (id, n) => { for (let i = 0; i < n; i++) pieces.push({ type: TYPES.find(t => t.id === id) }); };
+                    add('proton', Z); add('neutron', N); add('electron', E);
+                }
+            }
+            if (!released.length && !pieces.length) return false; // a single particle: nothing to push apart
+            const before = player.type.name;
+            if (pieces.length) {
+                becomeParticle(pieces[0].type, pieces[0].color, true);
+                // Big atoms have hundreds of pieces: most of them are blown far away
+                for (const piece of pieces.slice(1, 60)) {
+                    const e = makeEntity(piece.type, player.x, player.y);
+                    if (piece.color) e.color = piece.color;
+                    released.push(e);
+                    free.push(e);
+                }
+            }
+            for (const e of released) {
+                if (!free.includes(e)) free.push(e);
+                const a = rand(-0.9, 0.9), sp = rand(260, 420);
+                const dx = ux * Math.cos(a) - uy * Math.sin(a), dy = ux * Math.sin(a) + uy * Math.cos(a);
+                e.x = player.x + dx * (player.r + e.r + rand(10, 60));
+                e.y = player.y + dy * (player.r + e.r + rand(10, 60));
+                e.vx = dx * sp; e.vy = dy * sp;
+            }
+            player.vx = ux * 300; player.vy = uy * 300;
+            updateStats();
+            if (selected === player) showInfo(player);
+            const now = player.type.name;
+            showToast('The Ocamathron blasted you apart!', `Its light pushes grouped particles apart${pieces.length ? `: your ${lowerName(before)} broke into pieces and you're ${aOrAn(now)} ${lowerName(now)} now` : ''}. Build things farther away from it!`);
+            return true;
+        }
+
         // Physics off: a made-up particle takes in whatever it touches
         function growMadeUp(p) {
             const k = free.indexOf(p);
@@ -1137,6 +1533,12 @@
             if (!ensureOffAtom()) return false;
             absorb(p);
             return true;
+        }
+
+        // Names are hidden (only the Ocamathron shows its name) until you click
+        // something; then that thing's name shows. Clicking your molecule counts as you.
+        function nameShown(p) {
+            return !!selected && (p === selected || (p.isPlayer && selected === player));
         }
 
         function drawAtom(p, time) {
@@ -1196,7 +1598,7 @@
             }
             ctx.restore();
 
-            drawLabel(p.type.sym, p.x, p.y + p.r + 12, 14, false, false);
+            if (nameShown(p)) drawLabel(p.type.sym, p.x, p.y + p.r + 12, 14, false, false);
         }
 
         // =====================================================================
@@ -1522,7 +1924,7 @@
             player.mass = player.r * player.r;
 
             // At this scale, subatomic particles are far too small to see
-            for (let k = free.length - 1; k >= 0; k--) if (!free[k].chem) free.splice(k, 1);
+            for (let k = free.length - 1; k >= 0; k--) if (!free[k].chem && !free[k].huge) free.splice(k, 1);
             if (selected && !selected.chem) hideInfo();
 
             // Zoom out so your new molecule looks as big as your atom did,
@@ -1545,6 +1947,8 @@
 
         // Can the player's atom c bond with atom i of free molecule p?
         function canBond(c, p, i) {
+            if (!physicsOn && player.type === OCAMATHRON) return { ok: false }; // nothing bonds to it
+            if (!physicsOn && !mergeOn) return { ok: false };                    // merging turned off: just bump
             if (!physicsOn) { // anything bonds with anything
                 // A quark group snaps into a particle first; it can bond on the next touch
                 if (stage !== 'molecule' && !player.atom) { ensureOffAtom(); return { ok: false }; }
@@ -1718,7 +2122,7 @@
             const pts = L.pos.map(q => ({ x: p.x + q.x * cos - q.y * sin, y: p.y + q.x * sin + q.y * cos }));
             drawBondSticks(pts, L.bonds, L.orders);
             for (let i = 0; i < pts.length; i++) drawAtomBall(L.Zs[i], pts[i].x, pts[i].y);
-            if (L.Zs.length > 1 && !noLabel) {
+            if (L.Zs.length > 1 && !noLabel && nameShown(p)) {
                 const fs = Math.max(14, 11 / view.zoom);
                 drawLabel(p.type.name, p.x, p.y + p.r + fs, fs, false, false);
             }
@@ -2796,7 +3200,13 @@
                     // proton); once you're a particle or atom, touch anything to merge
                     const offGroup = !physicsOn && !player.atom && !player.parts;
                     const offMerge = !physicsOn && !offGroup;
-                    if (offGroup) {
+                    if (p.huge) {
+                        floatText(p, 'The Ocamathron is far too big to merge with!');
+                    } else if (!physicsOn && !mergeOn) {
+                        // Merging is turned off: you just bounce off things
+                    } else if (player.type === OCAMATHRON) {
+                        // You're the Ocamathron: far too big for anything to merge with you
+                    } else if (offGroup) {
                         if (!forming) { joinCluster(p, c); break; }
                     } else if (offMerge) {
                         if (c === player && player.parts) { growMadeUp(p); break; }
@@ -2833,6 +3243,60 @@
                 }
             }
 
+            // Too close to the Ocamathron (free floating, or you!): its light tears
+            // apart everything made of more than one particle
+            if (!physicsOn && (stage === 'particles' || stage === 'molecule')) {
+                const oc = player.type === OCAMATHRON ? player : findOcamathron();
+                if (oc) {
+                    const reach = oc.r * OCAMATHRON_REACH;
+                    // Its light pushes everything in the circle outward: hardest up close,
+                    // gently near the edge (you can still fight your way in)
+                    const pushOut = (e, maxSpeed) => {
+                        const dx = e.x - oc.x, dy = e.y - oc.y;
+                        if (Math.abs(dx) > reach || Math.abs(dy) > reach) return;
+                        const d = Math.hypot(dx, dy) || 0.001;
+                        if (d >= reach) return;
+                        const a = (OCAMATHRON_PUSH * (1 - d / reach) + 60) * dt;
+                        e.vx += dx / d * a; e.vy += dy / d * a;
+                        const sp = Math.hypot(e.vx, e.vy);
+                        if (maxSpeed && sp > maxSpeed) { e.vx *= maxSpeed / sp; e.vy *= maxSpeed / sp; }
+                    };
+                    for (const q of free) if (q !== oc && !q.huge && !q.orbit && !q.falling) pushOut(q, 450);
+                    // You (and anything stuck to you) drift outward, even while standing
+                    // still; steering against it works near the edge but not up close
+                    if (oc !== player && !playerOrbit) {
+                        const dx = player.x - oc.x, dy = player.y - oc.y, d = Math.hypot(dx, dy) || 0.001;
+                        if (d < reach) {
+                            const sp = (400 * (1 - d / reach) + 80) * dt;
+                            for (const q of cluster) { q.x += dx / d * sp; q.y += dy / d * sp; }
+                        }
+                    }
+                    if (oc !== player) {
+                        const b = clusterBounds();
+                        // as soon as any part of you is inside the circle
+                        const inside = cluster.some(m => Math.hypot(m.x - oc.x, m.y - oc.y) - m.r < reach) ||
+                            Math.hypot(b.cx - oc.x, b.cy - oc.y) < reach;
+                        if (inside) blastApart(oc);
+                    }
+                    let torn = 0; // a few per step, so a crowd breaks up smoothly
+                    for (let i = free.length - 1; i >= 0 && torn < 8; i--) {
+                        const q = free[i];
+                        if (q === oc || q.falling) continue;
+                        const dx = q.x - oc.x, dy = q.y - oc.y;
+                        // as soon as any part of it is inside the circle (big molecules too)
+                        const edge = reach + q.r;
+                        if (Math.abs(dx) > edge || Math.abs(dy) > edge || dx * dx + dy * dy >= edge * edge) continue;
+                        if (q.chem && q.layout.Zs.length > 1 && !moleculeTouches(q, oc, reach)) continue;
+                        if (tearFree(q, oc, 24, [180, 340], true)) torn++; // all the way down: nothing whole leaves the circle
+                    }
+                }
+            }
+
+            if (pulse) {
+                if ((stage === 'particles' || stage === 'molecule')) spreadPulse(dt);
+                else pulse = null;
+            }
+
             // A molecule as big as it can get becomes a dust grain
             // (or, with real physics, enough real molecules stuck together)
             if (stage === 'molecule' && (cluster.length >= MAX_MOLECULE_ATOMS || stuck.length >= CLUMP_SIZE ||
@@ -2841,6 +3305,10 @@
             // --- Camera follows the player (the middle of your molecule) ---
             let focus = stage === 'molecule' ? clusterBounds()
                 : stage === 'dust' ? { cx: player.x, cy: player.y, extent: player.r }
+                : player.type === OCAMATHRON
+                // zoomed out to see what your light tears apart; during a Hyper Pulse,
+                // pull way back to watch the shockwave sweep across the map
+                ? { cx: player.x, cy: player.y, extent: Math.max(player.r * 2.5, pulse ? Math.min(pulse.r, pulse.maxR * 0.75) * 0.6 : 0) }
                 : { cx: player.x, cy: player.y, extent: Math.max(player.r, bounds.extent) };
             if (playerOrbit) {
                 // While orbiting, hold the camera on what you're orbiting so
@@ -2974,7 +3442,7 @@
                 }
             }
 
-            drawLabel(p.type.sym, p.x, p.y + p.r + 10, 12, p.type.bar, false);
+            if (nameShown(p)) drawLabel(p.type.sym, p.x, p.y + p.r + 10, 12, p.type.bar, false);
         }
 
         function drawSimple(p, time) {
@@ -2992,7 +3460,7 @@
             drawBall(p.x, p.y, p.r, look);
             if (p.r >= 14) {
                 drawLabel(p.type.sym, p.x, p.y, Math.min(p.r * 0.85, 34), p.type.bar, false);
-            } else {
+            } else if (nameShown(p)) {
                 ctx.globalAlpha = 0.75;
                 drawLabel(p.type.sym, p.x + p.r + 9, p.y - p.r - 4, 10, p.type.bar, false);
                 ctx.globalAlpha = 1;
@@ -3006,11 +3474,47 @@
                 const x = p.x + Math.cos(a) * nr * 0.75, y = p.y + Math.sin(a) * nr * 0.75;
                 drawBall(x, y, nr, i % 2 ? NEUTRON_LOOK : PROTON_LOOK);
             }
-            drawLabel('α', p.x, p.y + p.r + 8, 12, false, false);
+            if (nameShown(p)) drawLabel('α', p.x, p.y + p.r + 8, 12, false, false);
+        }
+
+        function drawOcamathron(p, time) {
+            const { x, y, r } = p, TAU = Math.PI * 2;
+            // Where its light starts pushing groups apart
+            ctx.save();
+            ctx.setLineDash([14 / view.zoom, 12 / view.zoom]);
+            ctx.lineDashOffset = -time / 60 / view.zoom;
+            ctx.strokeStyle = 'rgba(150, 185, 255, 0.22)';
+            ctx.lineWidth = 2 / view.zoom;
+            ctx.beginPath();
+            ctx.arc(x, y, r * OCAMATHRON_REACH, 0, TAU);
+            ctx.stroke();
+            ctx.restore();
+            // Glow, like a star
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            const pulse = 1 + Math.sin(time / 400) * 0.05;
+            const halo = ctx.createRadialGradient(x, y, r * 0.8, x, y, r * 2.8 * pulse);
+            halo.addColorStop(0, p.type.glow + 'aa');
+            halo.addColorStop(1, p.type.glow + '00');
+            ctx.fillStyle = halo;
+            ctx.beginPath();
+            ctx.arc(x, y, r * 2.8 * pulse, 0, TAU);
+            ctx.fill();
+            ctx.restore();
+            const g = ctx.createRadialGradient(x - r * 0.2, y - r * 0.2, r * 0.05, x, y, r);
+            g.addColorStop(0, '#ffffff');
+            g.addColorStop(0.4, p.type.look.light);
+            g.addColorStop(1, p.type.look.base);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, TAU);
+            ctx.fill();
+            drawLabel('Ocamathron', x, y + r + 26, Math.max(18, 13 / view.zoom), false, false);
         }
 
         function drawFree(p, time) {
-            if (p.dust) drawDust(p);
+            if (p.type === OCAMATHRON) drawOcamathron(p, time);
+            else if (p.dust) drawDust(p);
             else if (p.chem) drawMolecule(p);
             else if (p.type.kind === 'nucleus') drawAlpha(p);
             else if (p.type.kind === 'atom') drawAtom(p, time);
@@ -3081,8 +3585,9 @@
             // World view: zoomed around the camera
             const z = camera.zoom;
             const viewW = w / z, viewH = h / z;
-            const camX = camera.x - viewW / 2;
-            const camY = camera.y - viewH / 2;
+            const [shakeX, shakeY] = pulseShake(time);
+            const camX = camera.x - viewW / 2 + shakeX;
+            const camY = camera.y - viewH / 2 + shakeY;
             view.x = camX;
             view.y = camY;
             view.zoom = z;
@@ -3132,8 +3637,9 @@
             // Free particles (only the ones on screen)
             const margin = 90 / z;
             for (const p of free) {
-                if (p.x + p.r + margin < camX || p.x - p.r - margin > camX + viewW ||
-                    p.y + p.r + margin < camY || p.y - p.r - margin > camY + viewH) continue;
+                const pr = p.drawR || p.r; // some things glow far past their edge
+                if (p.x + pr + margin < camX || p.x - pr - margin > camX + viewW ||
+                    p.y + pr + margin < camY || p.y - pr - margin > camY + viewH) continue;
                 drawFree(p, time);
             }
 
@@ -3193,10 +3699,13 @@
             }
 
             if (stage === 'dust') drawSupernova();
+            drawPulse(time);
 
             // Screen-space overlay: pointer to the next useful thing
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             if (stage === 'dust') drawSupernovaFlash(w, h);
+            drawPulseFlash(w, h);
+            updatePulseButton();
             // Goal pointer (yellow "___ this way" arrows) is turned off for now.
             // The code is kept below; uncomment this line to bring it back.
             // drawGoalPointer(w, h, z, time);
@@ -3525,9 +4034,9 @@
                 addFact('Electrons', E);
                 addFact('Mass', `About ${Z + N} atomic mass unit${Z + N === 1 ? '' : 's'}`);
             } else {
-                addFact('Mass', formatMass(t));
+                addFact('Mass', t.massLabel || formatMass(t));
             }
-            addFact('vs. up quark', compareToUp(t));
+            addFact('vs. up quark', t.compareLabel || compareToUp(t));
             addFact('Charge', info.charge);
             if (p.color) addFact('Color charge', p.color.replace('anti', 'anti-'));
             if (t.kind === 'hadron') {
@@ -3836,9 +4345,14 @@
             try { localStorage.setItem(PHYSICS_KEY, physicsOn ? 'on' : 'off'); } catch (err) { /* still works this game */ }
             showPhysicsButton();
             if (stage === 'molecule') refreshMolecule(false);
+            const wasOcamathron = physicsOn && player.type === OCAMATHRON;
+            if (wasOcamathron) becomeParticle(TYPES.find(t => t.id === 'up'), 'red', true);
+            manageOcamathron();
             updateSupernovaButton();
             updateRestartPrompt();
-            if (announce) {
+            if (wasOcamathron) {
+                showToast('Real physics ON', "The Ocamathron can't exist with real physics, so you're an up quark again");
+            } else if (announce) {
                 showToast(physicsOn ? 'Real physics ON' : 'Physics OFF!', physicsOn
                     ? 'Only real, stable molecules and real orbits, following the rules of nature'
                     : "Anything goes! Merge with anything, orbit anything. Tap 🎲 to start as any particle");
@@ -3850,6 +4364,26 @@
             physicsEl.blur(); // so the keyboard keeps steering you
         });
         menuPhysicsEl.addEventListener('click', () => setPhysics(!physicsOn, false));
+
+        // --- Merging on/off (physics off only) ---
+        const mergeEl = document.getElementById('merge-btn');
+        function showMergeButton() {
+            mergeEl.textContent = mergeOn ? '🧲 Merging: ON' : '🧲 Merging: OFF';
+            mergeEl.classList.toggle('off', !mergeOn);
+            mergeEl.title = mergeOn
+                ? 'You merge with particles, atoms and molecules you touch. Tap to just bounce off them instead'
+                : "You bounce off everything instead of merging. Tap to merge again";
+        }
+        showMergeButton();
+        mergeEl.addEventListener('click', () => {
+            mergeOn = !mergeOn;
+            try { localStorage.setItem(MERGE_KEY, mergeOn ? 'on' : 'off'); } catch (err) { /* still works this game */ }
+            showMergeButton();
+            mergeEl.blur(); // so the keyboard keeps steering you
+            showToast(mergeOn ? 'Merging ON' : 'Merging OFF', mergeOn
+                ? 'Touch particles, atoms and molecules to merge with them'
+                : "You'll bounce off particles, atoms and molecules instead of merging");
+        });
 
         // --- Main menu, and the particle picker (physics off only) ---
         const menuEl = document.getElementById('menu');
@@ -3892,14 +4426,14 @@
         });
 
         // Turn the player (still at the very start) into any particle
-        function becomeParticle(type) {
+        function becomeParticle(type, color, quiet) {
             const fresh = makeEntity(type, player.x, player.y);
             for (const k of ['color', 'inner', 'spin', 'spinSpeed', 'atom', 'parts']) delete player[k];
             player.type = type;
             player.r = type.radius;
             player.mass = player.r * player.r;
             player.vx = player.vy = 0;
-            if (fresh.color) player.color = fresh.color;
+            if (fresh.color) player.color = color || fresh.color;
             if (fresh.inner) player.inner = fresh.inner;
             if (fresh.spin !== undefined) { player.spin = 0; player.spinSpeed = 0.4; }
             if (type.id === 'proton') player.atom = { Z: 1, N: 0, E: 0 };
@@ -3907,7 +4441,11 @@
             if (type.id === 'alpha') { player.atom = { Z: 2, N: 2, E: 0 }; refreshAtom(); }
             updateStats();
             if (selected === player) showInfo(player);
-            showToast(`You're ${aOrAn(type.name)} ${type.name.toLowerCase()}!`, 'Physics is off: touch anything to merge with it');
+            document.body.classList.toggle('is-ocamathron', type === OCAMATHRON);
+            if (type === OCAMATHRON) manageOcamathron(); // there can only be one
+            if (!quiet) showToast(`You're ${aOrAn(type.name)} ${type === OCAMATHRON ? type.name : type.name.toLowerCase()}!`, type === OCAMATHRON
+                ? 'Your light tears apart anything that comes close. Press Space or tap 💥 Hyper Pulse to blast the whole map!'
+                : 'Physics is off: touch anything to merge with it');
         }
 
         function pickParticle(type) {
@@ -3930,6 +4468,7 @@
                 ['Force carriers (bosons)', t => t.kind === 'boson'],
                 ['Made of quarks (hadrons)', t => t.kind === 'hadron'],
                 ['Atomic nucleus', t => t.kind === 'nucleus'],
+                ['Mystery particle', t => t === OCAMATHRON],
             ];
             const ball = (look) => `radial-gradient(circle at 35% 30%, ${look.light}, ${look.base} 50%, ${look.dark})`;
             for (const [title, match] of groups) {
@@ -3937,7 +4476,7 @@
                 h.textContent = title;
                 const grid = document.createElement('div');
                 grid.className = 'pick-grid';
-                for (const t of TYPES.filter(match)) {
+                for (const t of [...TYPES, OCAMATHRON].filter(match)) {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'pick';
@@ -3947,6 +4486,7 @@
                         : t.kind === 'antiquark' ? ball(COLOR_CHARGE.antired)
                         : t.kind === 'hadron' ? 'radial-gradient(circle at 35% 30%, #d0d0d8, #8a8a98)'
                         : t.kind === 'nucleus' ? ball(PROTON_LOOK) : ball(t.look);
+                    if (t === OCAMATHRON) sw.style.boxShadow = `0 0 12px ${t.glow}`; // it glows
                     sw.textContent = t.sym;
                     if (t.bar) sw.style.textDecoration = 'overline';
                     const name = document.createElement('span');
@@ -3963,7 +4503,7 @@
         const startParams = new URLSearchParams(location.search);
         const startAs = startParams.get('as');
         if (startAs) history.replaceState(null, '', location.pathname); // so Start over shows the menu again
-        const startType = startAs && TYPES.find(t => t.id === startAs);
+        const startType = startAs && [...TYPES, OCAMATHRON].find(t => t.id === startAs);
         if (startType && !physicsOn) becomeParticle(startType);
         else if (!startParams.has('dust')) openMenu();
 
