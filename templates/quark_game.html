@@ -94,6 +94,107 @@
         #physics:hover { background: rgba(0, 70, 35, 0.75); }
         #physics.off { border-color: #ff6ad5; background: rgba(60, 0, 50, 0.65); color: #ff9ae4; }
         #physics.off:hover { background: rgba(90, 0, 75, 0.8); }
+        #pick-btn { display: none; border: 1px solid #ff6ad5; background: rgba(60, 0, 50, 0.65); color: #ff9ae4; }
+        #pick-btn:hover { background: rgba(90, 0, 75, 0.8); }
+        body.physics-off #pick-btn { display: block; }
+        body.menu-open #corner, body.menu-open #stats, body.menu-open #hint, body.menu-open #touch-controls { visibility: hidden; }
+
+        /* Main menu and particle picker */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            display: none;
+            padding: 16px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            background: rgba(3, 4, 12, 0.9);
+            color: #e6e8ff;
+            font-family: system-ui, sans-serif;
+        }
+        .overlay.open { display: flex; }
+        #picker { z-index: 21; background: rgba(3, 4, 12, 0.98); }
+        .overlay-card { margin: auto; text-align: center; width: 100%; }
+        #menu .overlay-card { max-width: 460px; }
+        #picker .overlay-card { max-width: 920px; position: relative; }
+        #menu h1 {
+            margin: 0 0 6px;
+            font: 800 clamp(40px, 9vw, 68px) system-ui, sans-serif;
+            color: #fff;
+            text-shadow: 0 0 26px rgba(255, 214, 74, 0.55);
+        }
+        #menu .tagline { margin: 0 0 30px; color: rgba(230, 232, 255, 0.7); font-size: 17px; }
+        #menu-physics {
+            padding: 12px 22px;
+            border-radius: 999px;
+            font: 700 18px system-ui, sans-serif;
+            cursor: pointer;
+            border: 2px solid rgba(120, 230, 160, 0.7);
+            background: rgba(0, 40, 20, 0.7);
+            color: #9ef0b8;
+        }
+        #menu-physics.off { border-color: #ff6ad5; background: rgba(60, 0, 50, 0.7); color: #ff9ae4; }
+        #menu-physics-note { min-height: 3em; margin: 10px auto 26px; max-width: 360px; font-size: 14px; color: rgba(230, 232, 255, 0.65); }
+        #play {
+            padding: 14px 56px;
+            border: none;
+            border-radius: 999px;
+            font: 800 24px system-ui, sans-serif;
+            background: #ffd64a;
+            color: #2a1f00;
+            cursor: pointer;
+            box-shadow: 0 0 24px rgba(255, 214, 74, 0.45);
+        }
+        #play:hover { background: #ffe27a; }
+        #picker h2 { margin: 4px 0 4px; padding: 0 36px; font: 800 28px system-ui, sans-serif; color: #fff; }
+        #picker .sub { margin: 0 0 18px; color: rgba(230, 232, 255, 0.65); }
+        #picker h3 {
+            margin: 18px 0 8px;
+            text-align: left;
+            font: 700 12px system-ui, sans-serif;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(200, 210, 255, 0.6);
+        }
+        .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+        .pick {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(140, 160, 255, 0.25);
+            background: rgba(20, 24, 48, 0.85);
+            color: #fff;
+            font: 14px system-ui, sans-serif;
+            text-align: left;
+            cursor: pointer;
+        }
+        .pick:hover { border-color: #ffd64a; background: rgba(40, 40, 70, 0.95); }
+        .pick .sw {
+            flex: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font: italic bold 14px Georgia, serif;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        #picker-close {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 30px;
+            line-height: 1;
+            cursor: pointer;
+        }
+        #picker-close:hover { color: #fff; }
         #restart:hover { background: rgba(80, 60, 0, 0.7); }
         #restart.stuck { animation: restart-pulse 1.6s ease-in-out infinite; color: #ffd64a; border-color: #ffd64a; }
         #restart.armed { background: #ffd64a; color: #2a1f00; animation: none; }
@@ -153,6 +254,10 @@
         #hint { bottom: 16px; }
         #stats { top: 16px; font-size: 16px; color: rgba(255, 255, 255, 0.8); max-width: calc(100vw - 260px); }
         body.touch #hint { max-width: calc(100vw - 260px); }
+        /* Narrow screens: the corner buttons wrap, so the stats line goes below them */
+        @media (max-width: 640px) {
+            #stats { top: 100px; max-width: calc(100vw - 32px); }
+        }
 
         #info {
             position: fixed;
@@ -228,10 +333,11 @@
 <body>
     <canvas id="game"></canvas>
     <div id="stats" class="hud"></div>
-    <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click to orbit (lighter things orbit you, you orbit heavier things) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &rarr; dust &rarr; planets &rarr; star &middot; click anything to learn about it</div>
+    <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click to orbit (with real physics only opposite charges, or gravity, hold things in orbit) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &rarr; dust &rarr; planets &rarr; star &middot; click anything to learn about it</div>
     <div id="toast"><b></b><span></span></div>
     <div id="corner">
         <button id="physics" type="button">&#9883; Real physics: ON</button>
+        <button id="pick-btn" type="button" title="Start over as any particle you like">&#127922; Pick a particle</button>
         <button id="supernova" type="button" title="You're over 100 Suns: explode and become a black hole">&#128165; Go supernova</button>
         <button id="restart" type="button" title="Start over as a quark (R)">&#8634; Start over</button>
         <button id="dev-btn" type="button" title="Dev test powers (local only)">DEV</button>
@@ -252,6 +358,23 @@
         <!-- RUN button turned off for now:
         <button id="run-btn" type="button" aria-label="Run">RUN</button>
         -->
+    </div>
+    <div id="menu" class="overlay">
+        <div class="overlay-card">
+            <h1>Matter Eater</h1>
+            <p class="tagline">Start as a quark. End as a black hole.</p>
+            <button id="menu-physics" type="button">&#9883; Real physics: ON</button>
+            <p id="menu-physics-note"></p>
+            <button id="play" type="button">Play</button>
+        </div>
+    </div>
+    <div id="picker" class="overlay">
+        <div class="overlay-card">
+            <button id="picker-close" type="button" aria-label="Close">&times;</button>
+            <h2 id="picker-title">Pick a particle to play as</h2>
+            <p class="sub">Physics is off, so you can start as anything!</p>
+            <div id="picker-list"></div>
+        </div>
     </div>
     <div id="info">
         <div id="info-head">
@@ -570,9 +693,8 @@
             if (i >= 0) free.splice(i, 1);
             updateStats();
             if (selected === q) showInfo(q);
-            // Physics off: any 3 quarks, or any quark + antiquark, snap together
-            const qCount = cluster.filter(m => m.type.kind === 'quark').length;
-            const offDone = !physicsOn && (cluster.length >= 3 || (qCount && qCount < cluster.length));
+            // Physics off: any 3 particles snap together, like the 3 quarks in a proton
+            const offDone = !physicsOn && cluster.length >= 3;
             if (isColorNeutral(cluster) || offDone) forming = { timer: 0.8 };
         }
 
@@ -599,8 +721,8 @@
         // Can quark q join the player's group? Returns a reason when it can't.
         function canJoin(q) {
             if (forming) return { ok: false };
-            if (!physicsOn) return { ok: player.type.kind === 'quark' };
-            if (player.type.kind !== 'quark') {
+            if (!physicsOn) return { ok: isQuarkKind(player.type) };
+            if (!isQuarkKind(player.type)) {
                 const what = player.type.kind === 'atom' ? player.type.elementName : player.type.name;
                 return { ok: false, reason: `You're ${what.toLowerCase()} now, quarks can't join` };
             }
@@ -611,6 +733,14 @@
             const qs = group.filter(p => p.type.kind === 'quark');
             const as = group.filter(p => p.type.kind === 'antiquark');
 
+            if (qs.length === 0) { // all antiquarks: an antibaryon needs anti-red, anti-green and anti-blue
+                const have = as.slice(0, -1).map(p => p.color);
+                if (have.includes(q.color)) {
+                    const need = ANTICOLORS.filter(c => !have.includes(c)).map(colorName).join(' or ');
+                    return { ok: false, reason: `Already have ${colorName(q.color)} — need ${need}` };
+                }
+                return { ok: true };
+            }
             if (as.length === 0) {
                 const have = qs.slice(0, -1).map(p => p.color);
                 if (have.includes(q.color)) {
@@ -678,7 +808,52 @@
             return c > 0 ? '+' + c : c < 0 ? '−' + -c : '0';
         }
 
+        // Physics off: a made-up particle from any 2 or 3 particles stuck together
+        // "Electron" -> "electron", but names like "Higgs boson" and "W⁺ boson" stay as they are
+        const lowerName = (n) => /^[A-Z][a-z]/.test(n) && !n.startsWith('Higgs') ? n[0].toLowerCase() + n.slice(1) : n;
+        // Physics off: a made-up particle from any particles stuck together.
+        // parts: [{ type, color }], one for each particle inside
+        const GROUP_NAMES = { 2: 'pair', 3: 'trio', 4: 'quartet', 5: 'quintet', 6: 'sextet' };
+        const NUMBER_WORDS = { 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six' };
+        function mixedTypeFor(parts) {
+            const n = parts.length;
+            const types = parts.map(q => q.type);
+            const same = types.every(t => t.id === types[0].id);
+            const groupName = GROUP_NAMES[n] || `${n}-particle blob`;
+            const charge3 = Math.round(types.reduce((s, t) => s + chargeOfType(t), 0) * 3);
+            const mass = types.reduce((s, t) => s + (t.mass || 0), 0);
+            const GRAY = flat('#a8a8b4', '#e0e0e8', '#55555f');
+            const lookOf = (t) => t.look || (t.kind === 'nucleus' ? PROTON_LOOK : GRAY);
+            // How many of each: "three Higgs bosons and a photon"
+            const counts = new Map();
+            for (const t of types) counts.set(t, (counts.get(t) || 0) + 1);
+            const byId = new Map();
+            for (const [t, k] of counts) { const e = byId.get(t.id); if (e) e.k += k; else byId.set(t.id, { t, k }); }
+            const entries = [...byId.values()];
+            const phrase = entries.map(({ t, k }) => k === 1 ? `${aOrAn(t.name)} ${lowerName(t.name)}` : `${NUMBER_WORDS[k] || k} ${lowerName(t.name)}s`);
+            const listText = phrase.length === 1 ? phrase[0] : phrase.slice(0, -1).join(', ') + ' and ' + phrase[phrase.length - 1];
+            const type = {
+                id: 'custom',
+                kind: 'hadron',
+                kindLabel: 'Made-up particle (physics off)',
+                name: same ? `${types[0].name} ${groupName}` : `Mixed ${groupName}`,
+                sym: n <= 4 ? types.map(t => t.sym).join('') : types.slice(0, 3).map(t => t.sym).join('') + '…',
+                mass,
+                madeOf: entries.map(({ t, k }) => (k > 1 ? `${k} × ` : '') + t.name).join(' + '),
+                inner: parts.map(q => isQuarkKind(q.type)
+                    ? { sym: q.type.sym, anti: !!q.type.bar, color: q.color }
+                    : { sym: q.type.sym, anti: !!q.type.bar, look: lookOf(q.type), name: q.type.name }),
+                info: {
+                    charge: formatCharge3(charge3),
+                    desc: `With physics off, ${listText} stuck together, just like the quarks in a proton. Nothing like this exists in the real universe!`,
+                },
+            };
+            type.radius = Math.max(16, radiusForMass(mass), 9 * Math.sqrt(n));
+            return type;
+        }
+
         function hadronTypeFor(group) {
+            if (group.some(p => !isQuarkKind(p.type))) return mixedTypeFor(group.map(p => ({ type: p.type, color: p.color })));
             const qs = group.filter(p => p.type.kind === 'quark').map(p => p.type.sym);
             const as = group.filter(p => p.type.kind === 'antiquark').map(p => p.type.sym);
             const sortQ = (list) => [...list].sort((a, b) => QUARK_ORDER.indexOf(a) - QUARK_ORDER.indexOf(b)).join('');
@@ -718,12 +893,13 @@
         function formHadron() {
             forming = null;
             const type = hadronTypeFor(cluster);
+            const parts = cluster.map(q => ({ type: q.type, color: q.color }));
             const cx = cluster.reduce((s, q) => s + q.x, 0) / cluster.length;
             const cy = cluster.reduce((s, q) => s + q.y, 0) / cluster.length;
 
             if (selected && selected !== player && cluster.includes(selected)) selected = player;
 
-            player.inner = cluster.map(q => ({ sym: q.type.sym, anti: !!q.type.bar, color: q.color }));
+            player.inner = type.inner || cluster.map(q => ({ sym: q.type.sym, anti: !!q.type.bar, color: q.color }));
             player.type = type;
             player.r = type.radius;
             player.mass = type.radius * type.radius;
@@ -745,8 +921,10 @@
                 player.atom = { Z: 0, N: 1, E: 0 };
                 showToast('You made a Neutron!', 'Touch a proton to start building an atomic nucleus');
             } else if (!physicsOn) {
-                player.atom = { Z: 1, N: 0, E: 0 };
-                showToast(`You made ${aOrAn(type.name)} ${type.name}!`, 'Physics is off, so it can build atoms like a proton. Touch anything to merge with it!');
+                // Not a proton or neutron: it stays its own made-up particle and
+                // grows by taking in whatever it touches
+                player.parts = parts;
+                showToast(`You made ${aOrAn(type.name)} ${type.name}!`, 'Physics is off: touch anything to pull it inside your particle');
             } else {
                 showToast(`You made ${aOrAn(type.name)} ${type.name}!`, 'Only protons and neutrons can build atoms. Press R to try again');
             }
@@ -923,12 +1101,36 @@
             }
         }
 
+        // Physics off: a made-up particle takes in whatever it touches
+        function growMadeUp(p) {
+            const k = free.indexOf(p);
+            if (k >= 0) free.splice(k, 1);
+            if (selected === p) hideInfo();
+            player.parts.push({ type: p.type, color: p.color });
+            const type = mixedTypeFor(player.parts);
+            player.type = type;
+            player.inner = type.inner;
+            player.r = type.radius;
+            player.mass = player.r * player.r;
+            floaters.push({ x: player.x, y: player.y - player.r - 12, text: '+ ' + lowerName(p.type.name), born: performance.now() });
+            updateStats();
+            if (selected === player) showInfo(player);
+        }
+
+        // Physics off: what a particle you picked starts out as when it merges
+        function offAtomFor(type) {
+            if (type.id === 'proton') return { Z: 1, N: 0, E: 0 };
+            if (type.id === 'neutron') return { Z: 0, N: 1, E: 0 };
+            if (type.id === 'electron') return { Z: 0, N: 0, E: 1 };
+            if (type.kind === 'hadron') return { Z: 1, N: 0, E: 0 };
+            return { Z: 0, N: 0, E: 0, extra: type.mass || 0 };
+        }
         // Physics off: whatever you are, you can start merging with things
         function ensureOffAtom() {
             if (player.atom) return true;
             if (forming) return false;
-            if (player.type.kind === 'quark') formHadron();
-            else player.atom = { Z: 1, N: 0, E: 0 };
+            if (isQuarkKind(player.type) || cluster.length > 1) formHadron();
+            else player.atom = offAtomFor(player.type);
             return !!player.atom;
         }
         function absorbAnything(p) {
@@ -2248,9 +2450,17 @@
                 statsEl.textContent = `You are ${player.type.name}  (${Z} proton${Z === 1 ? '' : 's'}, ${N} neutron${N === 1 ? '' : 's'}, ${E} electron${E === 1 ? '' : 's'})`;
                 return;
             }
+            if (cluster.length > 1 && cluster.some(q => !isQuarkKind(q.type))) {
+                statsEl.textContent = `Particles bound: ${cluster.map(q => (q.type.bar ? 'anti-' : '') + q.type.sym).join(', ')}  ·  ${3 - cluster.length} more to make a particle`;
+                return;
+            }
             if (player.type.kind === 'hadron') {
-                const made = player.inner.map(q => (q.anti ? 'anti-' : '') + q.sym).join(' ');
+                const made = player.type.madeOf || player.inner.map(q => (q.anti ? 'anti-' : '') + q.sym).join(' ');
                 statsEl.textContent = `You are a ${player.type.name}  (${made})`;
+                return;
+            }
+            if (!isQuarkKind(player.type)) {
+                statsEl.textContent = `You are ${aOrAn(player.type.name)} ${player.type.name}`;
                 return;
             }
             const names = cluster.map(q => `${q.type.bar ? 'anti-' : ''}${q.type.sym} (${colorName(q.color)})`).join(', ');
@@ -2582,10 +2792,14 @@
                     const d = Math.hypot(dx, dy) || 0.001;
                     if (d >= reach) continue;
 
-                    // Physics off: touch anything and you merge with it
-                    // (quarks still gather into a group first while you're a quark)
-                    const offMerge = !physicsOn && !(isQuarkKind(p.type) && player.type.kind === 'quark');
-                    if (offMerge) {
+                    // Physics off: anything joins your group (3 make a particle, like a
+                    // proton); once you're a particle or atom, touch anything to merge
+                    const offGroup = !physicsOn && !player.atom && !player.parts;
+                    const offMerge = !physicsOn && !offGroup;
+                    if (offGroup) {
+                        if (!forming) { joinCluster(p, c); break; }
+                    } else if (offMerge) {
+                        if (c === player && player.parts) { growMadeUp(p); break; }
                         if (c === player && absorbAnything(p)) break;
                     } else if (isQuarkKind(p.type)) {
                         const check = canJoin(p);
@@ -2739,18 +2953,26 @@
             ctx.stroke();
 
             const n = p.inner.length;
-            const qr = p.r * (n === 3 ? 0.3 : 0.34);
-            const dist = p.r * (n === 3 ? 0.5 : 0.48);
+            const dist = p.r * (n === 3 ? 0.5 : n > 3 ? 0.58 : 0.48);
+            const qr = n > 3 ? Math.min(p.r * 0.3, dist * Math.sin(Math.PI / n) * 0.95) : p.r * (n === 3 ? 0.3 : 0.34);
             const pts = p.inner.map((q, i) => {
                 const a = p.spin + (i / n) * Math.PI * 2 - Math.PI / 2;
                 return { x: p.x + Math.cos(a) * dist, y: p.y + Math.sin(a) * dist, q };
             });
             for (let i = 0; i < n; i++) {
                 for (let j = i + 1; j < n; j++) {
+                    if (n > 3 && j !== i + 1 && !(i === 0 && j === n - 1)) continue; // big groups: just neighbors
                     drawGluon(pts[i].x, pts[i].y, qr, pts[j].x, pts[j].y, qr, time, Math.max(1, qr * 0.18));
                 }
             }
-            for (const pt of pts) drawQuark(pt.x, pt.y, qr, pt.q.color, pt.q.sym, pt.q.anti);
+            for (const pt of pts) {
+                if (pt.q.look) { // physics off: any particle can be inside
+                    drawBall(pt.x, pt.y, qr, pt.q.look);
+                    if (qr >= 5) drawLabel(pt.q.sym, pt.x, pt.y, Math.min(qr * 0.9, 30), pt.q.anti, false);
+                } else {
+                    drawQuark(pt.x, pt.y, qr, pt.q.color, pt.q.sym, pt.q.anti);
+                }
+            }
 
             drawLabel(p.type.sym, p.x, p.y + p.r + 10, 12, p.type.bar, false);
         }
@@ -3092,6 +3314,10 @@
         // --- Dead ends: show a big "press R" prompt while you're stuck ---
         const restartEl = document.getElementById('restart');
         function deadEndReason() {
+            if (physicsOn && stage === 'particles' && !player.atom && !isQuarkKind(player.type) && player.type.kind !== 'hadron') {
+                const n = player.type.name;
+                return `${aOrAn(n).replace(/^a/, 'A')} ${n.toLowerCase()} can't build atoms with real physics`;
+            }
             if (player.type.kind === 'hadron' && !player.atom && physicsOn) {
                 return `${aOrAn(player.type.name).replace(/^a/, 'A')} ${player.type.name} can't build atoms`;
             }
@@ -3305,7 +3531,8 @@
             addFact('Charge', info.charge);
             if (p.color) addFact('Color charge', p.color.replace('anti', 'anti-'));
             if (t.kind === 'hadron') {
-                addFact('Made of', p.inner.map(q => (q.anti ? 'anti-' : '') + QUARK_BY_SYM[q.sym].name.toLowerCase()).join(' + '));
+                addFact('Made of', t.madeOf || p.inner.map(q => q.name ? lowerName(q.name)
+                    : (q.anti ? 'anti-' : '') + QUARK_BY_SYM[q.sym].name.toLowerCase()).join(' + '));
             }
             if (t.kind === 'nucleus') addFact('Made of', '2 protons + 2 neutrons');
             if (p.bonded && !p.isPlayer && !p.chem) addFact('Status', 'Bound to you by gluons');
@@ -3332,7 +3559,7 @@
         // =====================================================================
         function yourMass() { // in MeV/c², the same units particles use (kg for space dust)
             if (stage === 'dust') return dustMassKg(player);
-            if (player.type.kind === 'quark') return cluster.reduce((s, q) => s + q.type.mass, 0);
+            if (stage === 'particles' && (isQuarkKind(player.type) || cluster.length > 1)) return cluster.reduce((s, q) => s + q.type.mass, 0);
             return player.type.mass;
         }
 
@@ -3480,6 +3707,45 @@
             ctx.restore();
         }
 
+        // --- Real physics: which orbits can really happen? ---
+        // Down at particle size gravity is far too weak to matter. The only
+        // thing that holds a tiny particle in orbit is the electric force:
+        // opposite charges attract, like an electron around a nucleus.
+        // (Muons and even antiprotons can stand in for electrons. Real!)
+        const SHORT_LIVED = new Set(['wplus', 'wminus', 'z', 'higgs', 'tau', 'antitau', 'pionzero', 'top', 'antitop']);
+        function chargeOfType(t) {
+            const info = t.info || INFO[t.id];
+            if (!info) return 0;
+            const [n, d] = info.charge.replace('−', '-').split('/');
+            return Number(n) / (d ? Number(d) : 1);
+        }
+        function chargeOf(p) {
+            if (p.chem || p.dust) return 0;
+            if (p.isPlayer && player.atom && player.type.kind === 'atom') return player.atom.Z - player.atom.E;
+            return chargeOfType(p.type);
+        }
+        function cantOrbitBecause(p, isYou) {
+            const t = p.type, who = isYou ? 'You' : `The ${t.name.toLowerCase()}`;
+            if (isQuarkKind(t) || (isYou && cluster.length > 1)) return 'Quarks are trapped inside particles by the strong force, so they can\'t orbit anything';
+            if (t.id === 'photon' || t.id === 'gluon') return `${who} ${isYou ? 'zoom' : 'zooms'} at the speed of light, nothing can hold it in orbit`;
+            if (t.neutrino) return 'Neutrinos barely feel any force, so nothing can hold them in orbit';
+            if (SHORT_LIVED.has(t.id)) return `${who} would decay before finishing even one orbit`;
+            return null;
+        }
+        // Returns why this orbit can't happen in real life, or null if it can
+        function realOrbitProblem(p) {
+            if (stage === 'dust') return null; // gravity: lighter things orbit heavier ones
+            const why = cantOrbitBecause(player, true) || cantOrbitBecause(p, false);
+            if (why) return why;
+            const mine = chargeOf(player), theirs = chargeOf(p);
+            if (!mine || !theirs) {
+                return mine ? `The ${p.type.name.toLowerCase()} has no electric charge, so nothing holds it in orbit`
+                            : 'You have no electric charge, and at this size only opposite charges hold things in orbit';
+            }
+            if (mine * theirs > 0) return `You're both ${mine > 0 ? 'positive' : 'negative'}, so you push each other away`;
+            return null;
+        }
+
         // Right-click / long-press: make something orbit you, or orbit it yourself
         function orbitActionAt(clientX, clientY) {
             const p = particleAt(...toWorld({ clientX, clientY }));
@@ -3512,10 +3778,16 @@
                 floatText(p, `The ${name} is orbiting you! Right-click again to orbit it instead`);
                 return;
             }
+            p.msgUntil = 0;
+            const problem = realOrbitProblem(p);
+            if (problem) { floatText(p, problem); return; }
             const mine = yourMass();
             const theirs = p.dust ? dustMassKg(p) : p.type.mass;
-            p.msgUntil = 0;
-            if (theirs < mine) {
+            if (theirs === mine && stage !== 'dust') {
+                // e.g. an electron and a positron: they circle each other (positronium)
+                startOrbit(p);
+                floatText(p, 'Same mass, so you circle each other, like positronium!');
+            } else if (theirs < mine) {
                 startOrbit(p);
                 floatText(p, `The ${name} is orbiting you!`);
             } else if (theirs > mine) {
@@ -3534,7 +3806,7 @@
             if (e.key === 'Escape') {
                 hideInfo();
             }
-            if (e.key.toLowerCase() === 'r' && player.type.kind !== 'quark') location.reload();
+            if (e.key.toLowerCase() === 'r' && !isQuarkKind(player.type) && !isPaused()) location.reload();
         });
         // =====================================================================
         // Loop (fixed physics steps so the gluon springs stay stable)
@@ -3542,28 +3814,158 @@
         // Testing shortcut: open the page with ?dust to start as a dust grain
         if (new URLSearchParams(location.search).has('dust')) enterDustStage();
 
-        // --- Real physics on/off ---
+        // --- Real physics on/off (in the corner while playing, and on the main menu) ---
         const physicsEl = document.getElementById('physics');
+        const menuPhysicsEl = document.getElementById('menu-physics');
         function showPhysicsButton() {
-            physicsEl.textContent = physicsOn ? '⚛ Real physics: ON' : '✨ Physics: OFF';
-            physicsEl.classList.toggle('off', !physicsOn);
+            const label = physicsOn ? '⚛ Real physics: ON' : '✨ Physics: OFF';
+            for (const el of [physicsEl, menuPhysicsEl]) {
+                el.textContent = label;
+                el.classList.toggle('off', !physicsOn);
+            }
             physicsEl.title = physicsOn
                 ? 'Real physics is on: only real, stable things can form. Tap to turn it off'
                 : 'Physics is off: merge with anything, orbit anything. Tap to turn real physics back on';
+            document.getElementById('menu-physics-note').textContent = physicsOn
+                ? 'Everything follows the rules of nature: only real molecules form, and only real orbits happen.'
+                : 'Anything goes! Start as any particle, merge with anything, orbit anything.';
+            document.body.classList.toggle('physics-off', !physicsOn);
         }
-        showPhysicsButton();
-        physicsEl.addEventListener('click', () => {
-            physicsOn = !physicsOn;
+        function setPhysics(on, announce) {
+            physicsOn = on;
             try { localStorage.setItem(PHYSICS_KEY, physicsOn ? 'on' : 'off'); } catch (err) { /* still works this game */ }
             showPhysicsButton();
-            physicsEl.blur(); // so the keyboard keeps steering you
             if (stage === 'molecule') refreshMolecule(false);
             updateSupernovaButton();
             updateRestartPrompt();
-            showToast(physicsOn ? 'Real physics ON' : 'Physics OFF!', physicsOn
-                ? 'Only real, stable molecules can form, and everything follows the rules of nature'
-                : "Anything goes! Merge with anything, orbit anything. (The real universe doesn't work like this!)");
+            if (announce) {
+                showToast(physicsOn ? 'Real physics ON' : 'Physics OFF!', physicsOn
+                    ? 'Only real, stable molecules and real orbits, following the rules of nature'
+                    : "Anything goes! Merge with anything, orbit anything. Tap 🎲 to start as any particle");
+            }
+        }
+        showPhysicsButton();
+        physicsEl.addEventListener('click', () => {
+            setPhysics(!physicsOn, true);
+            physicsEl.blur(); // so the keyboard keeps steering you
         });
+        menuPhysicsEl.addEventListener('click', () => setPhysics(!physicsOn, false));
+
+        // --- Main menu, and the particle picker (physics off only) ---
+        const menuEl = document.getElementById('menu');
+        const pickerEl = document.getElementById('picker');
+        let pickerMidGame = false;
+        const isPaused = () => menuEl.classList.contains('open') || pickerEl.classList.contains('open');
+
+        function openMenu() {
+            menuEl.classList.add('open');
+            document.body.classList.add('menu-open');
+        }
+        function closeOverlays() {
+            menuEl.classList.remove('open');
+            pickerEl.classList.remove('open');
+            document.body.classList.remove('menu-open');
+        }
+        function openPicker(midGame) {
+            pickerMidGame = midGame;
+            document.getElementById('picker-title').textContent = midGame ? 'Start over as…' : 'Pick a particle to play as';
+            pickerEl.classList.add('open');
+            pickerEl.scrollTop = 0;
+            document.body.classList.add('menu-open');
+        }
+        document.getElementById('play').addEventListener('click', () => {
+            if (physicsOn) closeOverlays(); // real physics: everyone starts as an up quark
+            else openPicker(false);
+        });
+        document.getElementById('picker-close').addEventListener('click', () => {
+            pickerEl.classList.remove('open');
+            if (!menuEl.classList.contains('open')) document.body.classList.remove('menu-open');
+        });
+        document.getElementById('pick-btn').addEventListener('click', (e) => {
+            e.currentTarget.blur();
+            openPicker(true);
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && menuEl.classList.contains('open') && !pickerEl.classList.contains('open')) {
+                document.getElementById('play').click();
+            }
+        });
+
+        // Turn the player (still at the very start) into any particle
+        function becomeParticle(type) {
+            const fresh = makeEntity(type, player.x, player.y);
+            for (const k of ['color', 'inner', 'spin', 'spinSpeed', 'atom', 'parts']) delete player[k];
+            player.type = type;
+            player.r = type.radius;
+            player.mass = player.r * player.r;
+            player.vx = player.vy = 0;
+            if (fresh.color) player.color = fresh.color;
+            if (fresh.inner) player.inner = fresh.inner;
+            if (fresh.spin !== undefined) { player.spin = 0; player.spinSpeed = 0.4; }
+            if (type.id === 'proton') player.atom = { Z: 1, N: 0, E: 0 };
+            if (type.id === 'neutron') player.atom = { Z: 0, N: 1, E: 0 };
+            if (type.id === 'alpha') { player.atom = { Z: 2, N: 2, E: 0 }; refreshAtom(); }
+            updateStats();
+            if (selected === player) showInfo(player);
+            showToast(`You're ${aOrAn(type.name)} ${type.name.toLowerCase()}!`, 'Physics is off: touch anything to merge with it');
+        }
+
+        function pickParticle(type) {
+            if (pickerMidGame) {
+                // Start a fresh game as this particle (physics stays off: it's saved)
+                location.replace(location.pathname + '?as=' + encodeURIComponent(type.id));
+                return;
+            }
+            closeOverlays();
+            becomeParticle(type);
+        }
+
+        // Build the picker: every subatomic particle in the game
+        (function buildPicker() {
+            const list = document.getElementById('picker-list');
+            const groups = [
+                ['Quarks', t => t.kind === 'quark'],
+                ['Antiquarks', t => t.kind === 'antiquark'],
+                ['Leptons', t => t.kind === 'lepton'],
+                ['Force carriers (bosons)', t => t.kind === 'boson'],
+                ['Made of quarks (hadrons)', t => t.kind === 'hadron'],
+                ['Atomic nucleus', t => t.kind === 'nucleus'],
+            ];
+            const ball = (look) => `radial-gradient(circle at 35% 30%, ${look.light}, ${look.base} 50%, ${look.dark})`;
+            for (const [title, match] of groups) {
+                const h = document.createElement('h3');
+                h.textContent = title;
+                const grid = document.createElement('div');
+                grid.className = 'pick-grid';
+                for (const t of TYPES.filter(match)) {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'pick';
+                    const sw = document.createElement('span');
+                    sw.className = 'sw';
+                    sw.style.background = t.kind === 'quark' ? ball(COLOR_CHARGE.red)
+                        : t.kind === 'antiquark' ? ball(COLOR_CHARGE.antired)
+                        : t.kind === 'hadron' ? 'radial-gradient(circle at 35% 30%, #d0d0d8, #8a8a98)'
+                        : t.kind === 'nucleus' ? ball(PROTON_LOOK) : ball(t.look);
+                    sw.textContent = t.sym;
+                    if (t.bar) sw.style.textDecoration = 'overline';
+                    const name = document.createElement('span');
+                    name.textContent = t.name;
+                    b.append(sw, name);
+                    b.addEventListener('click', () => pickParticle(t));
+                    grid.append(b);
+                }
+                list.append(h, grid);
+            }
+        })();
+
+        // Coming back from "Start over as…": start straight away as that particle
+        const startParams = new URLSearchParams(location.search);
+        const startAs = startParams.get('as');
+        if (startAs) history.replaceState(null, '', location.pathname); // so Start over shows the menu again
+        const startType = startAs && TYPES.find(t => t.id === startAs);
+        if (startType && !physicsOn) becomeParticle(startType);
+        else if (!startParams.has('dust')) openMenu();
 
         // --- Dev test powers: only on this computer or the home network ---
         const IS_LOCAL = location.protocol === 'file:' ||
@@ -3633,6 +4035,7 @@
         function frame(now) {
             acc += Math.min((now - last) / 1000, 0.1);
             last = now;
+            if (isPaused()) acc = 0; // menus pause the game
             while (acc >= STEP) {
                 step(STEP);
                 acc -= STEP;
