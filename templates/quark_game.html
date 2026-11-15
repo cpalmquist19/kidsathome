@@ -3356,6 +3356,27 @@
                         const sp = Math.hypot(e.vx, e.vy);
                         if (maxSpeed && sp > maxSpeed) { e.vx *= maxSpeed / sp; e.vy *= maxSpeed / sp; }
                     };
+                    // Its light rips orbits apart: your moons get blown away when they
+                    // (or you) touch the circle, and if what you're orbiting touches it,
+                    // you get flung off your orbit
+                    if (oc !== player) {
+                        const touches = e => Math.hypot(e.x - oc.x, e.y - oc.y) - e.r < reach;
+                        const youInside = cluster.some(touches);
+                        let blown = null;
+                        for (const q of free) {
+                            if (!q.orbit || !(youInside || touches(q))) continue;
+                            delete q.orbit; // it flies off along its orbit, plus a shove outward
+                            const dx = q.x - oc.x, dy = q.y - oc.y, d = Math.hypot(dx, dy) || 1;
+                            q.vx += dx / d * 260; q.vy += dy / d * 260;
+                            blown = blown || q;
+                            if (selected === q) showInfo(q);
+                        }
+                        if (blown) floatText(blown, 'Blown out of orbit!');
+                        if (playerOrbit && (youInside || touches(playerOrbit.target))) {
+                            playerOrbit = null; // you keep your orbit speed and get pushed out
+                            showToast('Ripped out of orbit!', 'The Ocamathron\'s light knocked you off what you were orbiting');
+                        }
+                    }
                     for (const q of free) if (q !== oc && !q.huge && !q.orbit && !q.falling) pushOut(q, 450);
                     // You (and anything stuck to you) drift outward, even while standing
                     // still; steering against it works near the edge but not up close
