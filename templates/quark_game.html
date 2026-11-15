@@ -73,6 +73,9 @@
             display: flex;
             gap: 8px;
             z-index: 5;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            max-width: calc(100vw - 24px);
         }
         #corner button {
             padding: 6px 12px;
@@ -87,6 +90,10 @@
             background: rgba(40, 30, 0, 0.55);
             color: rgba(255, 214, 74, 0.85);
         }
+        #physics { border: 1px solid rgba(120, 230, 160, 0.6); background: rgba(0, 40, 20, 0.6); color: #9ef0b8; }
+        #physics:hover { background: rgba(0, 70, 35, 0.75); }
+        #physics.off { border-color: #ff6ad5; background: rgba(60, 0, 50, 0.65); color: #ff9ae4; }
+        #physics.off:hover { background: rgba(90, 0, 75, 0.8); }
         #restart:hover { background: rgba(80, 60, 0, 0.7); }
         #restart.stuck { animation: restart-pulse 1.6s ease-in-out infinite; color: #ffd64a; border-color: #ffd64a; }
         #restart.armed { background: #ffd64a; color: #2a1f00; animation: none; }
@@ -224,6 +231,7 @@
     <div id="hint" class="hud">WASD to move &middot; scroll to zoom &middot; right-click to orbit (lighter things orbit you, you orbit heavier things) &middot; quarks &rarr; proton &rarr; atom (up to element 118) &rarr; molecules &rarr; dust &rarr; planets &rarr; star &middot; click anything to learn about it</div>
     <div id="toast"><b></b><span></span></div>
     <div id="corner">
+        <button id="physics" type="button">&#9883; Real physics: ON</button>
         <button id="supernova" type="button" title="You're over 100 Suns: explode and become a black hole">&#128165; Go supernova</button>
         <button id="restart" type="button" title="Start over as a quark (R)">&#8634; Start over</button>
         <button id="dev-btn" type="button" title="Dev test powers (local only)">DEV</button>
@@ -282,6 +290,12 @@
         // Subatomic + atomic world (it grows again when you reach molecules)
         const WORLD = { width: 18000, height: 18000 };
         const rand = (a, b) => a + Math.random() * (b - a);
+
+        // Real physics ON: only real, stable things can form.
+        // Real physics OFF: anything goes. Merge with anything, orbit anything.
+        const PHYSICS_KEY = 'matterEaterPhysics';
+        let physicsOn = true;
+        try { physicsOn = localStorage.getItem(PHYSICS_KEY) !== 'off'; } catch (err) { /* keep the default */ }
 
         // =====================================================================
         // Particle catalog
@@ -556,7 +570,10 @@
             if (i >= 0) free.splice(i, 1);
             updateStats();
             if (selected === q) showInfo(q);
-            if (isColorNeutral(cluster)) forming = { timer: 0.8 };
+            // Physics off: any 3 quarks, or any quark + antiquark, snap together
+            const qCount = cluster.filter(m => m.type.kind === 'quark').length;
+            const offDone = !physicsOn && (cluster.length >= 3 || (qCount && qCount < cluster.length));
+            if (isColorNeutral(cluster) || offDone) forming = { timer: 0.8 };
         }
 
         // =====================================================================
@@ -582,6 +599,7 @@
         // Can quark q join the player's group? Returns a reason when it can't.
         function canJoin(q) {
             if (forming) return { ok: false };
+            if (!physicsOn) return { ok: player.type.kind === 'quark' };
             if (player.type.kind !== 'quark') {
                 const what = player.type.kind === 'atom' ? player.type.elementName : player.type.name;
                 return { ok: false, reason: `You're ${what.toLowerCase()} now, quarks can't join` };
@@ -726,6 +744,9 @@
             } else if (type.id === 'neutron') {
                 player.atom = { Z: 0, N: 1, E: 0 };
                 showToast('You made a Neutron!', 'Touch a proton to start building an atomic nucleus');
+            } else if (!physicsOn) {
+                player.atom = { Z: 1, N: 0, E: 0 };
+                showToast(`You made ${aOrAn(type.name)} ${type.name}!`, 'Physics is off, so it can build atoms like a proton. Touch anything to merge with it!');
             } else {
                 showToast(`You made ${aOrAn(type.name)} ${type.name}!`, 'Only protons and neutrons can build atoms. Press R to try again');
             }
@@ -803,8 +824,9 @@
                 name = `${iso} atom`;
                 kindLabel = 'Atom';
             } else {
-                name = `${iso} ion (${sym}${charge > 1 ? superNum(charge) : ''}⁺)`;
-                kindLabel = 'Ion (missing electrons)';
+                const n = Math.abs(charge);
+                name = `${iso} ion (${sym}${n > 1 ? superNum(n) : ''}${charge > 0 ? '⁺' : '⁻'})`;
+                kindLabel = charge > 0 ? 'Ion (missing electrons)' : 'Ion (extra electrons)';
             }
             const type = {
                 id: 'atom',
@@ -823,6 +845,7 @@
         function refreshAtom() {
             const { Z, N, E } = player.atom;
             player.type = atomType(Z, N, E);
+            player.type.mass += player.atom.extra || 0; // physics off: other particles you merged with
             player.r = player.type.radius;
             player.mass = player.r * player.r;
             updateStats();
@@ -872,10 +895,15 @@
 
             const a = player.atom;
             const oldZ = a.Z;
-            if (p.type.id === 'proton') a.Z++;
-            else if (p.type.id === 'neutron') a.N++;
-            else if (p.type.id === 'alpha') { a.Z += 2; a.N += 2; }
-            else a.E++;
+            // Past element 118 there are no more elements, so extra protons just add weight
+            const addZ = (n) => { const fit = Math.min(n, MAX_Z - a.Z); a.Z += fit; a.N += n - fit; };
+            const id = p.type.id;
+            if (id === 'proton') addZ(1);
+            else if (id === 'neutron') a.N++;
+            else if (id === 'alpha') { addZ(2); a.N += 2; }
+            else if (id === 'electron') a.E++;
+            else a.extra = (a.extra || 0) + (p.type.mass || 0); // physics off: anything else just adds its mass
+            if (a.Z === 0) { a.Z = 1; a.N = Math.max(0, a.N - 1); } // physics off: an element needs at least one proton
 
             floaters.push({ x: player.x, y: player.y - player.r - 12, text: '+ ' + p.type.name.toLowerCase(), born: performance.now() });
             refreshAtom();
@@ -893,6 +921,20 @@
                     ? `Grab ${missing} more electron${missing > 1 ? 's' : ''} to make a neutral atom`
                     : '');
             }
+        }
+
+        // Physics off: whatever you are, you can start merging with things
+        function ensureOffAtom() {
+            if (player.atom) return true;
+            if (forming) return false;
+            if (player.type.kind === 'quark') formHadron();
+            else player.atom = { Z: 1, N: 0, E: 0 };
+            return !!player.atom;
+        }
+        function absorbAnything(p) {
+            if (!ensureOffAtom()) return false;
+            absorb(p);
+            return true;
         }
 
         function drawAtom(p, time) {
@@ -1070,6 +1112,15 @@
         const MOLECULE_BY_FORMULA = {};
         for (const m of MOLECULES) MOLECULE_BY_FORMULA[m[0]] = m;
 
+        // Real physics: every bond has to be a step on the way to a real molecule
+        const elementCounts = (Zs) => { const c = {}; for (const Z of Zs) c[Z] = (c[Z] || 0) + 1; return c; };
+        const REAL_COUNTS = MOLECULES.map(m => elementCounts(parseFormula(m[0])));
+        function partOfRealMolecule(Zs) {
+            const want = elementCounts(Zs);
+            return REAL_COUNTS.some(have => Object.keys(want).every(Z => (have[Z] || 0) >= want[Z]));
+        }
+        const openBondsOf = (Zs, deg) => Zs.reduce((s, Z, k) => s + Math.max(0, valenceOf(Z) - (deg[k] || 0)), 0);
+
         // Hill system: carbon, then hydrogen, then the rest alphabetically
         function hillFormula(Zs) {
             const counts = {};
@@ -1198,6 +1249,7 @@
                      known: !!known, sym: prettyFormula(formula), atomCount: Zs.length,
                      name: known ? known[1] : `Molecule ${prettyFormula(formula)}`,
                      info: { charge: '0', desc: known ? known[2]
+                         : physicsOn ? 'Not finished yet! Keep bonding the right atoms and this will become a real molecule.'
                          : 'A molecule you invented! It isn\'t one of the famous molecules this game knows by name, but chemists have catalogued over 200 million different substances, so it might really exist.' } };
         }
         const chemTypeCache = new Map();
@@ -1260,7 +1312,7 @@
         // You bonded with another atom: welcome to chemistry!
         function enterMoleculeStage(bondingWith) {
             stage = 'molecule';
-            const Z = player.atom.Z;
+            const Z = Math.max(1, player.atom.Z);
             player.Z = Z;
             player.chem = true;
             player.deg = 0;
@@ -1291,6 +1343,11 @@
 
         // Can the player's atom c bond with atom i of free molecule p?
         function canBond(c, p, i) {
+            if (!physicsOn) { // anything bonds with anything
+                // A quark group snaps into a particle first; it can bond on the next touch
+                if (stage !== 'molecule' && !player.atom) { ensureOffAtom(); return { ok: false }; }
+                return { ok: true };
+            }
             if (stage !== 'molecule') {
                 if (!player.atom || player.type.kind !== 'atom') return { ok: false };
                 if (player.atom.E < player.atom.Z) return { ok: false, reason: 'Grab electrons to become a neutral atom first' };
@@ -1301,7 +1358,17 @@
             if (valenceOf(pZ) === 0) return { ok: false, reason: `${ELEMENTS[pZ - 1][1]} is a noble gas, it doesn't bond` };
             if (valenceOf(cZ) - (c.deg || 0) <= 0) return { ok: false, reason: `That ${ELEMENTS[cZ - 1][0]} has no free bonds left, touch with another atom` };
             if (valenceOf(pZ) - p.layout.deg[i] <= 0) return { ok: false, reason: `That ${ELEMENTS[pZ - 1][0]} is all bonded up, touch a different atom` };
-            // No size limit here: reaching MAX_MOLECULE_ATOMS turns you into a dust grain
+            // Real physics: only bonds that lead to a real, stable molecule
+            const yourZs = stage === 'molecule' ? cluster.map(m => m.Z) : [cZ];
+            const Zs = [...yourZs, ...p.layout.Zs];
+            const formula = hillFormula(Zs);
+            if (!MOLECULE_BY_FORMULA[formula]) {
+                if (!partOfRealMolecule(Zs)) return { ok: false, reason: `No real molecule has ${prettyFormula(formula)} in it` };
+                const yourOpen = stage === 'molecule' ? openBondsOf(yourZs, cluster.map(m => m.deg)) : valenceOf(cZ);
+                if (yourOpen + openBondsOf(p.layout.Zs, p.layout.deg) - 2 <= 0) {
+                    return { ok: false, reason: `${prettyFormula(formula)} wouldn't be a real, stable molecule` };
+                }
+            }
             return { ok: true };
         }
 
@@ -1372,6 +1439,7 @@
 
                     const check = canBond(c, p, i);
                     if (check.ok) { bondWith(p, i, c); return; }
+                    if (canStick(p)) { stickToYou(p); return; }
                     if (check.reason) floatText(p, check.reason);
 
                     const nx = dx / d, ny = dy / d, overlap = reach - d;
@@ -1387,6 +1455,37 @@
                     return;
                 }
             }
+        }
+
+        // Real physics: finished real molecules cling to each other with weak
+        // forces. Gather enough of them and you become a speck of space dust.
+        const stuck = [];       // molecules clinging to yours
+        const CLUMP_SIZE = 12;  // how many it takes to make a dust grain
+        const canStick = (p) => physicsOn && stage === 'molecule' && player.type.known &&
+            p.type.kind === 'molecule' && p.type.known;
+        function touchesStuck(p) {
+            return stuck.some(s => Math.hypot(s.x - p.x, s.y - p.y) < s.r + p.r);
+        }
+        function clusterCenter() {
+            let cx = 0, cy = 0;
+            for (const q of cluster) { cx += q.x; cy += q.y; }
+            return { cx: cx / cluster.length, cy: cy / cluster.length };
+        }
+        function stickToYou(p) {
+            const k = free.indexOf(p);
+            if (k >= 0) free.splice(k, 1);
+            if (selected === p) hideInfo();
+            delete p.orbit;
+            if (playerOrbit && playerOrbit.target === p) playerOrbit = null;
+            const c = clusterCenter();
+            p.stuckDX = p.x - c.cx;
+            p.stuckDY = p.y - c.cy;
+            stuck.push(p);
+            floaters.push({ x: p.x, y: p.y - p.r - 14, text: `${p.type.name} stuck to you (${stuck.length} of ${CLUMP_SIZE})`, born: performance.now() });
+            if (stuck.length === 1) {
+                showToast('Molecules stick together!', `Real molecules cling to each other with weak forces. Gather ${CLUMP_SIZE} and you'll become a speck of space dust`);
+            }
+            updateStats();
         }
 
         function drawBondSticks(pts, pairBonds, orders) {
@@ -1411,13 +1510,13 @@
             });
         }
 
-        function drawMolecule(p) {
+        function drawMolecule(p, noLabel) {
             const L = p.layout;
             const cos = Math.cos(p.rot), sin = Math.sin(p.rot);
             const pts = L.pos.map(q => ({ x: p.x + q.x * cos - q.y * sin, y: p.y + q.x * sin + q.y * cos }));
             drawBondSticks(pts, L.bonds, L.orders);
             for (let i = 0; i < pts.length; i++) drawAtomBall(L.Zs[i], pts[i].x, pts[i].y);
-            if (L.Zs.length > 1) {
+            if (L.Zs.length > 1 && !noLabel) {
                 const fs = Math.max(14, 11 / view.zoom);
                 drawLabel(p.type.name, p.x, p.y + p.r + fs, fs, false, false);
             }
@@ -1664,6 +1763,7 @@
             dustShape(player);
             cluster.length = 0;
             cluster.push(player);
+            stuck.length = 0;
             bonds.length = 0;
             bondedPairs = new Set();
             molBondOrders = [];
@@ -1687,7 +1787,7 @@
             const d = Math.hypot(dx, dy) || 0.001;
             if (d >= reach) return;
 
-            if (p.r < player.r) { eatDust(p); return; }
+            if (p.r < player.r || !physicsOn) { eatDust(p); return; } // physics off: eat anything
             if (dust.blackHole) { catchInBlackHole(p); return; }
 
             floatText(p, 'Too big to eat! Eat smaller ones first');
@@ -1791,13 +1891,17 @@
         // --- Supernova: a star of 100+ Suns can explode into a black hole ---
         const novaEl = document.getElementById('supernova');
         function updateSupernovaButton() {
+            if (stage !== 'dust') { novaEl.classList.remove('show'); return; }
             const kg = dustMassKg(player);
-            const ready = stage === 'dust' && !dust.blackHole && dustTierOf(player.r) === T_STAR &&
-                kg >= SUPERNOVA_SUNS * SUN_KG;
+            // Physics off: any star can go supernova
+            const ready = !dust.blackHole && dustTierOf(player.r) === T_STAR &&
+                (!physicsOn || kg >= SUPERNOVA_SUNS * SUN_KG);
             novaEl.classList.toggle('show', ready);
             if (ready && !dust.novaTold) {
                 dust.novaTold = true; // tell them once; after that the small button just waits
-                showToast('You can go supernova!', "You're over 100 Suns. Tap 💥 Go supernova (top right) whenever you're ready, or keep growing");
+                showToast('You can go supernova!', physicsOn
+                    ? "You're over 100 Suns. Tap 💥 Go supernova (top right) whenever you're ready, or keep growing"
+                    : 'Physics is off, so any star can do it. Tap 💥 Go supernova (top right) whenever you like');
             }
         }
         novaEl.addEventListener('click', goSupernova);
@@ -2052,7 +2156,7 @@
         // A red ring on anything too big for you to eat
         function drawTooBig(p) {
             const r = p.r;
-            if (!p.isPlayer && p.r >= player.r && !dust.blackHole) {
+            if (!p.isPlayer && p.r >= player.r && !dust.blackHole && physicsOn) {
                 ctx.strokeStyle = 'rgba(255, 90, 90, 0.6)';
                 ctx.lineWidth = 2 / view.zoom;
                 ctx.beginPath();
@@ -2090,7 +2194,7 @@
                 const next = DUST_TIERS[dustTierOf(p.r) + 1];
                 addFact('Next', next ? `${next.name} at ${formatSize(next.min)} across` : `At ${SUPERNOVA_SUNS} Suns you can explode in a supernova and become a black hole`);
             } else {
-                addFact('Can you eat it?', p.r < player.r ? 'Yes! It\'s smaller than you' : 'No, it\'s bigger than you. Grow first!');
+                addFact('Can you eat it?', !physicsOn ? 'Yes! Physics is off, so you can eat anything' : p.r < player.r ? 'Yes! It\'s smaller than you' : 'No, it\'s bigger than you. Grow first!');
                 const ratio = dustMassKg(p) / dustMassKg(player);
                 const times = (n) => n.toLocaleString(undefined, { maximumFractionDigits: n < 10 ? 1 : 0 });
                 addFact('vs. you', ratio >= 1 ? `${times(ratio)}× heavier` : `${times(1 / ratio)}× lighter`);
@@ -2134,7 +2238,9 @@
             if (stage === 'molecule') {
                 const t = player.type;
                 const what = t.kind === 'element' ? t.name : `${t.name}${t.known ? ` (${t.sym})` : ''}`;
-                statsEl.textContent = `You are ${what}  ·  ${cluster.length} atom${cluster.length === 1 ? '' : 's'}  ·  Named molecules discovered: ${discovered.size} of ${MOLECULES.length}`;
+                statsEl.textContent = `You are ${what}  ·  ${cluster.length} atom${cluster.length === 1 ? '' : 's'}  ·  ` +
+                    (stuck.length ? `${stuck.length} of ${CLUMP_SIZE} molecules stuck to you  ·  ` : '') +
+                    `Named molecules discovered: ${discovered.size} of ${MOLECULES.length}`;
                 return;
             }
             if (player.type.kind === 'atom') {
@@ -2255,6 +2361,7 @@
             cx /= cluster.length; cy /= cluster.length;
             let extent = 0;
             for (const q of cluster) extent = Math.max(extent, Math.hypot(q.x - cx, q.y - cy) + q.r);
+            for (const s of stuck) extent = Math.max(extent, Math.hypot(s.x - cx, s.y - cy) + s.r);
             return { cx, cy, extent };
         }
 
@@ -2376,6 +2483,14 @@
                 keepInWorld(q);
             }
             if (playerOrbit) orbitAroundTarget(dt);
+            if (stuck.length) { // molecules stuck to you come along
+                const c = clusterCenter();
+                for (const s of stuck) {
+                    s.x = c.cx + s.stuckDX; s.y = c.cy + s.stuckDY;
+                    s.vx = player.vx; s.vy = player.vy;
+                    s.rot += s.rotSpeed * dt;
+                }
+            }
             if (player.spin !== undefined) player.spin += player.spinSpeed * dt;
             if (stage === 'dust') {
                 player.rot += 0.15 * dt;
@@ -2398,6 +2513,7 @@
             const gravity = stage === 'dust' && dustTierOf(player.r) >= DUST_GRAVITY_TIER;
             const pullRange = player.r + 220;
             const bounds = clusterBounds();
+            if (stage === 'molecule') molExtent = bounds.extent;
             for (let i = free.length - 1; i >= 0; i--) {
                 const p = free[i];
                 if (p.falling) {
@@ -2429,7 +2545,7 @@
                     }
                 }
                 // Nothing gets away from a black hole: it pulls in everything, any size
-                const pulled = gravity && (dust.blackHole || p.r < player.r);
+                const pulled = gravity && (dust.blackHole || p.r < player.r || !physicsOn);
                 if (pulled) {
                     const dx = player.x - p.x, dy = player.y - p.y;
                     const d = Math.hypot(dx, dy), range = player.r * 5;
@@ -2456,6 +2572,7 @@
                 if (playerOrbit && p === playerOrbit.target && !(stage === 'dust' && dust.blackHole)) continue; // nor does what you orbit (unless you're a black hole)
                 const near = bounds.extent + p.r;
                 if (Math.abs(p.x - bounds.cx) > near || Math.abs(p.y - bounds.cy) > near) continue;
+                if (p.chem && stuck.length && canStick(p) && touchesStuck(p)) { stickToYou(p); continue; }
                 if (p.chem) { chemContact(p); continue; }
                 if (p.dust) { dustContact(p); continue; }
                 for (const c of cluster) {
@@ -2465,7 +2582,12 @@
                     const d = Math.hypot(dx, dy) || 0.001;
                     if (d >= reach) continue;
 
-                    if (isQuarkKind(p.type)) {
+                    // Physics off: touch anything and you merge with it
+                    // (quarks still gather into a group first while you're a quark)
+                    const offMerge = !physicsOn && !(isQuarkKind(p.type) && player.type.kind === 'quark');
+                    if (offMerge) {
+                        if (c === player && absorbAnything(p)) break;
+                    } else if (isQuarkKind(p.type)) {
                         const check = canJoin(p);
                         if (check.ok) {
                             joinCluster(p, c);
@@ -2498,7 +2620,9 @@
             }
 
             // A molecule as big as it can get becomes a dust grain
-            if (stage === 'molecule' && cluster.length >= MAX_MOLECULE_ATOMS) enterDustStage();
+            // (or, with real physics, enough real molecules stuck together)
+            if (stage === 'molecule' && (cluster.length >= MAX_MOLECULE_ATOMS || stuck.length >= CLUMP_SIZE ||
+                cluster.length + stuck.reduce((s, m) => s + m.layout.Zs.length, 0) >= MAX_MOLECULE_ATOMS)) enterDustStage();
 
             // --- Camera follows the player (the middle of your molecule) ---
             let focus = stage === 'molecule' ? clusterBounds()
@@ -2813,6 +2937,7 @@
             ctx.arc(gx, gy, glowR, 0, Math.PI * 2);
             ctx.fill();
 
+            for (const s of stuck) drawMolecule(s, true);
             if (stage === 'molecule') drawPlayerMolecule();
             else for (const q of cluster) drawFree(q, time);
 
@@ -2967,7 +3092,7 @@
         // --- Dead ends: show a big "press R" prompt while you're stuck ---
         const restartEl = document.getElementById('restart');
         function deadEndReason() {
-            if (player.type.kind === 'hadron' && !player.atom) {
+            if (player.type.kind === 'hadron' && !player.atom && physicsOn) {
                 return `${aOrAn(player.type.name).replace(/^a/, 'A')} ${player.type.name} can't build atoms`;
             }
             if (stage === 'particles' && player.atom && player.atom.Z === MAX_Z && player.atom.E === MAX_Z) {
@@ -2978,6 +3103,8 @@
                 return dust.won ? 'You made it from a quark all the way to a star! Keep eating, or start over' : null;
             }
             if (stage === 'molecule') {
+                if (!physicsOn) return null;          // anything can still merge with you
+                if (player.type.known) return null;   // real molecules can still clump into dust
                 if (cluster.length >= MAX_MOLECULE_ATOMS) return 'Your molecule is as big as it can get!';
                 if (!youCanBond()) return 'Your molecule is complete: no open bonds left!';
             }
@@ -3096,7 +3223,7 @@
             // Bound quarks are drawn on top, so check them first.
             // Tiny particles get a bigger click target.
             let best = null, bestD = Infinity;
-            for (const list of [cluster, free]) {
+            for (const list of [cluster, stuck, free]) {
                 for (const p of list) {
                     const d = Math.hypot(p.x - wx, p.y - wy);
                     if (d <= Math.max(p.r, 14 / view.zoom) && d < bestD) { best = p; bestD = d; }
@@ -3211,7 +3338,8 @@
 
         // Orbit gaps and speeds are sized for the atom world; in the dust world
         // you keep growing, so orbits grow with you
-        const orbitScale = () => stage === 'dust' ? player.r / 30 : 1;
+        let molExtent = 60; // how big your molecule is (orbits around it scale with it)
+        const orbitScale = () => stage === 'dust' ? player.r / 30 : stage === 'molecule' ? Math.max(1, molExtent / 50) : 1;
 
         function orbitDistance(p, bounds) {
             return bounds.extent + p.r + (30 + p.orbit.lane * 24) * orbitScale();
@@ -3355,8 +3483,9 @@
         // Right-click / long-press: make something orbit you, or orbit it yourself
         function orbitActionAt(clientX, clientY) {
             const p = particleAt(...toWorld({ clientX, clientY }));
-            if (!p || cluster.includes(p)) return;
-            if (stage === 'molecule') {
+            if (!p || cluster.includes(p) || stuck.includes(p)) return;
+            const name = p.type.name.toLowerCase();
+            if (stage === 'molecule' && physicsOn) {
                 floatText(p, 'Orbiting only works in the subatomic and atomic world, and for space dust');
                 return;
             }
@@ -3368,10 +3497,21 @@
             }
             if (p.orbit) {
                 delete p.orbit; // let it fly off along its orbit
+                p.msgUntil = 0;
+                if (!physicsOn) { // physics off: now you orbit it instead
+                    startPlayerOrbit(p);
+                    floatText(p, `Now you're orbiting the ${name}! Right-click it again to let go`);
+                    return;
+                }
                 floatText(p, 'Let go!');
                 return;
             }
-            const name = p.type.name.toLowerCase();
+            if (!physicsOn) { // physics off: mass doesn't matter, anything can orbit you
+                startOrbit(p);
+                p.msgUntil = 0;
+                floatText(p, `The ${name} is orbiting you! Right-click again to orbit it instead`);
+                return;
+            }
             const mine = yourMass();
             const theirs = p.dust ? dustMassKg(p) : p.type.mass;
             p.msgUntil = 0;
@@ -3401,6 +3541,29 @@
         // =====================================================================
         // Testing shortcut: open the page with ?dust to start as a dust grain
         if (new URLSearchParams(location.search).has('dust')) enterDustStage();
+
+        // --- Real physics on/off ---
+        const physicsEl = document.getElementById('physics');
+        function showPhysicsButton() {
+            physicsEl.textContent = physicsOn ? '⚛ Real physics: ON' : '✨ Physics: OFF';
+            physicsEl.classList.toggle('off', !physicsOn);
+            physicsEl.title = physicsOn
+                ? 'Real physics is on: only real, stable things can form. Tap to turn it off'
+                : 'Physics is off: merge with anything, orbit anything. Tap to turn real physics back on';
+        }
+        showPhysicsButton();
+        physicsEl.addEventListener('click', () => {
+            physicsOn = !physicsOn;
+            try { localStorage.setItem(PHYSICS_KEY, physicsOn ? 'on' : 'off'); } catch (err) { /* still works this game */ }
+            showPhysicsButton();
+            physicsEl.blur(); // so the keyboard keeps steering you
+            if (stage === 'molecule') refreshMolecule(false);
+            updateSupernovaButton();
+            updateRestartPrompt();
+            showToast(physicsOn ? 'Real physics ON' : 'Physics OFF!', physicsOn
+                ? 'Only real, stable molecules can form, and everything follows the rules of nature'
+                : "Anything goes! Merge with anything, orbit anything. (The real universe doesn't work like this!)");
+        });
 
         // --- Dev test powers: only on this computer or the home network ---
         const IS_LOCAL = location.protocol === 'file:' ||
