@@ -836,7 +836,7 @@
             for (let k = free.length - 1; k >= 0; k--) {
                 const q = free[k];
                 const extra = (counts.get(q.type) || 0) - q.type.count * 2;
-                if (extra <= 0 || q.chem || q.orbit || q === selected) continue;
+                if (extra <= 0 || q.huge || q.chem || q.orbit || q === selected) continue;
                 if (Math.abs(q.x - camera.x) < halfW && Math.abs(q.y - camera.y) < halfH) continue;
                 free.splice(k, 1);
                 counts.set(q.type, counts.get(q.type) - 1);
