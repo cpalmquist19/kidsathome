@@ -628,6 +628,34 @@
         const OCAMATHRON_REACH = 2.5 * 2; // 2.5× its diameter, measured from its middle, in radii
         const OCAMATHRON_PUSH = 1600;     // how hard its light pushes things out of the circle
 
+        // The Hiemadecticus: an Ocamathron is made of three of them. They're the
+        // same shade, but green, and have a third of everything an Ocamathron has.
+        // There are always exactly three. They pull on each other, and if all
+        // three touch they fuse into an Ocamathron.
+        const HIEMADECTICUS = {
+            id: 'hiemadecticus', name: 'Hiemadecticus', sym: 'Hi', kind: 'mystery',
+            kindLabel: 'Mystery particle (physics off only)',
+            mass: OCAMATHRON.mass / 3,
+            look: flat('#8fffb0', '#e0ffea', '#2c9a4a'), glow: '#9affb8',
+            massLabel: '3.28224 octillion up quarks (about 13 grams, a third of an Ocamathron)',
+            compareLabel: '3.28224 octillion× heavier',
+            info: {
+                charge: '0',
+                desc: 'A green mystery particle that only exists when physics is off. An Ocamathron is made of three of them, and there are always exactly three on the map. If they come within 2.5 Ocamathron-widths of each other they pull together, and if all three touch they fly apart, spiral back in faster and faster, and fuse into an Ocamathron! Its birth blast tears apart everything on the map and burns up everything that can burn. Like an Ocamathron, its light tears apart anything grouped that comes too close.',
+            },
+        };
+        HIEMADECTICUS.radius = OCAMATHRON.radius / 3;
+        const isGiant = (t) => t === OCAMATHRON || t === HIEMADECTICUS;
+        const giantPush = (e) => e.type === OCAMATHRON ? OCAMATHRON_PUSH : OCAMATHRON_PUSH / 3;
+        const HIEM_COUNT = 3;
+        const HIEM_PULL_RANGE = OCAMATHRON.radius * OCAMATHRON_REACH; // 2.5× an Ocamathron's diameter
+        const HIEM_PULL = 500;            // the same pull an atom has on an electron
+        const BIRTH_OUT = OCAMATHRON.radius * 10; // they get shot 5× an Ocamathron's diameter out
+        const BIRTH_OUT_TIME = 0.9, BIRTH_IN_TIME = 3.2; // seconds
+        // Things that burn (in air): these atoms catch fire in an Ocamathron's birth blast
+        const BURNABLE = new Set(['H', 'Li', 'C', 'Na', 'Mg', 'Al', 'P', 'S', 'K', 'Ca', 'Fe', 'Zn', 'Rb', 'Cs']);
+        const BURN_TIME = 1.6;            // seconds an atom burns before it's gone
+
         // =====================================================================
         // Particle facts (shown when you click a particle)
         // =====================================================================
@@ -775,43 +803,170 @@
             }
         }
 
-        // There's always exactly 1 Ocamathron in the subatomic, atomic and molecule
-        // levels. If one dies, a new one shows up a few seconds later somewhere random.
-        const OCAMATHRON_RESPAWN_MS = 4000;
-        let lastOc = null;         // the Ocamathron we spawned, to notice when it dies
-        let ocRespawnAt = 0;       // when a replacement may appear (0 = right away)
-        function manageOcamathron() {
+        // The Ocamathron never just appears: there are always exactly three
+        // Hiemadecticus in the subatomic, atomic and molecule levels (physics off),
+        // and an Ocamathron only forms if all three happen to touch. While it's
+        // alive the three are inside it; if it dies, its three Hiemadecticus show
+        // up a few seconds later in random spots on the map.
+        const GIANT_RESPAWN_MS = 4000;
+        let lastOc = null;         // the Ocamathron that's alive, to notice when it dies
+        let giantsRespawnAt = 0;   // when its Hiemadecticus may come back (0 = right away)
+        let ocBirth = null;        // three Hiemadecticus fusing into an Ocamathron
+        const freeHiems = () => free.filter(p => p.type === HIEMADECTICUS);
+        function removeFree(e) {
+            const k = free.indexOf(e);
+            if (k >= 0) free.splice(k, 1);
+            if (selected === e) hideInfo();
+            if (playerOrbit && playerOrbit.target === e) playerOrbit = null;
+        }
+        function makeGiant(type, x, y) {
+            const e = makeEntity(type, x, y);
+            e.huge = true; // too big to merge with
+            e.drawR = type.radius * (OCAMATHRON_REACH + 0.2);
+            const ang = rand(0, Math.PI * 2), sp = type === HIEMADECTICUS ? rand(80, 140) : 8;
+            e.vx = Math.cos(ang) * sp; e.vy = Math.sin(ang) * sp; // Hiemadecticus roam, so they can meet by chance
+            return e;
+        }
+        function manageGiants() {
             const oc = findOcamathron();
-            if (physicsOn || !(stage === 'particles' || stage === 'molecule') || player.type === OCAMATHRON) {
-                if (oc) {
-                    free.splice(free.indexOf(oc), 1);
-                    if (selected === oc) hideInfo();
-                }
-                lastOc = null; ocRespawnAt = 0; // not a death: one comes back right away later
+            const hiems = freeHiems();
+            if (physicsOn || !(stage === 'particles' || stage === 'molecule')) {
+                if (oc) removeFree(oc);
+                hiems.forEach(removeFree);
+                ocBirth = null; lastOc = null; giantsRespawnAt = 0; // not a death: they come back right away later
                 return;
             }
-            if (oc) { lastOc = oc; return; } // only one at a time
-            if (lastOc) { // it died: wait a few seconds before the next one
-                lastOc = null;
-                ocRespawnAt = performance.now() + OCAMATHRON_RESPAWN_MS;
+            if (ocBirth) return; // all three are busy becoming an Ocamathron
+            const youOc = player.type === OCAMATHRON, youHiem = player.type === HIEMADECTICUS;
+            if (youOc || (oc && !youHiem)) { // all three Hiemadecticus are inside the Ocamathron
+                hiems.forEach(removeFree);
+                if (youOc && oc) removeFree(oc); // there can only be one
+                lastOc = youOc ? player : oc;
+                return;
             }
-            if (performance.now() < ocRespawnAt) return;
-            ocRespawnAt = 0;
-            // A random spot on the map, off screen and well away from you
-            let x, y, tries = 0;
-            do { [x, y] = spawnPoint(OCAMATHRON.radius); }
-            while (++tries < 30 && Math.hypot(x - player.x, y - player.y) < OCAMATHRON.radius * (OCAMATHRON_REACH + 2));
-            const e = makeEntity(OCAMATHRON, x, y);
-            e.huge = true; // too big to merge with
-            e.drawR = OCAMATHRON.radius * (OCAMATHRON_REACH + 0.2);
-            e.vx *= 0.4; e.vy *= 0.4;
-            free.push(e);
-            lastOc = e;
+            if (oc) { removeFree(oc); lastOc = null; } // you're a Hiemadecticus: it falls apart, and you're one of its three
+            if (lastOc) { // it died: its three come back after a few seconds
+                if (lastOc !== player) giantsRespawnAt = performance.now() + GIANT_RESPAWN_MS;
+                lastOc = null;
+            }
+            if (performance.now() < giantsRespawnAt) return;
+            giantsRespawnAt = 0;
+            const want = HIEM_COUNT - (youHiem ? 1 : 0); // you count as one of the three
+            const far = (e) => Math.hypot(e.x - player.x, e.y - player.y);
+            hiems.sort((a, b) => far(b) - far(a));
+            while (hiems.length > want) removeFree(hiems.shift()); // never more than three
+            for (let i = hiems.length; i < want; i++) { // never fewer: random spots, off screen and away from you
+                let x, y, tries = 0;
+                do { [x, y] = spawnPoint(HIEMADECTICUS.radius); }
+                while (++tries < 30 && Math.hypot(x - player.x, y - player.y) < HIEMADECTICUS.radius * (OCAMATHRON_REACH + 4));
+                free.push(makeGiant(HIEMADECTICUS, x, y));
+            }
         }
-        setInterval(manageOcamathron, 500); // notice deaths quickly (replenish only runs every 2s)
+        setInterval(manageGiants, 500); // notice deaths quickly (replenish only runs every 2s)
+
+        // Hiemadecticus pull on each other when they're close, stick when they
+        // touch, and fuse when all three are touching
+        function stepHiems(dt) {
+            if (physicsOn || ocBirth || !(stage === 'particles' || stage === 'molecule')) return;
+            const bodies = freeHiems();
+            if (player.type === HIEMADECTICUS) bodies.push(player);
+            let allTouch = bodies.length === HIEM_COUNT;
+            for (let i = 0; i < bodies.length; i++) {
+                for (let j = i + 1; j < bodies.length; j++) {
+                    const a = bodies[i], b = bodies[j];
+                    const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.001;
+                    const nx = dx / d, ny = dy / d;
+                    if (d < HIEM_PULL_RANGE) {
+                        a.vx += nx * HIEM_PULL * dt; a.vy += ny * HIEM_PULL * dt;
+                        b.vx -= nx * HIEM_PULL * dt; b.vy -= ny * HIEM_PULL * dt;
+                    }
+                    const min = a.r + b.r;
+                    if (d < min) { // they touch: no passing through, they stick together
+                        const push = (min - d) / 2;
+                        a.x -= nx * push; a.y -= ny * push;
+                        b.x += nx * push; b.y += ny * push;
+                        const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+                        if (vn < 0) {
+                            a.vx += nx * vn / 2; a.vy += ny * vn / 2;
+                            b.vx -= nx * vn / 2; b.vy -= ny * vn / 2;
+                        }
+                    }
+                    if (d > min + 4) allTouch = false;
+                }
+            }
+            if (allTouch) startOcBirth(bodies);
+        }
+
+        function startOcBirth(bodies) {
+            const edge = BIRTH_OUT + HIEMADECTICUS.radius;
+            const cx = Math.max(edge, Math.min(WORLD.width - edge, bodies.reduce((s, b) => s + b.x, 0) / bodies.length));
+            const cy = Math.max(edge, Math.min(WORLD.height - edge, bodies.reduce((s, b) => s + b.y, 0) / bodies.length));
+            const playerIn = bodies.includes(player);
+            for (const b of bodies) if (b !== player) removeFree(b);
+            if (playerIn) playerOrbit = null;
+            // Each one shoots straight out, a third of a circle apart
+            const sorted = bodies.map(e => ({ e, a: Math.atan2(e.y - cy, e.x - cx) })).sort((p, q) => p.a - q.a);
+            const members = sorted.map((m, i) => ({ e: m.e, sx: m.e.x, sy: m.e.y, a: sorted[0].a + i * Math.PI * 2 / 3 }));
+            ocBirth = { cx, cy, t: 0, spin: 0, members, playerIn };
+            if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+            showToast('All three Hiemadecticus touched!', playerIn
+                ? "You're flying apart... and spiraling back in to fuse into an Ocamathron!"
+                : "They're flying apart... and spiraling back in to fuse into an Ocamathron!");
+        }
+
+        function stepOcBirth(dt) {
+            const b = ocBirth;
+            b.t += dt;
+            const touchR = HIEMADECTICUS.radius * 2 / Math.sqrt(3); // all three just touching
+            let done = false;
+            if (b.t < BIRTH_OUT_TIME) { // shot out...
+                const k = 1 - Math.pow(1 - b.t / BIRTH_OUT_TIME, 3);
+                for (const m of b.members) {
+                    m.e.x = m.sx + (b.cx + Math.cos(m.a) * BIRTH_OUT - m.sx) * k;
+                    m.e.y = m.sy + (b.cy + Math.sin(m.a) * BIRTH_OUT - m.sy) * k;
+                }
+            } else { // ...then spiral in, faster and faster
+                const u = Math.min(1, (b.t - BIRTH_OUT_TIME) / BIRTH_IN_TIME);
+                const dist = touchR + (BIRTH_OUT - touchR) * (1 - u * u);
+                b.spin += (0.8 + 16 * u * u * u) * dt;
+                for (const m of b.members) {
+                    m.e.x = b.cx + Math.cos(m.a + b.spin) * dist;
+                    m.e.y = b.cy + Math.sin(m.a + b.spin) * dist;
+                }
+                done = u >= 1;
+            }
+            for (const m of b.members) { m.e.vx = 0; m.e.vy = 0; }
+            if (done) finishOcBirth();
+        }
+
+        // They touch: an Ocamathron is born, and its blast sweeps the whole map
+        function finishOcBirth() {
+            const { cx, cy, playerIn } = ocBirth;
+            ocBirth = null;
+            let oc;
+            if (playerIn) {
+                player.x = cx; player.y = cy;
+                becomeParticle(OCAMATHRON, null, true);
+                oc = player;
+            } else {
+                oc = makeGiant(OCAMATHRON, cx, cy);
+                oc.vx = oc.vy = 0;
+                free.push(oc);
+            }
+            lastOc = oc;
+            const corners = [[0, 0], [WORLD.width, 0], [0, WORLD.height], [WORLD.width, WORLD.height]];
+            pulse = {
+                x: cx, y: cy, r: oc.r, coreR: oc.r, born: performance.now(), source: oc, burns: true,
+                maxR: Math.max(...corners.map(([x, y]) => Math.hypot(x - cx, y - cy))) + 400,
+            };
+            oc.pulseHit = pulse;
+            if (navigator.vibrate) navigator.vibrate([60, 30, 120]);
+            showToast(playerIn ? 'You became an Ocamathron!' : 'An Ocamathron was born!',
+                'Its blast tore apart everything on the map, and everything that can burn caught fire!');
+        }
 
         function replenish() {
-            manageOcamathron();
+            manageGiants();
             if (stage === 'dust') return; // the dust world refills itself as you move (manageDust)
             if (atomsAppeared) spawnChem(3);
             if (stage === 'molecule') {
@@ -1304,7 +1459,7 @@
             pulseReadyAt = now + PULSE_COOLDOWN;
             const corners = [[0, 0], [WORLD.width, 0], [0, WORLD.height], [WORLD.width, WORLD.height]];
             pulse = {
-                x: player.x, y: player.y, r: player.r, born: now,
+                x: player.x, y: player.y, r: player.r, coreR: player.r, born: now, source: player,
                 maxR: Math.max(...corners.map(([cx, cy]) => Math.hypot(cx - player.x, cy - player.y))) + 400,
             };
             playerOrbit = null;
@@ -1335,9 +1490,23 @@
                 }
                 const d = Math.sqrt(d2) || 1, sp = rand(PULSE_KICK[0], PULSE_KICK[1]);
                 q.vx = dx / d * sp; q.vy = dy / d * sp;
+                if (pulse.burns && canBurn(q)) q.burning = 0;
+            }
+            // An Ocamathron's birth blast: torn-off pieces that can burn catch fire too
+            if (pulse.burns) for (const q of free) if (q.pulseHit === pulse && q.burning === undefined && canBurn(q)) q.burning = 0;
+            // A blast that isn't yours hits you too
+            if (pulse.source !== player && !pulse.hitPlayer &&
+                Math.hypot(player.x - pulse.x, player.y - pulse.y) < pulse.r) {
+                pulse.hitPlayer = true;
+                playerOrbit = null;
+                for (const q of free) if (q.orbit) delete q.orbit;
+                blastApart(pulse);
             }
             if (pulse.r > pulse.maxR) pulse = null;
         }
+
+        // Atoms of things that burn in air catch fire (single atoms in the molecule world)
+        const canBurn = (q) => q.chem && q.layout.Zs.length === 1 && BURNABLE.has(q.formula);
 
         // The shockwave: a blazing blue-white ring with fainter echoes behind it
         function drawPulse(time) {
@@ -1349,12 +1518,12 @@
             // Bright core where it started, fading fast
             const age = (performance.now() - pulse.born) / 1000;
             if (age < 1) {
-                const core = ctx.createRadialGradient(x, y, 0, x, y, player.r * (2 + age * 6));
+                const core = ctx.createRadialGradient(x, y, 0, x, y, pulse.coreR * (2 + age * 6));
                 core.addColorStop(0, `rgba(240, 248, 255, ${0.9 * (1 - age)})`);
                 core.addColorStop(1, 'rgba(140, 180, 255, 0)');
                 ctx.fillStyle = core;
                 ctx.beginPath();
-                ctx.arc(x, y, player.r * (2 + age * 6), 0, TAU);
+                ctx.arc(x, y, pulse.coreR * (2 + age * 6), 0, TAU);
                 ctx.fill();
             }
             // The wave front
@@ -1507,7 +1676,7 @@
 
         // Molecule world: your molecule comes apart into single atoms, and anything
         // stuck to it comes loose. You keep being one of your atoms.
-        function blastMolecule(oc, ux, uy) {
+        function blastMolecule(oc, ux, uy, name = 'Ocamathron') {
             if (cluster.length <= 1 && !stuck.length) return false;
             const released = stuck.splice(0); // stuck molecules come loose as they are
             for (const m of cluster) {
@@ -1527,7 +1696,7 @@
             player.vx = ux * 300; player.vy = uy * 300;
             refreshMolecule(false);
             if (selected === player) showInfo(player);
-            showToast('The Ocamathron blasted your molecule apart!', `Its light broke your ${lowerName(before)} into single atoms. Build molecules farther away from it!`);
+            showToast(`The ${name} blasted your molecule apart!`, `Its light broke your ${lowerName(before)} into single atoms. Build molecules farther away from it!`);
             return true;
         }
 
@@ -1535,12 +1704,12 @@
         // a group comes unstuck, a proton becomes quarks, an atom becomes
         // protons, neutrons and electrons. Returns false if there's nothing to break.
         const quarkTypeOf = (sym, anti) => TYPES.find(t => t.id === (anti ? 'anti' : '') + QUARK_BY_SYM[sym].id);
-        function blastApart(oc) {
+        function blastApart(oc, name = 'Ocamathron') {
             const b = clusterBounds();
             let ux = b.cx - oc.x, uy = b.cy - oc.y;
             const ul = Math.hypot(ux, uy) || 1;
             ux /= ul; uy /= ul;
-            if (stage === 'molecule') return blastMolecule(oc, ux, uy);
+            if (stage === 'molecule') return blastMolecule(oc, ux, uy, name);
             const released = [];    // entities already in the world (a group coming unstuck)
             let pieces = [];        // [{ type, color }]: the first one becomes you
             if (cluster.length > 1) { // anything that was joining you comes unstuck...
@@ -1588,7 +1757,7 @@
             updateStats();
             if (selected === player) showInfo(player);
             const now = player.type.name;
-            showToast('The Ocamathron blasted you apart!', `Its light pushes grouped particles apart${pieces.length ? `: your ${lowerName(before)} broke into pieces and you're ${aOrAn(now)} ${lowerName(now)} now` : ''}. Build things farther away from it!`);
+            showToast(`The ${name} blasted you apart!`, `Its light pushes grouped particles apart${pieces.length ? `: your ${lowerName(before)} broke into pieces and you're ${aOrAn(now)} ${lowerName(now)} now` : ''}. Build things farther away from it!`);
             return true;
         }
 
@@ -1630,7 +1799,7 @@
             return true;
         }
 
-        // Names are hidden (only the Ocamathron shows its name) until you click
+        // Names are hidden (only the Ocamathron and Hiemadecticus show their names) until you click
         // something; then that thing's name shows. Clicking your molecule counts as you.
         function nameShown(p) {
             return !!selected && (p === selected || (p.isPlayer && selected === player));
@@ -2042,7 +2211,7 @@
 
         // Can the player's atom c bond with atom i of free molecule p?
         function canBond(c, p, i) {
-            if (!physicsOn && player.type === OCAMATHRON) return { ok: false }; // nothing bonds to it
+            if (!physicsOn && isGiant(player.type)) return { ok: false }; // nothing bonds to it
             if (!physicsOn && !mergeOn) return { ok: false };                    // merging turned off: just bump
             if (!physicsOn) { // anything bonds with anything
                 // A quark group snaps into a particle first; it can bond on the next touch
@@ -3231,6 +3400,12 @@
                     fallIntoBlackHole(p, dt);
                     continue;
                 }
+                if (p.burning !== undefined) { // on fire: it slows down and burns away
+                    p.burning += dt;
+                    if (p.burning >= BURN_TIME) { removeFree(p); continue; }
+                    const drag = Math.exp(-1.5 * dt);
+                    p.vx *= drag; p.vy *= drag;
+                }
                 if (p.orbit) { // right-clicked: circles around you
                     const o = p.orbit;
                     const dist = orbitDistance(p, bounds);
@@ -3272,12 +3447,16 @@
                 if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
                 keepInWorld(p);
             }
+            stepHiems(dt);
+            if (ocBirth) stepOcBirth(dt);
 
             // --- Collisions between the player's group and free particles ---
             for (let i = free.length - 1; i >= 0; i--) {
                 const p = free[i];
                 if (!p) continue; // the list shrank (e.g. subatomic particles vanished on entering molecule scale)
                 if (p.orbit) continue; // orbiting things never touch you
+                if (p.burning !== undefined) continue; // nor does something burning away
+                if (p.type === HIEMADECTICUS && player.type === HIEMADECTICUS) continue; // Hiemadecticus handle each other (stepHiems)
                 if (playerOrbit && p === playerOrbit.target && !(stage === 'dust' && dust.blackHole)) continue; // nor does what you orbit (unless you're a black hole)
                 const near = bounds.extent + p.r;
                 if (Math.abs(p.x - bounds.cx) > near || Math.abs(p.y - bounds.cy) > near) continue;
@@ -3296,11 +3475,11 @@
                     const offGroup = !physicsOn && !player.atom && !player.parts;
                     const offMerge = !physicsOn && !offGroup;
                     if (p.huge) {
-                        floatText(p, 'The Ocamathron is far too big to merge with!');
+                        floatText(p, `The ${p.type.name} is far too big to merge with!`);
                     } else if (!physicsOn && !mergeOn) {
                         // Merging is turned off: you just bounce off things
-                    } else if (player.type === OCAMATHRON) {
-                        // You're the Ocamathron: far too big for anything to merge with you
+                    } else if (isGiant(player.type)) {
+                        // You're an Ocamathron or Hiemadecticus: far too big for anything to merge with you
                     } else if (offGroup) {
                         if (!forming) { joinCluster(p, c); break; }
                     } else if (offMerge) {
@@ -3338,12 +3517,17 @@
                 }
             }
 
-            // Too close to the Ocamathron (free floating, or you!): its light tears
-            // apart everything made of more than one particle
+            // Too close to an Ocamathron or Hiemadecticus (free floating, or you!):
+            // its light tears apart everything made of more than one particle
             if (!physicsOn && (stage === 'particles' || stage === 'molecule')) {
-                const oc = player.type === OCAMATHRON ? player : findOcamathron();
-                if (oc) {
+                const lights = free.filter(q => q.huge && isGiant(q.type));
+                if (isGiant(player.type)) lights.push(player);
+                if (ocBirth) for (const m of ocBirth.members) if (m.e !== player) lights.push(m.e);
+                for (const oc of lights) {
                     const reach = oc.r * OCAMATHRON_REACH;
+                    const push = giantPush(oc), name = oc.type.name;
+                    // Its light never pushes or breaks you while you're a giant yourself
+                    const hitsYou = oc !== player && !isGiant(player.type);
                     // Its light pushes everything in the circle outward: hardest up close,
                     // gently near the edge (you can still fight your way in)
                     const pushOut = (e, maxSpeed) => {
@@ -3351,7 +3535,7 @@
                         if (Math.abs(dx) > reach || Math.abs(dy) > reach) return;
                         const d = Math.hypot(dx, dy) || 0.001;
                         if (d >= reach) return;
-                        const a = (OCAMATHRON_PUSH * (1 - d / reach) + 60) * dt;
+                        const a = (push * (1 - d / reach) + 60 * push / OCAMATHRON_PUSH) * dt;
                         e.vx += dx / d * a; e.vy += dy / d * a;
                         const sp = Math.hypot(e.vx, e.vy);
                         if (maxSpeed && sp > maxSpeed) { e.vx *= maxSpeed / sp; e.vy *= maxSpeed / sp; }
@@ -3359,7 +3543,7 @@
                     // Its light rips orbits apart: your moons get blown away when they
                     // (or you) touch the circle, and if what you're orbiting touches it,
                     // you get flung off your orbit
-                    if (oc !== player) {
+                    if (hitsYou) {
                         const touches = e => Math.hypot(e.x - oc.x, e.y - oc.y) - e.r < reach;
                         const youInside = cluster.some(touches);
                         let blown = null;
@@ -3374,30 +3558,30 @@
                         if (blown) floatText(blown, 'Blown out of orbit!');
                         if (playerOrbit && (youInside || touches(playerOrbit.target))) {
                             playerOrbit = null; // you keep your orbit speed and get pushed out
-                            showToast('Ripped out of orbit!', 'The Ocamathron\'s light knocked you off what you were orbiting');
+                            showToast('Ripped out of orbit!', `The ${name}'s light knocked you off what you were orbiting`);
                         }
                     }
                     for (const q of free) if (q !== oc && !q.huge && !q.orbit && !q.falling) pushOut(q, 450);
                     // You (and anything stuck to you) drift outward, even while standing
                     // still; steering against it works near the edge but not up close
-                    if (oc !== player && !playerOrbit) {
+                    if (hitsYou && !playerOrbit) {
                         const dx = player.x - oc.x, dy = player.y - oc.y, d = Math.hypot(dx, dy) || 0.001;
                         if (d < reach) {
-                            const sp = (400 * (1 - d / reach) + 80) * dt;
+                            const sp = (400 * (1 - d / reach) + 80) * push / OCAMATHRON_PUSH * dt;
                             for (const q of cluster) { q.x += dx / d * sp; q.y += dy / d * sp; }
                         }
                     }
-                    if (oc !== player) {
+                    if (hitsYou) {
                         const b = clusterBounds();
                         // as soon as any part of you is inside the circle
                         const inside = cluster.some(m => Math.hypot(m.x - oc.x, m.y - oc.y) - m.r < reach) ||
                             Math.hypot(b.cx - oc.x, b.cy - oc.y) < reach;
-                        if (inside) blastApart(oc);
+                        if (inside) blastApart(oc, name);
                     }
                     let torn = 0; // a few per step, so a crowd breaks up smoothly
                     for (let i = free.length - 1; i >= 0 && torn < 8; i--) {
                         const q = free[i];
-                        if (q === oc || q.falling) continue;
+                        if (q === oc || q.huge || q.falling) continue;
                         const dx = q.x - oc.x, dy = q.y - oc.y;
                         // as soon as any part of it is inside the circle (big molecules too)
                         const edge = reach + q.r;
@@ -3421,11 +3605,14 @@
             // --- Camera follows the player (the middle of your molecule) ---
             let focus = stage === 'molecule' ? clusterBounds()
                 : stage === 'dust' ? { cx: player.x, cy: player.y, extent: player.r }
-                : player.type === OCAMATHRON
+                : isGiant(player.type)
                 // zoomed out to see what your light tears apart; during a Hyper Pulse,
                 // pull way back to watch the shockwave sweep across the map
                 ? { cx: player.x, cy: player.y, extent: Math.max(player.r * 2.5, pulse ? Math.min(pulse.r, pulse.maxR * 0.75) * 0.6 : 0) }
                 : { cx: player.x, cy: player.y, extent: Math.max(player.r, bounds.extent) };
+            if (ocBirth && ocBirth.playerIn) { // watch all three of you fly out and spiral in
+                focus = { cx: ocBirth.cx, cy: ocBirth.cy, extent: BIRTH_OUT + HIEMADECTICUS.radius * 2 };
+            }
             if (playerOrbit) {
                 // While orbiting, hold the camera on what you're orbiting so
                 // the view stays steady and you circle around the middle
@@ -3615,7 +3802,7 @@
             ctx.save();
             ctx.setLineDash([14 / view.zoom, 12 / view.zoom]);
             ctx.lineDashOffset = -time / 60 / view.zoom;
-            ctx.strokeStyle = 'rgba(150, 185, 255, 0.22)';
+            ctx.strokeStyle = p.type === HIEMADECTICUS ? 'rgba(150, 255, 185, 0.22)' : 'rgba(150, 185, 255, 0.22)';
             ctx.lineWidth = 2 / view.zoom;
             ctx.beginPath();
             ctx.arc(x, y, r * OCAMATHRON_REACH, 0, TAU);
@@ -3641,11 +3828,40 @@
             ctx.beginPath();
             ctx.arc(x, y, r, 0, TAU);
             ctx.fill();
-            drawLabel('Ocamathron', x, y + r + 26, Math.max(18, 13 / view.zoom), false, false);
+            drawLabel(p.type.name, x, y + r + 26, Math.max(18, 13 / view.zoom), false, false);
+        }
+
+        // Flames licking up around something burning away
+        function drawFlames(p, time) {
+            const k = p.burning / BURN_TIME, r = p.r, TAU = Math.PI * 2;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (let i = 0; i < 6; i++) {
+                const flick = Math.sin(time / 60 + i * 2.1) * 0.5 + 0.5;
+                const fx = p.x + Math.cos(i * 1.7 + time / 300) * r * 0.5;
+                const fy = p.y - r * (0.3 + flick * 0.9) - i * r * 0.05;
+                const fr = r * (0.7 + flick * 0.6) * (1 - k * 0.5);
+                const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+                g.addColorStop(0, `rgba(255, 240, 160, ${0.7 * (1 - k)})`);
+                g.addColorStop(0.5, `rgba(255, 130, 30, ${0.45 * (1 - k)})`);
+                g.addColorStop(1, 'rgba(200, 40, 0, 0)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(fx, fy, fr, 0, TAU);
+                ctx.fill();
+            }
+            ctx.restore();
         }
 
         function drawFree(p, time) {
-            if (p.type === OCAMATHRON) drawOcamathron(p, time);
+            if (p.burning !== undefined) { // burning away: fades out under its flames
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, 1 - Math.pow(p.burning / BURN_TIME, 2));
+                drawMolecule(p);
+                ctx.restore();
+                drawFlames(p, time);
+            }
+            else if (isGiant(p.type)) drawOcamathron(p, time);
             else if (p.dust) drawDust(p);
             else if (p.chem) drawMolecule(p);
             else if (p.type.kind === 'nucleus') drawAlpha(p);
@@ -3774,6 +3990,8 @@
                     p.y + pr + margin < camY || p.y - pr - margin > camY + viewH) continue;
                 drawFree(p, time);
             }
+            // Three Hiemadecticus fusing into an Ocamathron
+            if (ocBirth) for (const m of ocBirth.members) if (m.e !== player) drawOcamathron(m.e, time);
 
             // Player's group: gluon bonds first, then the quarks on top
             if (stage !== 'molecule') {
@@ -4477,15 +4695,16 @@
             try { localStorage.setItem(PHYSICS_KEY, physicsOn ? 'on' : 'off'); } catch (err) { /* still works this game */ }
             showPhysicsButton();
             if (stage === 'molecule') refreshMolecule(false);
-            const wasOcamathron = physicsOn && player.type === OCAMATHRON;
+            const wasOcamathron = physicsOn && isGiant(player.type);
+            const wasHiem = physicsOn && player.type === HIEMADECTICUS;
             const wasTachyon = physicsOn && player.type === TACHYON;
             if (wasOcamathron || wasTachyon) becomeParticle(TYPES.find(t => t.id === 'up'), 'red', true);
-            manageOcamathron();
+            manageGiants();
             removeOffOnly();
             updateSupernovaButton();
             updateRestartPrompt();
             if (wasOcamathron || wasTachyon) {
-                showToast('Real physics ON', `${wasTachyon ? 'Tachyons' : 'The Ocamathron'} can't exist with real physics, so you're an up quark again`);
+                showToast('Real physics ON', `${wasTachyon ? 'Tachyons' : wasHiem ? 'Hiemadecticus' : 'The Ocamathron'} can't exist with real physics, so you're an up quark again`);
             } else if (announce) {
                 showToast(physicsOn ? 'Real physics ON' : 'Physics OFF!', physicsOn
                     ? 'Only real, stable molecules and real orbits, following the rules of nature'
@@ -4561,6 +4780,7 @@
 
         // Turn the player (still at the very start) into any particle
         function becomeParticle(type, color, quiet) {
+            const oldType = player.type;
             const fresh = makeEntity(type, player.x, player.y);
             for (const k of ['color', 'inner', 'spin', 'spinSpeed', 'atom', 'parts']) delete player[k];
             player.type = type;
@@ -4576,9 +4796,11 @@
             updateStats();
             if (selected === player) showInfo(player);
             document.body.classList.toggle('is-ocamathron', type === OCAMATHRON);
-            if (type === OCAMATHRON) manageOcamathron(); // there can only be one
-            if (!quiet) showToast(`You're ${aOrAn(type.name)} ${type === OCAMATHRON ? type.name : type.name.toLowerCase()}!`, type === OCAMATHRON
+            if (isGiant(type) || isGiant(oldType)) manageGiants(); // always exactly three Hiemadecticus
+            if (!quiet) showToast(`You're ${aOrAn(type.name)} ${isGiant(type) ? type.name : type.name.toLowerCase()}!`, type === OCAMATHRON
                 ? 'Your light tears apart anything that comes close. Press Space or tap 💥 Hyper Pulse to blast the whole map!'
+                : type === HIEMADECTICUS
+                ? "Your light tears apart anything grouped that comes close. Find the other two Hiemadecticus: if all three of you touch, you'll fuse into an Ocamathron!"
                 : 'Physics is off: touch anything to merge with it');
         }
 
@@ -4603,7 +4825,7 @@
                 ['Made of quarks (hadrons)', t => t.kind === 'hadron'],
                 ['Atomic nucleus', t => t.kind === 'nucleus'],
                 ['Hypothetical particles (never confirmed)', t => t.kind === 'hypothetical'],
-                ['Mystery particle', t => t === OCAMATHRON],
+                ['Mystery particles', t => isGiant(t)],
             ];
             const ball = (look) => `radial-gradient(circle at 35% 30%, ${look.light}, ${look.base} 50%, ${look.dark})`;
             for (const [title, match] of groups) {
@@ -4611,7 +4833,7 @@
                 h.textContent = title;
                 const grid = document.createElement('div');
                 grid.className = 'pick-grid';
-                for (const t of [...TYPES, OCAMATHRON].filter(match)) {
+                for (const t of [...TYPES, OCAMATHRON, HIEMADECTICUS].filter(match)) {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'pick';
@@ -4621,7 +4843,7 @@
                         : t.kind === 'antiquark' ? ball(COLOR_CHARGE.antired)
                         : t.kind === 'hadron' ? 'radial-gradient(circle at 35% 30%, #d0d0d8, #8a8a98)'
                         : t.kind === 'nucleus' ? ball(PROTON_LOOK) : ball(t.look);
-                    if (t === OCAMATHRON) sw.style.boxShadow = `0 0 12px ${t.glow}`; // it glows
+                    if (isGiant(t)) sw.style.boxShadow = `0 0 12px ${t.glow}`; // it glows
                     sw.textContent = t.sym;
                     if (t.bar) sw.style.textDecoration = 'overline';
                     const name = document.createElement('span');
@@ -4638,7 +4860,7 @@
         const startParams = new URLSearchParams(location.search);
         const startAs = startParams.get('as');
         if (startAs) history.replaceState(null, '', location.pathname); // so Start over shows the menu again
-        const startType = startAs && [...TYPES, OCAMATHRON].find(t => t.id === startAs);
+        const startType = startAs && [...TYPES, OCAMATHRON, HIEMADECTICUS].find(t => t.id === startAs);
         if (startType && !physicsOn) becomeParticle(startType);
         else if (!startParams.has('dust')) openMenu();
 
