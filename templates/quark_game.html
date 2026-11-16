@@ -363,6 +363,11 @@
     </div>
     <div id="dev-panel">
         <b>DEV POWERS (local only)</b>
+        <button type="button" data-dev-stage="quark">Up quark (fresh start)</button>
+        <button type="button" data-dev-stage="proton">Proton</button>
+        <button type="button" data-dev-stage="hydrogen">Hydrogen atom</button>
+        <button type="button" data-dev-stage="carbon">Carbon atom</button>
+        <button type="button" data-dev-stage="molecule">Molecule world (O atom)</button>
         <button type="button" data-dev="dust">Dust grain</button>
         <button type="button" data-dev="planet">Rocky planet</button>
         <button type="button" data-dev="gas">Gas giant</button>
@@ -983,7 +988,22 @@
                     counts[q.formula]--;
                 }
             }
-            if (stage === 'molecule') return; // subatomic particles are gone at molecule scale
+            if (stage === 'molecule') {
+                // Quarks and other pieces an Ocamathron broke things into: like in the
+                // quark world, extras far off screen are forgotten so they can't pile up forever
+                const halfW = window.innerWidth / 2 / view.zoom + 300, halfH = window.innerHeight / 2 / view.zoom + 300;
+                const counts = new Map();
+                for (const q of free) if (!q.chem && !q.huge) counts.set(q.type, (counts.get(q.type) || 0) + 1);
+                for (let k = free.length - 1; k >= 0; k--) {
+                    const q = free[k];
+                    if (q.chem || q.huge || q.orbit || q === selected || q.breakIn !== undefined) continue;
+                    if (counts.get(q.type) <= (q.type.count || 0) * 2) continue;
+                    if (Math.abs(q.x - camera.x) < halfW && Math.abs(q.y - camera.y) < halfH) continue;
+                    free.splice(k, 1);
+                    counts.set(q.type, counts.get(q.type) - 1);
+                }
+                return; // subatomic particles don't spawn at molecule scale
+            }
             const counts = new Map();
             for (const p of free) counts.set(p.type, (counts.get(p.type) || 0) + 1);
             // The Ocamathron breaks things into lots of pieces: don't let them pile up forever
@@ -1483,8 +1503,14 @@
                 if (d2 >= r2) continue;
                 q.pulseHit = pulse;
                 delete q.orbit; // nothing keeps orbiting through that
+                const d0 = Math.sqrt(d2) || 1;
+                if (pulse.burns && canBurn(q)) { // it burns up instead
+                    q.burning = 0;
+                    q.vx = dx / d0 * PULSE_KICK[0]; q.vy = dy / d0 * PULSE_KICK[0];
+                    continue;
+                }
                 const before = free.length;
-                if (tearFree(q, pulse, 8, PULSE_KICK, true)) {
+                if (tearFree(q, pulse, Infinity, PULSE_KICK, true)) {
                     for (let k = before - 1; k < free.length; k++) free[k].pulseHit = pulse; // its pieces were already blasted
                     continue;
                 }
@@ -1625,15 +1651,16 @@
             });
         }
 
-        // Molecule world: a molecule breaks into its atoms (single atoms stay whole;
-        // their protons and electrons are far too small to see at this size)
-        function tearMolecule(q, oc, speed) {
-            if (!q.chem || q.layout.Zs.length < 2) return false;
-            free.splice(free.indexOf(q), 1);
-            if (selected === q) hideInfo();
-            if (playerOrbit && playerOrbit.target === q) playerOrbit = null;
+        // Molecule world: a molecule breaks into its atoms. An Ocamathron (or
+        // Hiemadecticus) keeps going, one phase at a time, all the way down:
+        // molecule -> atoms -> protons, neutrons and electrons -> quarks.
+        const BREAK_DELAY = [0.25, 0.45]; // seconds between phases
+        function tearMolecule(q, oc, speed, maxPieces = 24, phased = false) {
+            if (!q.chem) return false;
+            if (q.layout.Zs.length < 2) return phased && !!shatter(q, oc, maxPieces, speed, true); // a single atom
+            removeFree(q);
             const cos = Math.cos(q.rot), sin = Math.sin(q.rot);
-            q.layout.Zs.slice(0, 40).forEach((Z, i) => {
+            q.layout.Zs.forEach((Z, i) => {
                 const lp = q.layout.pos[i];
                 const x = q.x + lp.x * cos - lp.y * sin, y = q.y + lp.x * sin + lp.y * cos;
                 const e = makeChemEntity(ELEMENTS[Z - 1][0], x, y);
@@ -1641,19 +1668,53 @@
                 const ul = Math.hypot(ux, uy) || 1;
                 const sp = rand(speed[0], speed[1]);
                 e.vx = ux / ul * sp + rand(-40, 40); e.vy = uy / ul * sp + rand(-40, 40);
+                if (phased) breakSoon(e, oc, maxPieces, speed);
                 free.push(e);
             });
             return true;
         }
 
+        // In a moment, this piece breaks into its own pieces too
+        function breakSoon(e, oc, maxPieces, speed) {
+            e.breakIn = rand(BREAK_DELAY[0], BREAK_DELAY[1]);
+            e.breakFrom = { x: oc.x, y: oc.y };
+            e.breakMax = maxPieces;
+            e.breakSpeed = speed;
+        }
+
+        // Break a free particle into its pieces (one phase), flung away from oc.
+        // Returns the new pieces, or null if it's just one particle.
+        function shatter(q, oc, maxPieces, speed, phased) {
+            const pieces = piecesOfFree(q);
+            if (!pieces) return null;
+            removeFree(q);
+            let ux = q.x - oc.x, uy = q.y - oc.y;
+            const ul = Math.hypot(ux, uy) || 1;
+            ux /= ul; uy /= ul;
+            const keep = pieces.length <= maxPieces ? pieces : pieces.slice(0, maxPieces);
+            const made = [];
+            for (const piece of keep) {
+                const e = makeEntity(piece.type, q.x, q.y);
+                if (piece.color) e.color = piece.color;
+                const a = rand(-0.9, 0.9), sp = rand(speed[0], speed[1]);
+                const dx = ux * Math.cos(a) - uy * Math.sin(a), dy = ux * Math.sin(a) + uy * Math.cos(a);
+                e.x = q.x + dx * rand(0, q.r);
+                e.y = q.y + dy * rand(0, q.r);
+                e.vx = dx * sp; e.vy = dy * sp;
+                if (q.pulseHit) e.pulseHit = q.pulseHit; // already blasted
+                if (phased && piecesOfFree(e)) breakSoon(e, oc, maxPieces, speed);
+                free.push(e);
+                made.push(e);
+            }
+            return made;
+        }
+
         function tearFree(q, oc, maxPieces = 24, speed = [180, 340], allTheWay = false) {
-            if (stage === 'molecule') return tearMolecule(q, oc, speed);
+            if (q.chem && (stage === 'molecule' || allTheWay)) return tearMolecule(q, oc, speed, maxPieces, allTheWay);
             let pieces = piecesOfFree(q);
             if (!pieces) return false;
             if (allTheWay) pieces = downToSingles(pieces);
-            free.splice(free.indexOf(q), 1);
-            if (selected === q) hideInfo();
-            if (playerOrbit && playerOrbit.target === q) playerOrbit = null;
+            removeFree(q);
             let ux = q.x - oc.x, uy = q.y - oc.y;
             const ul = Math.hypot(ux, uy) || 1;
             ux /= ul; uy /= ul;
@@ -1674,90 +1735,106 @@
             return true;
         }
 
-        // Molecule world: your molecule comes apart into single atoms, and anything
-        // stuck to it comes loose. You keep being one of your atoms.
-        function blastMolecule(oc, ux, uy, name = 'Ocamathron') {
-            if (cluster.length <= 1 && !stuck.length) return false;
-            const released = stuck.splice(0); // stuck molecules come loose as they are
-            for (const m of cluster) {
-                if (m === player) continue;
-                released.push(makeChemEntity(ELEMENTS[m.Z - 1][0], m.x, m.y));
-            }
-            const before = player.type.name;
-            cluster.length = 1;
+        // The quark (or other particle) you started the game as: when an Ocamathron
+        // breaks you all the way down, that's what you go back to being
+        let startedAs = { type: TYPES.find(t => t.id === 'up'), color: 'red' };
+
+        // Everything an atom is made of, all the way down: quarks and electrons
+        function atomSingles(Z, N, E) {
+            const out = [];
+            const add = (id, n) => { for (let i = 0; i < n; i++) out.push({ type: TYPES.find(t => t.id === id) }); };
+            add('proton', Z); add('neutron', N); add('electron', E);
+            return downToSingles(out);
+        }
+        const neutronsOf = (Z) => Math.max(0, Math.round(ELEMENTS[Z - 1][3]) - Z);
+
+        // Back from the molecule world to the quark world you started in
+        function backToQuarkWorld() {
+            const b = clusterBounds();
+            stage = 'particles';
+            player.x = b.cx; player.y = b.cy;
+            for (const k of ['chem', 'Z', 'deg']) delete player[k];
+            cluster.length = 0;
+            cluster.push(player);
+            stuck.length = 0;
             bonds.length = 0;
-            player.deg = 0;
-            for (const e of released) {
-                let dx = e.x - oc.x, dy = e.y - oc.y;
-                const d = Math.hypot(dx, dy) || 1, sp = rand(200, 360);
-                e.vx = dx / d * sp + rand(-50, 50); e.vy = dy / d * sp + rand(-50, 50);
-                free.push(e);
-            }
-            player.vx = ux * 300; player.vy = uy * 300;
-            refreshMolecule(false);
-            if (selected === player) showInfo(player);
-            showToast(`The ${name} blasted your molecule apart!`, `Its light broke your ${lowerName(before)} into single atoms. Build molecules farther away from it!`);
-            return true;
+            bondedPairs = new Set();
+            molBondOrders = [];
+            molExtent = 60;
+            chemTargets = { ...ATOM_COUNTS }; // single atoms float around again, like before you made a molecule
         }
 
-        // The Ocamathron's light breaks whatever you're made of into its pieces:
-        // a group comes unstuck, a proton becomes quarks, an atom becomes
-        // protons, neutrons and electrons. Returns false if there's nothing to break.
+        // An Ocamathron's light (or blast) breaks you all the way down to quarks:
+        // a molecule into atoms, atoms into protons, neutrons and electrons, and
+        // those into quarks. Everything you were made of flies off, and you go back
+        // to being the quark you started as. Returns false if there's nothing to break.
         const quarkTypeOf = (sym, anti) => TYPES.find(t => t.id === (anti ? 'anti' : '') + QUARK_BY_SYM[sym].id);
         function blastApart(oc, name = 'Ocamathron') {
             const b = clusterBounds();
             let ux = b.cx - oc.x, uy = b.cy - oc.y;
             const ul = Math.hypot(ux, uy) || 1;
             ux /= ul; uy /= ul;
-            if (stage === 'molecule') return blastMolecule(oc, ux, uy, name);
-            const released = [];    // entities already in the world (a group coming unstuck)
-            let pieces = [];        // [{ type, color }]: the first one becomes you
-            if (cluster.length > 1) { // anything that was joining you comes unstuck...
-                forming = null;
-                bonds.length = 0;
-                for (const q of cluster) if (q !== player) { q.bonded = false; released.push(q); }
-                cluster.length = 1;
-            }
-            // ...and you break into your own pieces, if you're made of more than one
-            if (player.parts) {
-                pieces = player.parts.slice();
-            } else if (player.type.kind === 'hadron' && player.inner) {
-                pieces = player.inner.map(q => ({ type: quarkTypeOf(q.sym, q.anti), color: q.color }));
-            } else if (player.atom && player.type.kind === 'atom') {
-                const { Z, N, E } = player.atom;
-                if (Z + N === 1 && E === 0) { // a bare proton or neutron
-                    const nucleon = TYPES.find(t => t.id === (Z ? 'proton' : 'neutron'));
-                    pieces = nucleon.quarks.map(([sym], i) => ({ type: quarkTypeOf(sym, false), color: COLORS[i] }));
-                } else {
-                    const add = (id, n) => { for (let i = 0; i < n; i++) pieces.push({ type: TYPES.find(t => t.id === id) }); };
-                    add('proton', Z); add('neutron', N); add('electron', E);
-                }
-            }
-            if (!released.length && !pieces.length) return false; // a single particle: nothing to push apart
             const before = player.type.name;
-            if (pieces.length) {
-                becomeParticle(pieces[0].type, pieces[0].color, true);
-                // Big atoms have hundreds of pieces: most of them are blown far away
-                for (const piece of pieces.slice(1, 60)) {
-                    const e = makeEntity(piece.type, player.x, player.y);
-                    if (piece.color) e.color = piece.color;
-                    released.push(e);
-                    free.push(e);
+            const pieces = [];      // [{ type, color }]: everything you were made of
+            const released = [];    // things that were already whole particles
+            if (stage === 'molecule') {
+                const Zs = cluster.map(m => m.Z);
+                for (const s of stuck) Zs.push(...s.layout.Zs);
+                for (const Z of Zs) pieces.push(...atomSingles(Z, neutronsOf(Z), Z));
+            } else {
+                forming = null;
+                for (const q of cluster) {
+                    if (q === player) continue;
+                    q.bonded = false;
+                    const inner = piecesOfFree(q);
+                    if (inner) pieces.push(...downToSingles(inner)); else released.push(q);
                 }
+                if (player.parts) pieces.push(...downToSingles(player.parts));
+                else if (player.atom) pieces.push(...atomSingles(player.atom.Z, player.atom.N, player.atom.E));
+                else if (player.type.kind === 'hadron' && player.inner) pieces.push(...player.inner.map(q => ({ type: quarkTypeOf(q.sym, q.anti), color: q.color })));
+                else if (player.type.kind === 'nucleus') pieces.push(...atomSingles(2, 2, 0));
+                else if (!released.length) return false; // a single particle: nothing to break
+                else released.push(null); // marker: you stay what you are
             }
+            const keepYou = released.includes(null);
+            if (keepYou) released.splice(released.indexOf(null), 1);
+
+            if (stage === 'molecule') backToQuarkWorld();
+            else { cluster.length = 1; bonds.length = 0; }
+
+            if (!keepYou) {
+                // You become the quark you started as (one of your own pieces)
+                let k = pieces.findIndex(p => p.type === startedAs.type && (!startedAs.color || p.color === startedAs.color));
+                if (k < 0) k = pieces.findIndex(p => p.type === startedAs.type);
+                if (k < 0) k = pieces.findIndex(p => isQuarkKind(p.type));
+                if (k < 0) k = 0;
+                const you = pieces.splice(k, 1)[0];
+                becomeParticle(you.type, you.color || startedAs.color, true);
+            }
+            for (const piece of pieces) {
+                const e = makeEntity(piece.type, player.x, player.y);
+                if (piece.color) e.color = piece.color;
+                released.push(e);
+            }
+            const spread = Math.sqrt(released.length) * 14; // lots of pieces: a bigger cloud
             for (const e of released) {
                 if (!free.includes(e)) free.push(e);
-                const a = rand(-0.9, 0.9), sp = rand(260, 420);
+                const a = rand(-1.2, 1.2), sp = rand(260, 460);
                 const dx = ux * Math.cos(a) - uy * Math.sin(a), dy = ux * Math.sin(a) + uy * Math.cos(a);
-                e.x = player.x + dx * (player.r + e.r + rand(10, 60));
-                e.y = player.y + dy * (player.r + e.r + rand(10, 60));
+                const out = player.r + e.r + rand(10, 60 + spread);
+                e.x = player.x + dx * out;
+                e.y = player.y + dy * out;
                 e.vx = dx * sp; e.vy = dy * sp;
+                if (oc === pulse) e.pulseHit = pulse; // the shockwave already hit these
             }
             player.vx = ux * 300; player.vy = uy * 300;
+            playerOrbit = null;
             updateStats();
             if (selected === player) showInfo(player);
             const now = player.type.name;
-            showToast(`The ${name} blasted you apart!`, `Its light pushes grouped particles apart${pieces.length ? `: your ${lowerName(before)} broke into pieces and you're ${aOrAn(now)} ${lowerName(now)} now` : ''}. Build things farther away from it!`);
+            showToast(`The ${name} blasted you apart!`, keepYou
+                ? 'Its light pushes grouped particles apart. Build things farther away from it!'
+                : `Your ${lowerName(before)} broke all the way down into ${pieces.length + 1} pieces, and you're ${aOrAn(now)} ${lowerName(now)} again. Build things farther away from it!`);
             return true;
         }
 
@@ -3405,6 +3482,12 @@
                     if (p.burning >= BURN_TIME) { removeFree(p); continue; }
                     const drag = Math.exp(-1.5 * dt);
                     p.vx *= drag; p.vy *= drag;
+                } else if (p.breakIn !== undefined) { // breaking down, one phase at a time
+                    p.breakIn -= dt;
+                    if (p.breakIn <= 0) {
+                        delete p.breakIn;
+                        if (shatter(p, p.breakFrom, p.breakMax, p.breakSpeed, true)) continue;
+                    }
                 }
                 if (p.orbit) { // right-clicked: circles around you
                     const o = p.orbit;
@@ -3456,6 +3539,7 @@
                 if (!p) continue; // the list shrank (e.g. subatomic particles vanished on entering molecule scale)
                 if (p.orbit) continue; // orbiting things never touch you
                 if (p.burning !== undefined) continue; // nor does something burning away
+                if (stage === 'molecule' && !p.chem && !p.huge) continue; // subatomic debris is far too small to touch at this scale
                 if (p.type === HIEMADECTICUS && player.type === HIEMADECTICUS) continue; // Hiemadecticus handle each other (stepHiems)
                 if (playerOrbit && p === playerOrbit.target && !(stage === 'dust' && dust.blackHole)) continue; // nor does what you orbit (unless you're a black hole)
                 const near = bounds.extent + p.r;
@@ -3587,7 +3671,7 @@
                         const edge = reach + q.r;
                         if (Math.abs(dx) > edge || Math.abs(dy) > edge || dx * dx + dy * dy >= edge * edge) continue;
                         if (q.chem && q.layout.Zs.length > 1 && !moleculeTouches(q, oc, reach)) continue;
-                        if (tearFree(q, oc, 24, [180, 340], true)) torn++; // all the way down: nothing whole leaves the circle
+                        if (tearFree(q, oc, Infinity, [180, 340], true)) torn++; // all the way down: nothing whole leaves the circle
                     }
                 }
             }
@@ -4797,6 +4881,7 @@
             if (selected === player) showInfo(player);
             document.body.classList.toggle('is-ocamathron', type === OCAMATHRON);
             if (isGiant(type) || isGiant(oldType)) manageGiants(); // always exactly three Hiemadecticus
+            if (!quiet && !isGiant(type)) startedAs = { type, color: player.color }; // what an Ocamathron breaks you back down to
             if (!quiet) showToast(`You're ${aOrAn(type.name)} ${isGiant(type) ? type.name : type.name.toLowerCase()}!`, type === OCAMATHRON
                 ? 'Your light tears apart anything that comes close. Press Space or tap 💥 Hyper Pulse to blast the whole map!'
                 : type === HIEMADECTICUS
@@ -4861,8 +4946,10 @@
         const startAs = startParams.get('as');
         if (startAs) history.replaceState(null, '', location.pathname); // so Start over shows the menu again
         const startType = startAs && [...TYPES, OCAMATHRON, HIEMADECTICUS].find(t => t.id === startAs);
+        const devStage = startParams.get('devstage');
+        if (devStage) history.replaceState(null, '', location.pathname);
         if (startType && !physicsOn) becomeParticle(startType);
-        else if (!startParams.has('dust')) openMenu();
+        else if (!startParams.has('dust') && !devStage) openMenu();
 
         // --- Dev test powers: only on this computer or the home network ---
         const IS_LOCAL = location.protocol === 'file:' ||
@@ -4920,8 +5007,33 @@
                     }
                 },
             };
+            // Earlier stages: start a fresh game already at that stage
+            const atomStage = (Z, N) => {
+                becomeParticle(TYPES.find(t => t.id === 'proton'), null, true);
+                player.atom = { Z, N, E: Z };
+                refreshAtom();
+                spawnAtomsAppear();
+            };
+            const DEV_STAGES = {
+                quark: () => {},
+                proton: () => becomeParticle(TYPES.find(t => t.id === 'proton'), null, true),
+                hydrogen: () => atomStage(1, 0),
+                carbon: () => atomStage(6, 6),
+                molecule: () => { atomStage(8, 8); enterMoleculeStage(null); refreshMolecule(false); },
+            };
+            if (devStage && DEV_STAGES[devStage]) {
+                DEV_STAGES[devStage]();
+                updateStats();
+                showToast(`DEV: ${player.type.name}`, stage === 'molecule' ? 'Molecule world: touch atoms to bond' : 'Fresh game, starting here');
+            }
+
             devPanel.addEventListener('click', (e) => {
-                const power = e.target.closest('button')?.dataset.dev;
+                const btn = e.target.closest('button');
+                if (btn?.dataset.devStage) {
+                    location.replace(location.pathname + '?devstage=' + encodeURIComponent(btn.dataset.devStage));
+                    return;
+                }
+                const power = btn?.dataset.dev;
                 if (power) DEV_POWERS[power]();
             });
         }
