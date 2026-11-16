@@ -430,12 +430,19 @@
     <script>
     (() => {
         const canvas = document.getElementById('game');
-        const ctx = canvas.getContext('2d');
+        let ctx = canvas.getContext('2d'); // (an iPad briefly points this at a sprite while painting one)
         const statsEl = document.getElementById('stats');
+        // iPads (an older one, like a 2019 iPad, struggles with the full-detail game)
+        // get a lighter version: fewer pixels, cached drawings, fewer physics steps.
+        // Computers never take this path. Add ?lowpower to the address to try it on one.
+        const IS_IPAD = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const LOW_POWER = IS_IPAD || new URLSearchParams(location.search).has('lowpower');
+        if (LOW_POWER) document.documentElement.classList.add('low-power');
         let dpr = 1;
 
         function resize() {
             dpr = window.devicePixelRatio || 1;
+            if (LOW_POWER) dpr = Math.min(dpr, 1.5); // a sharp-enough picture with ~44% fewer pixels to fill
             canvas.width = window.innerWidth * dpr;
             canvas.height = window.innerHeight * dpr;
             canvas.style.width = window.innerWidth + 'px';
@@ -990,7 +997,7 @@
                 'Its blast tore apart everything on the map, and everything that can burn caught fire!');
         }
 
-        const SHARD_LIMIT = 80000; // past this many things, even Ocamathron pieces get forgotten off screen
+        const SHARD_LIMIT = LOW_POWER ? 25000 : 80000; // past this many things, even Ocamathron pieces get forgotten off screen
         function replenish() {
             manageGiants();
             if (stage === 'dust') return; // the dust world refills itself as you move (manageDust)
@@ -1491,7 +1498,7 @@
         const CLEANUP_KEY = 'matterEaterCleanup';
         let cleanupOn = false;
         try { cleanupOn = localStorage.getItem(CLEANUP_KEY) === 'on'; } catch (err) { /* keep the default */ }
-        const CLEANUP_TICK = 0.1;          // seconds between checks (cheap even with tens of thousands of pieces)
+        const CLEANUP_TICK = LOW_POWER ? 0.25 : 0.1;          // seconds between checks (cheap even with tens of thousands of pieces)
         const CLEANUP_RANGE = 180;         // how far a quark or proton feels the pull
         const CLEANUP_PULL = 900;          // how hard they pull together
         const CLEANUP_TOUCH = 6;           // extra gap that still counts as touching
@@ -1727,7 +1734,7 @@
             ctx.strokeStyle = `rgba(220, 235, 255, ${0.7 * fade + 0.2})`;
             ctx.lineWidth = Math.max(2, 3 / z);
             ctx.beginPath();
-            const n = 72;
+            const n = LOW_POWER ? 24 : 72;
             for (let k = 0; k < n; k++) {
                 const a = (k / n) * TAU + Math.sin(time / 90 + k) * 0.02;
                 const len = w * (0.4 + 0.6 * Math.abs(Math.sin(time / 70 + k * 1.7)));
@@ -3907,7 +3914,79 @@
         // =====================================================================
         // Drawing helpers
         // =====================================================================
+        // iPad: each kind of ball is painted once (small and big versions) and then
+        // copied, instead of building a fresh gradient for every ball every frame
+        const ballSprites = new Map();
+        function ballSprite(look, big) {
+            const key = look.light + look.base + look.dark + (big ? 'B' : 's');
+            let c = ballSprites.get(key);
+            if (c) return c;
+            const R = big ? 96 : 24;
+            c = document.createElement('canvas');
+            c.width = c.height = R * 2 + 2;
+            const t = c.getContext('2d'), m = R + 1;
+            const g = t.createRadialGradient(m - R * 0.35, m - R * 0.4, R * 0.1, m, m, R);
+            g.addColorStop(0, look.light);
+            g.addColorStop(0.45, look.base);
+            g.addColorStop(1, look.dark);
+            t.fillStyle = g;
+            t.beginPath();
+            t.arc(m, m, R, 0, Math.PI * 2);
+            t.fill();
+            ballSprites.set(key, c);
+            return c;
+        }
+        const labelSprites = new Map();
+        function labelSprite(text, bar, serif) {
+            const key = text + (bar ? '~' : '') + (serif ? 'S' : '');
+            let sp = labelSprites.get(key);
+            if (sp) return sp;
+            const size = 64;
+            const font = `${serif ? 'italic bold' : 'bold'} ${size}px ${serif ? 'Georgia, "Times New Roman", serif' : 'system-ui, sans-serif'}`;
+            const c = document.createElement('canvas');
+            let t = c.getContext('2d');
+            t.font = font;
+            const w = Math.ceil(t.measureText(text).width) + size * 0.4;
+            c.width = w; c.height = Math.ceil(size * 1.6);
+            t = c.getContext('2d');
+            t.font = font;
+            t.textAlign = 'center';
+            t.textBaseline = 'middle';
+            t.lineJoin = 'round';
+            t.lineWidth = size * 0.14;
+            t.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+            const x = w / 2, y = c.height / 2;
+            t.strokeText(text, x, y);
+            t.fillStyle = '#ffffff';
+            t.fillText(text, x, y);
+            if (bar) {
+                const tw = t.measureText(text).width, by = y - size * 0.55;
+                t.lineCap = 'round';
+                t.beginPath(); t.moveTo(x - tw / 2, by); t.lineTo(x + tw / 2, by); t.stroke();
+                t.strokeStyle = '#ffffff';
+                t.lineWidth = size * 0.08;
+                t.beginPath(); t.moveTo(x - tw / 2, by); t.lineTo(x + tw / 2, by); t.stroke();
+            }
+            sp = { canvas: c, scale: 1 / size };
+            labelSprites.set(key, sp);
+            return sp;
+        }
+        // A particle's letter (cached on iPad, drawn fresh on computers)
+        function drawSymbol(text, x, y, size, bar, serif) {
+            if (!LOW_POWER) return drawLabel(text, x, y, size, bar, serif);
+            if (size * view.zoom < 4) return; // too small to read
+            const sp = labelSprite(text, bar, serif), k = size * sp.scale;
+            ctx.drawImage(sp.canvas, x - sp.canvas.width * k / 2, y - sp.canvas.height * k / 2, sp.canvas.width * k, sp.canvas.height * k);
+        }
+
         function drawBall(x, y, r, look, alpha = 1) {
+            if (LOW_POWER) {
+                const big = r * view.zoom * dpr > 24, R = big ? 96 : 24, h = r * (R + 1) / R;
+                ctx.globalAlpha = alpha;
+                ctx.drawImage(ballSprite(look, big), x - h, y - h, h * 2, h * 2);
+                ctx.globalAlpha = 1;
+                return;
+            }
             const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
             g.addColorStop(0, look.light);
             g.addColorStop(0.45, look.base);
@@ -3944,9 +4023,10 @@
 
         function drawQuark(x, y, r, color, sym, bar) {
             drawBall(x, y, r, COLOR_CHARGE[color]);
-            if (r >= 5) drawLabel(sym, x, y + r * 0.05, r * 1.2, bar, true);
+            if (r >= 5) drawSymbol(sym, x, y + r * 0.05, r * 1.2, bar, true);
         }
 
+        const GLUON_STEP = LOW_POWER ? 3 : 1.5;
         // Wavy gluon line between two balls, like a spring
         function drawGluon(ax, ay, ar, bx, by, br, time, width) {
             const dx = bx - ax, dy = by - ay;
@@ -3961,7 +4041,7 @@
             const phase = time / 120;
 
             ctx.beginPath();
-            for (let s = 0; s <= len; s += 1.5) {
+            for (let s = 0; s <= len; s += GLUON_STEP) {
                 const off = Math.sin((s / len) * waves * Math.PI * 2 - phase) * amp;
                 const x = ax + nx * (start + s) + px * off;
                 const y = ay + ny * (start + s) + py * off;
@@ -3977,7 +4057,40 @@
             ctx.stroke();
         }
 
+        // iPad: each kind of proton, neutron or other hadron is painted once and then
+        // copied and turned (its gluon springs hold still instead of wiggling)
+        const hadronSprites = new Map();
+        function drawHadronSprite(p) {
+            const key = p.type.id + '|' + p.inner.map(q => (q.look ? q.sym : q.color + q.sym) + (q.anti ? '~' : '')).join(',');
+            let sp = hadronSprites.get(key);
+            if (!sp) {
+                const R = 48, pad = 4;
+                const c = document.createElement('canvas');
+                c.width = c.height = (R + pad) * 2;
+                const saved = ctx, savedZoom = view.zoom;
+                ctx = c.getContext('2d');
+                view.zoom = 4; // paint the big, sharp versions of its balls and letters
+                drawHadronNow({ x: R + pad, y: R + pad, r: R, spin: 0, inner: p.inner, type: p.type }, 0);
+                ctx = saved;
+                view.zoom = savedZoom;
+                sp = { canvas: c, scale: (R + pad) / R };
+                hadronSprites.set(key, sp);
+            }
+            const h = p.r * sp.scale;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.spin || 0);
+            ctx.drawImage(sp.canvas, -h, -h, h * 2, h * 2);
+            ctx.restore();
+            if (nameShown(p)) drawLabel(p.type.sym, p.x, p.y + p.r + 10, 12, p.type.bar, false);
+        }
+
         function drawHadron(p, time) {
+            if (LOW_POWER && !p.isPlayer) return drawHadronSprite(p);
+            drawHadronNow(p, time);
+        }
+
+        function drawHadronNow(p, time) {
             // Gray "bag" holding its quarks, like the proton picture
             const g = ctx.createRadialGradient(p.x, p.y, p.r * 0.2, p.x, p.y, p.r);
             g.addColorStop(0, 'rgba(190, 190, 200, 0.55)');
@@ -4006,7 +4119,7 @@
             for (const pt of pts) {
                 if (pt.q.look) { // physics off: any particle can be inside
                     drawBall(pt.x, pt.y, qr, pt.q.look);
-                    if (qr >= 5) drawLabel(pt.q.sym, pt.x, pt.y, Math.min(qr * 0.9, 30), pt.q.anti, false);
+                    if (qr >= 5) drawSymbol(pt.q.sym, pt.x, pt.y, Math.min(qr * 0.9, 30), pt.q.anti, false);
                 } else {
                     drawQuark(pt.x, pt.y, qr, pt.q.color, pt.q.sym, pt.q.anti);
                 }
@@ -4045,7 +4158,7 @@
             }
             drawBall(p.x, p.y, p.r, look, p.type.ghost ? 0.45 : 1); // dark matter is see-through
             if (p.r >= 14) {
-                drawLabel(p.type.sym, p.x, p.y, Math.min(p.r * 0.85, 34), p.type.bar, false);
+                drawSymbol(p.type.sym, p.x, p.y, Math.min(p.r * 0.85, 34), p.type.bar, false);
             } else if (nameShown(p)) {
                 ctx.globalAlpha = 0.75;
                 drawLabel(p.type.sym, p.x + p.r + 9, p.y - p.r - 4, 10, p.type.bar, false);
@@ -4103,7 +4216,7 @@
             const k = p.burning / BURN_TIME, r = p.r, TAU = Math.PI * 2;
             ctx.save();
             ctx.globalCompositeOperation = 'lighter';
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < (LOW_POWER ? 3 : 6); i++) {
                 const flick = Math.sin(time / 60 + i * 2.1) * 0.5 + 0.5;
                 const fx = p.x + Math.cos(i * 1.7 + time / 300) * r * 0.5;
                 const fy = p.y - r * (0.3 + flick * 0.9) - i * r * 0.05;
@@ -4120,6 +4233,7 @@
             ctx.restore();
         }
 
+        const DOT_SIZE = LOW_POWER ? 3 : 1.5; // screen pixels: smaller than this is drawn as a dot
         // Colour for something drawn as a dot when it's too small to see properly
         function dotColor(p) {
             if (p.burning !== undefined) return '#ff9a3a';
@@ -4265,7 +4379,7 @@
                 const pr = p.drawR || p.r; // some things glow far past their edge
                 if (p.x + pr + margin < camX || p.x - pr - margin > camX + viewW ||
                     p.y + pr + margin < camY || p.y - pr - margin > camY + viewH) continue;
-                if (stage !== 'dust' && !p.huge && p.r * z < 1.5) {
+                if (stage !== 'dust' && !p.huge && p.r * z < DOT_SIZE) {
                     const c = dotColor(p);
                     let list = dots.get(c);
                     if (!list) dots.set(c, list = []);
@@ -5324,7 +5438,8 @@
             });
         }
 
-        const STEP = 1 / 120;
+        const STEP = LOW_POWER ? 1 / 60 : 1 / 120;
+        const MAX_STEPS = LOW_POWER ? 2 : 3; // catch-up steps per frame
         let last = performance.now();
         let acc = 0;
         function frame(now) {
@@ -5332,7 +5447,7 @@
             last = now;
             if (isPaused()) acc = 0; // menus pause the game
             let steps = 0;
-            while (acc >= STEP && steps < 3) {
+            while (acc >= STEP && steps < MAX_STEPS) {
                 step(STEP);
                 acc -= STEP;
                 steps++;
