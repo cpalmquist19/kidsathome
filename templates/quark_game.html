@@ -114,6 +114,9 @@
         #merge-btn:hover { background: rgba(0, 80, 70, 0.8); }
         #merge-btn.off { border-color: rgba(200, 200, 210, 0.5); background: rgba(40, 40, 50, 0.65); color: #c8c8d4; }
         body.physics-off #merge-btn { display: block; }
+        #cleanup-btn { border: 1px solid #f0c060; background: rgba(60, 45, 0, 0.65); color: #ffe0a0; }
+        #cleanup-btn:hover { background: rgba(90, 65, 0, 0.8); }
+        #cleanup-btn.off { border-color: rgba(200, 200, 210, 0.5); background: rgba(40, 40, 50, 0.65); color: #c8c8d4; }
         body.menu-open #corner, body.menu-open #stats, body.menu-open #hint, body.menu-open #touch-controls { visibility: hidden; }
 
         /* Main menu and particle picker */
@@ -358,6 +361,7 @@
         <button id="physics" type="button">&#9883; Real physics: ON</button>
         <button id="pulse-btn" type="button" title="Blast the whole map away from you (Space)">&#128165; Hyper Pulse</button>
         <button id="merge-btn" type="button">&#129522; Merging: ON</button>
+        <button id="cleanup-btn" type="button">&#129529; Cleanup: OFF</button>
         <button id="pick-btn" type="button" title="Start over as any particle you like">&#127922; Pick a particle</button>
         <button id="supernova" type="button" title="You're over 100 Suns: explode and become a black hole">&#128165; Go supernova</button>
         <button id="restart" type="button" title="Start over as a quark (R)">&#8634; Start over</button>
@@ -757,6 +761,7 @@
                 chem: false, formula: undefined, layout: undefined, rot: undefined, rotSpeed: undefined,
                 orbit: undefined, burning: undefined, breakIn: undefined, breakFrom: undefined, breakMax: undefined,
                 breakSpeed: undefined, shard: false, huge: false, falling: false, drawR: undefined, pulseHit: undefined,
+                ck: 0, gone: false,
             };
         }
 
@@ -1476,6 +1481,142 @@
                     ? `Grab ${missing} more electron${missing > 1 ? 's' : ''} to make a neutral atom`
                     : '');
             }
+        }
+
+        // =====================================================================
+        // Cleanup (a toggle at the top): loose quarks find each other and snap
+        // into protons (up + up + down) and neutrons (up + down + down), protons
+        // catch electrons to become hydrogen atoms, and loose neutrons join atoms.
+        // =====================================================================
+        const CLEANUP_KEY = 'matterEaterCleanup';
+        let cleanupOn = false;
+        try { cleanupOn = localStorage.getItem(CLEANUP_KEY) === 'on'; } catch (err) { /* keep the default */ }
+        const CLEANUP_TICK = 0.1;          // seconds between checks (cheap even with tens of thousands of pieces)
+        const CLEANUP_RANGE = 180;         // how far a quark or proton feels the pull
+        const CLEANUP_PULL = 900;          // how hard they pull together
+        const CLEANUP_TOUCH = 6;           // extra gap that still counts as touching
+        let cleanupTimer = 0;
+        const QUARK_UP = 1, QUARK_DOWN = 2, ELECTRON = 3, PROTON = 4, NEUTRON = 5, ATOM = 6;
+        function cleanupKind(p) {
+            if (p.orbit || p.falling || p.huge || p.burning !== undefined || p.breakIn !== undefined) return 0;
+            if (p.chem) return p.layout.Zs.length === 1 ? ATOM : 0;
+            switch (p.type.id) {
+                case 'up': return QUARK_UP;
+                case 'down': return QUARK_DOWN;
+                case 'electron': return ELECTRON;
+                case 'proton': return PROTON;
+                case 'neutron': return NEUTRON;
+                default: return 0;
+            }
+        }
+        function cleanupStep(dt) {
+            if (!cleanupOn || stage === 'dust') return;
+            cleanupTimer += dt;
+            if (cleanupTimer < CLEANUP_TICK) return;
+            const tick = cleanupTimer;
+            cleanupTimer = 0;
+
+            // Sort everything that can join up into a grid, so each piece only
+            // looks at its neighbors
+            const C = CLEANUP_RANGE, grid = new Map(), items = [];
+            const cellKey = (cx, cy) => cx * 65536 + cy;
+            for (const p of free) {
+                const k = cleanupKind(p);
+                if (!k) continue;
+                p.ck = k;
+                items.push(p);
+                const key = cellKey(Math.floor(p.x / C), Math.floor(p.y / C));
+                let cell = grid.get(key);
+                if (!cell) grid.set(key, cell = []);
+                cell.push(p);
+            }
+            if (!items.length) return;
+            const near = (p, fn) => {
+                const cx = Math.floor(p.x / C), cy = Math.floor(p.y / C);
+                for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
+                    const cell = grid.get(cellKey(cx + ox, cy + oy));
+                    if (cell) for (const q of cell) if (q !== p && !q.gone) fn(q);
+                }
+            };
+            const pull = CLEANUP_PULL * tick;
+            const made = [];
+            let gone = 0;
+            const merge = (parts, e) => {
+                let vx = 0, vy = 0;
+                for (const q of parts) { q.gone = true; vx += q.vx; vy += q.vy; if (q.shard) e.shard = true; } // made of kept pieces: kept too
+                e.vx = vx / parts.length; e.vy = vy / parts.length;
+                made.push(e);
+                gone += parts.length;
+            };
+
+            for (const p of items) {
+                if (p.gone) continue;
+                if (p.ck === QUARK_UP || p.ck === QUARK_DOWN) {
+                    // Quarks pull on quarks nearby; three that touch snap into a proton or neutron
+                    const ups = p.ck === QUARK_UP ? [p] : [], downs = p.ck === QUARK_DOWN ? [p] : [];
+                    let felt = false;
+                    near(p, q => {
+                        if (q.ck !== QUARK_UP && q.ck !== QUARK_DOWN) return;
+                        const dx = q.x - p.x, dy = q.y - p.y;
+                        if (Math.abs(dx) > C || Math.abs(dy) > C) return;
+                        const d = Math.hypot(dx, dy) || 0.001;
+                        if (d > C) return;
+                        p.vx += dx / d * pull; p.vy += dy / d * pull;
+                        felt = true;
+                        if (d < p.r + q.r + CLEANUP_TOUCH) (q.ck === QUARK_UP ? ups : downs).push(q);
+                    });
+                    if (felt) { p.vx *= 0.8; p.vy *= 0.8; } // they settle together instead of flying past
+                    let trio = null, id = null;
+                    if (ups.length >= 2 && downs.length >= 1) { trio = [ups[0], ups[1], downs[0]]; id = 'proton'; }
+                    else if (ups.length >= 1 && downs.length >= 2) { trio = [ups[0], downs[0], downs[1]]; id = 'neutron'; }
+                    if (trio && trio.includes(p)) {
+                        const x = (trio[0].x + trio[1].x + trio[2].x) / 3, y = (trio[0].y + trio[1].y + trio[2].y) / 3;
+                        merge(trio, makeEntity(TYPES.find(t => t.id === id), x, y));
+                    }
+                } else if (p.ck === PROTON) {
+                    // A proton pulls in electrons; one that touches makes a hydrogen atom
+                    let caught = null;
+                    near(p, q => {
+                        if (q.ck !== ELECTRON || caught) return;
+                        const dx = p.x - q.x, dy = p.y - q.y;
+                        if (Math.abs(dx) > C || Math.abs(dy) > C) return;
+                        const d = Math.hypot(dx, dy) || 0.001;
+                        if (d > C) return;
+                        q.vx += dx / d * pull; q.vy += dy / d * pull;
+                        q.vx *= 0.8; q.vy *= 0.8;
+                        if (d < p.r + q.r + CLEANUP_TOUCH) caught = q;
+                    });
+                    if (caught) merge([p, caught], makeChemEntity('H', p.x, p.y));
+                } else if (p.ck === NEUTRON) {
+                    // A loose neutron drifts to an atom nearby and joins its nucleus
+                    near(p, q => {
+                        if (q.ck !== ATOM || p.gone) return;
+                        const dx = q.x - p.x, dy = q.y - p.y;
+                        if (Math.abs(dx) > C || Math.abs(dy) > C) return;
+                        const d = Math.hypot(dx, dy) || 0.001;
+                        if (d > C) return;
+                        p.vx += dx / d * pull; p.vy += dy / d * pull;
+                        p.vx *= 0.8; p.vy *= 0.8;
+                        if (d < p.r + q.r + CLEANUP_TOUCH) { p.gone = true; gone++; }
+                    });
+                }
+            }
+
+            // Out with what merged, in with what it made
+            if (gone) {
+                let j = 0;
+                for (let i = 0; i < free.length; i++) {
+                    const q = free[i];
+                    if (q.gone) {
+                        if (selected === q) hideInfo();
+                        if (playerOrbit && playerOrbit.target === q) playerOrbit = null;
+                        continue;
+                    }
+                    free[j++] = q;
+                }
+                free.length = j;
+            }
+            for (const e of made) free.push(e);
         }
 
         // =====================================================================
@@ -3556,6 +3697,7 @@
             }
             stepHiems(dt, giantsNow);
             if (ocBirth) stepOcBirth(dt);
+            cleanupStep(dt);
 
             // --- Collisions between the player's group and free particles ---
             for (let i = free.length - 1; i >= 0; i--) {
@@ -4887,6 +5029,25 @@
             showToast(mergeOn ? 'Merging ON' : 'Merging OFF', mergeOn
                 ? 'Touch particles, atoms and molecules to merge with them'
                 : "You'll bounce off particles, atoms and molecules instead of merging");
+        });
+
+        const cleanupEl = document.getElementById('cleanup-btn');
+        function showCleanupButton() {
+            cleanupEl.textContent = cleanupOn ? '🧹 Cleanup: ON' : '🧹 Cleanup: OFF';
+            cleanupEl.classList.toggle('off', !cleanupOn);
+            cleanupEl.title = cleanupOn
+                ? 'Loose quarks join into protons and neutrons, and protons catch electrons to make atoms. Tap to turn off'
+                : 'Tap to let loose quarks join into protons and neutrons, and protons catch electrons to make atoms';
+        }
+        showCleanupButton();
+        cleanupEl.addEventListener('click', () => {
+            cleanupOn = !cleanupOn;
+            try { localStorage.setItem(CLEANUP_KEY, cleanupOn ? 'on' : 'off'); } catch (err) { /* still works this game */ }
+            showCleanupButton();
+            cleanupEl.blur(); // so the keyboard keeps steering you
+            showToast(cleanupOn ? 'Cleanup ON' : 'Cleanup OFF', cleanupOn
+                ? 'Loose quarks pull together into protons and neutrons, and protons catch electrons to become hydrogen atoms'
+                : 'Loose quarks and electrons stay loose');
         });
 
         // --- Main menu, and the particle picker (physics off only) ---
