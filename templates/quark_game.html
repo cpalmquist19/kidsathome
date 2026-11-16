@@ -237,6 +237,8 @@
             border: 1px dashed #7ef;
             border-radius: 12px;
             background: rgba(0, 20, 28, 0.92);
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
         }
         #dev-panel.open { display: flex; }
         #dev-panel b { font: 700 11px system-ui, sans-serif; color: #7ef; letter-spacing: 0.08em; }
@@ -363,12 +365,19 @@
     </div>
     <div id="dev-panel">
         <b>DEV POWERS (local only)</b>
-        <button type="button" data-dev-stage="quark">Up quark (fresh start)</button>
-        <button type="button" data-dev-stage="proton">Proton</button>
-        <button type="button" data-dev-stage="hydrogen">Hydrogen atom</button>
-        <button type="button" data-dev-stage="carbon">Carbon atom</button>
-        <button type="button" data-dev-stage="molecule">Molecule world (O atom)</button>
-        <button type="button" data-dev="dust">Dust grain</button>
+        <b>Scale</b>
+        <button type="button" data-dev="atomic">Atomic scale</button>
+        <button type="button" data-dev="molecular">Molecule scale</button>
+        <button type="button" data-dev="dust">Dust scale (dust grain)</button>
+        <b>Become (same map)</b>
+        <button type="button" data-dev="quark">Up quark</button>
+        <button type="button" data-dev="proton">Proton</button>
+        <button type="button" data-dev="hydrogen">Hydrogen atom</button>
+        <button type="button" data-dev="carbon">Carbon atom</button>
+        <button type="button" data-dev="oxygen">Oxygen atom (molecule scale)</button>
+        <button type="button" data-dev="bigOn">Biggest molecule (physics ON)</button>
+        <button type="button" data-dev="bigOff">Biggest molecule (physics OFF)</button>
+        <b>Space</b>
         <button type="button" data-dev="planet">Rocky planet</button>
         <button type="button" data-dev="gas">Gas giant</button>
         <button type="button" data-dev="star">Star (1 Sun)</button>
@@ -739,14 +748,20 @@
         // =====================================================================
         const isQuarkKind = (t) => t.kind === 'quark' || t.kind === 'antiquark';
 
-        function makeEntity(type, x, y) {
-            const e = {
-                type, x, y,
-                vx: 0, vy: 0,
-                r: type.radius,
-                mass: type.radius * type.radius,
-                bonded: false,
+        // Every free particle and atom starts with the same set of fields, in the
+        // same order, so the browser can run through tens of thousands of them fast
+        function newBody(type, x, y, r) {
+            return {
+                type, x, y, vx: 0, vy: 0, r, mass: r * r, bonded: false,
+                color: undefined, inner: undefined, spin: undefined, spinSpeed: undefined,
+                chem: false, formula: undefined, layout: undefined, rot: undefined, rotSpeed: undefined,
+                orbit: undefined, burning: undefined, breakIn: undefined, breakFrom: undefined, breakMax: undefined,
+                breakSpeed: undefined, shard: false, huge: false, falling: false, drawR: undefined, pulseHit: undefined,
             };
+        }
+
+        function makeEntity(type, x, y) {
+            const e = newBody(type, x, y, type.radius);
             if (type.kind === 'quark') e.color = COLORS[Math.floor(Math.random() * 3)];
             if (type.kind === 'antiquark') e.color = ANTICOLORS[Math.floor(Math.random() * 3)];
             if (type.kind === 'hadron') {
@@ -871,9 +886,9 @@
 
         // Hiemadecticus pull on each other when they're close, stick when they
         // touch, and fuse when all three are touching
-        function stepHiems(dt) {
+        function stepHiems(dt, giants) {
             if (physicsOn || ocBirth || !(stage === 'particles' || stage === 'molecule')) return;
-            const bodies = freeHiems();
+            const bodies = giants.filter(p => p.type === HIEMADECTICUS);
             if (player.type === HIEMADECTICUS) bodies.push(player);
             let allTouch = bodies.length === HIEM_COUNT;
             for (let i = 0; i < bodies.length; i++) {
@@ -970,6 +985,7 @@
                 'Its blast tore apart everything on the map, and everything that can burn caught fire!');
         }
 
+        const SHARD_LIMIT = 80000; // past this many things, even Ocamathron pieces get forgotten off screen
         function replenish() {
             manageGiants();
             if (stage === 'dust') return; // the dust world refills itself as you move (manageDust)
@@ -997,6 +1013,7 @@
                 for (let k = free.length - 1; k >= 0; k--) {
                     const q = free[k];
                     if (q.chem || q.huge || q.orbit || q === selected || q.breakIn !== undefined) continue;
+                    if (q.shard && free.length < SHARD_LIMIT) continue; // pieces of what an Ocamathron broke stay
                     if (counts.get(q.type) <= (q.type.count || 0) * 2) continue;
                     if (Math.abs(q.x - camera.x) < halfW && Math.abs(q.y - camera.y) < halfH) continue;
                     free.splice(k, 1);
@@ -1012,6 +1029,7 @@
                 const q = free[k];
                 const extra = (counts.get(q.type) || 0) - q.type.count * 2;
                 if (extra <= 0 || q.huge || q.chem || q.orbit || q === selected) continue;
+                if (q.shard && free.length < SHARD_LIMIT) continue; // pieces of what an Ocamathron broke stay
                 if (Math.abs(q.x - camera.x) < halfW && Math.abs(q.y - camera.y) < halfH) continue;
                 free.splice(k, 1);
                 counts.set(q.type, counts.get(q.type) - 1);
@@ -1668,6 +1686,7 @@
                 const ul = Math.hypot(ux, uy) || 1;
                 const sp = rand(speed[0], speed[1]);
                 e.vx = ux / ul * sp + rand(-40, 40); e.vy = uy / ul * sp + rand(-40, 40);
+                e.shard = true;
                 if (phased) breakSoon(e, oc, maxPieces, speed);
                 free.push(e);
             });
@@ -1702,6 +1721,7 @@
                 e.y = q.y + dy * rand(0, q.r);
                 e.vx = dx * sp; e.vy = dy * sp;
                 if (q.pulseHit) e.pulseHit = q.pulseHit; // already blasted
+                e.shard = true; // a piece of something an Ocamathron broke: it stays
                 if (phased && piecesOfFree(e)) breakSoon(e, oc, maxPieces, speed);
                 free.push(e);
                 made.push(e);
@@ -1730,6 +1750,7 @@
                 e.x = q.x + dx * rand(0, q.r);
                 e.y = q.y + dy * rand(0, q.r);
                 e.vx = dx * sp; e.vy = dy * sp;
+                e.shard = true;
                 free.push(e);
             }
             return true;
@@ -1826,6 +1847,7 @@
                 e.y = player.y + dy * out;
                 e.vx = dx * sp; e.vy = dy * sp;
                 if (oc === pulse) e.pulseHit = pulse; // the shockwave already hit these
+                e.shard = true;
             }
             player.vx = ux * 300; player.vy = uy * 300;
             playerOrbit = null;
@@ -2207,12 +2229,11 @@
             const layout = moleculeLayout(formula);
             const speed = rand(5, 25) / Math.sqrt(layout.Zs.length);
             const ang = rand(0, Math.PI * 2);
-            return {
-                chem: true, formula, layout, type: cachedChemType(formula),
-                x, y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
-                r: layout.radius, mass: layout.radius * layout.radius,
-                rot: rand(0, Math.PI * 2), rotSpeed: rand(-0.3, 0.3) / Math.sqrt(layout.Zs.length),
-            };
+            const e = newBody(cachedChemType(formula), x, y, layout.radius);
+            e.chem = true; e.formula = formula; e.layout = layout;
+            e.vx = Math.cos(ang) * speed; e.vy = Math.sin(ang) * speed;
+            e.rot = rand(0, Math.PI * 2); e.rotSpeed = rand(-0.3, 0.3) / Math.sqrt(layout.Zs.length);
+            return e;
         }
 
         // --- What's floating around (how many of each) ---
@@ -3306,7 +3327,7 @@
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             userZoom *= Math.exp(-e.deltaY * 0.0015);
-            userZoom = Math.max(0.1, Math.min(8, userZoom));
+            userZoom = Math.max(1e-4, Math.min(8, userZoom)); // how far out is limited each step (whole map fits)
         }, { passive: false });
 
         // Center of the player's group and how far it reaches
@@ -3469,8 +3490,10 @@
             const pullRange = player.r + 220;
             const bounds = clusterBounds();
             if (stage === 'molecule') molExtent = bounds.extent;
+            const giantsNow = [], orbitersNow = [];
             for (let i = free.length - 1; i >= 0; i--) {
                 const p = free[i];
+                if (p.huge) giantsNow.push(p);
                 if (p.falling) {
                     if (p.spin !== undefined) p.spin += p.spinSpeed * dt;
                     if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
@@ -3485,11 +3508,12 @@
                 } else if (p.breakIn !== undefined) { // breaking down, one phase at a time
                     p.breakIn -= dt;
                     if (p.breakIn <= 0) {
-                        delete p.breakIn;
+                        p.breakIn = undefined;
                         if (shatter(p, p.breakFrom, p.breakMax, p.breakSpeed, true)) continue;
                     }
                 }
                 if (p.orbit) { // right-clicked: circles around you
+                    orbitersNow.push(p);
                     const o = p.orbit;
                     const dist = orbitDistance(p, bounds);
                     const sp = o.speed * orbitScale();
@@ -3530,20 +3554,20 @@
                 if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
                 keepInWorld(p);
             }
-            stepHiems(dt);
+            stepHiems(dt, giantsNow);
             if (ocBirth) stepOcBirth(dt);
 
             // --- Collisions between the player's group and free particles ---
             for (let i = free.length - 1; i >= 0; i--) {
                 const p = free[i];
                 if (!p) continue; // the list shrank (e.g. subatomic particles vanished on entering molecule scale)
+                const near = bounds.extent + p.r;
+                if (Math.abs(p.x - bounds.cx) > near || Math.abs(p.y - bounds.cy) > near) continue;
                 if (p.orbit) continue; // orbiting things never touch you
                 if (p.burning !== undefined) continue; // nor does something burning away
                 if (stage === 'molecule' && !p.chem && !p.huge) continue; // subatomic debris is far too small to touch at this scale
                 if (p.type === HIEMADECTICUS && player.type === HIEMADECTICUS) continue; // Hiemadecticus handle each other (stepHiems)
                 if (playerOrbit && p === playerOrbit.target && !(stage === 'dust' && dust.blackHole)) continue; // nor does what you orbit (unless you're a black hole)
-                const near = bounds.extent + p.r;
-                if (Math.abs(p.x - bounds.cx) > near || Math.abs(p.y - bounds.cy) > near) continue;
                 if (p.chem && stuck.length && canStick(p) && touchesStuck(p)) { stickToYou(p); continue; }
                 if (p.chem) { chemContact(p); continue; }
                 if (p.dust) { dustContact(p); continue; }
@@ -3604,7 +3628,8 @@
             // Too close to an Ocamathron or Hiemadecticus (free floating, or you!):
             // its light tears apart everything made of more than one particle
             if (!physicsOn && (stage === 'particles' || stage === 'molecule')) {
-                const lights = free.filter(q => q.huge && isGiant(q.type));
+                const fusing = ocBirth ? ocBirth.members.map(m => m.e) : [];
+                const lights = giantsNow.filter(q => isGiant(q.type) && !fusing.includes(q));
                 if (isGiant(player.type)) lights.push(player);
                 if (ocBirth) for (const m of ocBirth.members) if (m.e !== player) lights.push(m.e);
                 for (const oc of lights) {
@@ -3631,7 +3656,7 @@
                         const touches = e => Math.hypot(e.x - oc.x, e.y - oc.y) - e.r < reach;
                         const youInside = cluster.some(touches);
                         let blown = null;
-                        for (const q of free) {
+                        for (const q of orbitersNow) {
                             if (!q.orbit || !(youInside || touches(q))) continue;
                             delete q.orbit; // it flies off along its orbit, plus a shove outward
                             const dx = q.x - oc.x, dy = q.y - oc.y, d = Math.hypot(dx, dy) || 1;
@@ -3645,7 +3670,6 @@
                             showToast('Ripped out of orbit!', `The ${name}'s light knocked you off what you were orbiting`);
                         }
                     }
-                    for (const q of free) if (q !== oc && !q.huge && !q.orbit && !q.falling) pushOut(q, 450);
                     // You (and anything stuck to you) drift outward, even while standing
                     // still; steering against it works near the edge but not up close
                     if (hitsYou && !playerOrbit) {
@@ -3662,16 +3686,21 @@
                             Math.hypot(b.cx - oc.x, b.cy - oc.y) < reach;
                         if (inside) blastApart(oc, name);
                     }
-                    let torn = 0; // a few per step, so a crowd breaks up smoothly
-                    for (let i = free.length - 1; i >= 0 && torn < 8; i--) {
+                    // Everything in the circle: torn apart (a few per step, so a crowd
+                    // breaks up smoothly) or, if it's a single particle, pushed out
+                    let torn = 0;
+                    for (let i = free.length - 1; i >= 0; i--) {
                         const q = free[i];
-                        if (q === oc || q.huge || q.falling) continue;
+                        if (q === undefined) continue;
                         const dx = q.x - oc.x, dy = q.y - oc.y;
                         // as soon as any part of it is inside the circle (big molecules too)
                         const edge = reach + q.r;
-                        if (Math.abs(dx) > edge || Math.abs(dy) > edge || dx * dx + dy * dy >= edge * edge) continue;
-                        if (q.chem && q.layout.Zs.length > 1 && !moleculeTouches(q, oc, reach)) continue;
-                        if (tearFree(q, oc, Infinity, [180, 340], true)) torn++; // all the way down: nothing whole leaves the circle
+                        if (Math.abs(dx) > edge || Math.abs(dy) > edge) continue;
+                        const d2 = dx * dx + dy * dy;
+                        if (d2 >= edge * edge || q === oc || q.huge || q.falling || q.orbit) continue;
+                        if (torn < 8 && !(q.chem && q.layout.Zs.length > 1 && !moleculeTouches(q, oc, reach)) &&
+                            tearFree(q, oc, Infinity, [180, 340], true)) { torn++; continue; } // all the way down: nothing whole leaves the circle
+                        if (d2 < reach * reach) pushOut(q, 450);
                     }
                 }
             }
@@ -3703,6 +3732,12 @@
                 const t = playerOrbit.target;
                 focus = { cx: t.x, cy: t.y, extent: playerOrbitDistance(bounds) + bounds.extent };
             }
+            if (stage !== 'dust') {
+                // Zoomed out to (nearly) the whole map: slide over to its middle so all of it fits
+                const fit = Math.min(window.innerWidth / WORLD.width, window.innerHeight / WORLD.height);
+                const k = Math.max(0, Math.min(1, (2 * fit - camera.zoom) / fit));
+                if (k > 0) focus = { ...focus, cx: focus.cx + (WORLD.width / 2 - focus.cx) * k, cy: focus.cy + (WORLD.height / 2 - focus.cy) * k };
+            }
             const t = 1 - Math.exp(-camera.follow * dt);
             camera.x += (focus.cx - camera.x) * t;
             camera.y += (focus.cy - camera.y) * t;
@@ -3716,7 +3751,13 @@
                 : stage === 'molecule'
                 ? Math.max(0.02, Math.min(1, moleculeScreenR / focus.extent))
                 : Math.min(1, screen * 0.35 / focus.extent);
-            // The scroll wheel scales the automatic zoom up or down
+            // The scroll wheel scales the automatic zoom up or down. You can zoom out
+            // until the whole map fits on screen (the dust world is endless, so less there).
+            if (stage === 'dust') userZoom = Math.max(userZoom, 0.1);
+            else {
+                const fit = Math.min(window.innerWidth / WORLD.width, window.innerHeight / WORLD.height);
+                userZoom = Math.max(userZoom, Math.min(1, fit / autoZoom));
+            }
             const targetZoom = Math.max(stage === 'dust' ? 1e-9 : 0.002, Math.min(8, autoZoom * userZoom));
             camera.zoom += (targetZoom - camera.zoom) * (1 - Math.exp(-5 * dt));
         }
@@ -3937,6 +3978,14 @@
             ctx.restore();
         }
 
+        // Colour for something drawn as a dot when it's too small to see properly
+        function dotColor(p) {
+            if (p.burning !== undefined) return '#ff9a3a';
+            if (p.color && COLOR_CHARGE[p.color]) return COLOR_CHARGE[p.color].base;
+            if (p.type.look) return p.type.look.base;
+            return p.chem ? '#cfd6e6' : '#b8b8c8';
+        }
+
         function drawFree(p, time) {
             if (p.burning !== undefined) { // burning away: fades out under its flames
                 ctx.save();
@@ -4066,13 +4115,31 @@
                 ctx.stroke();
             }
 
-            // Free particles (only the ones on screen)
+            // Free particles (only the ones on screen). Zoomed far out, tiny things are
+            // just dots, drawn in batches by colour so thousands of them stay fast.
             const margin = 90 / z;
+            const dots = new Map(), dotHalf = 0.9 / z;
             for (const p of free) {
                 const pr = p.drawR || p.r; // some things glow far past their edge
                 if (p.x + pr + margin < camX || p.x - pr - margin > camX + viewW ||
                     p.y + pr + margin < camY || p.y - pr - margin > camY + viewH) continue;
+                if (stage !== 'dust' && !p.huge && p.r * z < 1.5) {
+                    const c = dotColor(p);
+                    let list = dots.get(c);
+                    if (!list) dots.set(c, list = []);
+                    list.push(p);
+                    continue;
+                }
                 drawFree(p, time);
+            }
+            for (const [c, list] of dots) {
+                ctx.fillStyle = c;
+                ctx.beginPath();
+                for (const p of list) {
+                    const half = Math.max(p.r, dotHalf);
+                    ctx.rect(p.x - half, p.y - half, half * 2, half * 2);
+                }
+                ctx.fill();
             }
             // Three Hiemadecticus fusing into an Ocamathron
             if (ocBirth) for (const m of ocBirth.members) if (m.e !== player) drawOcamathron(m.e, time);
@@ -4618,7 +4685,7 @@
             if (longPress && Math.hypot(e.clientX - longPress.x, e.clientY - longPress.y) > 14) cancelLongPress();
             if (canvasTouches.size === 2 && pinchDist) {
                 const d = twoFingerDistance();
-                userZoom = Math.max(0.1, Math.min(8, userZoom * d / pinchDist));
+                userZoom = Math.max(1e-4, Math.min(8, userZoom * d / pinchDist));
                 pinchDist = d;
                 ignoreClickUntil = performance.now() + 400;
             }
@@ -5007,34 +5074,92 @@
                     }
                 },
             };
-            // Earlier stages: start a fresh game already at that stage
-            const atomStage = (Z, N) => {
-                becomeParticle(TYPES.find(t => t.id === 'proton'), null, true);
-                player.atom = { Z, N, E: Z };
-                refreshAtom();
-                spawnAtomsAppear();
+            // --- Earlier scales and things to become: they change only you, right
+            // where you are, and leave the rest of the map exactly as it is ---
+            // The dust world has no atoms left in it, so going back down from there
+            // starts a fresh map (the only way back)
+            const fromDust = (key) => {
+                if (stage !== 'dust') return false;
+                location.replace(location.pathname + '?devstage=' + encodeURIComponent({ atomic: 'hydrogen', molecular: 'oxygen' }[key] || key));
+                return true;
             };
-            const DEV_STAGES = {
-                quark: () => {},
-                proton: () => becomeParticle(TYPES.find(t => t.id === 'proton'), null, true),
-                hydrogen: () => atomStage(1, 0),
-                carbon: () => atomStage(6, 6),
-                molecule: () => { atomStage(8, 8); enterMoleculeStage(null); refreshMolecule(false); },
-            };
-            if (devStage && DEV_STAGES[devStage]) {
-                DEV_STAGES[devStage]();
-                updateStats();
-                showToast(`DEV: ${player.type.name}`, stage === 'molecule' ? 'Molecule world: touch atoms to bond' : 'Fresh game, starting here');
+            // Let go of whatever you're made of or holding, staying where you are
+            function devClear() {
+                if (stage === 'molecule') backToQuarkWorld();
+                forming = null;
+                playerOrbit = null;
+                for (const q of cluster) if (q !== player) q.bonded = false;
+                cluster.length = 1;
+                bonds.length = 0;
             }
+            function devParticle(id, color) {
+                devClear();
+                becomeParticle(TYPES.find(t => t.id === id), color, true);
+            }
+            function devAtom(Z) {
+                devClear();
+                becomeParticle(TYPES.find(t => t.id === 'proton'), null, true);
+                player.atom = { Z, N: Z === 1 ? 0 : neutronsOf(Z), E: Z };
+                refreshAtom();
+                if (!atomsAppeared) spawnAtomsAppear();
+            }
+            // Become a whole molecule, built atom by atom from its formula
+            function devMolecule(formula) {
+                const L = moleculeLayout(formula);
+                if (stage !== 'molecule') { devAtom(L.Zs[0]); enterMoleculeStage(null); }
+                cluster.length = 1;
+                bonds.length = 0;
+                stuck.length = 0;
+                player.Z = L.Zs[0];
+                player.r = atomDisplayRadius(player.Z);
+                player.mass = player.r * player.r;
+                player.deg = L.deg[0];
+                const members = L.Zs.map((Z, k) => {
+                    if (k === 0) return player;
+                    const r = atomDisplayRadius(Z);
+                    return { Z, chem: true, chemMember: true, bonded: true, r, mass: r * r, deg: L.deg[k],
+                             x: player.x + L.pos[k].x - L.pos[0].x, y: player.y + L.pos[k].y - L.pos[0].y, vx: 0, vy: 0 };
+                });
+                cluster.push(...members.slice(1));
+                for (const [a, b] of L.bonds) bonds.push([members[a], members[b]]);
+                refreshMolecule(false);
+            }
+            // The biggest real molecule (physics on), and the biggest anything-goes
+            // molecule (physics off): one atom short of becoming a dust grain
+            const BIGGEST_REAL = MOLECULES.reduce((best, m) => parseFormula(m[0]).length > parseFormula(best).length ? m[0] : best, MOLECULES[0][0]);
+            const BIGGEST_OFF = `C${Math.floor((MAX_MOLECULE_ATOMS - 1) / 3)}H${MAX_MOLECULE_ATOMS - 1 - Math.floor((MAX_MOLECULE_ATOMS - 1) / 3)}`;
+            const DEV_STAGES = {
+                atomic: () => {
+                    if (stage === 'particles') return showToast('DEV: already at atomic scale', 'Pick an atom or particle below to change what you are');
+                    devAtom(player.Z || 1);
+                },
+                molecular: () => {
+                    if (stage === 'molecule') return showToast('DEV: already at molecule scale', 'Pick a molecule below to change what you are');
+                    devMolecule(ELEMENTS[((player.atom && player.atom.Z) || 8) - 1][0]);
+                },
+                quark: () => devParticle('up', 'red'),
+                proton: () => devParticle('proton'),
+                hydrogen: () => devAtom(1),
+                carbon: () => devAtom(6),
+                oxygen: () => devMolecule('O'),
+                bigOn: () => { setPhysics(true, false); devMolecule(BIGGEST_REAL); },
+                bigOff: () => { setPhysics(false, false); devMolecule(BIGGEST_OFF); },
+            };
+            function runDevStage(key) {
+                if (fromDust(key)) return;
+                DEV_STAGES[key]();
+                updateStats();
+                if (selected === player) showInfo(player);
+                const size = stage === 'molecule' ? ` · ${cluster.length} atom${cluster.length > 1 ? 's' : ''}` : '';
+                showToast(`DEV: ${player.type.name}`, `${stage === 'molecule' ? 'Molecule' : 'Atomic'} scale${size} · physics ${physicsOn ? 'ON' : 'OFF'}`);
+            }
+            if (devStage && DEV_STAGES[devStage]) runDevStage(devStage);
 
             devPanel.addEventListener('click', (e) => {
-                const btn = e.target.closest('button');
-                if (btn?.dataset.devStage) {
-                    location.replace(location.pathname + '?devstage=' + encodeURIComponent(btn.dataset.devStage));
-                    return;
-                }
-                const power = btn?.dataset.dev;
-                if (power) DEV_POWERS[power]();
+                const power = e.target.closest('button')?.dataset.dev;
+                if (!power) return;
+                if (DEV_STAGES[power]) runDevStage(power);
+                else DEV_POWERS[power]();
             });
         }
 
@@ -5045,10 +5170,13 @@
             acc += Math.min((now - last) / 1000, 0.1);
             last = now;
             if (isPaused()) acc = 0; // menus pause the game
-            while (acc >= STEP) {
+            let steps = 0;
+            while (acc >= STEP && steps < 3) {
                 step(STEP);
                 acc -= STEP;
+                steps++;
             }
+            if (acc >= STEP) acc = 0; // too far behind: let it go rather than fall further behind
             draw(now);
             requestAnimationFrame(frame);
         }
