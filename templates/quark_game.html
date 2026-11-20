@@ -114,6 +114,13 @@
         #merge-btn:hover { background: rgba(0, 80, 70, 0.8); }
         #merge-btn.off { border-color: rgba(200, 200, 210, 0.5); background: rgba(40, 40, 50, 0.65); color: #c8c8d4; }
         body.physics-off #merge-btn { display: block; }
+        #giants-btn { display: none; border: 1px solid #9ab8ff; background: rgba(20, 35, 80, 0.65); color: #cfe0ff; }
+        #giants-btn:hover { background: rgba(30, 55, 120, 0.8); }
+        #giants-btn.off, #dustgrow-btn.off { border-color: rgba(200, 200, 210, 0.5); background: rgba(40, 40, 50, 0.65); color: #c8c8d4; }
+        body.physics-off #giants-btn { display: block; }
+        #dustgrow-btn { border: 1px solid #d8b890; background: rgba(60, 40, 20, 0.65); color: #f5dcc0; }
+        #dustgrow-btn:hover { background: rgba(90, 60, 30, 0.8); }
+        body.in-dust #dustgrow-btn { display: none; }
         #cleanup-btn { border: 1px solid #f0c060; background: rgba(60, 45, 0, 0.65); color: #ffe0a0; }
         #cleanup-btn:hover { background: rgba(90, 65, 0, 0.8); }
         #cleanup-btn.off { border-color: rgba(200, 200, 210, 0.5); background: rgba(40, 40, 50, 0.65); color: #c8c8d4; }
@@ -244,6 +251,8 @@
         }
         #nova-choices button:hover, #nova-cancel:hover { border-color: #ffc274; background: #302341; }
         #nova-choices span { display: block; margin-top: 3px; color: #d1c5e3; font-size: 13px; }
+        #nova-choices button:disabled { opacity: 0.45; cursor: not-allowed; border-color: rgba(200, 190, 220, 0.25); background: transparent; }
+        #nova-choices .need { color: #ffc274; font-weight: 600; }
         #nova-cancel { padding: 6px 9px; font-size: 13px; }
         @media (max-height: 440px) {
             #nova-picker { padding: 14px; }
@@ -384,6 +393,8 @@
         <button id="pulse-btn" type="button" title="Blast the whole map away from you (Space)">&#128165; Hyper Pulse</button>
         <button id="merge-btn" type="button">&#129522; Merging: ON</button>
         <button id="cleanup-btn" type="button">&#129529; Cleanup: OFF</button>
+        <button id="giants-btn" type="button">&#10024; Ocamathrons: ON</button>
+        <button id="dustgrow-btn" type="button">&#127761; Become dust: ON</button>
         <button id="pick-btn" type="button" title="Start over as any particle you like">&#127922; Pick a particle</button>
         <button id="supernova" type="button" title="Choose what your star becomes">&#128165; Go supernova</button>
         <button id="starquake" type="button" title="Send a shockwave through nearby space">Starquake</button>
@@ -409,6 +420,8 @@
         <button type="button" data-dev="hydrogen">Hydrogen atom</button>
         <button type="button" data-dev="carbon">Carbon atom</button>
         <button type="button" data-dev="oxygen">Oxygen atom (molecule scale)</button>
+        <button type="button" data-dev="ocamathron">Ocamathron (physics OFF)</button>
+        <button type="button" data-dev="hiemadecticus">Hiemadecticus (physics OFF)</button>
         <button type="button" data-dev="bigOn">Biggest molecule (physics ON)</button>
         <button type="button" data-dev="bigOff">Biggest molecule (physics OFF)</button>
         <b>Space</b>
@@ -416,7 +429,7 @@
         <button type="button" data-dev="gas">Gas giant</button>
         <button type="button" data-dev="star">Star (1 Sun)</button>
         <button type="button" data-dev="bluestar">Blue star (10 Suns)</button>
-        <button type="button" data-dev="nova">Supernova-ready (15 Suns)</button>
+        <button type="button" data-dev="nova">Supernova-ready (22 Suns)</button>
         <button type="button" data-dev="blackhole">Black hole now</button>
         <button type="button" data-dev="double">&times;2 mass</button>
     </div>
@@ -498,6 +511,12 @@
         const MERGE_KEY = 'matterEaterMerge';
         let mergeOn = true;
         try { mergeOn = localStorage.getItem(MERGE_KEY) !== 'off'; } catch (err) { /* keep the default */ }
+        // Ocamathrons and Hiemadecticus show up on the map (physics off), and a
+        // molecule that's as big as it can get turns into a dust grain
+        const GIANTS_KEY = 'matterEaterGiants', DUSTGROW_KEY = 'matterEaterBecomeDust';
+        let giantsOn = true, dustGrowOn = true;
+        try { giantsOn = localStorage.getItem(GIANTS_KEY) !== 'off'; } catch (err) { /* keep the default */ }
+        try { dustGrowOn = localStorage.getItem(DUSTGROW_KEY) !== 'off'; } catch (err) { /* keep the default */ }
         try { physicsOn = localStorage.getItem(PHYSICS_KEY) !== 'off'; } catch (err) { /* keep the default */ }
 
         // =====================================================================
@@ -973,6 +992,12 @@
                 return;
             }
             if (ocBirth) return; // all three are busy becoming an Ocamathron
+            if (!giantsOn) { // spawning turned off: none on the map (you can still be one)
+                if (oc) removeFree(oc);
+                hiems.forEach(removeFree);
+                lastOc = null; giantsRespawnAt = 0;
+                return;
+            }
             const youOc = player.type === OCAMATHRON, youHiem = player.type === HIEMADECTICUS;
             if (youOc || (oc && !youHiem)) { // all three Hiemadecticus are inside the Ocamathron
                 hiems.forEach(removeFree);
@@ -2482,12 +2507,16 @@
         // You bonded with another atom: welcome to chemistry!
         function enterMoleculeStage(bondingWith) {
             stage = 'molecule';
-            const Z = Math.max(1, player.atom.Z);
-            player.Z = Z;
-            player.chem = true;
-            player.deg = 0;
-            player.r = atomDisplayRadius(Z);
-            player.mass = player.r * player.r;
+            if (isGiant(player.type)) { // a giant stays itself, just at the bigger scale
+                moleculeScreenR = 80;
+            } else {
+                const Z = Math.max(1, player.atom.Z);
+                player.Z = Z;
+                player.chem = true;
+                player.deg = 0;
+                player.r = atomDisplayRadius(Z);
+                player.mass = player.r * player.r;
+            }
 
             // At this scale, subatomic particles are far too small to see
             for (let k = free.length - 1; k >= 0; k--) if (!free[k].chem && !free[k].huge) free.splice(k, 1);
@@ -2495,7 +2524,7 @@
 
             // Zoom out so your new molecule looks as big as your atom did,
             // and make the world bigger to fit molecules at this scale
-            moleculeScreenR = Math.max(80, player.r * camera.zoom);
+            if (!isGiant(player.type)) moleculeScreenR = Math.max(80, player.r * camera.zoom);
             WORLD.width = WORLD.height = 72000;
             chemTargets = { ...MOLECULE_COUNTS };
             for (const [sym, n] of Object.entries(ATOM_COUNTS)) chemTargets[sym] = COMMON_ATOMS[sym] ? n * 2 : 1;
@@ -2515,6 +2544,9 @@
         function canBond(c, p, i) {
             if (!physicsOn && isGiant(player.type)) return { ok: false }; // nothing bonds to it
             if (!physicsOn && !mergeOn) return { ok: false };                    // merging turned off: just bump
+            if (!dustGrowOn && stage === 'molecule' && cluster.length + p.layout.Zs.length > MAX_MOLECULE_ATOMS) {
+                return { ok: false, reason: 'Your molecule is as big as it can get (Become dust is off)' };
+            }
             if (!physicsOn) { // anything bonds with anything
                 // A quark group snaps into a particle first; it can bond on the next touch
                 if (stage !== 'molecule' && !player.atom) { ensureOffAtom(); return { ok: false }; }
@@ -2569,7 +2601,33 @@
         let molBondOrders = [];
         let bondedPairs = new Set(); // which atoms in your molecule are bonded (by cluster index)
 
+        function becomeMoleculeHere(formula) {
+            const L = moleculeLayout(formula);
+            cluster.length = 1;
+            bonds.length = 0;
+            stuck.length = 0;
+            for (const k of ['color', 'inner', 'spin', 'spinSpeed', 'atom', 'parts']) delete player[k];
+            const wasGiant = isGiant(player.type);
+            player.chem = true;
+            player.Z = L.Zs[0];
+            player.r = atomDisplayRadius(player.Z);
+            player.mass = player.r * player.r;
+            player.deg = L.deg[0];
+            const members = L.Zs.map((Z, k) => {
+                if (k === 0) return player;
+                const r = atomDisplayRadius(Z);
+                return { Z, chem: true, chemMember: true, bonded: true, r, mass: r * r, deg: L.deg[k],
+                         x: player.x + L.pos[k].x - L.pos[0].x, y: player.y + L.pos[k].y - L.pos[0].y, vx: 0, vy: 0 };
+            });
+            cluster.push(...members.slice(1));
+            for (const [a, b] of L.bonds) bonds.push([members[a], members[b]]);
+            refreshMolecule(false);
+            document.body.classList.remove('is-ocamathron');
+            if (wasGiant) manageGiants(); // the other Hiemadecticus come back
+        }
+
         function refreshMolecule(announce) {
+            if (isGiant(player.type) && !player.chem) { updateStats(); return; } // an Ocamathron isn't made of atoms
             const Zs = cluster.map(m => m.Z);
             const formula = hillFormula(Zs);
             const prev = player.type.formula;
@@ -2634,7 +2692,8 @@
         const stuck = [];       // molecules clinging to yours
         const CLUMP_SIZE = 12;  // how many it takes to make a dust grain
         const canStick = (p) => physicsOn && stage === 'molecule' && player.type.known &&
-            p.type.kind === 'molecule' && p.type.known;
+            p.type.kind === 'molecule' && p.type.known &&
+            (dustGrowOn || stuck.length < CLUMP_SIZE); // becoming dust off: the clump stops growing
         function touchesStuck(p) {
             return stuck.some(s => Math.hypot(s.x - p.x, s.y - p.y) < s.r + p.r);
         }
@@ -2655,7 +2714,9 @@
             stuck.push(p);
             floaters.push({ x: p.x, y: p.y - p.r - 14, text: `${p.type.name} stuck to you (${stuck.length} of ${CLUMP_SIZE})`, born: performance.now() });
             if (stuck.length === 1) {
-                showToast('Molecules stick together!', `Real molecules cling to each other with weak forces. Gather ${CLUMP_SIZE} and you'll become a speck of space dust`);
+                showToast('Molecules stick together!', dustGrowOn
+                    ? `Real molecules cling to each other with weak forces. Gather ${CLUMP_SIZE} and you'll become a speck of space dust`
+                    : `Real molecules cling to each other with weak forces. Up to ${CLUMP_SIZE} can stick (Become dust is off)`);
             }
             updateStats();
         }
@@ -3029,6 +3090,7 @@
             player.mass = player.r * player.r;
             player.chem = false;
             player.dust = true;
+            document.body.classList.add('in-dust');
             delete player.remnant;
             delete player.remnantKg;
             delete player.massR;
@@ -3511,6 +3573,10 @@
             return endingsFor(dustMassKg(player));
         }
         const supernovaReady = () => starEndings().length > 0;
+        // What a star's mass has to be for each ending (real physics)
+        const endingNeeds = (r) => r.wd ? `Needs ${WHITE_DWARF_SUNS}–${SUPERNOVA_SUNS} Suns`
+            : r === REMNANTS.blackhole ? `Needs ${BLACK_HOLE_SUNS}+ Suns`
+            : `Needs ${SUPERNOVA_SUNS}–${NEUTRON_MAX_SUNS} Suns`;
         const canExplode = (endings) => endings.some(r => !r.wd);
 
         function updateSupernovaButton() {
@@ -3534,7 +3600,12 @@
         novaEl.addEventListener('click', () => {
             const endings = starEndings();
             if (!endings.length || novaPicker.open) return;
-            for (const button of novaChoices.children) button.hidden = !endings.some(r => r.id === button.dataset.remnant);
+            // Endings your star is too light or too heavy for stay in the list, greyed out, saying what they need
+            for (const button of novaChoices.children) {
+                const ok = endings.some(r => r.id === button.dataset.remnant);
+                button.disabled = !ok;
+                button.querySelector('.need').textContent = ok ? '' : endingNeeds(REMNANTS[button.dataset.remnant]);
+            }
             document.getElementById('nova-picker-title').textContent = canExplode(endings) ? 'Choose your supernova remnant' : 'How your star ends';
             novaPicker.showModal();
         });
@@ -3545,7 +3616,9 @@
             const name = document.createElement('strong'), detail = document.createElement('span');
             name.textContent = remnant.name;
             detail.textContent = remnant.hint;
-            button.append(name, detail);
+            const need = document.createElement('span');
+            need.className = 'need';
+            button.append(name, detail, need);
             button.addEventListener('click', () => {
                 novaPicker.close();
                 goSupernova(remnant);
@@ -4275,7 +4348,7 @@
                     (next ? `${next.name} at ${formatSize(next.min)}` : starNextText());
                 return;
             }
-            if (stage === 'molecule') {
+            if (stage === 'molecule' && !isGiant(player.type)) {
                 const t = player.type;
                 const what = t.kind === 'element' ? t.name : `${t.name}${t.known ? ` (${t.sym})` : ''}`;
                 statsEl.textContent = `You are ${what}  ·  ${cluster.length} atom${cluster.length === 1 ? '' : 's'}  ·  ` +
@@ -4803,11 +4876,11 @@
 
             // A molecule as big as it can get becomes a dust grain
             // (or, with real physics, enough real molecules stuck together)
-            if (stage === 'molecule' && (cluster.length >= MAX_MOLECULE_ATOMS || stuck.length >= CLUMP_SIZE ||
+            if (stage === 'molecule' && dustGrowOn && (cluster.length >= MAX_MOLECULE_ATOMS || stuck.length >= CLUMP_SIZE ||
                 cluster.length + stuck.reduce((s, m) => s + m.layout.Zs.length, 0) >= MAX_MOLECULE_ATOMS)) enterDustStage();
 
             // --- Camera follows the player (the middle of your molecule) ---
-            let focus = stage === 'molecule' ? clusterBounds()
+            let focus = stage === 'molecule' && !isGiant(player.type) ? clusterBounds()
                 : stage === 'dust' ? { cx: player.x, cy: player.y, extent: player.r }
                 : isGiant(player.type)
                 // zoomed out to see what your light tears apart; during a Hyper Pulse,
@@ -4839,7 +4912,7 @@
             // Dust keeps you the same size on screen however big you grow.
             const autoZoom = stage === 'dust'
                 ? (playerOrbit ? screen * 0.4 / focus.extent : DUST.screenR / focus.extent)
-                : stage === 'molecule'
+                : stage === 'molecule' && !isGiant(player.type)
                 ? Math.max(0.02, Math.min(1, moleculeScreenR / focus.extent))
                 : Math.min(1, screen * 0.35 / focus.extent);
             // The scroll wheel scales the automatic zoom up or down. You can zoom out
@@ -5643,7 +5716,7 @@
             ctx.fill();
 
             for (const s of stuck) drawMolecule(s, true);
-            if (stage === 'molecule') drawPlayerMolecule();
+            if (stage === 'molecule' && !isGiant(player.type)) drawPlayerMolecule();
             else for (const q of cluster) drawFree(q, time);
 
             // Floating messages (kept readable when zoomed out)
@@ -5714,6 +5787,7 @@
 
         // Can you still bond with anything right now?
         function youCanBond() {
+            if (isGiant(player.type)) return false; // nothing bonds to a giant
             if (stage === 'molecule') {
                 return cluster.length < MAX_MOLECULE_ATOMS && cluster.some(m => valenceOf(m.Z) - m.deg > 0);
             }
@@ -6330,7 +6404,9 @@
             const wasOcamathron = physicsOn && isGiant(player.type);
             const wasHiem = physicsOn && player.type === HIEMADECTICUS;
             const disabledType = physicsOn && player.type.offOnly && player.type;
-            if (wasOcamathron || disabledType) {
+            const molGiant = wasOcamathron && stage === 'molecule';
+            if (molGiant) becomeMoleculeHere('H');
+            else if (wasOcamathron || disabledType) {
                 becomeParticle(TYPES.find(t => t.id === 'up'), 'red', true);
                 startedAs = { type: player.type, color: player.color };
             }
@@ -6339,7 +6415,7 @@
             updateSupernovaButton();
             updateRestartPrompt();
             if (wasOcamathron || disabledType) {
-                showToast('Real physics ON', `${disabledType ? disabledType.name : wasHiem ? 'Hiemadecticus' : 'The Ocamathron'} is available with physics off, so you're an up quark again`);
+                showToast('Real physics ON', `${disabledType ? disabledType.name : wasHiem ? 'Hiemadecticus' : 'The Ocamathron'} is available with physics off, so you're ${molGiant ? 'a hydrogen atom' : 'an up quark'} again`);
             } else if (announce) {
                 showToast(physicsOn ? 'Real physics ON' : 'Physics OFF!', physicsOn
                     ? 'Only real, stable molecules and real orbits, following the rules of nature'
@@ -6393,6 +6469,47 @@
             showToast(cleanupOn ? 'Cleanup ON' : 'Cleanup OFF', detail);
         });
 
+        // --- Ocamathron / Hiemadecticus spawning on/off (physics off only) ---
+        const giantsEl = document.getElementById('giants-btn');
+        function showGiantsButton() {
+            giantsEl.textContent = giantsOn ? '\u2728 Ocamathrons: ON' : '\u2728 Ocamathrons: OFF';
+            giantsEl.classList.toggle('off', !giantsOn);
+            giantsEl.title = giantsOn
+                ? 'Three Hiemadecticus roam the subatomic, atomic and molecule worlds, and can fuse into an Ocamathron. Tap to stop them spawning'
+                : "No Ocamathrons or Hiemadecticus spawn (you can still pick one to be). Tap to let them spawn again";
+        }
+        showGiantsButton();
+        giantsEl.addEventListener('click', () => {
+            giantsOn = !giantsOn;
+            try { localStorage.setItem(GIANTS_KEY, giantsOn ? 'on' : 'off'); } catch (err) { /* still works this game */ }
+            showGiantsButton();
+            manageGiants();
+            giantsEl.blur(); // so the keyboard keeps steering you
+            showToast(giantsOn ? 'Ocamathrons ON' : 'Ocamathrons OFF', giantsOn
+                ? 'Three Hiemadecticus are back on the map. If all three touch, they fuse into an Ocamathron'
+                : 'No more Ocamathrons or Hiemadecticus on the map');
+        });
+
+        // --- Becoming a dust grain on/off (works with physics on or off) ---
+        const dustGrowEl = document.getElementById('dustgrow-btn');
+        function showDustGrowButton() {
+            dustGrowEl.textContent = dustGrowOn ? '\ud83c\udf11 Become dust: ON' : '\ud83c\udf11 Become dust: OFF';
+            dustGrowEl.classList.toggle('off', !dustGrowOn);
+            dustGrowEl.title = dustGrowOn
+                ? `A molecule as big as it can get (or ${CLUMP_SIZE} real molecules stuck together) becomes a dust grain. Tap to stay at molecule scale`
+                : 'You stay at molecule scale however big you get. Tap to become a dust grain again';
+        }
+        showDustGrowButton();
+        dustGrowEl.addEventListener('click', () => {
+            dustGrowOn = !dustGrowOn;
+            try { localStorage.setItem(DUSTGROW_KEY, dustGrowOn ? 'on' : 'off'); } catch (err) { /* still works this game */ }
+            showDustGrowButton();
+            dustGrowEl.blur(); // so the keyboard keeps steering you
+            showToast(dustGrowOn ? 'Become dust ON' : 'Become dust OFF', dustGrowOn
+                ? 'When your molecule is as big as it can get, you become a speck of space dust'
+                : "You'll stay a molecule, however big you get");
+        });
+
         // --- Main menu, and the particle picker (physics off only) ---
         const menuEl = document.getElementById('menu');
         const pickerEl = document.getElementById('picker');
@@ -6436,6 +6553,17 @@
         // Turn the player (still at the very start) into any particle
         function becomeParticle(type, color, quiet) {
             const oldType = player.type;
+            if (stage === 'molecule') {
+                // At molecule scale only the giants are big enough to be: you stop
+                // being a molecule (and whatever was stuck to you floats off)
+                if (!isGiant(type)) return becomeMoleculeHere('H');
+                for (const k of ['chem', 'Z', 'deg']) delete player[k];
+                cluster.length = 1;
+                bonds.length = 0;
+                stuck.length = 0;
+                bondedPairs = new Set();
+                molBondOrders = [];
+            }
             const fresh = makeEntity(type, player.x, player.y);
             for (const k of ['color', 'inner', 'spin', 'spinSpeed', 'atom', 'parts']) delete player[k];
             player.type = type;
@@ -6461,6 +6589,11 @@
         }
 
         function pickParticle(type) {
+            if (pickerMidGame && stage === 'molecule' && isGiant(type)) {
+                closeOverlays();
+                becomeParticle(type); // giants are big enough to be at molecule scale: no need to start over
+                return;
+            }
             if (pickerMidGame) {
                 // Start a fresh game as this particle (physics stays off: it's saved)
                 location.replace(location.pathname + '?as=' + encodeURIComponent(type.id));
@@ -6566,7 +6699,7 @@
                 gas: () => devBecome(1.4e8),      // about Jupiter
                 star: () => devBecome(starSize(1)),
                 bluestar: () => devBecome(starSize(10)),
-                nova: () => devBecome(starSize(15)),
+                nova: () => devBecome(starSize(22)), // heavy enough for every supernova ending
                 blackhole: () => {
                     if (!dust || !dust.blackHole) { devBecome(starSize(110)); goSupernova(REMNANTS.blackhole); }
                 },
@@ -6619,24 +6752,14 @@
             }
             // Become a whole molecule, built atom by atom from its formula
             function devMolecule(formula) {
-                const L = moleculeLayout(formula);
-                if (stage !== 'molecule') { devAtom(L.Zs[0]); enterMoleculeStage(null); }
-                cluster.length = 1;
-                bonds.length = 0;
-                stuck.length = 0;
-                player.Z = L.Zs[0];
-                player.r = atomDisplayRadius(player.Z);
-                player.mass = player.r * player.r;
-                player.deg = L.deg[0];
-                const members = L.Zs.map((Z, k) => {
-                    if (k === 0) return player;
-                    const r = atomDisplayRadius(Z);
-                    return { Z, chem: true, chemMember: true, bonded: true, r, mass: r * r, deg: L.deg[k],
-                             x: player.x + L.pos[k].x - L.pos[0].x, y: player.y + L.pos[k].y - L.pos[0].y, vx: 0, vy: 0 };
-                });
-                cluster.push(...members.slice(1));
-                for (const [a, b] of L.bonds) bonds.push([members[a], members[b]]);
-                refreshMolecule(false);
+                if (stage !== 'molecule') { devAtom(moleculeLayout(formula).Zs[0]); enterMoleculeStage(null); }
+                becomeMoleculeHere(formula);
+            }
+            // Be an Ocamathron or Hiemadecticus right here, at either scale
+            function devGiant(type) {
+                if (physicsOn) setPhysics(false, false);
+                if (stage !== 'molecule') devClear();
+                becomeParticle(type, null, true);
             }
             // The biggest real molecule (physics on), and the biggest anything-goes
             // molecule (physics off): one atom short of becoming a dust grain
@@ -6649,6 +6772,7 @@
                 },
                 molecular: () => {
                     if (stage === 'molecule') return showToast('DEV: already at molecule scale', 'Pick a molecule below to change what you are');
+                    if (isGiant(player.type)) return enterMoleculeStage(null); // stay a giant, just at molecule scale
                     devMolecule(ELEMENTS[((player.atom && player.atom.Z) || 8) - 1][0]);
                 },
                 quark: () => devParticle('up', 'red'),
@@ -6656,6 +6780,8 @@
                 hydrogen: () => devAtom(1),
                 carbon: () => devAtom(6),
                 oxygen: () => devMolecule('O'),
+                ocamathron: () => devGiant(OCAMATHRON),
+                hiemadecticus: () => devGiant(HIEMADECTICUS),
                 bigOn: () => { setPhysics(true, false); devMolecule(BIGGEST_REAL); },
                 bigOff: () => { setPhysics(false, false); devMolecule(BIGGEST_OFF); },
             };
@@ -6664,7 +6790,7 @@
                 DEV_STAGES[key]();
                 updateStats();
                 if (selected === player) showInfo(player);
-                const size = stage === 'molecule' ? ` · ${cluster.length} atom${cluster.length > 1 ? 's' : ''}` : '';
+                const size = stage === 'molecule' && !isGiant(player.type) ? ` · ${cluster.length} atom${cluster.length > 1 ? 's' : ''}` : '';
                 showToast(`DEV: ${player.type.name}`, `${stage === 'molecule' ? 'Molecule' : 'Atomic'} scale${size} · physics ${physicsOn ? 'ON' : 'OFF'}`);
             }
             function runDevPower(power) {
