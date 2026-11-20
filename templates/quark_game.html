@@ -226,8 +226,30 @@
             animation: nova-pulse 1.4s ease-in-out infinite;
         }
         #supernova.show { display: block; }
-        #dev-btn { display: none; border: 1px dashed #7ef; background: rgba(0, 40, 50, 0.6); color: #7ef; }
-        body.dev #dev-btn { display: block; }
+        #starquake { display: none; border: 1px solid #e593ff; background: #28143c; color: #f4d1ff; }
+        #starquake.show { display: block; }
+        #starquake:disabled { opacity: 0.65; cursor: default; }
+        #nova-picker {
+            width: min(570px, calc(100vw - 32px)); max-height: calc(100dvh - 32px);
+            box-sizing: border-box; padding: 22px; border: 1px solid #585478; border-radius: 14px;
+            background: #141124; color: #f3eeff; color-scheme: dark; font: 15px system-ui, sans-serif;
+        }
+        #nova-picker::backdrop { background: rgba(3, 2, 11, 0.78); }
+        #nova-picker header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        #nova-picker h2 { margin: 0; font-size: 21px; }
+        #nova-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(192px, 1fr)); gap: 8px; }
+        #nova-choices button, #nova-cancel {
+            color: inherit; background: #221c36; border: 1px solid #62597e; border-radius: 8px;
+            padding: 10px 12px; text-align: left; font: inherit; cursor: pointer;
+        }
+        #nova-choices button:hover, #nova-cancel:hover { border-color: #ffc274; background: #302341; }
+        #nova-choices span { display: block; margin-top: 3px; color: #d1c5e3; font-size: 13px; }
+        #nova-cancel { padding: 6px 9px; font-size: 13px; }
+        @media (max-height: 440px) {
+            #nova-picker { padding: 14px; }
+            #nova-choices button { padding: 7px 9px; }
+        }
+        #dev-btn { border: 1px dashed #7ef; background: rgba(0, 40, 50, 0.6); color: #7ef; }
         #dev-panel {
             position: fixed;
             top: 48px;
@@ -363,12 +385,20 @@
         <button id="merge-btn" type="button">&#129522; Merging: ON</button>
         <button id="cleanup-btn" type="button">&#129529; Cleanup: OFF</button>
         <button id="pick-btn" type="button" title="Start over as any particle you like">&#127922; Pick a particle</button>
-        <button id="supernova" type="button" title="You're over 100 Suns: explode and become a black hole">&#128165; Go supernova</button>
+        <button id="supernova" type="button" title="Choose what your star becomes">&#128165; Go supernova</button>
+        <button id="starquake" type="button" title="Send a shockwave through nearby space">Starquake</button>
         <button id="restart" type="button" title="Start over as a quark (R)">&#8634; Start over</button>
-        <button id="dev-btn" type="button" title="Dev test powers (local only)">DEV</button>
+        <button id="dev-btn" type="button" title="Dev test powers" aria-controls="dev-panel" aria-expanded="false">DEV</button>
     </div>
+    <dialog id="nova-picker" aria-labelledby="nova-picker-title">
+        <header>
+            <h2 id="nova-picker-title">Choose your supernova remnant</h2>
+            <form method="dialog"><button id="nova-cancel" autofocus>Keep playing as a star</button></form>
+        </header>
+        <div id="nova-choices"></div>
+    </dialog>
     <div id="dev-panel">
-        <b>DEV POWERS (local only)</b>
+        <b>DEV POWERS</b>
         <b>Scale</b>
         <button type="button" data-dev="atomic">Atomic scale</button>
         <button type="button" data-dev="molecular">Molecule scale</button>
@@ -386,7 +416,7 @@
         <button type="button" data-dev="gas">Gas giant</button>
         <button type="button" data-dev="star">Star (1 Sun)</button>
         <button type="button" data-dev="bluestar">Blue star (10 Suns)</button>
-        <button type="button" data-dev="nova">Supernova-ready (110 Suns)</button>
+        <button type="button" data-dev="nova">Supernova-ready (15 Suns)</button>
         <button type="button" data-dev="blackhole">Black hole now</button>
         <button type="button" data-dev="double">&times;2 mass</button>
     </div>
@@ -1525,6 +1555,7 @@
         // the player's first atom, free protons and electrons can form hydrogen.
         // =====================================================================
         const CLEANUP_KEY = 'matterEaterCleanup';
+        const cleanupEl = document.getElementById('cleanup-btn');
         let cleanupOn = false;
         try { cleanupOn = localStorage.getItem(CLEANUP_KEY) === 'on'; } catch (err) { /* keep the default */ }
         const CLEANUP_TICK = LOW_POWER ? 0.25 : 0.1;          // seconds between checks (cheap even with tens of thousands of pieces)
@@ -2719,12 +2750,37 @@
         ];
         const T_DWARF = 6, T_ROCKY = 7, T_GAS = 8, T_STAR = 9;
 
-        // After a supernova you're a black hole (not a size you can grow into)
-        const SUPERNOVA_SUNS = 100;
+        // Supernova remnants are separate from the ordinary size tiers.
+        // Real life: a star's mass decides how it ends. Red dwarfs (under about
+        // 0.45 Suns) burn so slowly that none has run out of fuel yet. Up to about
+        // 8 Suns, a star puffs off its outer layers and leaves a white dwarf. Heavier
+        // stars explode as supernovas: a neutron star is left behind, or, from
+        // about 20 Suns, a black hole (above about 25 Suns, always a black hole).
+        const WHITE_DWARF_SUNS = 0.45, SUPERNOVA_SUNS = 8, BLACK_HOLE_SUNS = 20, NEUTRON_MAX_SUNS = 25;
+        const STAR_GAS_TYPE = { id: 'dust', kind: 'dust', name: 'Star gas', kindLabel: 'Torn-off gas', sym: '', info: { charge: '0',
+            desc: 'Hot gas torn off a star by tides, when it came too close to something far heavier and denser, like a black hole. Some of it swirls in through an accretion disk, and the rest is flung back out into space.' } };
         const BLACK_HOLE_TYPE = { id: 'dust', kind: 'dust', name: 'Black hole', kindLabel: 'Black hole', sym: '', info: { charge: '0',
             desc: 'What\'s left after a giant star explodes in a supernova: its core collapses into a point so dense that nothing, not even light, can escape its gravity. The edge you can\'t come back from is called the event horizon. The glowing ring is gas swirling around faster and faster as it falls in.' } };
         // How big the event horizon is: about 6 km across for each Sun of mass
         const eventHorizonM = (kg) => 4 * 6.674e-11 * kg / (2.998e8 * 2.998e8);
+        const REMNANTS = {
+            whitedwarf: { name: 'White dwarf', hint: 'The hot, Earth-sized core a Sun-like star leaves behind.', density: 2e9, maxSuns: 1.4, suns: 0.6,
+                color: '#dfe9ff', wd: true, collapseTo: 'neutron',
+                desc: 'What\'s left when a star that isn\'t heavy enough to explode runs out of fuel. It puffs its outer layers off into a glowing cloud called a planetary nebula, and its core shrinks into a white dwarf: as heavy as the Sun, but only about as big as Earth! A teaspoon of it would weigh as much as a car. Our Sun will become one in about 5 billion years. Pile more than 1.4 Suns onto it and it collapses.' },
+            neutron: { name: 'Neutron star', hint: 'Dense stellar core with a strong starquake.', density: 3.7e17, maxSuns: 3, suns: 1.55, color: '#a6dfff', quake: 1 },
+            pulsar: { name: 'Pulsar', hint: 'Sweeping twin beams and a starquake.', density: 3.7e17, maxSuns: 3, suns: 1.55, color: '#64bdff', beams: true, quake: 1.15 },
+            magnetar: { name: 'Magnetar', hint: 'Powerful magnetic field and a larger starquake.', density: 3.7e17, maxSuns: 3, suns: 1.55, color: '#e28bff', magnetic: 1, quake: 1.55 },
+            quark: { name: 'Quark star', hint: 'Hypothetical, denser core with a starquake.', density: 8e17, maxSuns: 3.5, suns: 1.8, color: '#ff9e86', quake: 1.35 },
+            blackhole: { name: 'Black hole', hint: 'Swallows matter and other remnants.', color: '#ffb060', type: BLACK_HOLE_TYPE },
+            quarkpulsenatar: { name: 'Quarkpulsenatar', hint: 'Fictional hybrid with twin beams, an extreme magnetic field, quark-star density, and a starquake.',
+                density: 8e17, maxSuns: 3.5, suns: 1.8, color: '#ff78de', beams: true, magnetic: 2.6, quake: 2 },
+        };
+        for (const [id, remnant] of Object.entries(REMNANTS)) {
+            remnant.id = id;
+            remnant.type ||= { id: 'dust', kind: 'dust', name: remnant.name, kindLabel: 'Stellar remnant', sym: '', info: { charge: '0', desc: remnant.desc || remnant.hint } };
+        }
+        const remnantOf = p => p.isPlayer && dust?.blackHole ? REMNANTS.blackhole : p.remnant;
+        const REMNANT_MERGE_PRIORITY = ['whitedwarf', 'neutron', 'pulsar', 'magnetar', 'quark', 'quarkpulsenatar'];
         const DUST_GRAVITY_TIER = 4; // boulders and up pull things in
         const DUST_TYPES = DUST_TIERS.map(t => ({ id: 'dust', kind: 'dust', name: t.name, kindLabel: t.label, sym: '', info: { charge: '0', desc: t.desc } }));
 
@@ -2780,8 +2836,11 @@
         // The star color for a star of real size `size` (meters across)
         function starLookFor(size) {
             const suns = WORLD_LOOKS[T_STAR][0].density * Math.PI / 6 * Math.pow(size, 3) / SUN_KG;
-            return WORLD_LOOKS[T_STAR].find(l => suns < l.maxSuns);
+            const looks = WORLD_LOOKS[T_STAR];
+            return looks.find(l => suns < l.maxSuns) || looks[looks.length - 1];
         }
+        // How big (meters across) an ordinary star of this many Suns is
+        const sizeForSuns = (suns) => Math.cbrt(suns * SUN_KG * 6 / (Math.PI * 1330));
         const pickDustLook = (tier, r) => {
             if (tier === T_STAR) return starLookFor(dustRealSize(r));
             const list = WORLD_LOOKS[tier] || DUST_LOOKS;
@@ -2795,6 +2854,17 @@
         const DUST_HINT_TOUCH = 'Joystick to move &middot; pinch to zoom &middot; eat dust smaller than you (red rings are too big) &middot; long-press to orbit &middot; grow into a star &middot; tap anything to learn about it';
 
         const dustRealSize = (r) => DUST.startSize * Math.pow(r / dust.r0, DUST_EXP); // meters across
+        const dustRForSize = (m) => dust.r0 * Math.pow(m / DUST.startSize, 1 / DUST_EXP); // ...and back
+        // Remnants are drawn at their real size (a neutron star is about 25 km
+        // across, so it's tiny next to a planet), but they push, pull and get
+        // bumped as hard as an ordinary star of the same mass would
+        const remnantSizeM = (remnant, kg) => remnant === REMNANTS.blackhole
+            ? eventHorizonM(kg) : Math.cbrt(kg * 6 / (Math.PI * remnant.density));
+        function sizeRemnant(p, remnant, kg) {
+            p.r = dustRForSize(remnantSizeM(remnant, kg));
+            p.massR = dustRForSize(Math.cbrt(kg * 6 / (Math.PI * 1330))); // an equal-mass star
+            p.mass = p.massR * p.massR;
+        }
         function dustTierOf(r) {
             const size = dustRealSize(r);
             let i = 0;
@@ -2802,12 +2872,14 @@
             return i;
         }
         // Real mass: a ball of its real size, as heavy as what it's made of (kg/m³)
-        const dustMassKg = (p) => (p.isPlayer && dust.blackHole) ? dust.bhKg : (p.isPlayer ? playerDensity(dustTierOf(p.r)) : p.look.density) *
-            Math.PI / 6 * Math.pow(dustRealSize(p.r), 3);
+        const dustDensity = (p) => p.isPlayer ? playerDensity(dustTierOf(p.r)) : p.look.density;
+        const dustVolume = (diameter) => Math.PI / 6 * diameter ** 3;
+        // (debris from a tidal breakup carries its share of the real mass in kg)
+        const dustMassKg = (p) => (p.isPlayer && dust.blackHole) ? dust.bhKg : p.remnantKg ?? p.kg ?? dustDensity(p) * dustVolume(dustRealSize(p.r));
         const EARTH_KG = 5.972e24, JUPITER_KG = 1.898e27, SUN_KG = 1.989e30;
         function formatMassKg(kg, short) {
             const fmt = (n, unit, long) => `${n.toLocaleString(undefined, n < 1 ? { maximumSignificantDigits: 2 } : { maximumFractionDigits: n < 10 ? 1 : 0 })} ${unit}${long && !short ? ` (${long})` : ''}`;
-            if (kg >= SUN_KG) return fmt(kg / SUN_KG, 'Suns');
+            if (kg >= 0.1 * SUN_KG) return fmt(kg / SUN_KG, 'Suns'); // stars and white dwarfs: in Suns
             if (kg >= 0.1 * JUPITER_KG) {
                 const suns = kg / SUN_KG;
                 return fmt(kg / JUPITER_KG, 'Jupiter masses', suns >= 0.05 ? `${suns.toLocaleString(undefined, { maximumSignificantDigits: 2 })} Suns` : '');
@@ -2854,12 +2926,46 @@
             });
         }
 
+        function setRemnant(p, remnant, kg) {
+            p.remnant = remnant;
+            p.remnantKg = kg;
+            p.type = remnant.type;
+            sizeRemnant(p, remnant, kg);
+            p.rotSpeed = remnant.beams ? 1.8 : remnant.magnetic ? 0.65 : 0.28;
+            p.drawR = p.r * (remnant.beams ? 9 : remnant.magnetic ? 4 * Math.sqrt(remnant.magnetic) : 1.8);
+            if (!p.isPlayer) return;
+            if (remnant === REMNANTS.blackhole) {
+                if (!dust.blackHole) dust.starsEaten = 0;
+                dust.blackHole = true;
+                dust.bhKg = kg;
+                dust.quake = null;
+                dust.quakeReady = 0;
+            }
+            dust.won = true;
+        }
+
+        const remnantNeighbors = Object.values(REMNANTS);
+        function makeSpaceNeighbor(r, x, y) {
+            const p = makeDustEntity(r, x, y);
+            if (remnantOf(player) && r > player.r * 0.46 && Math.random() < 0.14) {
+                const remnant = remnantNeighbors[Math.floor(Math.random() * remnantNeighbors.length)];
+                setRemnant(p, remnant, SUN_KG * rand(0.9, remnant.suns || 3.5));
+            }
+            return p;
+        }
+
         // Mostly things smaller than you (food), plus a few bigger ones to dodge
         function dustSpawnRadius() {
             const between = (a, b) => player.r * Math.exp(rand(Math.log(a), Math.log(b)));
             const u = Math.random();
             if (u < 0.5) return between(0.12, 0.4);
-            if (u < 0.88) return between(0.4, 0.92);
+            if (u < (remnantOf(player) ? 0.96 : 0.88)) return between(0.4, 0.92); // big things are rarer around remnants
+            if (remnantOf(player)) {
+                // A remnant is tiny for how heavy it is, so the bigger things around it
+                // are real planets and stars (up to 20 Suns), not ones scaled to you
+                const lo = Math.max(dustRealSize(player.r) * 1.2, 1e6), hi = sizeForSuns(20);
+                if (lo < hi) return dustRForSize(Math.exp(rand(Math.log(lo), Math.log(hi))));
+            }
             return between(1.15, 3);
         }
 
@@ -2869,20 +2975,43 @@
             const half = Math.hypot(window.innerWidth, window.innerHeight) / 2;
             const seen = half / camera.zoom;              // what's on screen right now
             const usual = half * player.r / DUST.screenR; // what's on screen at normal zoom
-            const inner = fillView ? player.r * 4 : seen * 1.05;
-            const outer = Math.max(usual * 3, inner + usual);
+            const field = usual * 3;                      // the neighborhood kept full, whatever the zoom
+            // Zooming never adds or removes things: new things only appear out of
+            // sight, and anything you've looked at lately stays put (keepR shrinks
+            // back slowly after you zoom in, so zooming back out shows the same sky)
+            if (fillView) dust.keepR = 0;
+            dust.keepR = Math.max(Math.max(seen, usual) * 1.1, (dust.keepR || 0) * 0.97);
+            const inner = fillView ? player.r * 4 : Math.max(seen, usual) * 1.05;
+            const outer = field;
+            let ordinary = 0;
             for (let k = free.length - 1; k >= 0; k--) {
                 const p = free[k];
+                if (p.falling) continue; // spiraling into you
+                if (p.rocheFragment && !cleanupOn) continue;
                 const d = Math.hypot(p.x - player.x, p.y - player.y);
-                if (d > outer * 1.4 || (p.r < player.r * 0.04 && d > seen)) {
+                if (d > Math.max(field * 1.4, dust.keepR) || (p.r < player.r * 0.04 && d > dust.keepR)) {
                     if (selected === p) hideInfo();
+                    if (p === playerOrbit?.target) playerOrbit = null;
                     free.splice(k, 1);
+                } else if (d <= field * 1.4) {
+                    ordinary++; // only the neighborhood counts, so zooming out doesn't stop new things coming
                 }
             }
-            for (let missing = DUST.count - free.length; missing > 0; missing--) {
+            // Long encounters can create debris faster than it drifts away.
+            let excess = cleanupOn ? free.length - (DUST.count + 96) : 0;
+            for (let i = 0; excess > 0 && i < free.length; i++) {
+                const p = free[i];
+                if (!p.rocheFragment || p.rocheGrace > 0 || p.orbit || p === playerOrbit?.target) continue;
+                removeFree(p);
+                i--;
+                excess--;
+                ordinary--;
+            }
+            if (inner >= outer) return; // zoomed out past the neighborhood: nowhere out of sight to add things
+            for (let missing = DUST.count - ordinary; missing > 0; missing--) {
                 const r = dustSpawnRadius(), ang = rand(0, Math.PI * 2);
                 const d = Math.sqrt(rand(inner * inner, outer * outer)) + r;
-                free.push(makeDustEntity(r, player.x + Math.cos(ang) * d, player.y + Math.sin(ang) * d));
+                free.push(makeSpaceNeighbor(r, player.x + Math.cos(ang) * d, player.y + Math.sin(ang) * d));
             }
         }
 
@@ -2900,6 +3029,10 @@
             player.mass = player.r * player.r;
             player.chem = false;
             player.dust = true;
+            delete player.remnant;
+            delete player.remnantKg;
+            delete player.massR;
+            delete player.drawR;
             player.look = DUST_LOOKS[0];
             dustShape(player);
             cluster.length = 0;
@@ -2916,22 +3049,27 @@
             manageDust(true);
 
             document.getElementById('hint').innerHTML = document.body.classList.contains('touch') ? DUST_HINT_TOUCH : DUST_HINT;
+            showCleanupButton();
             updateStats();
             showToast('You became a dust grain!', 'Your molecule gathered with trillions of others into a speck of space dust. Eat dust smaller than you to grow into planets, and then a star!');
         }
 
         // Touching dust: eat it if it's smaller than you, bump it if it's bigger
         function dustContact(p) {
+            if (physicsOn && (p.rocheGrace > 0 || dust.rocheGrace > 0)) return;
+            const bounceOnly = !physicsOn && !mergeOn; // merging turned off: just bump
+            if (!bounceOnly && isRemnantImpact(player, p)) return; // resolved by the swept space encounters
             const dx = p.x - player.x, dy = p.y - player.y;
             const reach = p.r + player.r;
             if (Math.abs(dx) > reach || Math.abs(dy) > reach) return;
             const d = Math.hypot(dx, dy) || 0.001;
             if (d >= reach) return;
 
-            if (p.r < player.r || !physicsOn) { eatDust(p); return; } // physics off: eat anything
-            if (dust.blackHole) { catchInBlackHole(p); return; }
-
-            floatText(p, 'Too big to eat! Eat smaller ones first');
+            if (!bounceOnly) {
+                if (dust.blackHole) { catchInBlackHole(p); return; } // swirls in through the disk, never instantly
+                if (p.r < player.r || !physicsOn) { eatDust(p); return; } // physics off: eat anything
+                floatText(p, 'Too big to eat! Eat smaller ones first');
+            }
             const nx = dx / d, ny = dy / d, overlap = reach - d;
             const total = p.mass + player.mass;
             p.x += nx * overlap * (player.mass / total); p.y += ny * overlap * (player.mass / total);
@@ -2944,33 +3082,359 @@
             }
         }
 
+        // The fluid Roche limit, with a simple strength correction for small,
+        // cohesive bodies. The game applies the radius ratio to its drawn scale.
+        const ROCHE_STRENGTH = 1e5; // Pa, representative cohesion
+        const ROCHE_MASS_RATIO = 10; // satellite approximation
+        // Budgets are in addition to the ambient field of 170 objects. A full
+        // field delays new breakups until impacts free space; existing debris stays.
+        const ROCHE_DEBRIS_BUDGET = LOW_POWER ? 450 : 900;
+        function rocheBody(p) {
+            const size = dustRealSize(p.r), volume = dustVolume(size);
+            const remnant = remnantOf(p);
+            const mass = remnant ? dustMassKg(p) : dustDensity(p) * volume;
+            const density = mass / volume;
+            // Central pressure of a uniform sphere due to its own gravity.
+            const pressure = Math.PI * 6.6743e-11 * (density * size) ** 2 / 6;
+            return {
+                p, mass, source: remnant ? p.massR * Math.cbrt(1330) : p.r * Math.cbrt(density),
+                response: remnant ? 0 : 2.44 / Math.cbrt(density * (1 + ROCHE_STRENGTH / pressure)),
+                x: p.dustX ?? p.x, y: p.dustY ?? p.y,
+            };
+        }
+
+        function sweptDustCrossing(primary, satellite, limit, dx, dy) {
+            const x0 = satellite.x - primary.x, y0 = satellite.y - primary.y;
+            if ((x0 > limit && dx > limit) || (x0 < -limit && dx < -limit) ||
+                (y0 > limit && dy > limit) || (y0 < -limit && dy < -limit)) return null;
+            const reach2 = limit * limit, start2 = x0 * x0 + y0 * y0;
+            if (start2 <= reach2) return start2 ? [x0, y0, 0] : [dx || 1, dy, 0];
+            const vx = dx - x0, vy = dy - y0;
+            const travel2 = vx * vx + vy * vy;
+            const approach = -(x0 * vx + y0 * vy);
+            if (approach <= 0) return null;
+            const discriminant = approach * approach - travel2 * (start2 - reach2);
+            if (discriminant < 0) return null;
+            const t = (start2 - reach2) / (approach + Math.sqrt(discriminant));
+            return t <= 1 ? [x0 + vx * t, y0 + vy * t, t] : null;
+        }
+
+        function shedRocheDebris(p, primary, crossing, count) {
+            const [dx, dy] = crossing, distance = Math.hypot(dx, dy) || 1;
+            const nx = dx / distance, ny = dy / distance;
+            const { r, vx, vy } = p;
+            const x = primary.x + dx, y = primary.y + dy;
+            const core = p.isPlayer ? 0.55 : 0;
+            const speed = Math.max(r, primary.r * 0.25);
+            const weights = Array.from({ length: count }, () => rand(0.45, 1.55));
+            const total = weights.reduce((sum, weight) => sum + weight, 0);
+            const shards = [], kg = dustMassKg(p);
+            const starGas = !p.isPlayer && dustTierOf(r) === T_STAR ? p.look : null; // a star tears into streams of hot gas
+            // Preserve the same squared-radius growth budget as eating the object whole.
+            for (const [i, weight] of weights.entries()) {
+                const along = (2 * i / (count - 1) - 1) * r;
+                const side = rand(-0.5, 0.5) * r;
+                const shard = makeDustEntity(r * Math.sqrt((1 - core) * weight / total),
+                    x + nx * along - ny * side, y + ny * along + nx * side);
+                shard.vx = vx + nx * (along / r) * speed - ny * side / r * speed;
+                shard.vy = vy + ny * (along / r) * speed + nx * side / r * speed;
+                shard.kg = kg * (1 - core) * weight / total;
+                if (starGas) { shard.starGas = true; shard.look = starGas; shard.type = STAR_GAS_TYPE; }
+                shard.rocheGrace = 1.1;
+                shard.rocheFragment = true;
+                free.push(shard);
+                shards.push(shard);
+            }
+            if (!p.isPlayer) {
+                removeFree(p);
+                floatText({ x, y, r }, 'Roche limit! Tidal breakup');
+                return shards;
+            }
+
+            playerOrbit = null;
+            dust.rocheGrace = 1.8;
+            const safeDistance = Math.max(distance, primary.r + r);
+            p.x = primary.x + nx * (safeDistance + r * 0.4);
+            p.y = primary.y + ny * (safeDistance + r * 0.4);
+            p.vx = vx + nx * speed;
+            p.vy = vy + ny * speed;
+            p.r = r * Math.sqrt(core);
+            p.mass = p.r * p.r;
+            const tier = dustTierOf(p.r);
+            if (tier !== dust.tier) p.look = pickDustLook(tier, p.r);
+            dust.tier = tier;
+            p.type = DUST_TYPES[tier];
+            updateStats();
+            updateSupernovaButton();
+            if (selected === p) showInfo(p);
+            showToast('Roche limit! Tidal breakup', 'Tidal forces tore you apart. You’re now the largest surviving fragment.');
+        }
+
+        function mergeDustDebris(a, b, impact, dt) {
+            const big = a.p.r >= b.p.r ? a : b;
+            const small = big === a ? b : a;
+            const p = big.p, q = small.p;
+            const total = p.mass + q.mass;
+            const share = q.mass / total;
+            const tier = dustTierOf(p.r);
+            const inspect = selected === p || selected === q;
+            p.vx += (q.vx - p.vx) * share;
+            p.vy += (q.vy - p.vy) * share;
+            const rest = (1 - impact) * dt;
+            const x = big.x + (p.x - big.x) * impact;
+            const y = big.y + (p.y - big.y) * impact;
+            const qx = small.x + (q.x - small.x) * impact;
+            const qy = small.y + (q.y - small.y) * impact;
+            p.x = x + (qx - x) * share + p.vx * rest;
+            p.y = y + (qy - y) * share + p.vy * rest;
+            if (p.kg !== undefined || q.kg !== undefined) p.kg = dustMassKg(p) + dustMassKg(q);
+            p.mass = total;
+            p.r = Math.sqrt(total);
+            const next = dustTierOf(p.r);
+            if (next !== tier && !p.starGas) {
+                p.look = pickDustLook(next, p.r);
+                p.type = DUST_TYPES[next];
+            }
+            removeFree(q);
+            if (inspect) showInfo(p);
+        }
+
+        function isRemnantImpact(a, b) {
+            const first = remnantOf(a), second = remnantOf(b);
+            // Keep the player's existing black-hole capture and accretion for ordinary matter.
+            return !!(first || second) && !(a.isPlayer && first === REMNANTS.blackhole && !second) &&
+                !(b.isPlayer && second === REMNANTS.blackhole && !first);
+        }
+
+        function mergeRemnantImpact(a, b, impact, dt) {
+            const p = a.p, q = b.p, first = remnantOf(p), second = remnantOf(q);
+            const pKg = dustMassKg(p), qKg = dustMassKg(q);
+            const main = !second || (first && pKg >= qKg) ? p : q;
+            const target = p.isPlayer ? p : q.isPlayer ? q : main;
+            const other = target === p ? q : p;
+            const inspect = selected === p || selected === q;
+            const both = first && second;
+            const blackHole = first === REMNANTS.blackhole || second === REMNANTS.blackhole;
+            let result = blackHole ? REMNANTS.blackhole : remnantOf(main);
+            let kg = pKg + qKg;
+            if (both && !blackHole) {
+                result = REMNANT_MERGE_PRIORITY.indexOf(first.id) >= REMNANT_MERGE_PRIORITY.indexOf(second.id) ? first : second;
+                kg *= 0.96; // a small share leaves in ejecta and radiation
+            } else if (!blackHole) {
+                const incoming = main === p ? qKg : pKg;
+                kg = dustMassKg(main) + Math.min(incoming * 0.15, SUN_KG * 0.04); // most of a star that hits it splashes away
+            }
+            const collapse = kg > (result.maxSuns || Infinity) * SUN_KG;
+            if (collapse) {
+                // Too heavy: a white dwarf crushes into a neutron star, anything heavier into a black hole
+                result = REMNANTS[result.collapseTo] || REMNANTS.blackhole;
+                if (kg > (result.maxSuns || Infinity) * SUN_KG) result = REMNANTS.blackhole;
+            }
+            const majorImpact = both || remnantOf(target) !== result || (target === p ? qKg : pKg) >= 0.02 * SUN_KG; // a star-sized hit, not a rock
+            const targetShare = target === p ? pKg / (pKg + qKg) : qKg / (pKg + qKg);
+            const share = 1 - targetShare;
+            const from = target === p ? a : b;
+            const into = target === p ? b : a;
+            const x = from.x + (target.x - from.x) * impact;
+            const y = from.y + (target.y - from.y) * impact;
+            const ox = into.x + (other.x - into.x) * impact;
+            const oy = into.y + (other.y - into.y) * impact;
+            target.vx += (other.vx - target.vx) * share;
+            target.vy += (other.vy - target.vy) * share;
+            target.x = x + (ox - x) * share + target.vx * (1 - impact) * dt;
+            target.y = y + (oy - y) * share + target.vy * (1 - impact) * dt;
+            setRemnant(target, result, kg);
+            removeFree(other);
+            const neutronLike = (r) => r && r !== REMNANTS.blackhole && !r.wd;
+            const kilonova = both && !blackHole && neutronLike(first) && neutronLike(second);
+            const label = collapse ? `Collapse to ${aOrAn(result.name)} ${result.name.toLowerCase()}!` : blackHole && both ? 'Black-hole merger' :
+                kilonova ? 'Kilonova' : both ? 'Stellar merger' : blackHole ? 'Black-hole capture' : 'Accretion flare';
+            feedRemnant(target, majorImpact ? 1 : 0.35); // the infalling gas lights up a disk
+            if (majorImpact) {
+                const kind = collapse ? 'collapse' : blackHole && both ? 'merger' : kilonova ? 'kilonova' : 'flare';
+                addBurst(kind, target.x, target.y, both && !kilonova && !blackHole ? 1.8 : 1);
+            }
+            if (target.isPlayer) {
+                playerOrbit = null;
+                updateStats();
+                updateSupernovaButton();
+                updateRestartPrompt();
+                if (majorImpact) showToast(label, `You’re now ${aOrAn(result.name)} ${result.name.toLowerCase()} of ${formatMassKg(kg, true)}.`);
+            } else if (majorImpact) {
+                floatText(target, `${label} → ${result.name}`);
+            }
+            if (inspect) showInfo(target);
+        }
+
+        function stepDustEncounters(dt, checkRoche) {
+            dust.rocheWarning = null;
+            dust.rocheGrace = Math.max(0, (dust.rocheGrace || 0) - dt);
+            const compactNearby = remnantOf(player) || free.some(p => p.remnant);
+            if (!checkRoche && !compactNearby && (cleanupOn || !free.some(p => p.rocheFragment))) return;
+            const encounterBody = p => checkRoche ? rocheBody(p) : { p, x: p.dustX ?? p.x, y: p.dustY ?? p.y };
+            const bodies = checkRoche || compactNearby ? [encounterBody(player)] : [];
+            let fragmentCount = 0;
+            for (const p of free) {
+                if (p.rocheFragment) fragmentCount++;
+                if (p.rocheGrace > 0) p.rocheGrace = Math.max(0, p.rocheGrace - dt);
+                if (p.falling) continue;
+                bodies.push(encounterBody(p));
+            }
+            const trackDebris = !cleanupOn && fragmentCount > 0;
+            let maxResponse = 0;
+            for (const body of bodies) {
+                body.grace = body.p.isPlayer ? dust.rocheGrace : body.p.rocheGrace || 0;
+                if (checkRoche && !body.grace) maxResponse = Math.max(maxResponse, body.response);
+            }
+
+            // Sweep only nearby pairs. The broad-phase bounds include every
+            // possible Roche radius, as well as the path traveled this step.
+            for (const body of bodies) {
+                const r = checkRoche ? Math.max(body.p.r, body.source * maxResponse * 1.33) : body.p.r;
+                body.left = Math.min(body.x, body.p.x) - r;
+                body.right = Math.max(body.x, body.p.x) + r;
+                body.top = Math.min(body.y, body.p.y) - r;
+                body.bottom = Math.max(body.y, body.p.y) + r;
+            }
+            bodies.sort((a, b) => a.left - b.left);
+            const disruptions = [], contacts = [];
+            let warningRatio = 1.33;
+            for (let i = 0; i < bodies.length; i++) {
+                const a = bodies[i];
+                for (let j = i + 1; j < bodies.length && bodies[j].left <= a.right; j++) {
+                    const b = bodies[j];
+                    if (b.top > a.bottom || b.bottom < a.top) continue;
+                    const dx = b.p.x - a.p.x, dy = b.p.y - a.p.y;
+                    const touch = a.p.r + b.p.r;
+                    const remnantImpact = compactNearby && isRemnantImpact(a.p, b.p) &&
+                        (physicsOn || mergeOn || !(a.p.isPlayer || b.p.isPlayer)); // merging off: you just bump
+                    if (!a.grace && !b.grace && (remnantImpact ||
+                        (trackDebris && !a.p.isPlayer && !b.p.isPlayer && (a.p.rocheFragment || b.p.rocheFragment)))) {
+                        const crossing = sweptDustCrossing(a, b, touch, dx, dy);
+                        if (crossing) contacts.push({ a, b, impact: crossing[2], remnantImpact });
+                    }
+                    if (!checkRoche) continue;
+                    const primary = a.mass >= b.mass ? a : b;
+                    const satellite = primary === a ? b : a;
+                    if (primary.mass < satellite.mass * ROCHE_MASS_RATIO || !satellite.response || satellite.grace) continue;
+                    let limit = primary.source * satellite.response;
+                    if (primary.p.isPlayer && dust.blackHole) limit = Math.min(limit, satellite.p.r + primary.p.r * 10);
+                    if (limit <= touch) continue;
+                    if (a.p.isPlayer || b.p.isPlayer) {
+                        const ratio = Math.hypot(dx, dy) / limit;
+                        if (ratio < warningRatio) {
+                            warningRatio = ratio;
+                            dust.rocheWarning = { center: primary.p, limit };
+                        }
+                    }
+                    const direction = primary === a ? 1 : -1;
+                    const crossing = sweptDustCrossing(primary, satellite, limit, dx * direction, dy * direction);
+                    if (crossing) disruptions.push({ primary, satellite, limit, crossing });
+                }
+            }
+            disruptions.sort((a, b) => b.satellite.mass - a.satellite.mass || b.primary.mass - a.primary.mass);
+            for (const { primary, satellite, limit, crossing } of disruptions) {
+                if (primary.resolved || satellite.resolved) continue;
+                const center = primary.p, p = satellite.p;
+                const blackHoleCapture = center.isPlayer && dust.blackHole;
+                const maximum = LOW_POWER ? 6 : 9;
+                const replaced = p.rocheFragment ? 1 : 0;
+                const count = cleanupOn ? maximum : Math.min(maximum, ROCHE_DEBRIS_BUDGET - fragmentCount + replaced);
+                if (!blackHoleCapture && count < 2) continue;
+                satellite.resolved = true;
+                dust.rocheEvent = { center, limit, born: performance.now() };
+                if (blackHoleCapture && count < 2) catchInBlackHole(p); // no room for more debris: it spirals in whole
+                else if (blackHoleCapture) {
+                    // A tidal disruption: the near half of the debris is bound and
+                    // spirals in through the disk, the far half gets flung away
+                    const wasStar = dustTierOf(p.r) === T_STAR;
+                    const reach = Math.hypot(crossing[0], crossing[1]);
+                    for (const shard of shedRocheDebris(p, center, crossing, count)) {
+                        if (Math.hypot(shard.x - center.x, shard.y - center.y) <= reach) catchInBlackHole(shard, true);
+                    }
+                    fragmentCount += count - replaced;
+                    feedRemnant(player, 0.4);
+                    if (wasStar) {
+                        dust.starsEaten++;
+                        updateStats();
+                        if (!dust.toldTde) {
+                            dust.toldTde = true;
+                            showToast('Tidal disruption!', 'Your tides tore a star into streams of gas. Some swirls into a disk around you, the rest flies away.');
+                        }
+                    }
+                } else {
+                    shedRocheDebris(p, center, crossing, count);
+                    fragmentCount += count - replaced;
+                }
+            }
+            contacts.sort((a, b) => a.impact - b.impact);
+            for (const { a, b, impact, remnantImpact } of contacts) {
+                if (a.resolved || b.resolved) continue;
+                a.resolved = b.resolved = true;
+                if (remnantImpact) mergeRemnantImpact(a, b, impact, dt);
+                else mergeDustDebris(a, b, impact, dt);
+            }
+        }
+
+        function drawRocheLimit() {
+            if (!physicsOn) return;
+            const event = dust.rocheEvent;
+            const age = event ? (performance.now() - event.born) / 1300 : 1;
+            const warning = dust.rocheWarning;
+            const ring = warning || (age < 1 ? event : null);
+            if (!ring) return;
+            const { center, limit } = ring, z = view.zoom;
+            ctx.save();
+            ctx.globalAlpha = warning ? 0.72 : 0.85 * (1 - age);
+            ctx.strokeStyle = '#ffd37e';
+            ctx.lineWidth = 1.5 / z;
+            ctx.setLineDash([8 / z, 6 / z]);
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, limit, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            drawLabel('Roche limit', center.x, center.y - limit - 12 / z, 13 / z, false, false);
+            ctx.restore();
+        }
+
         // Black holes don't care how big something is: once anything touches,
         // it's caught for good. Tides stretch it into gas that spirals in.
-        function catchInBlackHole(p) {
+        function catchInBlackHole(p, quiet) {
             if (p.falling) return;
             p.falling = true;
             delete p.orbit;
             if (playerOrbit && playerOrbit.target === p) playerOrbit = null;
             if (dustTierOf(p.r) === T_STAR) p.wasStar = true;
+            // It goes around and around, closer each time, instead of dropping straight in
+            const dx = p.x - player.x, dy = p.y - player.y;
+            const turn = dx * (p.vy - player.vy) - dy * (p.vx - player.vx);
+            p.spiral = { a: Math.atan2(dy, dx), d: Math.max(Math.hypot(dx, dy), player.r * 1.5), dir: turn < 0 ? -1 : 1 };
+            if (quiet) return;
             p.msgUntil = 0;
             floatText(p, p.wasStar ? 'Tearing the star apart!' : 'Tearing it apart!');
         }
 
-        // Each step something caught spirals toward the middle and gets
-        // stripped; you grow by what's stripped, the same as eating it whole
+        // Something caught spirals inward through the accretion disk, faster the
+        // closer it gets, and is stripped away as it goes; you grow by what's
+        // stripped, the same as eating it whole
         function fallIntoBlackHole(p, dt) {
-            const pull = Math.min(1, 3 * dt);
-            p.x += (player.x - p.x) * pull;
-            p.y += (player.y - p.y) * pull;
+            const h = player.r, sp = p.spiral;
+            const close = Math.min(1, h * 6 / sp.d);
+            sp.a += 1.5 * Math.pow(h * 10 / sp.d, 0.8) * sp.dir * dt;
+            sp.d = Math.max(h * 0.6, sp.d * Math.exp(-0.3 * dt) - h * 0.5 * dt);
+            p.x = player.x + Math.cos(sp.a) * sp.d;
+            p.y = player.y + Math.sin(sp.a) * sp.d;
             p.vx = player.vx; p.vy = player.vy;
-            p.rotSpeed = (p.rotSpeed || 0) + 3 * dt; // spins up as it falls in
-            const before = p.r, kgBefore = dustMassKg(p);
-            p.r *= Math.exp(-1.8 * dt);
+            p.rotSpeed = (p.rotSpeed || 0) + 2 * dt; // spins up as it falls in
+            if (p.kg === undefined) p.kg = dustMassKg(p);
+            const keep = Math.exp(-2 * (0.12 + 1.6 * close) * dt); // share of it left after this step
+            p.r *= Math.sqrt(keep);
             p.mass = p.r * p.r;
-            dust.bhKg += kgBefore - dustMassKg(p);
-            player.r = Math.sqrt(player.r * player.r + 0.25 * (before * before - p.r * p.r));
-            player.mass = player.r * player.r;
-            if (p.r < player.r) eatDust(p);
+            dust.bhKg += p.kg * (1 - keep);
+            p.kg *= keep;
+            sizeRemnant(player, REMNANTS.blackhole, dust.bhKg);
+            feedRemnant(player, dt * (0.3 + 0.9 * close));
+            if (sp.d < h * 1.2 || p.r < h * 0.15) eatDust(p);
             else if (selected === player) showInfo(player);
             updateStats();
         }
@@ -2983,8 +3447,7 @@
                 // Black holes keep everything that falls in
                 dust.bhKg += dustMassKg(p);
                 if (p.wasStar || dustTierOf(p.r) === T_STAR) dust.starsEaten++;
-                player.r = Math.hypot(player.r, p.r * 0.5);
-                player.mass = player.r * player.r;
+                sizeRemnant(player, REMNANTS.blackhole, dust.bhKg);
                 updateStats();
                 if (selected === player) showInfo(player);
                 return;
@@ -3029,78 +3492,449 @@
             updateSupernovaButton();
         }
 
-        // --- Supernova: a star of 100+ Suns can explode into a black hole ---
+        // --- Supernova choices and remnant abilities ---
         const novaEl = document.getElementById('supernova');
-        function updateSupernovaButton() {
-            if (stage !== 'dust') { novaEl.classList.remove('show'); return; }
-            const kg = dustMassKg(player);
-            // Physics off: any star can go supernova
-            const ready = !dust.blackHole && dustTierOf(player.r) === T_STAR &&
-                (!physicsOn || kg >= SUPERNOVA_SUNS * SUN_KG);
-            novaEl.classList.toggle('show', ready);
-            if (ready && !dust.novaTold) {
-                dust.novaTold = true; // tell them once; after that the small button just waits
-                showToast('You can go supernova!', physicsOn
-                    ? "You're over 100 Suns. Tap 💥 Go supernova (top right) whenever you're ready, or keep growing"
-                    : 'Physics is off, so any star can do it. Tap 💥 Go supernova (top right) whenever you like');
-            }
+        const novaPicker = document.getElementById('nova-picker');
+        const quakeEl = document.getElementById('starquake');
+        const novaChoices = document.getElementById('nova-choices');
+        const QUAKE_COOLDOWN = 5;
+        // What your star can turn into right now
+        function endingsFor(kg) {
+            if (!physicsOn) return remnantNeighbors; // anything goes
+            const suns = kg / SUN_KG;
+            if (suns < WHITE_DWARF_SUNS) return [];
+            if (suns < SUPERNOVA_SUNS) return [REMNANTS.whitedwarf];
+            return remnantNeighbors.filter(r => r === REMNANTS.blackhole ? suns >= BLACK_HOLE_SUNS : !r.wd && suns < NEUTRON_MAX_SUNS);
         }
-        novaEl.addEventListener('click', goSupernova);
+        function starEndings() {
+            if (stage !== 'dust' || remnantOf(player) || dustTierOf(player.r) !== T_STAR) return [];
+            return endingsFor(dustMassKg(player));
+        }
+        const supernovaReady = () => starEndings().length > 0;
+        const canExplode = (endings) => endings.some(r => !r.wd);
 
-        function goSupernova() {
-            if (!dust || dust.blackHole) return;
-            const starKg = dustMassKg(player);
-            dust.nova = { born: performance.now(), x: player.x, y: player.y, r: player.r };
-            dust.blackHole = true;
-            dust.bhKg = starKg * 0.25; // most of the star is blasted into space
-            dust.starsEaten = 0;
-            player.r *= 0.6;
-            player.mass = player.r * player.r;
-            player.type = BLACK_HOLE_TYPE;
+        function updateSupernovaButton() {
+            const endings = starEndings(), ready = endings.length > 0;
+            novaEl.classList.toggle('show', ready);
+            updateStarquakeButton();
+            if (!ready) return;
+            const explode = canExplode(endings);
+            const label = explode ? '\u{1F4A5} Go supernova' : '\u2728 Become a white dwarf';
+            if (novaEl.textContent !== label) novaEl.textContent = label;
+            // Tell them once for each new kind of ending; after that the button just waits
+            const told = !physicsOn ? 'any' : explode ? 'supernova' : 'whitedwarf';
+            if (dust.novaTold === told || (dust.novaTold === 'any' && !physicsOn)) return;
+            dust.novaTold = told;
+            if (!physicsOn) showToast('Your star can end any way you like!', 'Physics is off, so any star can become any remnant.');
+            else if (explode) showToast('You can go supernova!', dustMassKg(player) >= BLACK_HOLE_SUNS * SUN_KG
+                ? 'You\'re heavy enough to explode and leave a black hole behind. Or keep growing!'
+                : 'Stars over 8 Suns explode when they run out of fuel. Tap Go supernova, or keep growing: at 20 Suns you can make a black hole.');
+            else showToast('Your star can become a white dwarf', 'Stars up to 8 Suns end by puffing off their outer layers. Or keep growing: at 8 Suns you can go supernova!');
+        }
+        novaEl.addEventListener('click', () => {
+            const endings = starEndings();
+            if (!endings.length || novaPicker.open) return;
+            for (const button of novaChoices.children) button.hidden = !endings.some(r => r.id === button.dataset.remnant);
+            document.getElementById('nova-picker-title').textContent = canExplode(endings) ? 'Choose your supernova remnant' : 'How your star ends';
+            novaPicker.showModal();
+        });
+        for (const remnant of remnantNeighbors) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.dataset.remnant = remnant.id;
+            const name = document.createElement('strong'), detail = document.createElement('span');
+            name.textContent = remnant.name;
+            detail.textContent = remnant.hint;
+            button.append(name, detail);
+            button.addEventListener('click', () => {
+                novaPicker.close();
+                goSupernova(remnant);
+            });
+            novaChoices.append(button);
+        }
+
+        function goSupernova(remnant) {
+            if (!starEndings().includes(remnant)) return;
+            const starKg = dustMassKg(player), starR = player.r, suns = starKg / SUN_KG;
+            const blackHole = remnant === REMNANTS.blackhole, gentle = !!remnant.wd;
+            // How heavy the leftover core is (white dwarfs: heavier stars leave heavier ones)
+            const kg = blackHole ? starKg * 0.25
+                : gentle ? Math.min(starKg * 0.9, Math.min(1.35, 0.109 * suns + 0.394) * SUN_KG)
+                : Math.min(starKg * 0.9, remnant.suns * SUN_KG);
+            addBurst(gentle ? 'nebula' : 'supernova', player.x, player.y);
+            setRemnant(player, remnant, kg); // shrinks you down to its real size
             playerOrbit = null;
-            // The blast throws everything nearby outward
+            // The blast throws everything nearby outward (a planetary nebula just nudges).
+            // A supernova destroys whatever was right next to the star, so the new
+            // remnant starts out in cleared space, without a disk
+            for (let k = free.length - 1; k >= 0; k--) {
+                const p = free[k];
+                if (!gentle && !p.remnant && Math.hypot(p.x - player.x, p.y - player.y) - p.r < starR * 4) {
+                    removeFree(p);
+                    continue;
+                }
+            }
+            player.feed = 0;
             for (const p of free) {
                 delete p.orbit;
                 const dx = p.x - player.x, dy = p.y - player.y, d = Math.hypot(dx, dy) || 1;
-                const reach = player.r * 30;
+                const reach = starR * 12;
                 if (d < reach) {
-                    const kick = player.r * 10 * (1 - d / reach);
+                    const kick = starR * (gentle ? 0.6 : 4) * (1 - d / reach);
                     p.vx += (dx / d) * kick;
                     p.vy += (dy / d) * kick;
                 }
             }
-            novaEl.classList.remove('show');
+            if (gentle) {
+                updateSupernovaButton();
+                updateRestartPrompt();
+                showToast('A planetary nebula!', 'Your star puffed its outer layers off into a glowing cloud. Its hot core is left behind as a white dwarf, about as big as Earth.');
+                updateStats();
+                if (selected === player) showInfo(player);
+                return;
+            }
+            updateSupernovaButton();
             updateRestartPrompt();
-            showToast('Supernova!', `Your star exploded! Its core collapsed into a black hole of ${formatMassKg(dust.bhKg, true)}. Eat stars to grow!`);
+            showToast('Supernova!', `Your star left behind ${aOrAn(remnant.name)} ${remnant.name.toLowerCase()}. ${blackHole ? 'Eat stars to grow!' : 'Use Starquake to send out a shockwave.'}`);
             updateStats();
             if (selected === player) showInfo(player);
         }
 
-        // Expanding blast and a white flash
-        function drawSupernova() {
-            if (!dust || !dust.nova) return;
-            const n = dust.nova, age = (performance.now() - n.born) / 3000;
-            if (age >= 1) { dust.nova = null; return; }
-            const R = n.r * (1 + age * 18);
+        function updateStarquakeButton() {
+            const available = stage === 'dust' && !!remnantOf(player)?.quake;
+            quakeEl.classList.toggle('show', available);
+            if (!available) return;
+            const seconds = Math.ceil(dust.quakeReady || 0);
+            quakeEl.disabled = seconds > 0;
+            const label = seconds > 0 ? `Starquake (${seconds}s)` : 'Starquake';
+            if (quakeEl.textContent !== label) quakeEl.textContent = label;
+        }
+
+        quakeEl.addEventListener('click', () => {
+            const power = remnantOf(player)?.quake;
+            if (stage !== 'dust' || !power || dust.quakeReady > 0 || isPaused()) return;
+            dust.quakeReady = QUAKE_COOLDOWN;
+            dust.quake = { x: player.x, y: player.y, r: player.r, reach: player.r * (8 + 6 * power), age: 0, power,
+                color: remnantOf(player).color };
+            updateStarquakeButton();
+            showToast('Starquake!', 'The shockwave throws nearby matter outward.');
+        });
+
+        function stepStarquake(dt) {
+            if (dust.quakeReady > 0) {
+                const previous = Math.ceil(dust.quakeReady);
+                dust.quakeReady = Math.max(0, dust.quakeReady - dt);
+                if (Math.ceil(dust.quakeReady) !== previous) updateStarquakeButton();
+            }
+            const wave = dust.quake;
+            if (!wave) return;
+            wave.age = Math.min(1, wave.age + dt / 0.85);
+            const reach = wave.r + (wave.reach - wave.r) * wave.age;
+            for (const p of free) {
+                if (p.quakeHit === wave || p.falling) continue;
+                const dx = p.x - wave.x, dy = p.y - wave.y, d = Math.hypot(dx, dy);
+                if (d > reach + p.r || d < 0.001) continue;
+                p.quakeHit = wave;
+                delete p.orbit;
+                if (playerOrbit?.target === p) playerOrbit = null;
+                const kick = wave.r * 5 * wave.power * Math.min(1, wave.r / p.r) * Math.max(0.12, 1 - d / wave.reach);
+                p.vx += dx / d * kick;
+                p.vy += dy / d * kick;
+            }
+            if (wave.age >= 1) dust.quake = null;
+        }
+
+        function applyRemnantField(p, dt, remnant) {
+            if (remnantOf(p) || p.r >= player.r) return;
+            const dx = p.x - player.x, dy = p.y - player.y, r = player.r;
+            const d = Math.hypot(dx, dy);
+            if (d < r || d >= r * 9) return;
+            const nx = dx / d, ny = dy / d;
+            if (remnant.magnetic) {
+                const falloff = Math.max(0, 1 - d / (r * (4 + remnant.magnetic)));
+                const force = r * 9 * remnant.magnetic * falloff * dt;
+                p.vx -= (nx + 0.65 * ny) * force;
+                p.vy -= (ny - 0.65 * nx) * force;
+            }
+            if (remnant.beams && Math.abs(nx * Math.cos(player.rot) + ny * Math.sin(player.rot)) > 0.986) {
+                const kick = r * 11 * (1 - d / (r * 9)) * dt;
+                p.vx += nx * kick;
+                p.vy += ny * kick;
+            }
+        }
+
+        // --- Accretion disks: gas falling onto something very dense (a white
+        // dwarf, neutron star, quark star or black hole) can't fall straight in.
+        // It swirls into a flat, glowing disk first, hottest at the inside edge.
+        // Each remnant remembers how much it's been fed lately; that fades away.
+        const FEED_FADE_MS = 40000; // a disk lingers long after a meal: bright for about 20 s, gone after a couple of minutes
+        const feedLevel = (p, now = performance.now()) => p.feed ? p.feed * Math.exp(-(now - p.feedT) / FEED_FADE_MS) : 0;
+        function feedRemnant(p, amount) {
+            if (!remnantOf(p)) return;
+            const now = performance.now();
+            p.feed = Math.min(1.6, feedLevel(p, now) + amount);
+            p.feedT = now;
+        }
+        // Outer edge to inner edge: cooler red gas, then yellow, then the hottest gas
+        const DISK_COLORS = {
+            wd: ['255, 120, 80', '255, 205, 140', '235, 245, 255'],
+            compact: ['255, 110, 70', '255, 210, 150', '170, 210, 255'], // hot enough to glow in X-rays
+        };
+        function drawAccretionDisk(p, remnant, level, front) {
+            const { x, y, r } = p, a = Math.min(1, level), TAU = Math.PI * 2;
+            const R = r * (remnant.wd ? 2.6 : 3.4), tilt = p.tilt || 0.3, squash = 0.34;
+            const colors = remnant.wd ? DISK_COLORS.wd : DISK_COLORS.compact;
+            const spin = performance.now() / 1000 * (remnant.wd ? 1.2 : 2.6);
+            const from = front ? 0 : Math.PI, to = front ? Math.PI : TAU;
             ctx.save();
             ctx.globalCompositeOperation = 'lighter';
-            const g = ctx.createRadialGradient(n.x, n.y, R * 0.6, n.x, n.y, R);
-            g.addColorStop(0, 'rgba(255, 200, 120, 0)');
-            g.addColorStop(0.75, `rgba(255, 160, 80, ${0.75 * (1 - age)})`);
-            g.addColorStop(0.92, `rgba(140, 170, 255, ${0.6 * (1 - age)})`);
-            g.addColorStop(1, 'rgba(140, 170, 255, 0)');
+            ctx.lineCap = 'butt'; // the disk's edges go behind the star, so no round blobs at the ends
+            // Smooth bands of gas, from the outside in
+            for (let i = 0; i < 3; i++) {
+                const rr = R * (1 - i * 0.26);
+                ctx.strokeStyle = `rgba(${colors[i]}, ${(0.16 + i * 0.14) * a})`;
+                ctx.lineWidth = R * (0.17 - i * 0.04);
+                ctx.beginPath();
+                ctx.ellipse(x, y, rr, rr * squash, tilt, from, to);
+                ctx.stroke();
+            }
+            // Clumps of gas racing around (faster on the inside)
+            ctx.setLineDash([R * 0.18, R * 0.32]);
+            for (let i = 0; i < 2; i++) {
+                const rr = R * (0.82 - i * 0.3);
+                ctx.lineDashOffset = -spin * R * (1 + i * 0.8);
+                ctx.strokeStyle = `rgba(255, 250, 235, ${0.28 * a})`;
+                ctx.lineWidth = R * 0.03;
+                ctx.beginPath();
+                ctx.ellipse(x, y, rr, rr * squash, tilt, from, to);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // --- Bursts of light in space: supernovas, planetary nebulas, kilonovas,
+        // mergers, collapses and flares. Sizes are in screen pixels, so you see the
+        // whole thing however far you're zoomed in on a tiny remnant.
+        const BURSTS = {
+            // A star's core collapses and the rest is blasted out: a white-blue
+            // flash, then a shell of glowing gas (red hydrogen, teal oxygen) and streaks
+            supernova: { life: 4.5, size: 470, sparks: 110, flash: 0.32, core: ['255, 255, 255', '190, 225, 255'],
+                shell: ['255, 120, 80', '120, 230, 215'], colors: ['#ffffff', '#cfe6ff', '#ffbe6a', '#ff7048', '#7ff0d8'] },
+            // A gentle puff: the star's outer layers drift off into a glowing cloud
+            nebula: { life: 7, size: 330, sparks: 46, flash: 0.08, slow: true, lobes: true, core: ['230, 245, 255', '160, 220, 255'],
+                shell: ['255, 95, 130', '110, 240, 225'], colors: ['#8ff3e4', '#a8dcff', '#ff8aa6', '#ff6474'] },
+            // Two neutron stars smash together: first blue, then red as heavy
+            // elements like gold form in the cooling cloud
+            kilonova: { life: 3, size: 290, sparks: 70, flash: 0.22, redden: true, core: ['255, 255, 255', '170, 195, 255'],
+                shell: ['150, 175, 255', '255, 80, 90'], colors: ['#e6eeff', '#a9c0ff', '#ff9a78', '#ff5470'] },
+            // Black holes merging make almost no light, just ripples in space itself
+            merger: { life: 2.6, size: 380, ripples: 6, flash: 0, core: ['255, 225, 180', '255, 160, 80'] },
+            // Something gets too heavy and collapses: light rushes in, then a pop
+            collapse: { life: 1.9, size: 240, sparks: 36, flash: 0.14, inward: true, core: ['255, 255, 255', '255, 215, 150'],
+                shell: ['255, 200, 140', '255, 140, 70'], colors: ['#ffffff', '#ffd896', '#ffae5a'] },
+            // A big lump of gas lands on a dense star and flares up
+            flare: { life: 1.2, size: 120, sparks: 16, flash: 0, core: ['255, 255, 255', '190, 220, 255'],
+                shell: ['200, 225, 255', '140, 175, 255'], colors: ['#ffffff', '#cfe4ff'] },
+        };
+        const mixRgb = (a, b, t) => {
+            const pa = a.split(',').map(Number), pb = b.split(',').map(Number);
+            return pa.map((v, i) => Math.round(v + (pb[i] - v) * t)).join(', ');
+        };
+        const hexRgb = (hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)).join(', ');
+
+        function addBurst(kind, x, y, scale = 1) {
+            const def = BURSTS[kind];
+            const n = Math.round((def.sparks || 0) * (LOW_POWER ? 0.5 : 1));
+            const sparks = Array.from({ length: n }, () => {
+                const a = rand(0, Math.PI * 2);
+                return { cx: Math.cos(a), cy: Math.sin(a), v: rand(0.45, 1.05), w: rand(1, 3.2), b: rand(0.45, 1),
+                         color: def.colors[Math.floor(Math.random() * def.colors.length)] };
+            });
+            (dust.effects ||= []).push({ kind, x, y, scale, sparks, angle: rand(0, Math.PI), born: performance.now() });
+        }
+
+        function drawBursts() {
+            const list = dust.effects;
+            if (!list || !list.length) return;
+            const now = performance.now(), z = view.zoom, TAU = Math.PI * 2;
+            const unit = Math.min(window.innerWidth, window.innerHeight) / 800;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.lineCap = 'round';
+            for (let k = list.length - 1; k >= 0; k--) {
+                const e = list[k], def = BURSTS[e.kind];
+                const t = (now - e.born) / (def.life * 1000);
+                if (t >= 1) { list.splice(k, 1); continue; }
+                const { x, y } = e;
+                const grow = def.slow ? 1 - Math.pow(1 - t, 1.6) : 1 - Math.pow(1 - t, 3);
+                const R = def.size * unit * e.scale / z * (0.05 + 0.95 * grow);
+                const fade = Math.pow(1 - t, 1.5);
+                ctx.globalAlpha = 1;
+                // Bright core, gone in the first part of the burst
+                const coreA = Math.max(0, 1 - t * (def.slow ? 2.2 : 3.2));
+                if (coreA > 0) {
+                    const cr = R * (def.inward ? 0.9 * (1 - grow) + 0.25 : 0.55);
+                    const g = ctx.createRadialGradient(x, y, 0, x, y, cr);
+                    g.addColorStop(0, `rgba(${def.core[0]}, ${0.95 * coreA})`);
+                    g.addColorStop(0.35, `rgba(${def.core[1]}, ${0.55 * coreA})`);
+                    g.addColorStop(1, `rgba(${def.core[1]}, 0)`);
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(x, y, cr, 0, TAU);
+                    ctx.fill();
+                }
+                // The expanding shell of glowing gas: soft and thick, brightest at its edge
+                if (def.shell && !def.inward) {
+                    const edge = def.redden ? mixRgb(def.shell[0], def.shell[1], Math.min(1, t * 1.6)) : def.shell[0];
+                    const inner = def.redden ? edge : def.shell[1];
+                    const g = ctx.createRadialGradient(x, y, R * 0.35, x, y, R);
+                    g.addColorStop(0, `rgba(${inner}, 0)`);
+                    g.addColorStop(0.62, `rgba(${inner}, ${0.16 * fade})`);
+                    g.addColorStop(0.9, `rgba(${edge}, ${0.42 * fade})`);
+                    g.addColorStop(1, `rgba(${edge}, 0)`);
+                    ctx.fillStyle = g;
+                    ctx.beginPath();
+                    ctx.arc(x, y, R, 0, TAU);
+                    ctx.fill();
+                }
+                // Planetary nebulas often blow out two lobes, like an hourglass
+                if (def.lobes) {
+                    for (const side of [-1, 1]) {
+                        ctx.save();
+                        ctx.translate(x + Math.cos(e.angle) * R * 0.5 * side, y + Math.sin(e.angle) * R * 0.5 * side);
+                        ctx.rotate(e.angle);
+                        ctx.scale(1, 0.55);
+                        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.55);
+                        g.addColorStop(0, `rgba(${def.shell[1]}, ${0.12 * fade})`);
+                        g.addColorStop(0.8, `rgba(${def.shell[0]}, ${0.22 * fade})`);
+                        g.addColorStop(1, `rgba(${def.shell[0]}, 0)`);
+                        ctx.fillStyle = g;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, R * 0.55, 0, TAU);
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                }
+                // Ripples in space itself (gravitational waves)
+                for (let i = 0; i < (def.ripples || 0); i++) {
+                    const p = (t * 1.8 + i / def.ripples) % 1;
+                    ctx.strokeStyle = `rgba(200, 215, 255, ${0.4 * (1 - p) * fade})`;
+                    ctx.lineWidth = (1 + 2.5 * (1 - p)) / z;
+                    ctx.beginPath();
+                    ctx.arc(x, y, R * p, 0, TAU);
+                    ctx.stroke();
+                }
+                // Streaks of hot gas flying out (or rushing in, for a collapse)
+                for (const s of e.sparks) {
+                    const d = def.inward ? R * s.v * (1 - grow) : R * s.v;
+                    const tail = R * s.v * (def.inward ? 0.25 : 0.1 + 0.2 * (1 - t));
+                    const d0 = def.inward ? d + tail : Math.max(0, d - tail);
+                    ctx.globalAlpha = s.b * fade;
+                    ctx.strokeStyle = s.color;
+                    ctx.lineWidth = s.w * unit / z;
+                    ctx.beginPath();
+                    ctx.moveTo(x + s.cx * d0, y + s.cy * d0);
+                    ctx.lineTo(x + s.cx * d, y + s.cy * d);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // A soft glow over the whole screen for the brightest bursts (never a white-out)
+        function drawBurstFlash(w, h) {
+            const list = dust && dust.effects;
+            if (!list) return;
+            const now = performance.now();
+            let a = 0;
+            for (const e of list) {
+                const age = (now - e.born) / 1000, flash = BURSTS[e.kind].flash;
+                if (flash && age < 0.5) a = Math.max(a, flash * Math.pow(1 - age / 0.5, 2));
+            }
+            if (a <= 0.005) return;
+            ctx.fillStyle = `rgba(255, 244, 228, ${a})`;
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        // The starquake's shockwave: a soft band of light, brightest at its leading edge
+        function drawStarquake() {
+            const wave = dust.quake;
+            if (!wave) return;
+            const radius = wave.r + wave.age * (wave.reach - wave.r);
+            const rgb = mixRgb(hexRgb(wave.color), '255, 255, 255', 0.25);
+            const a = Math.pow(1 - wave.age, 1.3);
+            const g = ctx.createRadialGradient(wave.x, wave.y, radius * 0.7, wave.x, wave.y, radius);
+            g.addColorStop(0, `rgba(${rgb}, 0)`);
+            g.addColorStop(0.8, `rgba(${rgb}, ${0.22 * a})`);
+            g.addColorStop(0.97, `rgba(255, 250, 255, ${0.7 * a})`);
+            g.addColorStop(1, 'rgba(255, 250, 255, 0)');
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
             ctx.fillStyle = g;
             ctx.beginPath();
-            ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
+            ctx.arc(wave.x, wave.y, radius, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
         }
-        function drawSupernovaFlash(w, h) {
-            if (!dust || !dust.nova) return;
-            const age = (performance.now() - dust.nova.born) / 3000;
-            if (age > 0.15) return;
-            ctx.fillStyle = `rgba(255, 250, 235, ${0.9 * (1 - age / 0.15)})`;
-            ctx.fillRect(0, 0, w, h);
+
+        function drawCompactStar(p, remnant) {
+            const { x, y, r } = p, color = remnant.color;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(p.rot);
+            ctx.globalCompositeOperation = 'lighter';
+            if (remnant.magnetic) {
+                const strength = remnant.magnetic;
+                ctx.strokeStyle = color;
+                for (let i = 0; i < (LOW_POWER ? 3 : 5); i++) {
+                    const extent = r * (1.55 + i * 0.5) * Math.sqrt(strength);
+                    ctx.globalAlpha = 0.56 - i * 0.075;
+                    ctx.lineWidth = Math.max(1 / view.zoom, r * 0.035);
+                    ctx.beginPath();
+                    ctx.moveTo(-r * 0.8, 0);
+                    ctx.bezierCurveTo(-extent, -extent, extent, -extent, r * 0.8, 0);
+                    ctx.bezierCurveTo(extent, extent, -extent, extent, -r * 0.8, 0);
+                    ctx.stroke();
+                }
+            }
+            ctx.globalAlpha = 1;
+            if (remnant.beams) {
+                for (const side of [-1, 1]) {
+                    const beam = ctx.createLinearGradient(side * r * 0.75, 0, side * r * 9, 0);
+                    beam.addColorStop(0, '#efffff');
+                    beam.addColorStop(0.2, color + 'cc');
+                    beam.addColorStop(1, color + '00');
+                    ctx.fillStyle = beam;
+                    ctx.beginPath();
+                    ctx.moveTo(side * r * 0.7, -r * 0.13);
+                    ctx.lineTo(side * r * 9, -r * 0.78);
+                    ctx.lineTo(side * r * 9, r * 0.78);
+                    ctx.lineTo(side * r * 0.7, r * 0.13);
+                    ctx.fill();
+                }
+            }
+            const halo = ctx.createRadialGradient(0, 0, r * 0.35, 0, 0, r * 1.7);
+            halo.addColorStop(0, color + 'da');
+            halo.addColorStop(1, color + '00');
+            ctx.fillStyle = halo;
+            ctx.fillRect(-r * 1.7, -r * 1.7, r * 3.4, r * 3.4);
+            ctx.globalCompositeOperation = 'source-over';
+            const core = ctx.createRadialGradient(-r * 0.23, -r * 0.31, r * 0.05, 0, 0, r);
+            core.addColorStop(0, '#fffff7');
+            core.addColorStop(0.36, color);
+            core.addColorStop(1, shade(color, -0.65));
+            ctx.fillStyle = core;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = r * 0.055;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.ellipse(0, 0, r * 0.92, r * (0.18 + 0.24 * i), 0.32, 0.15, Math.PI - 0.15);
+                ctx.stroke();
+            }
+            ctx.restore();
         }
 
         // A black hole: a black ball inside a glowing, swirling disk of gas
@@ -3108,17 +3942,20 @@
             const { x, y, r } = p, TAU = Math.PI * 2, tilt = p.tilt || 0.2;
             ctx.save();
             ctx.globalCompositeOperation = 'lighter';
+            const glow0 = Math.min(1, feedLevel(p));
             const halo = ctx.createRadialGradient(x, y, r * 0.4, x, y, r * 1.5);
-            halo.addColorStop(0, 'rgba(255, 140, 60, 0.35)');
+            halo.addColorStop(0, `rgba(255, 140, 60, ${0.35 * glow0})`);
             halo.addColorStop(1, 'rgba(255, 140, 60, 0)');
             ctx.fillStyle = halo;
             ctx.beginPath();
             ctx.arc(x, y, r * 1.5, 0, TAU);
             ctx.fill();
             ctx.restore();
+            const glow = Math.min(1, feedLevel(p)); // no disk until it feeds
             const disk = (front) => {
                 ctx.save();
                 ctx.globalCompositeOperation = 'lighter';
+                ctx.globalAlpha = glow;
                 for (const [w, color] of [[0.5, 'rgba(255, 110, 40, 0.35)'], [0.26, 'rgba(255, 190, 90, 0.6)'], [0.09, 'rgba(255, 245, 220, 0.9)']]) {
                     ctx.beginPath();
                     ctx.ellipse(x, y, r * 1.05, r * 0.38, tilt, front ? 0 : Math.PI, front ? Math.PI : TAU);
@@ -3128,7 +3965,7 @@
                 }
                 ctx.restore();
             };
-            disk(false); // the far side of the disk, behind the hole
+            if (glow > 0.03) disk(false); // the far side of the disk, behind the hole
             ctx.fillStyle = '#000';
             ctx.beginPath();
             ctx.arc(x, y, r * 0.52, 0, TAU);
@@ -3138,7 +3975,7 @@
             ctx.beginPath();
             ctx.arc(x, y, r * 0.55, 0, TAU);
             ctx.stroke();
-            disk(true); // the near side, in front
+            if (glow > 0.03) disk(true); // the near side, in front
         }
 
         function dustPath(p) {
@@ -3269,9 +4106,40 @@
             if (look.rings) ring(true);
         }
 
+        // Gas torn off a star: a glowing blob stretched out along the way it's moving
+        function drawStarGas(p) {
+            const look = p.look, r = p.r;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.translate(p.x, p.y);
+            ctx.rotate(Math.atan2(p.vy - player.vy, p.vx - player.vx));
+            ctx.scale(1.9, 0.6);
+            const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+            g.addColorStop(0, look.light + 'ee');
+            g.addColorStop(0.45, look.base + '99');
+            g.addColorStop(1, look.glow + '00');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
         function drawDust(p) {
             const look = p.look, r = p.r;
-            if (p.isPlayer && dust.blackHole) { drawBlackHole(p); return; }
+            if (p.starGas) { drawStarGas(p); return; }
+            const remnant = remnantOf(p);
+            if (remnant) {
+                if (remnant === REMNANTS.blackhole) drawBlackHole(p);
+                else {
+                    const level = feedLevel(p);
+                    if (level > 0.03) drawAccretionDisk(p, remnant, level, false); // far side, behind the star
+                    drawCompactStar(p, remnant);
+                    if (level > 0.03) drawAccretionDisk(p, remnant, level, true);  // near side, in front
+                }
+                if (!p.isPlayer && r * view.zoom > 10) drawLabel(remnant.name, p.x, p.y + r + 12 / view.zoom, 12 / view.zoom, false, false);
+                return;
+            }
             const worldTier = dustTierOf(r);
             if (worldTier >= T_DWARF) { drawWorld(p, worldTier); drawTooBig(p); return; }
             // The light comes from the same side for everything, however it spins
@@ -3297,7 +4165,7 @@
         // A red ring on anything too big for you to eat
         function drawTooBig(p) {
             const r = p.r;
-            if (!p.isPlayer && p.r >= player.r && !dust.blackHole && physicsOn) {
+            if (!p.isPlayer && p.r >= player.r && !remnantOf(player) && physicsOn) { // remnants can take in anything
                 ctx.strokeStyle = 'rgba(255, 90, 90, 0.6)';
                 ctx.lineWidth = 2 / view.zoom;
                 ctx.beginPath();
@@ -3308,16 +4176,26 @@
 
         function showDustInfo(p) {
             const t = p.type, look = p.look;
-            if (p.isPlayer && dust.blackHole) {
-                infoName.textContent = 'You! Black hole';
+            const remnant = remnantOf(p);
+            if (remnant) {
+                const kg = dustMassKg(p), blackHole = remnant === REMNANTS.blackhole;
+                infoName.textContent = (p.isPlayer ? 'You! ' : '') + remnant.name;
                 infoKind.textContent = t.kindLabel;
-                infoSwatch.style.background = 'radial-gradient(circle, #000 38%, #fff2d8 44%, #ff9a40 56%, #3a1606 78%)';
+                infoSwatch.style.background = blackHole ? 'radial-gradient(circle, #000 38%, #fff2d8 44%, #ff9a40 56%, #3a1606 78%)'
+                    : `radial-gradient(circle at 35% 30%, white, ${remnant.color} 46%, ${shade(remnant.color, -0.65)})`;
                 infoSwatch.textContent = '';
                 infoFacts.replaceChildren();
-                addFact('Mass', formatMassKg(dust.bhKg));
-                addFact('Event horizon', `About ${formatSize(eventHorizonM(dust.bhKg))} across`);
-                addFact('Stars eaten', dust.starsEaten);
-                addFact('Made of', 'Nobody knows! Everything inside the event horizon is hidden from us forever');
+                addFact('Mass', formatMassKg(kg));
+                if (blackHole) {
+                    addFact('Event horizon', `About ${formatSize(eventHorizonM(kg))} across`);
+                    if (p.isPlayer) addFact('Stars eaten', dust.starsEaten);
+                } else {
+                    const size = Math.cbrt(kg * 6 / (Math.PI * remnant.density));
+                    addFact('Size', `About ${formatSize(size)} across`);
+                    if (remnant.beams) addFact('Beams', 'Two rotating beams');
+                    if (remnant.magnetic) addFact('Magnetic field', remnant.magnetic > 1 ? 'Extreme hybrid field' : 'Very strong');
+                    addFact('In-game collapse mass', `${remnant.maxSuns} Suns`);
+                }
                 infoDesc.textContent = t.info.desc;
                 infoEl.classList.add('open');
                 return;
@@ -3333,9 +4211,14 @@
             addFact('Made of', look.what);
             if (p.isPlayer) {
                 const next = DUST_TIERS[dustTierOf(p.r) + 1];
-                addFact('Next', next ? `${next.name} at ${formatSize(next.min)} across` : `At ${SUPERNOVA_SUNS} Suns you can explode in a supernova and become a black hole`);
+                addFact('Next', next ? `${next.name} at ${formatSize(next.min)} across` : starNextText(true));
             } else {
-                addFact('Can you eat it?', !physicsOn ? 'Yes! Physics is off, so you can eat anything' : p.r < player.r ? 'Yes! It\'s smaller than you' : 'No, it\'s bigger than you. Grow first!');
+                const yours = remnantOf(player);
+                addFact('Can you eat it?', !physicsOn && !mergeOn ? 'No, merging is off, so you just bump into things'
+                    : !physicsOn ? 'Yes! Physics is off, so you can eat anything'
+                    : yours === REMNANTS.blackhole ? 'Yes! However big it is, your tides tear it apart and some of it spirals in'
+                    : yours ? `Yes! As ${aOrAn(yours.name)} ${yours.name.toLowerCase()}, you're so dense that anything that hits you gets pulled onto you`
+                    : p.r < player.r ? 'Yes! It\'s smaller than you' : 'No, it\'s bigger than you. Grow first!');
                 const ratio = dustMassKg(p) / dustMassKg(player);
                 const times = (n) => n.toLocaleString(undefined, { maximumFractionDigits: n < 10 ? 1 : 0 });
                 addFact('vs. you', ratio >= 1 ? `${times(ratio)}× heavier` : `${times(1 / ratio)}× lighter`);
@@ -3365,15 +4248,31 @@
             toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4000);
         }
 
+        // What a star can look forward to, by its mass
+        function starNextText(long) {
+            const suns = dustMassKg(player) / SUN_KG;
+            if (!physicsOn) return long ? 'Physics is off: you can end your star any way you like' : 'can end any way you like';
+            if (suns < WHITE_DWARF_SUNS) return long ? `Red dwarfs outlive the universe! At ${WHITE_DWARF_SUNS} Suns you can become a white dwarf` : `white dwarf at ${WHITE_DWARF_SUNS} Suns`;
+            if (suns < SUPERNOVA_SUNS) return long ? `You can become a white dwarf now, or reach ${SUPERNOVA_SUNS} Suns to go supernova` : `white dwarf now, supernova at ${SUPERNOVA_SUNS} Suns`;
+            if (suns < BLACK_HOLE_SUNS) return long ? `You can go supernova now and leave a neutron star; at ${BLACK_HOLE_SUNS} Suns you could leave a black hole` : `supernova now, black hole at ${BLACK_HOLE_SUNS} Suns`;
+            return long ? 'You can go supernova and leave a black hole behind' : 'heavy enough to make a black hole!';
+        }
+
         function updateStats() {
             if (stage === 'dust' && dust.blackHole) {
                 statsEl.textContent = `You are a black hole  ·  event horizon about ${formatSize(eventHorizonM(dust.bhKg))} across  ·  weighs ${formatMassKg(dust.bhKg, true)}  ·  stars eaten: ${dust.starsEaten}`;
                 return;
             }
             if (stage === 'dust') {
+                const remnant = remnantOf(player);
+                if (remnant) {
+                    statsEl.textContent = `You are ${aOrAn(remnant.name)} ${remnant.name.toLowerCase()}  ·  about ${formatSize(remnantSizeM(remnant, dustMassKg(player)))} across  ·  weighs ${formatMassKg(dustMassKg(player), true)}` +
+                        (remnant.quake ? '  ·  starquake available' : `  ·  collapses at ${remnant.maxSuns} Suns`);
+                    return;
+                }
                 const i = dustTierOf(player.r), next = DUST_TIERS[i + 1];
                 statsEl.textContent = `You are ${aOrAn(DUST_TIERS[i].name)} ${DUST_TIERS[i].name.toLowerCase()}  ·  about ${formatSize(dustRealSize(player.r))} across  ·  weighs ${formatMassKg(dustMassKg(player), true)}  ·  ` +
-                    (next ? `${next.name} at ${formatSize(next.min)}` : dustMassKg(player) < SUPERNOVA_SUNS * SUN_KG ? `supernova at ${SUPERNOVA_SUNS} Suns` : 'heavy enough to go supernova!');
+                    (next ? `${next.name} at ${formatSize(next.min)}` : starNextText());
                 return;
             }
             if (stage === 'molecule') {
@@ -3523,6 +4422,11 @@
         }
 
         function step(dt) {
+            const inSpace = stage === 'dust';
+            if (inSpace) {
+                player.dustX = player.x;
+                player.dustY = player.y;
+            }
             // --- Player input ---
             let ix = 0, iy = 0;
             if (keys.has('a')) ix -= 1;
@@ -3641,8 +4545,10 @@
                 }
             }
             if (player.spin !== undefined) player.spin += player.spinSpeed * dt;
-            if (stage === 'dust') {
-                player.rot += 0.15 * dt;
+            const compactPlayer = inSpace ? remnantOf(player) : null;
+            if (inSpace) {
+                player.rot += (compactPlayer ? player.rotSpeed ?? 0.15 : 0.15) * dt;
+                stepStarquake(dt);
                 // the starry background slides a little as you move
                 dust.bgX += player.vx * camera.zoom * dt * 0.35;
                 dust.bgY += player.vy * camera.zoom * dt * 0.35;
@@ -3659,13 +4565,17 @@
             // A positive nucleus or ion pulls nearby electrons toward it
             const pullsElectrons = stage === 'particles' && player.atom && player.atom.E < player.atom.Z;
             // Once you're big enough, your gravity pulls in smaller things nearby
-            const gravity = stage === 'dust' && dustTierOf(player.r) >= DUST_GRAVITY_TIER;
+            const gravity = inSpace && (compactPlayer || dustTierOf(player.r) >= DUST_GRAVITY_TIER);
             const pullRange = player.r + 220;
             const bounds = clusterBounds();
             if (stage === 'molecule') molExtent = bounds.extent;
             const giantsNow = [], orbitersNow = [];
             for (let i = free.length - 1; i >= 0; i--) {
                 const p = free[i];
+                if (inSpace) {
+                    p.dustX = p.x;
+                    p.dustY = p.y;
+                }
                 if (p.huge) giantsNow.push(p);
                 if (p.falling) {
                     if (p.spin !== undefined) p.spin += p.spinSpeed * dt;
@@ -3700,7 +4610,7 @@
                     if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
                     continue;
                 }
-                if (pullsElectrons && p.type.id === 'electron') {
+                if (pullsElectrons && (physicsOn || mergeOn) && p.type.id === 'electron') {
                     const dx = player.x - p.x, dy = player.y - p.y;
                     const d = Math.hypot(dx, dy);
                     if (d < pullRange && d > 0.001) {
@@ -3709,24 +4619,31 @@
                     }
                 }
                 // Nothing gets away from a black hole: it pulls in everything, any size
-                const pulled = gravity && (dust.blackHole || p.r < player.r || !physicsOn);
+                // (merging turned off: your gravity lets go of everything, so you just bump)
+                // Gravity reaches about as far as you look big (for a black hole, a few
+                // event horizons), so you have to hunt stars down rather than vacuum them up
+                const pullR = player.r;
+                const pulled = gravity && (physicsOn || mergeOn) && (dust.blackHole || p.r < pullR || !physicsOn);
                 if (pulled) {
                     const dx = player.x - p.x, dy = player.y - p.y;
-                    const d = Math.hypot(dx, dy), range = player.r * 5;
+                    const d = Math.hypot(dx, dy), range = pullR * 5;
                     // Measure from its edge, so a big star's center can be far away
                     const gap = dust.blackHole ? Math.max(d - p.r, 0) : d;
                     if (gap < range && d > 0.001) {
-                        const a = player.r * 3 * (1 - gap / range);
+                        const a = pullR * 3 * (1 - gap / range);
+                        if (remnantOf(player) && gap < range * 0.6) feedRemnant(player, dt * 0.5); // gas spirals in
                         p.vx += (dx / d) * a * dt;
                         p.vy += (dy / d) * a * dt;
                     }
                 }
+                if (compactPlayer?.beams || compactPlayer?.magnetic) applyRemnantField(p, dt, compactPlayer);
                 p.x += p.vx * dt;
                 p.y += p.vy * dt;
                 if (p.spin !== undefined) p.spin += p.spinSpeed * dt;
                 if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
                 keepInWorld(p);
             }
+            if (inSpace) stepDustEncounters(dt, physicsOn);
             stepHiems(dt, giantsNow);
             if (ocBirth) stepOcBirth(dt);
             cleanupStep(dt);
@@ -4672,6 +5589,8 @@
                 ctx.stroke();
             }
 
+            if (stage === 'dust') drawRocheLimit();
+
             // Free particles (only the ones on screen). Zoomed far out, tiny things are
             // just dots, drawn in batches by colour so thousands of them stay fast.
             const margin = 90 / z;
@@ -4756,12 +5675,15 @@
                 ctx.setLineDash([]);
             }
 
-            if (stage === 'dust') drawSupernova();
+            if (stage === 'dust') {
+                drawBursts();
+                drawStarquake();
+            }
             drawPulse(time);
 
             // Screen-space overlay: pointer to the next useful thing
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            if (stage === 'dust') drawSupernovaFlash(w, h);
+            if (stage === 'dust') drawBurstFlash(w, h);
             drawPulseFlash(w, h);
             updatePulseButton();
             // Goal pointer (yellow "___ this way" arrows) is turned off for now.
@@ -4892,7 +5814,8 @@
                 return 'You reached oganesson, the end of the periodic table!';
             }
             if (stage === 'dust') {
-                if (dust.blackHole) return 'You went supernova and became a black hole! Keep eating stars, or start over';
+                if (dust.blackHole) return 'You became a black hole! Keep eating stars, or start over';
+                if (remnantOf(player)) return `You became ${aOrAn(player.type.name)} ${player.type.name.toLowerCase()}! Keep exploring, or start over`;
                 return dust.won ? 'You made it from a quark all the way to a star! Keep eating, or start over' : null;
             }
             if (stage === 'molecule') {
@@ -5450,27 +6373,31 @@
                 : "You'll bounce off particles, atoms and molecules instead of merging");
         });
 
-        const cleanupEl = document.getElementById('cleanup-btn');
-        const cleanupDetails = 'Loose quarks form protons and neutrons. After you make your first atom, loose protons can catch electrons to make hydrogen.';
         function showCleanupButton() {
             cleanupEl.textContent = cleanupOn ? '🧹 Cleanup: ON' : '🧹 Cleanup: OFF';
             cleanupEl.classList.toggle('off', !cleanupOn);
-            cleanupEl.title = cleanupDetails;
+            const detail = stage === 'dust'
+                ? cleanupOn ? 'Distant tidal debris fades away.' : 'Tidal debris stays until it hits or merges with another body.'
+                : cleanupOn
+                    ? 'Loose quarks form protons and neutrons. After you make your first atom, loose protons can catch electrons to make hydrogen.'
+                    : 'Loose quarks and electrons stay loose.';
+            cleanupEl.title = detail;
+            return detail;
         }
         showCleanupButton();
         cleanupEl.addEventListener('click', () => {
             cleanupOn = !cleanupOn;
             try { localStorage.setItem(CLEANUP_KEY, cleanupOn ? 'on' : 'off'); } catch (err) { /* still works this game */ }
-            showCleanupButton();
+            const detail = showCleanupButton();
             cleanupEl.blur(); // so the keyboard keeps steering you
-            showToast(cleanupOn ? 'Cleanup ON' : 'Cleanup OFF', cleanupOn ? cleanupDetails : 'Loose quarks and electrons stay loose');
+            showToast(cleanupOn ? 'Cleanup ON' : 'Cleanup OFF', detail);
         });
 
         // --- Main menu, and the particle picker (physics off only) ---
         const menuEl = document.getElementById('menu');
         const pickerEl = document.getElementById('picker');
         let pickerMidGame = false;
-        const isPaused = () => menuEl.classList.contains('open') || pickerEl.classList.contains('open');
+        const isPaused = () => novaPicker.open || menuEl.classList.contains('open') || pickerEl.classList.contains('open');
 
         function openMenu() {
             menuEl.classList.add('open');
@@ -5593,24 +6520,30 @@
         const startType = startAs && [...TYPES, OCAMATHRON, HIEMADECTICUS].find(t => t.id === startAs);
         const devStage = startParams.get('devstage');
         if (devStage) history.replaceState(null, '', location.pathname);
-        if (startType && !physicsOn) becomeParticle(startType);
-        else if (!startParams.has('dust') && !devStage) openMenu();
+        const startAsParticle = startType && !physicsOn;
+        if (startAsParticle) becomeParticle(startType);
 
-        // --- Dev test powers: only on this computer or the home network ---
-        const IS_LOCAL = location.protocol === 'file:' ||
-            /^(localhost|127\.\d+\.\d+\.\d+|\[?::1\]?|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|.*\.local)$/.test(location.hostname);
-        if (IS_LOCAL) {
-            document.body.classList.add('dev');
+        // Dev powers act on the current game in this browser.
+        function initDevPowers(initialPower) {
             const devPanel = document.getElementById('dev-panel');
-            document.getElementById('dev-btn').addEventListener('click', () => devPanel.classList.toggle('open'));
+            const devButton = document.getElementById('dev-btn');
+            devButton.addEventListener('click', () => {
+                devButton.setAttribute('aria-expanded', String(devPanel.classList.toggle('open')));
+            });
 
             // Mass of a star with this many Suns -> its real size (meters across)
-            const starSize = (suns) => Math.cbrt(suns * SUN_KG * 6 / (Math.PI * 1330));
+            const starSize = sizeForSuns;
 
             // Jump straight to being this big (real meters across) in the dust world
             function devBecome(size) {
                 if (stage !== 'dust') enterDustStage();
                 if (dust.blackHole) return;
+                delete player.remnant;
+                delete player.remnantKg;
+                delete player.massR;
+                delete player.drawR;
+                dust.quake = null;
+                dust.quakeReady = 0;
                 player.r = dust.r0 * Math.pow(size / DUST.startSize, 1 / DUST_EXP);
                 player.mass = player.r * player.r;
                 const tier = dustTierOf(player.r);
@@ -5633,18 +6566,21 @@
                 gas: () => devBecome(1.4e8),      // about Jupiter
                 star: () => devBecome(starSize(1)),
                 bluestar: () => devBecome(starSize(10)),
-                nova: () => devBecome(starSize(110)),
+                nova: () => devBecome(starSize(15)),
                 blackhole: () => {
-                    if (!dust || !dust.blackHole) { devBecome(starSize(110)); goSupernova(); }
+                    if (!dust || !dust.blackHole) { devBecome(starSize(110)); goSupernova(REMNANTS.blackhole); }
                 },
                 double: () => {
                     if (stage !== 'dust') enterDustStage();
                     if (dust.blackHole) {
                         dust.bhKg *= 2;
-                        player.r *= Math.SQRT2;
-                        player.mass = player.r * player.r;
+                        sizeRemnant(player, REMNANTS.blackhole, dust.bhKg);
                         free.length = 0;
                         manageDust(true);
+                        updateStats();
+                        if (selected === player) showInfo(player);
+                    } else if (player.remnant) {
+                        setRemnant(player, player.remnant, player.remnantKg * 2);
                         updateStats();
                         if (selected === player) showInfo(player);
                     } else {
@@ -5731,15 +6667,21 @@
                 const size = stage === 'molecule' ? ` · ${cluster.length} atom${cluster.length > 1 ? 's' : ''}` : '';
                 showToast(`DEV: ${player.type.name}`, `${stage === 'molecule' ? 'Molecule' : 'Atomic'} scale${size} · physics ${physicsOn ? 'ON' : 'OFF'}`);
             }
-            if (devStage && DEV_STAGES[devStage]) runDevStage(devStage);
+            function runDevPower(power) {
+                if (Object.hasOwn(DEV_STAGES, power)) runDevStage(power);
+                else if (Object.hasOwn(DEV_POWERS, power)) DEV_POWERS[power]();
+                else return false;
+                return true;
+            }
 
             devPanel.addEventListener('click', (e) => {
                 const power = e.target.closest('button')?.dataset.dev;
-                if (!power) return;
-                if (DEV_STAGES[power]) runDevStage(power);
-                else DEV_POWERS[power]();
+                if (power) runDevPower(power);
             });
+            return initialPower && runDevPower(initialPower);
         }
+        const startedWithDev = initDevPowers(devStage);
+        if (!startAsParticle && !startParams.has('dust') && !startedWithDev) openMenu();
 
         const STEP = LOW_POWER ? 1 / 60 : 1 / 120;
         const MAX_STEPS = LOW_POWER ? 2 : 3; // catch-up steps per frame
