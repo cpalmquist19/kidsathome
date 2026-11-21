@@ -124,6 +124,14 @@
         #cleanup-btn { border: 1px solid #f0c060; background: rgba(60, 45, 0, 0.65); color: #ffe0a0; }
         #cleanup-btn:hover { background: rgba(90, 65, 0, 0.8); }
         #cleanup-btn.off { border-color: rgba(200, 200, 210, 0.5); background: rgba(40, 40, 50, 0.65); color: #c8c8d4; }
+        #rarity-btn { border: 1px solid #ffd27a; background: rgba(60, 40, 0, 0.65); color: #ffe6a8; }
+        #rarity-btn:hover { background: rgba(90, 60, 0, 0.8); }
+        #rarity-btn.normal, #menu-rarity.normal { border-color: #9fd0ff; background: rgba(10, 40, 70, 0.7); color: #d6ebff; }
+        #rarity-btn.off, #menu-rarity.off { border-color: rgba(200, 200, 210, 0.5); background: rgba(40, 40, 50, 0.65); color: #c8c8d4; }
+        #nebula-btn { display: none; border: 1px solid #ff9ad6; background: rgba(70, 20, 70, 0.75); color: #ffd0f0; }
+        #nebula-btn:hover { background: rgba(100, 30, 100, 0.85); }
+        #nebula-btn.show { display: block; }
+        body.in-nebula #dustgrow-btn, body.in-nebula #cleanup-btn { display: none; }
         body.menu-open #corner, body.menu-open #stats, body.menu-open #hint, body.menu-open #touch-controls { visibility: hidden; }
 
         /* Main menu and particle picker */
@@ -173,6 +181,43 @@
             box-shadow: 0 0 24px rgba(255, 214, 74, 0.45);
         }
         #play:hover { background: #ffe27a; }
+        #menu-play { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+        #play-nebula {
+            padding: 14px 40px;
+            border: none;
+            border-radius: 999px;
+            font: 800 24px system-ui, sans-serif;
+            background: #ff8ad8;
+            color: #2a0022;
+            cursor: pointer;
+            box-shadow: 0 0 24px rgba(255, 138, 216, 0.45);
+        }
+        #play-nebula:hover { background: #ffa8e4; }
+        body.physics-off #play-nebula { display: none; }
+        #menu-rarity {
+            margin: -12px 0 24px;
+            padding: 8px 18px;
+            border-radius: 999px;
+            font: 700 15px system-ui, sans-serif;
+            cursor: pointer;
+            border: 2px solid rgba(255, 210, 122, 0.7);
+            background: rgba(60, 40, 0, 0.7);
+            color: #ffe6a8;
+        }
+        /* Rarity names in the info card, from Ubiquitous (0) to Godly (11) */
+        #info-facts dd.rarity { font-weight: 800; }
+        .rarity-0 { color: #aeb6c2 !important; }
+        .rarity-1 { color: #f2f2f2 !important; }
+        .rarity-2 { color: #6ee07a !important; }
+        .rarity-3 { color: #58aaff !important; }
+        .rarity-4 { color: #b77bff !important; }
+        .rarity-5 { color: #ff7ad9 !important; }
+        .rarity-6 { color: #ffb02e !important; }
+        .rarity-7 { color: #ff5a5a !important; }
+        .rarity-8 { color: #fff1a8 !important; text-shadow: 0 0 8px rgba(255, 240, 170, 0.8); }
+        .rarity-9 { background: linear-gradient(90deg, #ff5a5a, #ffd24a, #6ee07a, #58aaff, #b77bff); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
+        .rarity-10 { color: #b8fdff !important; text-shadow: 0 0 10px rgba(150, 250, 255, 0.9); }
+        .rarity-11 { color: #ffd700 !important; text-shadow: 0 0 6px #ff9a00, 0 0 14px rgba(255, 215, 0, 0.9); }
         #picker h2 { margin: 4px 0 4px; padding: 0 36px; font: 800 28px system-ui, sans-serif; color: #fff; }
         #picker .sub { margin: 0 0 18px; color: rgba(230, 232, 255, 0.65); }
         #picker h3 {
@@ -235,6 +280,11 @@
         #supernova.show { display: block; }
         #starquake { display: none; border: 1px solid #e593ff; background: #28143c; color: #f4d1ff; }
         #starquake.show { display: block; }
+        #cluster-btn, #galaxy-btn { display: none; }
+        #cluster-btn.show, #galaxy-btn.show { display: block; animation: pulse-glow 1.6s ease-in-out infinite; }
+        #cluster-btn { border: 1px solid #ffd98a; background: rgba(70, 50, 10, 0.8); color: #fff0c8; }
+        #galaxy-btn { border: 1px solid #b9a0ff; background: rgba(40, 20, 90, 0.8); color: #e6dcff; }
+        #cluster-btn.have, #galaxy-btn.have { animation: none; }
         #starquake:disabled { opacity: 0.65; cursor: default; }
         #nova-picker {
             width: min(570px, calc(100vw - 32px)); max-height: calc(100dvh - 32px);
@@ -393,11 +443,15 @@
         <button id="pulse-btn" type="button" title="Blast the whole map away from you (Space)">&#128165; Hyper Pulse</button>
         <button id="merge-btn" type="button">&#129522; Merging: ON</button>
         <button id="cleanup-btn" type="button">&#129529; Cleanup: OFF</button>
+        <button id="rarity-btn" type="button">&#128142; Rarity: ON</button>
+        <button id="nebula-btn" type="button" title="Go back to being your nebula, and pick another star">&#9729; Back to your nebula</button>
         <button id="giants-btn" type="button">&#10024; Ocamathrons: ON</button>
         <button id="dustgrow-btn" type="button">&#127761; Become dust: ON</button>
         <button id="pick-btn" type="button" title="Start over as any particle you like">&#127922; Pick a particle</button>
         <button id="supernova" type="button" title="Choose what your star becomes">&#128165; Go supernova</button>
         <button id="starquake" type="button" title="Send a shockwave through nearby space">Starquake</button>
+        <button id="cluster-btn" type="button">&#10024; Star cluster</button>
+        <button id="galaxy-btn" type="button">&#127756; Galaxy</button>
         <button id="restart" type="button" title="Start over as a quark (R)">&#8634; Start over</button>
         <button id="dev-btn" type="button" title="Dev test powers" aria-controls="dev-panel" aria-expanded="false">DEV</button>
     </div>
@@ -425,12 +479,16 @@
         <button type="button" data-dev="bigOn">Biggest molecule (physics ON)</button>
         <button type="button" data-dev="bigOff">Biggest molecule (physics OFF)</button>
         <b>Space</b>
+        <button type="button" data-dev="nebula">Nebula</button>
         <button type="button" data-dev="planet">Rocky planet</button>
         <button type="button" data-dev="gas">Gas giant</button>
         <button type="button" data-dev="star">Star (1 Sun)</button>
         <button type="button" data-dev="bluestar">Blue star (10 Suns)</button>
         <button type="button" data-dev="nova">Supernova-ready (22 Suns)</button>
         <button type="button" data-dev="blackhole">Black hole now</button>
+        <button type="button" data-dev="imbh">Intermediate black hole (1,000 Suns)</button>
+        <button type="button" data-dev="smbh">Supermassive black hole (4 million Suns)</button>
+        <button type="button" data-dev="giantbh">Giant black hole (6.5 billion Suns)</button>
         <button type="button" data-dev="double">&times;2 mass</button>
     </div>
     <div id="touch-controls">
@@ -445,7 +503,11 @@
             <p class="tagline">Start as a quark. End as a black hole.</p>
             <button id="menu-physics" type="button">&#9883; Real physics: ON</button>
             <p id="menu-physics-note"></p>
-            <button id="play" type="button">Play</button>
+            <button id="menu-rarity" type="button">&#128142; Rarity: ON</button>
+            <div id="menu-play">
+                <button id="play" type="button">Play</button>
+                <button id="play-nebula" type="button">Play as a nebula</button>
+            </div>
         </div>
     </div>
     <div id="picker" class="overlay">
@@ -519,6 +581,44 @@
         try { dustGrowOn = localStorage.getItem(DUSTGROW_KEY) !== 'off'; } catch (err) { /* keep the default */ }
         try { physicsOn = localStorage.getItem(PHYSICS_KEY) !== 'off'; } catch (err) { /* keep the default */ }
 
+        // How things spawn (one button cycles through the three):
+        //  - Normal: the way the game always worked, before the rarity system:
+        //    a set number of each kind of thing on the map.
+        //  - Rarity ON ('real'): things spawn about as often as they really do in
+        //    nature. Every kind of thing has a rarity level, from Ubiquitous
+        //    (everywhere) to Godly, based on how common it really is (or, for
+        //    made-up and never-seen things, how far from real life it is). Each
+        //    level is RARITY_STEP times rarer than the one before it.
+        //  - Rarity OFF ('equal'): every kind of thing has the same chance.
+        // (Things that only came with the rarity system, like nebulas drifting
+        // through space and which kind of star a nebula makes, use the real-life
+        // rarities in Normal mode too.)
+        const RARITY_KEY = 'matterEaterRarity';
+        const SPAWN_MODES = ['normal', 'real', 'equal'];
+        const SAVED_MODE = { normal: 'normal', on: 'real', off: 'equal' };
+        let spawnMode = 'normal';
+        try { spawnMode = SAVED_MODE[localStorage.getItem(RARITY_KEY)] || 'normal'; } catch (err) { /* keep the default */ }
+        const normalSpawns = () => spawnMode === 'normal';
+        const RARITIES = ['Ubiquitous', 'Common', 'Uncommon', 'Rare', 'Epic', 'Exotic',
+                          'Legendary', 'Mythical', 'Divine', 'Prismatic', 'Transcendent', 'Godly'];
+        const TIER = Object.fromEntries(RARITIES.map((name, i) => [name.toUpperCase(), i]));
+        const RARITY_STEP = 3;
+        const rarityWeight = (tier) => spawnMode === 'equal' ? 1 : Math.pow(RARITY_STEP, -(tier ?? TIER.RARE));
+        const pickAny = (list) => list[Math.floor(Math.random() * list.length)];
+        // Normal mode: any of them, like before; otherwise a rarity roll
+        const pickSpawn = (list, tierOf) => normalSpawns() ? pickAny(list) : rollByRarity(list, tierOf);
+        // Pick one thing from a list, the rarer ones less often (or all equally, with rarity off)
+        function rollByRarity(list, tierOf) {
+            let total = 0;
+            for (const item of list) total += rarityWeight(tierOf(item));
+            let u = Math.random() * total;
+            for (const item of list) {
+                u -= rarityWeight(tierOf(item));
+                if (u < 0) return item;
+            }
+            return list[list.length - 1];
+        }
+
         // =====================================================================
         // Particle catalog
         //
@@ -548,6 +648,7 @@
         const flat = (base, light, dark) => ({ base, light, dark });
         const ELECTRON_LOOK = flat('#ff9958', '#fff9ed', '#a62f23');
         const PREON_LOOK = flat('#4989ff', '#e1fbff', '#2340a0');
+        const GRAVITON_LOOK = flat('#9a59ff', '#f3e6ff', '#4a1fa0'); // a purple preon
         const MANIFOLD_LOOK = flat('#8955ff', '#c2b5ff', '#3e1e88');
         const LEPTON = flat('#8f6cf0', '#cdbcff', '#3a2390');
         const ANTILEPTON = flat('#c56cf0', '#ecc4ff', '#5a2380');
@@ -690,7 +791,7 @@
               desc: 'A super-light particle dreamed up in 1977 to explain a puzzle about the strong force. Axions might be the invisible dark matter that holds galaxies together. Experiments use giant magnets to try to turn axions into light.' },
             { id: 'dilaton', name: 'Dilaton', sym: 'D', mass: 1000, count: 4, look: hypo('#4fc9b4'), ...UNKNOWN_MASS,
               desc: 'Comes from string theory, the idea that every particle is a tiny vibrating string. The dilaton would control how strong all the forces of nature are.' },
-            { id: 'graviton', name: 'Graviton', sym: 'G', mass: 0, count: 6, look: hypo('#ffd95a'), fast: true,
+            { id: 'graviton', name: 'Graviton', sym: 'G', mass: 0, count: 6, look: GRAVITON_LOOK, fast: true,
               desc: 'The particle that would carry gravity, the way photons carry light. Gravity is so weak that catching even one graviton might be impossible, even with a detector as big as Jupiter!' },
             { id: 'graviphoton', name: 'Graviphoton', sym: 'Gγ', mass: 500, count: 4, look: hypo('#ff9f4a'), ...UNKNOWN_MASS,
               desc: 'A cousin of the graviton from theories with an extra dimension of space, curled up too tiny to see. It would carry a new force a bit like electricity and magnetism.' },
@@ -759,6 +860,51 @@
         TACHYON.radius = 6;
         CALABI_YAU.radius = 13;
 
+        // --- How rare each particle really is ---
+        // Ubiquitous: the most numerous things in the universe (light, neutrinos,
+        // and what ordinary matter is made of). Then particles made all the time
+        // by cosmic rays, then ones made only in high-energy collisions, then
+        // ones only the biggest colliders make. Past Legendary are particles
+        // nobody has found yet: the less evidence, the rarer.
+        const PARTICLE_RARITY = {
+            photon: 0, gluon: 0, electron: 0, up: 0, down: 0, proton: 0,
+            nue: 0, numu: 0, nutau: 0, antinue: 0, antinumu: 0, antinutau: 0,
+            neutron: 1, alpha: 1,
+            positron: 2, muon: 2, antimuon: 2, antiup: 2, antidown: 2, pionplus: 2, pionminus: 2, pionzero: 2,
+            strange: 3, antistrange: 3, kaonplus: 3, kaonminus: 3, kaonzero: 3,
+            charm: 4, anticharm: 4, tau: 4, antitau: 4, antiproton: 4, antineutron: 4,
+            bottom: 5, antibottom: 5, wplus: 5, wminus: 5, z: 5,
+            top: 6, antitop: 6, higgs: 6,
+            glueball: 7, anyon: 7, axion: 7, sterile: 7,
+            neutralino: 8, chargino: 8, gravitino: 8, selectron: 8, squark: 8, gluino: 8, photino: 8,
+            wino: 8, higgsino: 8, darkphoton: 8, millicharged: 8, majoron: 8, dilaton: 8, curvaton: 8,
+            graviton: 9, graviphoton: 9, preon: 9, uhdm: 9, monopole: 9,
+            inflaton: 10, tachyon: 10, calabiyau: 10,
+        };
+        // Other hadrons: the heavier the quarks inside, the rarer (heavy quarks
+        // need more energy to make); antimatter and exotic ones are rarer still
+        function hadronRarity(t) {
+            const flavors = t.quarks.map(([f]) => f);
+            let tier = flavors.includes('t') ? 6 : flavors.includes('b') ? 5 : flavors.includes('c') ? 4 : flavors.includes('s') ? 3 : 2;
+            if (flavors.filter(f => 'cbt'.includes(f)).length >= 2) tier++;
+            if (t.kindLabel === 'Antibaryon') tier++;
+            if (t.kindLabel === 'Exotic hadron') tier = Math.max(tier, TIER.EXOTIC);
+            return Math.min(tier, TIER.MYTHICAL);
+        }
+        for (const t of TYPES) {
+            t.rarity = PARTICLE_RARITY[t.id] ?? (t.kind === 'hadron' && t.quarks ? hadronRarity(t) : t.offOnly ? TIER.DIVINE : TIER.RARE);
+        }
+        // What spawns in the subatomic world: the map holds as many particles as
+        // it always has, but each new one is a roll on everything that can spawn
+        const TYPES_REAL = TYPES.filter(t => !t.offOnly);
+        const PARTICLE_TOTAL = {
+            on: TYPES_REAL.reduce((s, t) => s + t.count, 0),
+            off: TYPES.reduce((s, t) => s + t.count, 0),
+        };
+        const particleTotal = () => physicsOn ? PARTICLE_TOTAL.on : PARTICLE_TOTAL.off;
+        const spawnableTypes = () => physicsOn ? TYPES_REAL : TYPES;
+        const rollParticleType = () => rollByRarity(spawnableTypes(), t => t.rarity);
+
         // The Ocamathron: a giant made-up particle that only exists with physics
         // off, one at a time. It shines like a blue star, and its light pushes
         // grouped particles apart if you come within 2.5× its width.
@@ -795,6 +941,7 @@
             },
         };
         HIEMADECTICUS.radius = OCAMATHRON.radius / 3;
+        OCAMATHRON.rarity = HIEMADECTICUS.rarity = TIER.GODLY; // made up: as far from real life as it gets
         const isGiant = (t) => t === OCAMATHRON || t === HIEMADECTICUS;
         const giantPush = (e) => e.type === OCAMATHRON ? OCAMATHRON_PUSH : OCAMATHRON_PUSH / 3;
         const HIEM_COUNT = 3;
@@ -933,16 +1080,28 @@
 
         // Everything else, spread across the world
         const free = [];
-        for (const type of TYPES) {
-            if (type.offOnly && physicsOn) continue;
-            for (let i = 0; i < type.count; i++) {
-                let x, y;
-                do {
-                    x = rand(type.radius, WORLD.width - type.radius);
-                    y = rand(type.radius, WORLD.height - type.radius);
-                } while (Math.hypot(x - player.x, y - player.y) < 350);
-                free.push(makeEntity(type, x, y));
-            }
+        function spawnAwayFromYou(type) {
+            let x, y;
+            do {
+                x = rand(type.radius, WORLD.width - type.radius);
+                y = rand(type.radius, WORLD.height - type.radius);
+            } while (Math.hypot(x - player.x, y - player.y) < 350);
+            free.push(makeEntity(type, x, y));
+        }
+        if (normalSpawns()) {
+            for (const type of spawnableTypes()) for (let i = 0; i < type.count; i++) spawnAwayFromYou(type);
+        } else {
+            for (let i = particleTotal(); i > 0; i--) spawnAwayFromYou(rollParticleType());
+        }
+
+        // A toast when something really rare shows up (rarity on, at most every half minute)
+        let lastRareToast = 0;
+        function announceRare(tier, name) {
+            if (spawnMode !== 'real' || tier < TIER.LEGENDARY) return;
+            const now = performance.now();
+            if (now - lastRareToast < 30000) return;
+            lastRareToast = now;
+            showToast(`✨ ${RARITIES[tier]} spawn!`, `${aOrAn(name).replace(/^a/, 'A')} ${lowerName(name)} just appeared somewhere out there. Go find it!`);
         }
 
         // Replace particles you've used up, somewhere off screen
@@ -1127,23 +1286,27 @@
         }
 
         const SHARD_LIMIT = LOW_POWER ? 25000 : 80000; // past this many things, even Ocamathron pieces get forgotten off screen
-        function replenish() {
+        // Every couple of seconds, about 1 in 100 things far off screen drifts away
+        // and something new (a fresh roll) takes its place, so rare things come and go
+        const TURNOVER = 0.01;
+        function replenish(fillAll) {
             manageGiants();
-            if (stage === 'dust') return; // the dust world refills itself as you move (manageDust)
-            if (atomsAppeared) spawnChem(3);
-            if (stage === 'molecule') {
+            if (stage === 'dust' || stage === 'nebula') return; // space refills itself as you move (manageDust)
+            const halfW = window.innerWidth / 2 / view.zoom + 300, halfH = window.innerHeight / 2 / view.zoom + 300;
+            const offScreen = (q) => Math.abs(q.x - camera.x) >= halfW || Math.abs(q.y - camera.y) >= halfH;
+            if (chemPool) {
                 // The Ocamathron breaks molecules into lots of atoms: forget extras far off screen
                 const counts = {};
                 for (const q of free) if (q.chem) counts[q.formula] = (counts[q.formula] || 0) + 1;
-                const halfW = window.innerWidth / 2 / view.zoom + 300, halfH = window.innerHeight / 2 / view.zoom + 300;
                 for (let k = free.length - 1; k >= 0; k--) {
                     const q = free[k];
-                    if (!q.chem || q.orbit || q === selected) continue;
-                    if (counts[q.formula] <= Math.max(4, (chemTargets[q.formula] || 0) * 2)) continue;
-                    if (Math.abs(q.x - camera.x) < halfW && Math.abs(q.y - camera.y) < halfH) continue;
+                    if (!q.chem || q.orbit || q === selected || q.burning !== undefined || q.breakIn !== undefined || !offScreen(q)) continue;
+                    const tooMany = counts[q.formula] > Math.max(4, expectedChem(q.formula) * 2);
+                    if (!tooMany && (q.shard || normalSpawns() || Math.random() >= TURNOVER)) continue;
                     free.splice(k, 1);
                     counts[q.formula]--;
                 }
+                spawnChem(fillAll ? Infinity : 40);
             }
             if (stage === 'molecule') {
                 // Quarks and other pieces an Ocamathron broke things into: like in the
@@ -1162,23 +1325,54 @@
                 }
                 return; // subatomic particles don't spawn at molecule scale
             }
+            if (normalSpawns()) { replenishNormal(fillAll, offScreen); return; }
+            const counts = new Map();
+            let particles = 0;
+            for (const p of free) {
+                if (p.chem || p.huge) continue;
+                counts.set(p.type, (counts.get(p.type) || 0) + 1);
+                particles++;
+            }
+            const total = particleTotal();
+            const weights = spawnableTypes().reduce((s, t) => s + rarityWeight(t.rarity), 0);
+            for (let k = free.length - 1; k >= 0; k--) {
+                const q = free[k];
+                if (q.huge || q.chem || q.orbit || q.bonded || q === selected || q.burning !== undefined || q.breakIn !== undefined) continue;
+                if (q.shard && free.length < SHARD_LIMIT) continue; // pieces of what an Ocamathron broke stay
+                if (!offScreen(q)) continue;
+                // The Ocamathron breaks things into lots of pieces: don't let them pile up forever
+                const n = counts.get(q.type) || 0;
+                const tooMany = n > Math.max(4, Math.ceil(total * rarityWeight(q.type.rarity) / weights * 2));
+                if (!tooMany && Math.random() >= TURNOVER) continue;
+                free.splice(k, 1);
+                counts.set(q.type, n - 1);
+                particles--;
+            }
+            const missing = total - particles;
+            for (let i = Math.min(missing, fillAll ? Infinity : 60); i > 0; i--) {
+                const type = rollParticleType();
+                const [x, y] = spawnPoint(type.radius);
+                free.push(makeEntity(type, x, y));
+                announceRare(type.rarity, type.name);
+            }
+        }
+        // Normal mode: keep a set number of each kind, like the game always did
+        function replenishNormal(fillAll, offScreen) {
             const counts = new Map();
             for (const p of free) counts.set(p.type, (counts.get(p.type) || 0) + 1);
             // The Ocamathron breaks things into lots of pieces: don't let them pile up forever
-            const halfW = window.innerWidth / 2 / view.zoom + 300, halfH = window.innerHeight / 2 / view.zoom + 300;
             for (let k = free.length - 1; k >= 0; k--) {
                 const q = free[k];
                 const extra = (counts.get(q.type) || 0) - q.type.count * 2;
                 if (extra <= 0 || q.huge || q.chem || q.orbit || q === selected) continue;
                 if (q.shard && free.length < SHARD_LIMIT) continue; // pieces of what an Ocamathron broke stay
-                if (Math.abs(q.x - camera.x) < halfW && Math.abs(q.y - camera.y) < halfH) continue;
+                if (!offScreen(q)) continue;
                 free.splice(k, 1);
                 counts.set(q.type, counts.get(q.type) - 1);
             }
-            for (const type of TYPES) {
-                if (type.offOnly && physicsOn) continue;
+            for (const type of spawnableTypes()) {
                 const missing = type.count - (counts.get(type) || 0);
-                for (let i = 0; i < Math.min(missing, 5); i++) {
+                for (let i = 0; i < Math.min(missing, fillAll ? Infinity : 5); i++) {
                     const [x, y] = spawnPoint(type.radius);
                     free.push(makeEntity(type, x, y));
                 }
@@ -1602,7 +1796,7 @@
             }
         }
         function cleanupStep(dt) {
-            if (!cleanupOn || stage === 'dust') return;
+            if (!cleanupOn || stage === 'dust' || stage === 'nebula') return;
             cleanupTimer += dt;
             if (cleanupTimer < CLEANUP_TICK) return;
             const tick = cleanupTimer;
@@ -2015,7 +2209,7 @@
             bondedPairs = new Set();
             molBondOrders = [];
             molExtent = 60;
-            chemTargets = { ...ATOM_COUNTS }; // single atoms float around again, like before you made a molecule
+            chemPool = ATOM_POOL; // single atoms float around again, like before you made a molecule
         }
 
         // An Ocamathron's light (or blast) breaks you all the way down to quarks:
@@ -2472,7 +2666,78 @@
         ELEMENTS.forEach(([sym]) => { ATOM_COUNTS[sym] = COMMON_ATOMS[sym] || 1; }); // every element at least once
         const MOLECULE_COUNTS = {};
         for (const [f, , , weight] of MOLECULES) MOLECULE_COUNTS[f] = weight * 3;
-        let chemTargets = {};
+        const sumOf = (obj) => Object.values(obj).reduce((s, n) => s + n, 0);
+        // What can spawn, and how many things in all: single atoms once you've made
+        // your first atom; molecules and atoms at molecule scale
+        const SYMBOLS = ELEMENTS.map(([sym]) => sym);
+        // (counts: how many of each there are in Normal mode)
+        const ATOM_POOL = { kinds: SYMBOLS, counts: ATOM_COUNTS, total: sumOf(ATOM_COUNTS) };
+        const MOLECULE_POOL = { kinds: [...MOLECULES.map(([f]) => f), ...SYMBOLS], counts: { ...MOLECULE_COUNTS } };
+        for (const sym of SYMBOLS) MOLECULE_POOL.counts[sym] = COMMON_ATOMS[sym] ? ATOM_COUNTS[sym] * 2 : 1;
+        MOLECULE_POOL.total = sumOf(MOLECULE_POOL.counts);
+        let chemPool = null;
+
+        // --- How rare each element really is ---
+        // How many atoms of each element there are in our solar system, as a
+        // power of ten with hydrogen at 12 (a trillion hydrogen atoms for every
+        // 1 of an element at 0). null: radioactive, with no lasting supply.
+        const ELEMENT_ABUNDANCE = [
+            12.00, 10.93, 3.26, 1.30, 2.79, 8.43, 7.83, 8.69, 4.42, 7.93,  // H to Ne
+            6.27, 7.53, 6.43, 7.51, 5.41, 7.15, 5.25, 6.40, 5.10, 6.29,    // Na to Ca
+            3.04, 4.90, 3.96, 5.63, 5.47, 7.46, 4.87, 6.20, 4.25, 4.63,    // Sc to Zn
+            3.08, 3.58, 2.30, 3.34, 2.54, 3.25, 2.36, 2.88, 2.17, 2.53,    // Ga to Zr
+            1.41, 1.94, null, 1.76, 1.06, 1.65, 1.20, 1.71, 0.76, 2.07,    // Nb to Sn
+            1.01, 2.18, 1.55, 2.24, 1.08, 2.18, 1.17, 1.58, 0.76, 1.45,    // Sb to Nd
+            null, 0.94, 0.51, 1.05, 0.32, 1.13, 0.47, 0.92, 0.12, 0.92,    // Pm to Yb
+            0.09, 0.71, -0.12, 0.65, 0.26, 1.35, 1.32, 1.62, 0.80, 1.17,   // Lu to Hg
+            0.77, 2.04, 0.65, null, null, null, null, null, null, 0.06,    // Tl to Th
+            null, -0.54,                                                    // Pa, U
+        ];
+        // Hydrogen is Ubiquitous and uranium (the rarest element that lasts) is
+        // Divine. Elements that only exist as traces from radioactive decay are
+        // Prismatic, ones only made in nuclear reactors Transcendent, and ones
+        // made a few atoms at a time in labs Godly.
+        function elementRarity(Z) {
+            if (Z >= 100) return TIER.GODLY;
+            if (Z >= 95) return TIER.TRANSCENDENT;
+            const a = ELEMENT_ABUNDANCE[Z - 1];
+            if (a == null) return TIER.PRISMATIC;
+            return Math.min(TIER.DIVINE, Math.round((12 - a) * TIER.DIVINE / 12.54));
+        }
+        // --- How rare each molecule is ---
+        // Molecules seen all over space first (hydrogen gas is the most common
+        // molecule in the universe), then everyday ones on Earth. Big molecules
+        // that only living things make are rarer, and ones only people make rarer still.
+        const MOLECULE_RARITY = {
+            H2: 0, CO: 1, H2O: 1, N2: 2, O2: 2, CO2: 2, CH4: 2, H3N: 2, O2Si: 2, ClNa: 2,
+            CHN: 3, CH2O: 3, CH4O: 3, H2S: 3, C2H2: 3, O2S: 3, CCaO3: 3, Fe2O3: 3,
+            C2H6O: 4, C60: 5,
+            CCl4: 6, CHCl3: 6, C2H3Cl: 6, C2F4: 6, CoLiO2: 6, C9H8O4: 6, C8H9NO2: 6, C13H18O2: 6, F6U: 7,
+        };
+        const chemRarityCache = new Map();
+        function chemRarity(formula) {
+            if (chemRarityCache.has(formula)) return chemRarityCache.get(formula);
+            let tier = null;
+            if (SYM_TO_Z[formula]) tier = elementRarity(SYM_TO_Z[formula]);
+            else if (formula in MOLECULE_RARITY) tier = MOLECULE_RARITY[formula];
+            else if (MOLECULE_BY_FORMULA[formula]) {
+                const weight = MOLECULE_BY_FORMULA[formula][3], atoms = parseFormula(formula).length;
+                tier = (weight >= 5 ? 2 : weight >= 2 ? 3 : 4) + (atoms >= 25 ? 2 : atoms >= 10 ? 1 : 0);
+                tier = Math.min(tier, TIER.MYTHICAL);
+            }
+            chemRarityCache.set(formula, tier);
+            return tier;
+        }
+        // How many of this one there should be, on average
+        const chemWeights = new Map();
+        function expectedChem(formula) {
+            if (!chemPool) return 0;
+            if (normalSpawns()) return chemPool.counts[formula] || 0;
+            const key = chemPool === ATOM_POOL ? 'atoms' : 'molecules';
+            const cacheKey = key + spawnMode;
+            if (!chemWeights.has(cacheKey)) chemWeights.set(cacheKey, chemPool.kinds.reduce((s, f) => s + rarityWeight(chemRarity(f)), 0));
+            return chemPool.total * rarityWeight(chemRarity(formula)) / chemWeights.get(cacheKey);
+        }
 
         // A random spot outside the view (zoomFor: the zoom the view will have)
         function spawnPoint(r, zoomFor = view.zoom) {
@@ -2485,23 +2750,39 @@
             return [x, y];
         }
 
-        function spawnChem(limitPerKind, zoomFor) {
-            const counts = {};
-            for (const p of free) if (p.chem) counts[p.formula] = (counts[p.formula] || 0) + 1;
-            for (const [f, want] of Object.entries(chemTargets)) {
-                const missing = Math.min(want - (counts[f] || 0), limitPerKind);
-                for (let i = 0; i < missing; i++) {
-                    const layout = moleculeLayout(f);
-                    const [x, y] = spawnPoint(layout.radius, zoomFor);
-                    free.push(makeChemEntity(f, x, y));
+        // Top up the atoms and molecules floating around: each new one is a roll
+        // (rarer ones come up less often, or all equally with rarity off)
+        function spawnChem(limit, zoomFor, quiet) {
+            if (!chemPool) return;
+            if (normalSpawns()) { // a set number of each, like before (3 of each at a time)
+                const counts = {};
+                for (const p of free) if (p.chem) counts[p.formula] = (counts[p.formula] || 0) + 1;
+                for (const [f, want] of Object.entries(chemPool.counts)) {
+                    const missing = Math.min(want - (counts[f] || 0), limit === Infinity ? Infinity : 3);
+                    for (let i = 0; i < missing; i++) {
+                        const [x, y] = spawnPoint(moleculeLayout(f).radius, zoomFor);
+                        free.push(makeChemEntity(f, x, y));
+                    }
                 }
+                return;
+            }
+            let have = 0;
+            for (const p of free) if (p.chem) have++;
+            const missing = Math.min(chemPool.total - have, limit);
+            for (let i = 0; i < missing; i++) {
+                const f = rollByRarity(chemPool.kinds, chemRarity);
+                const layout = moleculeLayout(f);
+                const [x, y] = spawnPoint(layout.radius, zoomFor);
+                const e = makeChemEntity(f, x, y);
+                free.push(e);
+                if (!quiet) announceRare(chemRarity(f), e.type.name);
             }
         }
 
         function spawnAtomsAppear() {
             atomsAppeared = true;
-            chemTargets = { ...ATOM_COUNTS };
-            spawnChem(Infinity);
+            chemPool = ATOM_POOL;
+            spawnChem(Infinity, undefined, true);
         }
 
         // You bonded with another atom: welcome to chemistry!
@@ -2526,8 +2807,7 @@
             // and make the world bigger to fit molecules at this scale
             if (!isGiant(player.type)) moleculeScreenR = Math.max(80, player.r * camera.zoom);
             WORLD.width = WORLD.height = 72000;
-            chemTargets = { ...MOLECULE_COUNTS };
-            for (const [sym, n] of Object.entries(ATOM_COUNTS)) chemTargets[sym] = COMMON_ATOMS[sym] ? n * 2 : 1;
+            chemPool = MOLECULE_POOL;
 
             // Spread the atoms that were already around across the bigger world,
             // keeping clear of the area you'll see once the camera zooms out
@@ -2537,7 +2817,7 @@
                 delete p.orbit; // orbiting is a subatomic/atomic-world thing
                 if (p !== bondingWith) [p.x, p.y] = spawnPoint(p.r, zoomAfter);
             }
-            spawnChem(Infinity, zoomAfter);
+            spawnChem(Infinity, zoomAfter, true);
         }
 
         // Can the player's atom c bond with atom i of free molecule p?
@@ -2836,8 +3116,13 @@
             quarkpulsenatar: { name: 'Quarkpulsenatar', hint: 'Fictional hybrid with twin beams, an extreme magnetic field, quark-star density, and a starquake.',
                 density: 8e17, maxSuns: 3.5, suns: 1.8, color: '#ff78de', beams: true, magnetic: 2.6, quake: 2 },
         };
+        // White dwarfs are left by most stars; neutron stars and black holes only by
+        // rare heavy ones. Only a few dozen magnetars are known, quark stars are
+        // only an idea so far, and the quarkpulsenatar is made up.
+        const REMNANT_RARITY = { whitedwarf: 1, neutron: 2, pulsar: 3, blackhole: 3, magnetar: 5, quark: 8, quarkpulsenatar: 10 };
         for (const [id, remnant] of Object.entries(REMNANTS)) {
             remnant.id = id;
+            remnant.rarity = REMNANT_RARITY[id];
             remnant.type ||= { id: 'dust', kind: 'dust', name: remnant.name, kindLabel: 'Stellar remnant', sym: '', info: { charge: '0', desc: remnant.desc || remnant.hint } };
         }
         const remnantOf = p => p.isPlayer && dust?.blackHole ? REMNANTS.blackhole : p.remnant;
@@ -2846,47 +3131,47 @@
         const DUST_TYPES = DUST_TIERS.map(t => ({ id: 'dust', kind: 'dust', name: t.name, kindLabel: t.label, sym: '', info: { charge: '0', desc: t.desc } }));
 
         const DUST_LOOKS = [
-            { ...flat('#8a7f74', '#cfc4b8', '#3a332c'), what: 'Rock (silicate minerals, like sand)', density: 2700 },
-            { ...flat('#94664a', '#e0b08f', '#432616'), what: 'Rock with lots of iron (that makes it reddish)', density: 3800 },
-            { ...flat('#5c5650', '#a39d96', '#23201c'), what: 'Carbon, a lot like soot', density: 1800 },
-            { ...flat('#a9bccc', '#eef6ff', '#4a5a6a'), what: 'Ice and rock (far from a star, water freezes)', density: 1200 },
-            { ...flat('#a08a5a', '#e6d3a0', '#4a3a1a'), what: 'Rock and metal grains', density: 4500 },
+            { ...flat('#8a7f74', '#cfc4b8', '#3a332c'), what: 'Rock (silicate minerals, like sand)', density: 2700, rarity: 0 },
+            { ...flat('#94664a', '#e0b08f', '#432616'), what: 'Rock with lots of iron (that makes it reddish)', density: 3800, rarity: 2 },
+            { ...flat('#5c5650', '#a39d96', '#23201c'), what: 'Carbon, a lot like soot', density: 1800, rarity: 1 },
+            { ...flat('#a9bccc', '#eef6ff', '#4a5a6a'), what: 'Ice and rock (far from a star, water freezes)', density: 1200, rarity: 1 },
+            { ...flat('#a08a5a', '#e6d3a0', '#4a3a1a'), what: 'Rock and metal grains', density: 4500, rarity: 2 },
         ];
         // Worlds and stars look different from rocks (densities in kg/m³ are real)
         const WORLD_LOOKS = {
             [T_DWARF]: [
-                { base: '#b9a48c', patch: '#e8dccb', what: 'Rock and ice, like Pluto', density: 1900 },
-                { base: '#8d8a86', patch: '#a9a6a2', what: 'Rock and icy clay, like Ceres', density: 2200 },
-                { base: '#d9d4cc', patch: '#f4f1ec', what: 'Ice and rock, like Eris', density: 2500 },
+                { base: '#b9a48c', patch: '#e8dccb', what: 'Rock and ice, like Pluto', density: 1900, rarity: 1 },
+                { base: '#8d8a86', patch: '#a9a6a2', what: 'Rock and icy clay, like Ceres', density: 2200, rarity: 2 },
+                { base: '#d9d4cc', patch: '#f4f1ec', what: 'Ice and rock, like Eris', density: 2500, rarity: 3 },
             ],
             [T_ROCKY]: [
-                { base: '#2d64c8', patch: '#3f9a4a', clouds: true, caps: true, air: 'rgba(120, 180, 255, 0.6)', what: 'Rock and metal, with oceans and air, like Earth', density: 5500 },
-                { base: '#c1592e', patch: '#8e3a1c', caps: true, air: 'rgba(255, 170, 120, 0.3)', what: 'Rock rusted red, like Mars', density: 3900 },
-                { base: '#9a948e', patch: '#77716b', what: 'Rock around a big iron core, like Mercury', density: 5400 },
-                { base: '#e2c27a', patch: '#cfa95c', clouds: true, air: 'rgba(255, 220, 150, 0.5)', what: 'Rock under thick yellow clouds, like Venus', density: 5200 },
+                { base: '#2d64c8', patch: '#3f9a4a', clouds: true, caps: true, air: 'rgba(120, 180, 255, 0.6)', what: 'Rock and metal, with oceans and air, like Earth', density: 5500, rarity: 6 },
+                { base: '#c1592e', patch: '#8e3a1c', caps: true, air: 'rgba(255, 170, 120, 0.3)', what: 'Rock rusted red, like Mars', density: 3900, rarity: 2 },
+                { base: '#9a948e', patch: '#77716b', what: 'Rock around a big iron core, like Mercury', density: 5400, rarity: 1 },
+                { base: '#e2c27a', patch: '#cfa95c', clouds: true, air: 'rgba(255, 220, 150, 0.5)', what: 'Rock under thick yellow clouds, like Venus', density: 5200, rarity: 3 },
             ],
             [T_GAS]: [
-                { base: '#d8b48a', bands: ['#e9d6b8', '#c4945f', '#efe2c8', '#a8714a', '#dcc09a'], spot: '#c0533a', what: 'Hydrogen and helium gas, like Jupiter', density: 1330 },
-                { base: '#e3d29f', bands: ['#efe2b6', '#d6c07f', '#e8d7a6', '#cbb26e'], rings: 'rgba(220, 200, 150, 0.55)', what: 'Hydrogen and helium gas, with rings of ice, like Saturn', density: 690 },
-                { base: '#3e66d6', bands: ['#4a74e0', '#3557c2', '#5a84ea'], spot: '#1d3a96', what: 'Gas and ice, like Neptune', density: 1640 },
-                { base: '#8fd8e0', bands: ['#9be0e6', '#86ccd6'], rings: 'rgba(200, 240, 250, 0.3)', what: 'Gas and ice, like Uranus', density: 1270 },
+                { base: '#d8b48a', bands: ['#e9d6b8', '#c4945f', '#efe2c8', '#a8714a', '#dcc09a'], spot: '#c0533a', what: 'Hydrogen and helium gas, like Jupiter', density: 1330, rarity: 2 },
+                { base: '#e3d29f', bands: ['#efe2b6', '#d6c07f', '#e8d7a6', '#cbb26e'], rings: 'rgba(220, 200, 150, 0.55)', what: 'Hydrogen and helium gas, with rings of ice, like Saturn', density: 690, rarity: 3 },
+                { base: '#3e66d6', bands: ['#4a74e0', '#3557c2', '#5a84ea'], spot: '#1d3a96', what: 'Gas and ice, like Neptune', density: 1640, rarity: 1 },
+                { base: '#8fd8e0', bands: ['#9be0e6', '#86ccd6'], rings: 'rgba(200, 240, 250, 0.3)', what: 'Gas and ice, like Uranus', density: 1270, rarity: 2 },
             ],
             // A star's color comes from its mass: heavier stars burn hotter,
             // and hotter stars look bluer. (maxSuns: up to this many Suns of mass)
             [T_STAR]: [
-                { maxSuns: 0.45, color: 'red dwarf', base: '#ff5a2a', light: '#ffb08a', glow: '#ff6a3a', density: 1330,
+                { maxSuns: 0.45, rarity: 0, color: 'red dwarf', base: '#ff5a2a', light: '#ffb08a', glow: '#ff6a3a', density: 1330,
                   what: 'Hydrogen and helium: a cool red dwarf star, the most common kind of star',
                   fact: 'The coolest, smallest kind of star. Red dwarfs burn so slowly they can shine for trillions of years!' },
-                { maxSuns: 0.8, color: 'orange star', base: '#ff9a3a', light: '#ffd09a', glow: '#ffa040', density: 1330,
+                { maxSuns: 0.8, rarity: 1, color: 'orange star', base: '#ff9a3a', light: '#ffd09a', glow: '#ffa040', density: 1330,
                   what: 'Hydrogen and helium: an orange star',
                   fact: 'A bit heavier means a bit hotter, so you glow orange now' },
-                { maxSuns: 1.4, color: 'yellow star', base: '#ffd84a', light: '#fff4c0', glow: '#ffe070', density: 1330,
+                { maxSuns: 1.4, rarity: 2, color: 'yellow star', base: '#ffd84a', light: '#fff4c0', glow: '#ffe070', density: 1330,
                   what: 'Hydrogen and helium: a yellow star like our Sun',
                   fact: 'Just like our Sun! Its surface is about 5,500 °C' },
-                { maxSuns: 2.1, color: 'white star', base: '#e8eeff', light: '#ffffff', glow: '#dfe6ff', density: 1330,
+                { maxSuns: 2.1, rarity: 3, color: 'white star', base: '#e8eeff', light: '#ffffff', glow: '#dfe6ff', density: 1330,
                   what: 'Hydrogen and helium: a hot white star, like Sirius',
                   fact: 'Hotter than the Sun, like Sirius, the brightest star in our night sky' },
-                { maxSuns: Infinity, color: 'blue star', base: '#8fb0ff', light: '#e0eaff', glow: '#9ab8ff', density: 1330,
+                { maxSuns: Infinity, rarity: 4, color: 'blue star', base: '#8fb0ff', light: '#e0eaff', glow: '#9ab8ff', density: 1330,
                   what: 'Hydrogen and helium: a very hot blue star, like Rigel',
                   fact: 'The hottest kind of star, over 10,000 °C! Big blue stars burn so fast they only last a few million years' },
             ],
@@ -2904,8 +3189,7 @@
         const sizeForSuns = (suns) => Math.cbrt(suns * SUN_KG * 6 / (Math.PI * 1330));
         const pickDustLook = (tier, r) => {
             if (tier === T_STAR) return starLookFor(dustRealSize(r));
-            const list = WORLD_LOOKS[tier] || DUST_LOOKS;
-            return list[Math.floor(Math.random() * list.length)];
+            return pickSpawn(WORLD_LOOKS[tier] || DUST_LOOKS, l => l.rarity);
         };
         // You: rock up to dwarf planet, then squeezed rock and metal, then gas.
         // (Your mass never goes down: becoming a gas giant puffs you up instead.)
@@ -3006,13 +3290,40 @@
         }
 
         const remnantNeighbors = Object.values(REMNANTS);
-        function makeSpaceNeighbor(r, x, y) {
+        function makeSpaceNeighbor(r, x, y, quiet) {
+            if (!normalSpawns() && dustTierOf(r) === T_STAR) r = rollStarR(r);
             const p = makeDustEntity(r, x, y);
             if (remnantOf(player) && r > player.r * 0.46 && Math.random() < 0.14) {
-                const remnant = remnantNeighbors[Math.floor(Math.random() * remnantNeighbors.length)];
-                setRemnant(p, remnant, SUN_KG * rand(0.9, remnant.suns || 3.5));
+                const remnant = pickSpawn(remnantNeighbors, r => r.rarity);
+                // Around a big black hole, other black holes come in all sizes too:
+                // swallowing them is how real black holes grow from stellar to supermassive
+                const bhNeighbor = remnant === REMNANTS.blackhole && dust.blackHole;
+                setRemnant(p, remnant, bhNeighbor ? SUN_KG * Math.max(3, bhSuns() * rand(0.05, 0.35)) : SUN_KG * rand(0.9, remnant.suns || 3.5));
+            }
+            if (!quiet) {
+                const remnant = remnantOf(p), tier = dustTierOf(p.r);
+                announceRare(remnant ? remnant.rarity : p.look.rarity ?? 0, remnant ? remnant.name
+                    : tier === T_STAR ? p.look.color : tier >= T_DWARF ? `${p.type.name} ${p.look.what.replace(/^.*, like /, 'like ')}` : p.type.name);
             }
             return p;
+        }
+
+        // Star colors come from their mass, and red dwarfs are far more common than
+        // blue stars. A star that spawns near you keeps about the size it rolled
+        // (so food stays food), but which kind of star it is gets a rarity roll.
+        const STAR_CLASSES = WORLD_LOOKS[T_STAR].map((look, i, all) => ({ look, min: i ? all[i - 1].maxSuns : 0.08, max: Math.min(look.maxSuns, 40) }));
+        function rollStarR(r) {
+            let lo = r / 1.5, hi = r * 1.5;
+            if (r < player.r) hi = Math.min(hi, player.r * 0.95); else lo = Math.max(lo, player.r * 1.05);
+            const starMin = dustRForSize(DUST_TIERS[T_STAR].min);
+            const options = [];
+            for (const c of STAR_CLASSES) {
+                const a = Math.max(lo, starMin, dustRForSize(sizeForSuns(c.min))), b = Math.min(hi, dustRForSize(sizeForSuns(c.max)));
+                if (a < b) options.push({ c, a, b });
+            }
+            if (options.length < 2) return r;
+            const pick = rollByRarity(options, o => o.c.look.rarity);
+            return Math.exp(rand(Math.log(pick.a), Math.log(pick.b)));
         }
 
         // Mostly things smaller than you (food), plus a few bigger ones to dodge
@@ -3068,17 +3379,29 @@
                 excess--;
                 ordinary--;
             }
+            // Nebulas far behind you drift out of the neighborhood too
+            for (let k = spaceNebulas.length - 1; k >= 0; k--) {
+                const n = spaceNebulas[k];
+                if (Math.hypot(n.x - player.x, n.y - player.y) - n.r > Math.max(field * 1.4, dust.keepR)) removeSpaceNebula(n);
+            }
             if (inner >= outer) return; // zoomed out past the neighborhood: nowhere out of sight to add things
             for (let missing = DUST.count - ordinary; missing > 0; missing--) {
                 const r = dustSpawnRadius(), ang = rand(0, Math.PI * 2);
+                if (rollSpaceNebula()) { // once in a while, a whole nebula instead
+                    const n = addSpaceNebula(player.r * rand(5, 10), Math.max(seen, usual) * 1.05, outer);
+                    if (!fillView) announceRare(n.kind.rarity, n.kind.name);
+                    continue;
+                }
                 const d = Math.sqrt(rand(inner * inner, outer * outer)) + r;
-                free.push(makeSpaceNeighbor(r, player.x + Math.cos(ang) * d, player.y + Math.sin(ang) * d));
+                free.push(makeSpaceNeighbor(r, player.x + Math.cos(ang) * d, player.y + Math.sin(ang) * d, fillView));
             }
         }
 
-        function enterDustStage() {
+        function enterDustStage(quiet) {
             const b = clusterBounds();
             stage = 'dust';
+            document.body.classList.remove('in-nebula');
+            spaceNebulas.length = 0;
             hideInfo();
             playerOrbit = null;
             forming = null;
@@ -3113,7 +3436,8 @@
             document.getElementById('hint').innerHTML = document.body.classList.contains('touch') ? DUST_HINT_TOUCH : DUST_HINT;
             showCleanupButton();
             updateStats();
-            showToast('You became a dust grain!', 'Your molecule gathered with trillions of others into a speck of space dust. Eat dust smaller than you to grow into planets, and then a star!');
+            updateNebulaButton();
+            if (!quiet) showToast('You became a dust grain!', 'Your molecule gathered with trillions of others into a speck of space dust. Eat dust smaller than you to grow into planets, and then a star!');
         }
 
         // Touching dust: eat it if it's smaller than you, bump it if it's bigger
@@ -4261,7 +4585,11 @@
                 addFact('Mass', formatMassKg(kg));
                 if (blackHole) {
                     addFact('Event horizon', `About ${formatSize(eventHorizonM(kg))} across`);
+                    const cls = blackHoleClass(kg / SUN_KG);
+                    addFact('Kind', cls[0].toUpperCase() + cls.slice(1) + (cls === 'stellar-mass' ? ` (${IMBH_SUNS} Suns makes it intermediate-mass)`
+                        : cls === 'intermediate-mass' ? ` (${SMBH_SUNS.toLocaleString()} Suns makes it supermassive)` : ''));
                     if (p.isPlayer) addFact('Stars eaten', dust.starsEaten);
+                    if (p.isPlayer && dust.system) addFact('Around you', `${dust.system.label} (about ${formatBig(realStarCount(dust.system, kg / SUN_KG))} stars in real life)`);
                 } else {
                     const size = Math.cbrt(kg * 6 / (Math.PI * remnant.density));
                     addFact('Size', `About ${formatSize(size)} across`);
@@ -4269,6 +4597,7 @@
                     if (remnant.magnetic) addFact('Magnetic field', remnant.magnetic > 1 ? 'Extreme hybrid field' : 'Very strong');
                     addFact('In-game collapse mass', `${remnant.maxSuns} Suns`);
                 }
+                addRarityFact(remnant.rarity);
                 infoDesc.textContent = t.info.desc;
                 infoEl.classList.add('open');
                 return;
@@ -4297,8 +4626,730 @@
                 addFact('vs. you', ratio >= 1 ? `${times(ratio)}× heavier` : `${times(1 / ratio)}× lighter`);
                 if (p.orbit) addFact('Status', 'Orbiting you');
             }
+            if (!p.starGas) addRarityFact(look.rarity);
             infoDesc.textContent = t.info.desc;
             infoEl.classList.add('open');
+        }
+
+        // =====================================================================
+        // Nebulas: giant clouds of gas and dust, light-years across, where stars
+        // are born. You can start as one. With real physics its gas slowly
+        // collapses and clumps into new stars; right-click a star to play as it,
+        // then tap "Back to your nebula" to come back and pick another. With
+        // physics off the cloud just floats: nothing collapses.
+        // Other nebulas drift through space too, as rarely as they really do.
+        // =====================================================================
+        const NEBULA_KINDS = [
+            { id: 'emission', name: 'Emission nebula', rarity: TIER.LEGENDARY, ly: [20, 60], starForming: true,
+              colors: ['#ff4f7a', '#ff7a5a', '#ff9ec0', '#d94aa0'],
+              desc: 'A giant glowing cloud of hydrogen gas, light-years across. Hot young stars inside shine so hard that the gas glows pink and red, like a neon sign. The Orion Nebula and the Lagoon Nebula are emission nebulas.' },
+            { id: 'reflection', name: 'Reflection nebula', rarity: TIER.LEGENDARY, ly: [3, 10], starForming: true,
+              colors: ['#5a8cff', '#7ab8ff', '#9fd4ff', '#4a6ad0'],
+              desc: 'A cloud of dust lit up by nearby stars. Dust scatters blue light best (the same reason the sky is blue), so the cloud glows blue. The haze around the Pleiades star cluster is a famous one.' },
+            { id: 'starforming', name: 'Star-forming nebula', rarity: TIER.LEGENDARY, ly: [15, 40], starForming: true,
+              colors: ['#ff5f9a', '#8a6cff', '#5ab0ff', '#ffb070'],
+              desc: 'A stellar nursery: a cold, dusty cloud where clumps of gas collapse under their own gravity and light up as new stars. The "Pillars of Creation" in the Eagle Nebula are part of one.' },
+            { id: 'planetary', name: 'Planetary nebula', rarity: TIER.MYTHICAL, ly: [0.5, 2], ring: true,
+              colors: ['#5ff0d0', '#4ab0ff', '#ff7a9a', '#9a7aff'],
+              desc: 'A glowing shell of gas puffed off by a dying Sun-like star, with a white dwarf left in the middle. It has nothing to do with planets: early astronomers just thought they looked like planets through small telescopes. One only lasts about 20,000 years, a blink for a star, which makes them rare.' },
+        ];
+        const NEBULA_TYPE = {
+            id: 'nebula', kind: 'nebula', name: 'Nebula', sym: '', kindLabel: 'Nebula (a giant cloud of gas and dust)',
+            look: flat('#ff7ab8', '#ffd0ea', '#6a2a6a'), rarity: TIER.LEGENDARY, mass: 0, radius: 40,
+            info: { charge: '0', desc: 'A giant cloud of gas and dust, light-years across, where new stars are born.' },
+        };
+        const NEB_STAR_TYPE = { id: 'nebstar', kind: 'nebstar', name: 'Star', kindLabel: 'A star born in your nebula', sym: '', info: { charge: '0', desc: '' } };
+        const NEB_R = 900;              // how big your nebula is in the game world
+        const NEB_MAX_STARS = 16;       // how many stars one nebula makes (merging clouds makes room for more)
+        const PROTOSTAR_TIME = 6;       // seconds a collapsing clump takes to light up
+        const NEB_COLLAPSE_TIME = 150;  // seconds for the whole cloud to pull itself in
+        const NEBULA_HINT = 'WASD to move &middot; scroll to zoom &middot; with real physics your gas collapses into new stars &middot; right-click a star to play as it &middot; fly into other nebulas to merge &middot; click anything to learn about it';
+        const NEBULA_HINT_TOUCH = 'Joystick to move &middot; pinch to zoom &middot; long-press a star to play as it &middot; tap anything to learn about it';
+        let neb = null;                 // your nebula (kept while you go off and play as one of its stars)
+        const spaceNebulas = [];        // other nebulas drifting through space
+        const nebulaBtn = document.getElementById('nebula-btn');
+        const touchUI = () => document.body.classList.contains('touch');
+        const fmtNum = (n) => n.toLocaleString(undefined, { maximumSignificantDigits: n < 10 ? 2 : 3 });
+        const starNameOf = (s) => s.remnant ? REMNANTS[s.remnant].name : s.look.color[0].toUpperCase() + s.look.color.slice(1);
+        const starLookForSuns = (suns) => WORLD_LOOKS[T_STAR].find(l => suns < l.maxSuns) || WORLD_LOOKS[T_STAR][WORLD_LOOKS[T_STAR].length - 1];
+
+        // The cloud is painted once into its own picture, then drawn slowly turning
+        function makeNebulaSprite(kind) {
+            const S = LOW_POWER ? 256 : 400, h = S / 2;
+            const c = document.createElement('canvas');
+            c.width = c.height = S;
+            const g = c.getContext('2d');
+            const blob = (x, y, br, rgb, alpha) => {
+                const grad = g.createRadialGradient(x, y, 0, x, y, br);
+                grad.addColorStop(0, `rgba(${rgb}, ${alpha})`);
+                grad.addColorStop(1, `rgba(${rgb}, 0)`);
+                g.fillStyle = grad;
+                g.fillRect(x - br, y - br, br * 2, br * 2);
+            };
+            g.globalCompositeOperation = 'lighter';
+            for (let i = 0; i < 28; i++) { // glowing gas
+                const a = rand(0, Math.PI * 2);
+                const d = kind.ring ? h * rand(0.42, 0.62) : h * 0.55 * Math.sqrt(Math.random());
+                blob(h + Math.cos(a) * d, h + Math.sin(a) * d, h * (kind.ring ? rand(0.12, 0.24) : rand(0.18, 0.42)),
+                    rgbOf(kind.colors[i % kind.colors.length]).join(', '), rand(0.12, 0.24));
+            }
+            if (!kind.ring) { // dark lanes of dust in front of the glowing gas
+                g.globalCompositeOperation = 'source-atop';
+                for (let i = 0; i < 6; i++) {
+                    const a = rand(0, Math.PI * 2), d = h * 0.5 * Math.sqrt(Math.random());
+                    blob(h + Math.cos(a) * d, h + Math.sin(a) * d, h * rand(0.08, 0.2), '10, 4, 18', 0.5);
+                }
+            }
+            g.globalCompositeOperation = 'lighter'; // a sprinkle of faraway stars shining through
+            for (let i = 0; i < 40; i++) {
+                const a = rand(0, Math.PI * 2), d = h * 0.8 * Math.sqrt(Math.random());
+                g.fillStyle = `rgba(255, 255, 255, ${rand(0.3, 0.9)})`;
+                g.beginPath();
+                g.arc(h + Math.cos(a) * d, h + Math.sin(a) * d, rand(0.4, 1.2) * S / 400, 0, Math.PI * 2);
+                g.fill();
+            }
+            g.globalCompositeOperation = 'destination-in'; // soft edges
+            const edge = g.createRadialGradient(h, h, h * 0.45, h, h, h);
+            edge.addColorStop(0, 'rgba(0, 0, 0, 1)');
+            edge.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            g.fillStyle = edge;
+            g.fillRect(0, 0, S, S);
+            return c;
+        }
+        // r: how far the cloud reaches (its glow fades out a little past that)
+        function drawNebulaCloud(sprite, x, y, r, rot, core) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.translate(x, y);
+            ctx.rotate(rot);
+            const size = r * 2.3;
+            ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+            if (core > 0) { // the gas gathering toward the middle as it collapses
+                const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.5);
+                g.addColorStop(0, `rgba(255, 225, 240, ${0.3 * core})`);
+                g.addColorStop(1, 'rgba(255, 225, 240, 0)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // --- Other nebulas out in space ---
+        // How likely each new thing in space is to be a nebula instead: as rare as
+        // anything Legendary with rarity on, or as likely as any other kind of
+        // thing in space with rarity off
+        const SPACE_KIND_COUNT = DUST_LOOKS.length + Object.values(WORLD_LOOKS).reduce((s, l) => s + l.length, 0) + Object.keys(REMNANTS).length + 1;
+        const nebulaChance = () => spawnMode === 'equal' ? 1 / SPACE_KIND_COUNT : rarityWeight(TIER.LEGENDARY);
+        // Nebulas show up once you're a star (or what's left of one): they're
+        // light-years across, so they'd hide everything smaller
+        const rollSpaceNebula = () => stage === 'dust' && spaceNebulas.length < 2 &&
+            (remnantOf(player) || dustTierOf(player.r) >= T_STAR) && Math.random() < nebulaChance();
+        function addSpaceNebula(r, inner, outer, kind = rollByRarity(NEBULA_KINDS, k => k.rarity), ly = rand(...kind.ly)) {
+            const ang = rand(0, Math.PI * 2), d = Math.sqrt(rand(inner * inner, Math.max(inner, outer) ** 2)) + r;
+            const drift = rand(0, Math.PI * 2), speed = player.r * rand(0.05, 0.15);
+            const n = { nebula: true, type: NEBULA_TYPE, kind, ly, gasSuns: kind.ring ? rand(0.1, 0.6) : 40 * ly * ly * rand(0.7, 1.3),
+                x: player.x + Math.cos(ang) * d, y: player.y + Math.sin(ang) * d, r,
+                vx: Math.cos(drift) * speed, vy: Math.sin(drift) * speed, rot: rand(0, Math.PI * 2), rotSpeed: rand(-0.02, 0.02),
+                sprite: makeNebulaSprite(kind) };
+            spaceNebulas.push(n);
+            return n;
+        }
+        function removeSpaceNebula(n) {
+            const k = spaceNebulas.indexOf(n);
+            if (k >= 0) spaceNebulas.splice(k, 1);
+            if (selected === n) hideInfo();
+        }
+        function stepSpaceNebulas(dt) {
+            for (const n of spaceNebulas) {
+                n.x += n.vx * dt;
+                n.y += n.vy * dt;
+                n.rot += n.rotSpeed * dt;
+            }
+        }
+        function drawSpaceNebulas(camX, camY, viewW, viewH) {
+            for (const n of spaceNebulas) {
+                const reach = n.r * 1.2;
+                if (n.x + reach < camX || n.x - reach > camX + viewW || n.y + reach < camY || n.y - reach > camY + viewH) continue;
+                drawNebulaCloud(n.sprite, n.x, n.y, n.r, n.rot, 0);
+                if (stage === 'dust') drawNebulaCloud(n.sprite, n.x, n.y, n.r * 0.85, n.rot + 2, 0); // brighter against space's dusty glow
+            }
+        }
+
+        // --- Your nebula ---
+        function makeHomeNebula() {
+            const kind = rollByRarity(NEBULA_KINDS.filter(k => k.starForming), k => k.rarity), ly = rand(...kind.ly);
+            return {
+                kind, ly, gasSuns: 40 * ly * ly * rand(0.7, 1.3), sprite: makeNebulaSprite(kind), r0: NEB_R, rot: 0,
+                stars: [], collapse: 0, formIn: 3, maxStars: NEB_MAX_STARS, x: player.x, y: player.y, bgX: 0, bgY: 0,
+                playing: null, nextId: 1, toldStar: false, toldFull: false, spawnTimer: 0,
+            };
+        }
+        // A new clump of gas starts collapsing somewhere in the cloud. What kind of
+        // star it becomes is a rarity roll: most stars are small red dwarfs.
+        function makeNebStar() {
+            const c = rollByRarity(STAR_CLASSES, c => c.look.rarity);
+            const suns = Math.exp(rand(Math.log(c.min), Math.log(c.max)));
+            return dustShape({
+                nebStar: true, type: NEB_STAR_TYPE, id: neb.nextId++, x: player.x, y: player.y, r: 1, vx: 0, vy: 0,
+                ang: rand(0, Math.PI * 2), dist: 0.75 * Math.sqrt(Math.random()), orbitRate: rand(-0.05, 0.05),
+                kg: suns * SUN_KG, look: c.look, remnant: null, grow: 0, flash: 0, played: false,
+            });
+        }
+        function starIgnites(s) {
+            s.flash = 1;
+            const name = starNameOf(s), tier = s.look.rarity;
+            if (!neb.toldStar) {
+                neb.toldStar = true;
+                showToast('A star is born!', `Gas in your nebula collapsed under its own gravity until its middle got hot enough for fusion. ${touchUI() ? 'Long-press' : 'Right-click'} the new star to play as it!`);
+            } else {
+                floatText(s, spawnMode === 'real' && tier >= TIER.RARE ? `${RARITIES[tier]} ${name.toLowerCase()} born!` : `${aOrAn(name).replace(/^a/, 'A')} ${name.toLowerCase()} was born!`);
+            }
+            updateStats();
+            if (selected === s) showInfo(s);
+        }
+        function stepNebula(dt) {
+            neb.x = player.x;
+            neb.y = player.y;
+            neb.rot += 0.012 * dt;
+            neb.bgX += player.vx * camera.zoom * dt * 0.35;
+            neb.bgY += player.vy * camera.zoom * dt * 0.35;
+            if (physicsOn) { // real physics: gravity pulls the gas together into stars
+                neb.collapse = Math.min(1, neb.collapse + dt / NEB_COLLAPSE_TIME);
+                for (const s of neb.stars) {
+                    if (s.grow >= 1) continue;
+                    s.grow = Math.min(1, s.grow + dt / PROTOSTAR_TIME);
+                    if (s.grow >= 1) starIgnites(s);
+                }
+                neb.formIn -= dt;
+                if (neb.formIn <= 0) {
+                    neb.formIn = rand(4, 9);
+                    if (neb.stars.length < neb.maxStars && neb.gasSuns > 60) {
+                        const s = makeNebStar();
+                        neb.gasSuns -= s.kg / SUN_KG * 30; // only a few percent of a cloud's gas ends up in its stars
+                        neb.stars.push(s);
+                        updateStats();
+                    } else if (!neb.toldFull) {
+                        neb.toldFull = true;
+                        showToast('Your nebula has made all the stars it can', 'Fly into another nebula to merge with it: a crash squeezes the gas and sets off new stars!');
+                    }
+                }
+            }
+            player.r = neb.r0 * (1 - 0.25 * neb.collapse);
+            player.mass = player.r * player.r;
+            for (const s of neb.stars) { // stars circle slowly inside the cloud
+                s.ang += s.orbitRate * dt;
+                s.x = player.x + Math.cos(s.ang) * s.dist * player.r;
+                s.y = player.y + Math.sin(s.ang) * s.dist * player.r;
+                s.rot += 0.15 * dt;
+                const size = s.remnant ? 0.5 : Math.min(4, Math.max(0.55, Math.pow(s.kg / SUN_KG, 0.4)));
+                s.r = NEB_R * 0.03 * size * (s.grow < 1 ? 0.4 + 0.6 * s.grow : 1);
+                if (s.flash > 0) s.flash = Math.max(0, s.flash - dt * 0.6);
+            }
+            // Other nebulas: new ones drift in now and then, far ones are forgotten,
+            // and flying into one merges it into yours
+            stepSpaceNebulas(dt);
+            neb.spawnTimer -= dt;
+            if (neb.spawnTimer <= 0) {
+                neb.spawnTimer = 0.25;
+                const seen = Math.hypot(window.innerWidth, window.innerHeight) / 2 / camera.zoom;
+                for (let k = spaceNebulas.length - 1; k >= 0; k--) {
+                    const n = spaceNebulas[k];
+                    if (Math.hypot(n.x - player.x, n.y - player.y) - n.r > seen * 4) removeSpaceNebula(n);
+                }
+                if (spaceNebulas.length < 3 && Math.random() < nebulaChance() * 3) {
+                    const kind = rollByRarity(NEBULA_KINDS, k => k.rarity), ly = rand(...kind.ly);
+                    const r = player.r * Math.min(2.5, Math.max(0.1, ly / neb.ly));
+                    addSpaceNebula(r, seen * 1.1, seen * 3, kind, ly);
+                    announceRare(kind.rarity, kind.name);
+                }
+            }
+            if (physicsOn || mergeOn) {
+                for (let k = spaceNebulas.length - 1; k >= 0; k--) {
+                    const n = spaceNebulas[k];
+                    if (Math.hypot(n.x - player.x, n.y - player.y) < (player.r + n.r) * 0.5) mergeNebula(n);
+                }
+            }
+        }
+        function mergeNebula(n) {
+            removeSpaceNebula(n);
+            const oldLy = neb.ly;
+            neb.ly = Math.cbrt(neb.ly ** 3 + n.ly ** 3);
+            neb.r0 *= neb.ly / oldLy;
+            neb.gasSuns += n.gasSuns;
+            neb.maxStars = Math.min(40, neb.maxStars + (n.kind.starForming ? 6 : 1));
+            neb.toldFull = false;
+            if (physicsOn) neb.formIn = Math.min(neb.formIn, 1); // the crash squeezes the gas: new stars start forming
+            showToast('Your nebula merged with another cloud!', physicsOn
+                ? `The ${n.kind.name.toLowerCase()} crashed into yours. Crashes like this squeeze the gas and set off new stars!`
+                : `You swallowed the ${n.kind.name.toLowerCase()}. Physics is off, so nothing collapses into stars`);
+            updateStats();
+            if (selected === player) showInfo(player);
+        }
+
+        function drawNebStar(s, time) {
+            if (s.grow < 1) { // a protostar: a warm clump still pulling itself together
+                const pr = s.r * (1.4 + 0.15 * Math.sin(time / 300 + s.id));
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, pr);
+                g.addColorStop(0, `rgba(255, 190, 130, ${0.25 + 0.6 * s.grow})`);
+                g.addColorStop(0.5, `rgba(255, 110, 70, ${0.15 + 0.3 * s.grow})`);
+                g.addColorStop(1, 'rgba(255, 80, 60, 0)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, pr, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+                return;
+            }
+            if (s.remnant === 'blackhole') {
+                ctx.fillStyle = '#000';
+                ctx.strokeStyle = '#ffb060';
+                ctx.lineWidth = s.r * 0.35;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            } else if (s.remnant) {
+                const color = REMNANTS[s.remnant].color;
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 3);
+                g.addColorStop(0, '#ffffff');
+                g.addColorStop(0.25, color);
+                g.addColorStop(1, color + '00');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r * 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            } else {
+                drawWorld(s, T_STAR);
+            }
+            if (s.flash > 0) { // the flash as fusion lights up
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                const fr = s.r * (2 + 8 * (1 - s.flash));
+                const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, fr);
+                g.addColorStop(0, `rgba(255, 255, 255, ${0.7 * s.flash})`);
+                g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, fr, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            if (s.played && s.r * view.zoom > 3) drawLabel('you played this star', s.x, s.y + s.r * 2.6 + 6 / view.zoom, 10 / view.zoom, false, false);
+        }
+        function drawYourNebula(time) {
+            drawNebulaCloud(neb.sprite, player.x, player.y, player.r, neb.rot, neb.collapse);
+            for (const s of neb.stars) drawNebStar(s, time);
+        }
+
+        // Become your nebula (a new one the first time), right where it was
+        function enterNebulaStage() {
+            const fresh = !neb;
+            if (fresh) neb = makeHomeNebula();
+            stage = 'nebula';
+            hideInfo();
+            playerOrbit = null;
+            forming = null;
+            pulse = null;
+            for (const k of ['color', 'inner', 'spin', 'spinSpeed', 'atom', 'parts', 'Z', 'deg', 'remnant', 'remnantKg', 'massR', 'drawR', 'look']) delete player[k];
+            player.chem = false;
+            player.dust = false;
+            player.type = NEBULA_TYPE;
+            player.x = neb.x;
+            player.y = neb.y;
+            player.vx = player.vy = 0;
+            player.r = neb.r0 * (1 - 0.25 * neb.collapse);
+            player.mass = player.r * player.r;
+            cluster.length = 0;
+            cluster.push(player);
+            bonds.length = 0;
+            stuck.length = 0;
+            bondedPairs = new Set();
+            molBondOrders = [];
+            free.length = 0;
+            spaceNebulas.length = 0;
+            neb.playing = null;
+            document.body.classList.remove('in-dust', 'is-ocamathron');
+            document.body.classList.add('in-nebula');
+            document.getElementById('hint').innerHTML = touchUI() ? NEBULA_HINT_TOUCH : NEBULA_HINT;
+            userZoom = 1;
+            camera.x = player.x;
+            camera.y = player.y;
+            camera.zoom = Math.min(window.innerWidth, window.innerHeight) * 0.42 / player.r;
+            manageGiants();
+            updateStats();
+            updateSupernovaButton();
+            updateNebulaButton();
+            updateRestartPrompt();
+            if (fresh) {
+                showToast(`You're ${aOrAn(neb.kind.name)} ${neb.kind.name.toLowerCase()}!`, physicsOn
+                    ? `Your gas is slowly collapsing. Watch for glowing clumps that light up into new stars, then ${touchUI() ? 'long-press' : 'right-click'} one to play as it!`
+                    : "Physics is off, so your gas won't collapse into stars. Turn real physics on to watch stars form");
+            }
+        }
+
+        // Jump to being this big (real meters across) in the space world
+        function setSpaceSize(size) {
+            delete player.remnant;
+            delete player.remnantKg;
+            delete player.massR;
+            delete player.drawR;
+            dust.quake = null;
+            dust.quakeReady = 0;
+            player.r = dust.r0 * Math.pow(size / DUST.startSize, 1 / DUST_EXP);
+            player.mass = player.r * player.r;
+            const tier = dustTierOf(player.r);
+            dust.tier = tier; // already "puffed up" if it's gas, so no double puff
+            dust.won = tier === DUST_TIERS.length - 1;
+            player.type = DUST_TYPES[tier];
+            player.look = tier >= T_DWARF ? pickDustLook(tier, player.r) : DUST_LOOKS[0];
+            playerOrbit = null;
+            free.length = 0;      // new neighbors to match your new size
+            spaceNebulas.length = 0;
+            manageDust(true);
+        }
+
+        // Right-click a star in your nebula: go off and play as it
+        function playAsNebulaStar(s) {
+            if (s.grow < 1) { floatText(s, "This protostar hasn't lit up yet. Wait for it to shine!"); return; }
+            const name = starNameOf(s);
+            neb.playing = s;
+            s.played = true;
+            enterDustStage(true);
+            setSpaceSize(sizeForSuns(Math.max(s.kg / SUN_KG, 0.08)));
+            if (s.remnant) {
+                setRemnant(player, REMNANTS[s.remnant], s.kg);
+                free.length = 0;
+                manageDust(true);
+            }
+            camera.x = player.x;
+            camera.y = player.y;
+            camera.zoom = DUST.screenR / player.r;
+            userZoom = 1;
+            updateStats();
+            updateSupernovaButton();
+            updateNebulaButton();
+            showToast(`You're ${aOrAn(name)} ${name.toLowerCase()} from your nebula!`,
+                `${formatMassKg(s.kg, true)}. Tap ☁ Back to your nebula any time to go back and pick another star.`);
+        }
+
+        // ...and come back: the star you were keeps whatever it became
+        function returnToNebula() {
+            if (!neb || stage !== 'dust') return;
+            const s = neb.playing;
+            if (s) {
+                const remnant = remnantOf(player);
+                s.kg = dust.blackHole ? dust.bhKg : dustMassKg(player);
+                s.remnant = remnant ? remnant.id : null;
+                s.look = starLookForSuns(s.kg / SUN_KG);
+            }
+            enterNebulaStage();
+            showToast('Back in your nebula', s ? `Your ${starNameOf(s).toLowerCase()} is back among its sisters. ${touchUI() ? 'Long-press' : 'Right-click'} any star to play as it` : '');
+        }
+        function updateNebulaButton() {
+            nebulaBtn.classList.toggle('show', stage === 'dust' && !!neb?.playing);
+        }
+        nebulaBtn.addEventListener('click', () => {
+            nebulaBtn.blur(); // so the keyboard keeps steering you
+            returnToNebula();
+        });
+
+        function showNebulaInfo(p) {
+            const yours = p === player, n = yours ? neb : p, kind = n.kind;
+            infoName.textContent = (yours ? 'You! ' : '') + kind.name;
+            infoKind.textContent = NEBULA_TYPE.kindLabel;
+            infoSwatch.style.background = `radial-gradient(circle at 42% 40%, #ffffffaa, ${kind.colors[0]} 32%, ${kind.colors[2]} 58%, ${kind.colors[1]}55 72%, #0000 76%)`;
+            infoSwatch.textContent = '';
+            infoSwatch.style.textDecoration = 'none';
+            infoFacts.replaceChildren();
+            addFact('Size', `About ${fmtNum(n.ly)} light-years across` + (stage === 'dust' ? ' (drawn far smaller than it really is)' : ''));
+            addFact('Gas', `About ${fmtNum(n.gasSuns)} Suns of gas and dust`);
+            if (yours) {
+                const lit = neb.stars.filter(s => s.grow >= 1).length, forming = neb.stars.length - lit;
+                addFact('Stars', `${lit} shining` + (forming ? `, ${forming} still forming` : ''));
+                addFact('Collapsing?', !physicsOn ? 'No: physics is off, so the gas just floats'
+                    : neb.stars.length >= neb.maxStars ? 'It has made all the stars it can (merge with another nebula for more)'
+                    : 'Yes: clumps of gas are falling together into new stars');
+            } else {
+                addFact('Can you eat it?', stage === 'nebula'
+                    ? (physicsOn || mergeOn ? 'Fly into it and your clouds merge!' : 'No, merging is off, so you float right through')
+                    : "No: it's light-years across, far bigger than anything else here. You float right through");
+            }
+            addRarityFact(kind.rarity);
+            infoDesc.textContent = kind.desc;
+            infoEl.classList.add('open');
+        }
+        function showNebStarInfo(s) {
+            const name = starNameOf(s), born = s.grow >= 1;
+            infoName.textContent = born ? name : 'Protostar';
+            infoKind.textContent = born ? NEB_STAR_TYPE.kindLabel : 'A star still being born';
+            const color = s.remnant ? REMNANTS[s.remnant].color : born ? s.look.base : '#ff8a5a';
+            infoSwatch.style.background = s.remnant === 'blackhole' ? 'radial-gradient(circle, #000 38%, #fff2d8 44%, #ff9a40 56%, #3a1606 78%)'
+                : `radial-gradient(circle at 35% 30%, white, ${color} 46%, ${shade(color, -0.6)})`;
+            infoSwatch.textContent = '';
+            infoSwatch.style.textDecoration = 'none';
+            infoFacts.replaceChildren();
+            if (!born) {
+                addFact('Lighting up', `${Math.round(s.grow * 100)}%`);
+                infoDesc.textContent = 'A clump of gas in your nebula is collapsing under its own gravity. As it squeezes tighter it heats up, and when its middle reaches about 10 million °C, hydrogen starts fusing into helium and it becomes a star!';
+                infoEl.classList.add('open');
+                return;
+            }
+            addFact('Mass', formatMassKg(s.kg));
+            if (!s.remnant) addFact('Size', `About ${formatSize(sizeForSuns(s.kg / SUN_KG))} across`);
+            addFact('Play as it', `${touchUI() ? 'Long-press' : 'Right-click'} it` + (s.played ? ' (you were this star before)' : ''));
+            addRarityFact(s.remnant ? REMNANTS[s.remnant].rarity : s.look.rarity);
+            infoDesc.textContent = s.remnant
+                ? (REMNANTS[s.remnant].type.info.desc + ' You turned this star into it when you played as it.')
+                : `${s.look.what}. It formed in your nebula when a clump of gas collapsed under its own gravity and fusion lit up inside it.`;
+            infoEl.classList.add('open');
+        }
+
+        // =====================================================================
+        // Big black holes: a star cluster or a whole galaxy of your own
+        //
+        // Intermediate-mass black holes (100 to 100,000 Suns) are thought to hide
+        // in the middle of dense star clusters, and supermassive ones (100,000
+        // Suns and up) sit at the heart of galaxies. The heavier your black hole,
+        // the bigger the cluster or galaxy, and it keeps growing as you do.
+        // They're drawn much closer in than real: a real galaxy is billions of
+        // times wider than the black hole in its middle.
+        // =====================================================================
+        const IMBH_SUNS = 100, SMBH_SUNS = 1e5, UMBH_SUNS = 1e10;
+        const clusterBtn = document.getElementById('cluster-btn');
+        const galaxyBtn = document.getElementById('galaxy-btn');
+        const bhSuns = () => dust.bhKg / SUN_KG;
+        const blackHoleClass = (suns) => suns >= UMBH_SUNS ? 'ultramassive' : suns >= SMBH_SUNS ? 'supermassive'
+            : suns >= IMBH_SUNS ? 'intermediate-mass' : 'stellar-mass';
+        const clampTo = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+        const gauss = () => (Math.random() + Math.random() + Math.random() + Math.random() - 2) * 1.732;
+        const SYS_RGB = { red: '255, 150, 110', orange: '255, 200, 140', yellow: '255, 236, 190', white: '235, 240, 255', blue: '165, 195, 255', pink: '255, 120, 175' };
+        const pickColor = (weights) => {
+            let u = Math.random() * Object.values(weights).reduce((a, b) => a + b, 0);
+            for (const [c, w] of Object.entries(weights)) { u -= w; if (u < 0) return c; }
+            return 'white';
+        };
+        const OLD_STARS = { red: 35, orange: 30, yellow: 25, white: 7, blue: 3 }; // old clusters and bulges: mostly cool stars
+        const YOUNG_STARS = { blue: 45, white: 35, yellow: 10, pink: 10 };       // spiral arms: hot young stars and glowing gas
+        const DISK_STARS = { yellow: 40, white: 30, orange: 20, red: 10 };
+
+        // How far it reaches, measured in your black hole's size on screen
+        function systemReach(sys) {
+            const suns = bhSuns();
+            if (sys.kind === 'cluster') return 6 + 8 * clampTo(Math.log10(suns / IMBH_SUNS) / 3, 0, 1);
+            return 18 + 30 * clampTo(Math.log10(suns / SMBH_SUNS) / 5, 0, 1.3);
+        }
+        // About how many stars it would really have
+        const realStarCount = (sys, suns) => sys.kind === 'cluster' ? suns * 200 : 1e11 * Math.pow(suns / 4e6, suns < 4e6 ? 0.9 : 0.55);
+        function formatBig(n) {
+            for (const [v, w] of [[1e12, 'trillion'], [1e9, 'billion'], [1e6, 'million'], [1e3, 'thousand']]) {
+                if (n >= v) return `${(n / v).toLocaleString(undefined, { maximumSignificantDigits: 2 })} ${w}`;
+            }
+            return Math.round(n).toLocaleString();
+        }
+
+        // A star that swings around the middle on a tilted 3D orbit (cluster stars,
+        // a galaxy's bulge, an elliptical galaxy): seen from far away, each orbit
+        // looks like an ellipse pointing its own way
+        function orbitStar(d, w, color, size) {
+            const node = rand(0, Math.PI * 2);
+            return { d, th: rand(0, Math.PI * 2), w, dir: Math.random() < 0.5 ? 1 : -1, plane: false,
+                ci: rand(-1, 1), cn: Math.cos(node), sn: Math.sin(node), c: color, s: size };
+        }
+        // A star going around in the flat disk of a galaxy
+        const diskStar = (d, th, w, color, size) => ({ d, th, w, dir: 1, plane: true, c: color, s: size });
+        // How far out, for a ball of stars bunched up in the middle (a Plummer sphere)
+        function plummerD(a) {
+            for (;;) {
+                const d = a / Math.sqrt(Math.pow(Math.random(), -2 / 3) - 1);
+                if (d <= 1) return d;
+            }
+        }
+        const sysStarSize = () => Math.random() < 0.06 ? rand(2.2, 3) : rand(1, 1.8); // a few bright giants
+
+        function makeStarCluster() {
+            const suns = bhSuns(), t = clampTo(Math.log10(suns / IMBH_SUNS) / 3, 0, 1);
+            const n = Math.round((60 + 240 * t) * (LOW_POWER ? 0.6 : 1));
+            const a = 0.25, W = 2 * Math.PI / 70 * Math.pow(1 + a * a, 0.75); // outer stars take about 70 s to go around
+            const stars = [];
+            for (let i = 0; i < n; i++) {
+                const d = plummerD(a);
+                stars.push(orbitStar(d, W / Math.pow(d * d + a * a, 0.75), pickColor(OLD_STARS), sysStarSize()));
+            }
+            return { kind: 'cluster', type: 'globular', label: 'Globular star cluster', stars, t: 0, ci: 1, q: 1, pa: 0,
+                glow: [['255, 230, 190', 0.5, 0.2]] };
+        }
+
+        function makeGalaxy() {
+            const suns = bhSuns(), t = clampTo(Math.log10(suns / SMBH_SUNS) / 5, 0, 1.3);
+            const n = Math.round(Math.min(3200, 1300 + 1700 * t) * (LOW_POWER ? 0.5 : 1));
+            // The kind of galaxy follows its black hole, like in real life: small
+            // ones live in dwarf galaxies, the Milky Way's (4 million Suns) in a
+            // barred spiral, Andromeda's (100 million) in a spiral, and the
+            // biggest (billions of Suns, like M87's) in giant elliptical galaxies
+            const type = suns < 1e6 ? 'dwarf' : suns < 3e7 ? 'barred' : suns < 1e9 ? 'spiral' : 'elliptical';
+            const dir = Math.random() < 0.5 ? 1 : -1;
+            const dc = 0.07, V = 2 * Math.PI / 150 * Math.sqrt(1 + dc * dc); // the edge takes about 150 s to go around
+            const spin = (d) => V / Math.sqrt(d * d + dc * dc);  // flat rotation curve: about the same speed at every distance
+            const patternSpeed = spin(0.55);                     // spiral arms and bars turn as one, like a wave
+            const sys = { kind: 'galaxy', type, stars: [], t: 0, dir, ci: rand(0.5, 0.95), q: 1, pa: rand(0, Math.PI * 2) };
+            const expD = (scale) => { for (;;) { const d = -scale * Math.log(1 - Math.random()); if (d <= 1) return d; } };
+            const add = (star) => { star.dir = star.plane ? dir : star.dir; sys.stars.push(star); };
+            if (type === 'elliptical') {
+                sys.label = 'Giant elliptical galaxy';
+                sys.q = rand(0.6, 0.9);
+                const a = 0.18, W = 2 * Math.PI / 120 * Math.pow(1 + a * a, 0.75);
+                for (let i = 0; i < n; i++) {
+                    const d = plummerD(a);
+                    add(orbitStar(d, W / Math.pow(d * d + a * a, 0.75), pickColor(OLD_STARS), sysStarSize()));
+                }
+                sys.glow = [['255, 220, 170', 0.85, 0.32], ['255, 235, 200', 0.25, 0.5]];
+                return sys;
+            }
+            if (type === 'dwarf') {
+                sys.label = 'Dwarf galaxy';
+                const solid = (d) => V / Math.sqrt(d * d + 0.3 * 0.3); // small galaxies turn almost like a wheel
+                for (let i = 0; i < n * 0.5; i++) { const d = expD(0.35); add(diskStar(d, rand(0, Math.PI * 2), solid(d), pickColor(DISK_STARS), sysStarSize())); }
+                const clumps = 5 + Math.floor(Math.random() * 4); // lumpy patches where new stars are forming
+                for (let k = 0; k < clumps; k++) {
+                    const cd = rand(0.1, 0.8), cth = rand(0, Math.PI * 2);
+                    for (let i = 0; i < n * 0.5 / clumps; i++) {
+                        const x = cd * Math.cos(cth) + gauss() * 0.06, y = cd * Math.sin(cth) + gauss() * 0.06;
+                        const d = Math.min(1, Math.hypot(x, y));
+                        add(diskStar(d, Math.atan2(y, x), solid(d), pickColor(YOUNG_STARS), sysStarSize()));
+                    }
+                }
+                sys.glow = [['200, 215, 255', 0.9, 0.2]];
+                return sys;
+            }
+            const barred = type === 'barred';
+            sys.label = barred ? 'Barred spiral galaxy' : 'Spiral galaxy';
+            const bulge = barred ? 0.12 : 0.15, bar = barred ? 0.12 : 0, disk = 0.36;
+            const a = 0.06, W = spin(0.1) * Math.pow(0.1 * 0.1 + a * a, 0.75);
+            for (let i = 0; i < n * bulge; i++) { // the bulge: old stars swarming around the middle
+                const d = plummerD(a) * 0.35;
+                add(orbitStar(d, W / Math.pow(d * d + a * a, 0.75), pickColor(OLD_STARS), sysStarSize()));
+            }
+            for (let i = 0; i < n * bar; i++) { // the bar: a long bunch of stars across the middle
+                const x = rand(-1, 1) * 0.28, y = gauss() * 0.045;
+                add(diskStar(Math.hypot(x, y), Math.atan2(y, x), patternSpeed, pickColor(OLD_STARS), sysStarSize()));
+            }
+            for (let i = 0; i < n * disk; i++) { // the disk: older stars, each going around at its own pace
+                const d = expD(0.32);
+                add(diskStar(d, rand(0, Math.PI * 2), spin(d), pickColor(DISK_STARS), sysStarSize()));
+            }
+            // The arms: young blue stars and glowing pink gas where a wave of
+            // crowding sweeps around the disk
+            const arms = 2, start = barred ? 0.28 : 0.1, pitch = barred ? 0.3 : 0.25;
+            for (let i = 0, armN = n * (1 - bulge - bar - disk); i < armN; i++) {
+                const k = i % arms, d = clampTo(start + (1 - start) * Math.pow(Math.random(), 0.8) + gauss() * 0.02, 0.02, 1);
+                const th = k * 2 * Math.PI / arms + Math.log(d / start) / pitch + gauss() * 0.14;
+                add(diskStar(d, th, patternSpeed, pickColor(YOUNG_STARS), sysStarSize()));
+            }
+            sys.glow = [['200, 210, 255', 1, 0.2], ['255, 225, 170', 0.22, 0.65]];
+            return sys;
+        }
+
+        function giveBlackHoleSystem(kind) {
+            if (stage !== 'dust' || !dust.blackHole) return;
+            const replaced = dust.system;
+            dust.system = kind === 'cluster' ? makeStarCluster() : makeGalaxy();
+            const sys = dust.system, suns = bhSuns();
+            // Zoom out so it fits on screen (scroll or pinch to zoom back in)
+            const screen = Math.min(window.innerWidth, window.innerHeight);
+            userZoom = clampTo(screen * (sys.kind === 'galaxy' ? 0.62 : 0.46) / (DUST.screenR * systemReach(sys)), 0.1, 1);
+            updateBlackHoleButtons();
+            const stars = formatBig(realStarCount(sys, suns));
+            const like = { globular: 'Like Omega Centauri, which may have a black hole of tens of thousands of Suns in its middle.',
+                dwarf: 'Small and lumpy, like the Magellanic Clouds next to our Milky Way.',
+                barred: 'Like our Milky Way, whose black hole, Sagittarius A*, weighs 4 million Suns.',
+                spiral: 'Like Andromeda, whose black hole weighs about 100 million Suns.',
+                elliptical: 'Like M87, whose 6.5-billion-Sun black hole was the first ever photographed.' }[sys.type];
+            showToast(`${replaced ? 'A new' : 'You have a'} ${sys.label.toLowerCase()}!`,
+                `${like} A real one this size has about ${stars} stars${sys.kind === 'galaxy' ? ', all going around you' : ' swarming around you'}.`);
+            if (selected === player) showInfo(player);
+        }
+        clusterBtn.addEventListener('click', () => { clusterBtn.blur(); giveBlackHoleSystem('cluster'); });
+        galaxyBtn.addEventListener('click', () => { galaxyBtn.blur(); giveBlackHoleSystem('galaxy'); });
+
+        // The buttons show up once your black hole is heavy enough (checked
+        // whenever your stats change, so whenever you grow)
+        function updateBlackHoleButtons() {
+            const bh = stage === 'dust' && dust.blackHole, suns = bh ? bhSuns() : 0;
+            const canCluster = bh && suns >= IMBH_SUNS && suns < SMBH_SUNS, canGalaxy = bh && suns >= SMBH_SUNS;
+            clusterBtn.classList.toggle('show', canCluster);
+            galaxyBtn.classList.toggle('show', canGalaxy);
+            if (!bh) return;
+            const hasCluster = dust.system?.kind === 'cluster', hasGalaxy = dust.system?.kind === 'galaxy';
+            clusterBtn.classList.toggle('have', hasCluster);
+            galaxyBtn.classList.toggle('have', hasGalaxy);
+            const cl = hasCluster ? '✨ New star cluster' : '✨ Star cluster', gl = hasGalaxy ? '\u{1F30C} New galaxy' : '\u{1F30C} Galaxy';
+            if (clusterBtn.textContent !== cl) clusterBtn.textContent = cl;
+            if (galaxyBtn.textContent !== gl) galaxyBtn.textContent = gl;
+            clusterBtn.title = 'Surround your black hole with a star cluster (the heavier you are, the bigger it is)';
+            galaxyBtn.title = 'Give your black hole a galaxy (the heavier you are, the bigger it is, and the kind of galaxy changes)';
+            if (canCluster && !dust.toldIMBH) {
+                dust.toldIMBH = true;
+                showToast("You're an intermediate-mass black hole!", 'Over 100 Suns! Black holes like you are thought to hide in the middle of dense star clusters. Tap ✨ Star cluster to get one');
+            }
+            if (canGalaxy && !dust.toldSMBH) {
+                dust.toldSMBH = true;
+                showToast("You're a supermassive black hole!", 'Over 100,000 Suns! Black holes like you sit at the heart of galaxies. Tap \u{1F30C} Galaxy to get one of your own');
+            }
+        }
+
+        function drawBlackHoleSystem(camX, camY, viewW, viewH, z) {
+            const sys = dust.system, R = player.r * systemReach(sys);
+            const inner = 2.2 / systemReach(sys); // nothing closer than just outside your glow
+            const cpa = Math.cos(sys.pa), spa = Math.sin(sys.pa), t = sys.t;
+            const sizeBoost = sys.kind === 'galaxy' ? 1.35 : 1;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            // Soft glow of all the stars too faint to see one by one
+            for (const [rgb, reach, alpha] of sys.glow) {
+                ctx.save();
+                ctx.translate(player.x, player.y);
+                ctx.rotate(sys.pa);
+                ctx.scale(1, sys.kind === 'galaxy' && sys.type !== 'elliptical' ? sys.ci : sys.q);
+                const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * reach);
+                g.addColorStop(0, `rgba(${rgb}, ${alpha})`);
+                g.addColorStop(1, `rgba(${rgb}, 0)`);
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(0, 0, R * reach, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            // The stars, a batch per color
+            const batches = {};
+            const left = camX - 10 / z, right = camX + viewW + 10 / z, top = camY - 10 / z, bottom = camY + viewH + 10 / z;
+            for (const st of sys.stars) {
+                const th = st.th + st.dir * st.w * t, d = inner + st.d * (1 - inner);
+                let x = d * Math.cos(th), y = d * Math.sin(th);
+                if (st.plane) y *= sys.ci;
+                else {
+                    y *= st.ci;
+                    const xr = x * st.cn - y * st.sn;
+                    y = (x * st.sn + y * st.cn) * sys.q;
+                    x = xr;
+                }
+                const wx = player.x + R * (x * cpa - y * spa), wy = player.y + R * (x * spa + y * cpa);
+                if (wx < left || wx > right || wy < top || wy > bottom) continue;
+                (batches[st.c] ||= []).push(wx, wy, st.s * sizeBoost / z);
+            }
+            for (const [c, list] of Object.entries(batches)) {
+                ctx.fillStyle = `rgba(${SYS_RGB[c]}, 1)`;
+                ctx.beginPath();
+                for (let i = 0; i < list.length; i += 3) ctx.rect(list[i] - list[i + 2] / 2, list[i + 1] - list[i + 2] / 2, list[i + 2], list[i + 2]);
+                ctx.fill();
+            }
+            ctx.restore();
         }
 
         // --- Messages ---
@@ -4332,8 +5383,15 @@
         }
 
         function updateStats() {
+            updateBlackHoleButtons();
+            if (stage === 'nebula') {
+                const lit = neb.stars.filter(s => s.grow >= 1).length;
+                statsEl.textContent = `You are ${aOrAn(neb.kind.name)} ${neb.kind.name.toLowerCase()}  ·  ${fmtNum(neb.ly)} light-years across  ·  ${fmtNum(neb.gasSuns)} Suns of gas  ·  ` +
+                    (!physicsOn ? 'no stars form with physics off' : `${lit} star${lit === 1 ? '' : 's'} born`);
+                return;
+            }
             if (stage === 'dust' && dust.blackHole) {
-                statsEl.textContent = `You are a black hole  ·  event horizon about ${formatSize(eventHorizonM(dust.bhKg))} across  ·  weighs ${formatMassKg(dust.bhKg, true)}  ·  stars eaten: ${dust.starsEaten}`;
+                statsEl.textContent = `You are ${aOrAn(blackHoleClass(bhSuns()))} ${blackHoleClass(bhSuns())} black hole  ·  event horizon about ${formatSize(eventHorizonM(dust.bhKg))} across  ·  weighs ${formatMassKg(dust.bhKg, true)}  ·  stars eaten: ${dust.starsEaten}`;
                 return;
             }
             if (stage === 'dust') {
@@ -4445,7 +5503,7 @@
         function enableTouchControls() {
             if (document.body.classList.contains('touch')) return;
             document.body.classList.add('touch');
-            document.getElementById('hint').innerHTML = stage === 'dust' ? DUST_HINT_TOUCH :
+            document.getElementById('hint').innerHTML = stage === 'dust' ? DUST_HINT_TOUCH : stage === 'nebula' ? NEBULA_HINT_TOUCH :
                 'Joystick to move &middot; pinch to zoom &middot; tap anything to learn about it &middot; long-press to orbit &middot; quarks &rarr; proton &rarr; atom &rarr; molecules &rarr; dust &rarr; planets &rarr; star';
         }
         if (window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) enableTouchControls();
@@ -4487,7 +5545,7 @@
         }
 
         function keepInWorld(e) {
-            if (stage === 'dust') return; // space has no walls: the dust world goes on forever
+            if (stage === 'dust' || stage === 'nebula') return; // space has no walls: it goes on forever
             if (e.x < e.r) { e.x = e.r; e.vx = Math.abs(e.vx); }
             if (e.x > WORLD.width - e.r) { e.x = WORLD.width - e.r; e.vx = -Math.abs(e.vx); }
             if (e.y < e.r) { e.y = e.r; e.vy = Math.abs(e.vy); }
@@ -4609,6 +5667,8 @@
                 keepInWorld(q);
             }
             if (playerOrbit) orbitAroundTarget(dt);
+            if (stage === 'nebula') stepNebula(dt);
+            else if (inSpace) stepSpaceNebulas(dt);
             if (stuck.length) { // molecules stuck to you come along
                 const c = clusterCenter();
                 for (const s of stuck) {
@@ -4622,6 +5682,7 @@
             if (inSpace) {
                 player.rot += (compactPlayer ? player.rotSpeed ?? 0.15 : 0.15) * dt;
                 stepStarquake(dt);
+                if (dust.system) dust.system.t += dt;
                 // the starry background slides a little as you move
                 dust.bgX += player.vx * camera.zoom * dt * 0.35;
                 dust.bgY += player.vy * camera.zoom * dt * 0.35;
@@ -4881,7 +5942,7 @@
 
             // --- Camera follows the player (the middle of your molecule) ---
             let focus = stage === 'molecule' && !isGiant(player.type) ? clusterBounds()
-                : stage === 'dust' ? { cx: player.x, cy: player.y, extent: player.r }
+                : stage === 'dust' || stage === 'nebula' ? { cx: player.x, cy: player.y, extent: player.r }
                 : isGiant(player.type)
                 // zoomed out to see what your light tears apart; during a Hyper Pulse,
                 // pull way back to watch the shockwave sweep across the map
@@ -4896,7 +5957,8 @@
                 const t = playerOrbit.target;
                 focus = { cx: t.x, cy: t.y, extent: playerOrbitDistance(bounds) + bounds.extent };
             }
-            if (stage !== 'dust') {
+            const endless = stage === 'dust' || stage === 'nebula';
+            if (!endless) {
                 // Zoomed out to (nearly) the whole map: slide over to its middle so all of it fits
                 const fit = Math.min(window.innerWidth / WORLD.width, window.innerHeight / WORLD.height);
                 const k = Math.max(0, Math.min(1, (2 * fit - camera.zoom) / fit));
@@ -4912,17 +5974,18 @@
             // Dust keeps you the same size on screen however big you grow.
             const autoZoom = stage === 'dust'
                 ? (playerOrbit ? screen * 0.4 / focus.extent : DUST.screenR / focus.extent)
+                : stage === 'nebula' ? screen * 0.42 / focus.extent
                 : stage === 'molecule' && !isGiant(player.type)
                 ? Math.max(0.02, Math.min(1, moleculeScreenR / focus.extent))
                 : Math.min(1, screen * 0.35 / focus.extent);
             // The scroll wheel scales the automatic zoom up or down. You can zoom out
             // until the whole map fits on screen (the dust world is endless, so less there).
-            if (stage === 'dust') userZoom = Math.max(userZoom, 0.1);
+            if (endless) userZoom = Math.max(userZoom, 0.1);
             else {
                 const fit = Math.min(window.innerWidth / WORLD.width, window.innerHeight / WORLD.height);
                 userZoom = Math.max(userZoom, Math.min(1, fit / autoZoom));
             }
-            const targetZoom = Math.max(stage === 'dust' ? 1e-9 : 0.002, Math.min(8, autoZoom * userZoom));
+            const targetZoom = Math.max(endless ? 1e-9 : 0.002, Math.min(8, autoZoom * userZoom));
             camera.zoom += (targetZoom - camera.zoom) * (1 - Math.exp(-5 * dt));
         }
 
@@ -5027,6 +6090,12 @@
                 haze: ['#ddf9ff', '#75c6ffb0', '#366df280', '#2548c238', '#2548c200'],
                 strands: ['#e2fbffee', '#a1e2ffd0', '#6fb7ffaa', '#6396ff48'],
                 core: ['#f5feff', '#dff9ff', '#91cfffdf', '#76bfff00'],
+            }],
+            [GRAVITON_LOOK, { // the preon's look, in purple
+                frames: [],
+                haze: ['#f3e2ff', '#b77bffb0', '#7e3af280', '#5a25c238', '#5a25c200'],
+                strands: ['#f5e4ffee', '#d2a8ffd0', '#a86fffaa', '#8a5cff48'],
+                core: ['#fbf5ff', '#f0e0ff', '#c391ffdf', '#b076ff00'],
             }],
         ]);
         function makeCoronaFrame(frame, art) {
@@ -5434,7 +6503,7 @@
 
         function drawSimple(p, time) {
             const look = p.type.look;
-            if (p.type.neutrino || p.type.fast || p.type.ftl) {
+            if ((p.type.neutrino || p.type.fast || p.type.ftl) && !coronaArt.has(look)) { // (corona art has its own glow)
                 // Tiny particles get a soft glow so they're visible
                 const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
                 glow.addColorStop(0, look.base + '88');
@@ -5619,20 +6688,25 @@
             view.x = camX;
             view.y = camY;
             view.zoom = z;
-            if (stage === 'dust') {
+            const endless = stage === 'dust' || stage === 'nebula';
+            if (endless) {
                 // Endless space: the background is drawn on the screen, sliding
                 // gently as you move, with a warm glow like a dusty young solar system
-                const ox = ((dust.bgX % TILE) + TILE) % TILE, oy = ((dust.bgY % TILE) + TILE) % TILE;
+                // (in a nebula, a deep purple one)
+                const bg = stage === 'dust' ? dust : neb;
+                const ox = ((bg.bgX % TILE) + TILE) % TILE, oy = ((bg.bgY % TILE) + TILE) % TILE;
                 ctx.setTransform(dpr, 0, 0, dpr, -ox * dpr, -oy * dpr);
                 ctx.fillStyle = bgPattern;
                 ctx.fillRect(ox, oy, w, h);
                 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                ctx.fillStyle = 'rgba(150, 90, 40, 0.12)';
+                ctx.fillStyle = stage === 'dust' ? 'rgba(150, 90, 40, 0.12)' : 'rgba(70, 30, 110, 0.14)';
                 ctx.fillRect(0, 0, w, h);
             }
             ctx.setTransform(dpr * z, 0, 0, dpr * z, -camX * dpr * z, -camY * dpr * z);
+            if (endless) drawSpaceNebulas(camX, camY, viewW, viewH);
+            if (stage === 'dust' && dust.system) drawBlackHoleSystem(camX, camY, viewW, viewH, z);
 
-            if (stage !== 'dust') {
+            if (!endless) {
                 const left = Math.max(0, camX), top = Math.max(0, camY);
                 const right = Math.min(WORLD.width, camX + viewW), bottom = Math.min(WORLD.height, camY + viewH);
                 if (right > left && bottom > top) {
@@ -5698,6 +6772,7 @@
                 for (const [a, b] of bonds) drawGluon(a.x, a.y, a.r, b.x, b.y, b.r, time, 4);
             }
 
+            if (stage === 'nebula') drawYourNebula(time);
             // Glow around you (flares up while a hadron is forming)
             const pulse = 1 + Math.sin(time / 250) * 0.06;
             const flare = forming ? 1 + (1 - forming.timer / 0.8) * 2 : 1;
@@ -5707,17 +6782,19 @@
                 : stage === 'molecule'
                 ? clusterBounds().extent * 1.3 * pulse
                 : Math.max(Math.min(player.r * 3.5, player.r + 60), cluster.length > 1 ? 70 : 0) * pulse * flare;
-            const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, glowR);
-            glow.addColorStop(0, `rgba(255, 255, 255, ${forming ? 0.5 : 0.25})`);
-            glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.fillStyle = glow;
-            ctx.beginPath();
-            ctx.arc(gx, gy, glowR, 0, Math.PI * 2);
-            ctx.fill();
+            if (stage !== 'nebula') {
+                const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, glowR);
+                glow.addColorStop(0, `rgba(255, 255, 255, ${forming ? 0.5 : 0.25})`);
+                glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(gx, gy, glowR, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
             for (const s of stuck) drawMolecule(s, true);
             if (stage === 'molecule' && !isGiant(player.type)) drawPlayerMolecule();
-            else for (const q of cluster) drawFree(q, time);
+            else if (stage !== 'nebula') for (const q of cluster) drawFree(q, time);
 
             // Floating messages (kept readable when zoomed out)
             const now = performance.now();
@@ -6012,11 +7089,14 @@
         function particleAt(wx, wy) {
             // Bound quarks are drawn on top, so check them first.
             // Tiny particles get a bigger click target.
+            // (In your nebula, its stars come first: the cloud is all around them.)
             let best = null, bestD = Infinity;
-            for (const list of [cluster, stuck, free]) {
+            const lists = stage === 'nebula' ? [neb.stars, spaceNebulas, cluster] : [cluster, stuck, free, spaceNebulas];
+            for (const list of lists) {
                 for (const p of list) {
                     const d = Math.hypot(p.x - wx, p.y - wy);
-                    if (d <= Math.max(p.r, 14 / view.zoom) && d < bestD) { best = p; bestD = d; }
+                    const reach = p.nebStar ? Math.max(p.r * 2, 16 / view.zoom) : p.nebula || p.type === NEBULA_TYPE ? p.r * 0.8 : Math.max(p.r, 14 / view.zoom);
+                    if (d <= reach && d < bestD) { best = p; bestD = d; }
                 }
                 if (best) return best;
             }
@@ -6029,12 +7109,29 @@
             const dd = document.createElement('dd');
             dd.textContent = value;
             infoFacts.append(dt, dd);
+            return dd;
+        }
+        // How rare it is, in its rarity's color
+        function addRarityFact(tier) {
+            if (tier == null) return;
+            const dd = addFact('Rarity', spawnMode === 'equal' ? `${RARITIES[tier]} (rarity is off, so everything spawns equally)`
+                : spawnMode === 'normal' ? `${RARITIES[tier]} in real life` : RARITIES[tier]);
+            dd.className = `rarity rarity-${tier}`;
+        }
+        function rarityOfThing(p) {
+            const t = p.type;
+            if (t.kind === 'element') return elementRarity(t.Z);
+            if (t.kind === 'molecule') return t.known ? chemRarity(t.formula) : null;
+            if (t.kind === 'atom') return p.atom && p.atom.Z >= 1 ? elementRarity(p.atom.Z) : null;
+            return t.rarity;
         }
 
         function showInfo(p) {
             selected = p;
             const t = p.type;
             if (t.kind === 'dust') { showDustInfo(p); return; }
+            if (t.kind === 'nebula') { showNebulaInfo(p); return; }
+            if (t.kind === 'nebstar') { showNebStarInfo(p); return; }
             const info = t.info || INFO[t.id];
 
             infoName.textContent = (p.isPlayer ? 'You! ' : '') + t.name;
@@ -6101,6 +7198,7 @@
             }
             if (t.kind === 'nucleus') addFact('Made of', '2 protons + 2 neutrons');
             if (p.bonded && !p.isPlayer && !p.chem) addFact('Status', 'Bound to you by gluons');
+            addRarityFact(rarityOfThing(p));
 
             infoDesc.textContent = info.desc;
             infoEl.classList.add('open');
@@ -6314,6 +7412,14 @@
         // Right-click / long-press: make something orbit you, or orbit it yourself
         function orbitActionAt(clientX, clientY) {
             const p = particleAt(...toWorld({ clientX, clientY }));
+            if (stage === 'nebula') { // in your nebula: right-click a star to go and play as it
+                if (p && p.nebStar) playAsNebulaStar(p);
+                else if (p && p.nebula) floatText(p, physicsOn || mergeOn ? 'Fly into this nebula to merge your clouds!' : 'Merging is off, so you float right through it');
+                else if (p === player) floatText(player, neb.stars.length ? `${touchUI() ? 'Long-press' : 'Right-click'} one of your stars to play as it`
+                    : physicsOn ? 'No stars yet: wait for your gas to collapse' : 'Physics is off, so no stars form');
+                return;
+            }
+            if (p && p.nebula) { floatText(p, "A nebula is light-years across: far too big to orbit!"); return; }
             if (!p || cluster.includes(p) || stuck.includes(p)) return;
             const name = p.type.name.toLowerCase();
             if (stage === 'molecule' && physicsOn) {
@@ -6392,8 +7498,9 @@
                 ? 'Real physics is on: only real, stable things can form. Tap to turn it off'
                 : 'Physics is off: merge with anything, orbit anything. Tap to turn real physics back on';
             document.getElementById('menu-physics-note').textContent = physicsOn
-                ? 'Everything follows the rules of nature: only real molecules form, and only real orbits happen.'
-                : 'Anything goes! Start as any particle, merge with anything, orbit anything.';
+                ? 'Everything follows the rules of nature: only real molecules form, and only real orbits happen. Start as a quark, or as a nebula that collapses into stars.'
+                : 'Anything goes! Start as anything (even a nebula), merge with anything, orbit anything.';
+            document.getElementById('play').textContent = physicsOn ? 'Play as a quark' : 'Play';
             document.body.classList.toggle('physics-off', !physicsOn);
         }
         function setPhysics(on, announce) {
@@ -6416,6 +7523,11 @@
             updateRestartPrompt();
             if (wasOcamathron || disabledType) {
                 showToast('Real physics ON', `${disabledType ? disabledType.name : wasHiem ? 'Hiemadecticus' : 'The Ocamathron'} is available with physics off, so you're ${molGiant ? 'a hydrogen atom' : 'an up quark'} again`);
+            } else if (announce && stage === 'nebula') {
+                showToast(physicsOn ? 'Real physics ON' : 'Physics OFF!', physicsOn
+                    ? 'Gravity pulls your gas together again: watch for new stars!'
+                    : 'Your nebula stops collapsing: no new stars form while physics is off');
+                updateStats();
             } else if (announce) {
                 showToast(physicsOn ? 'Real physics ON' : 'Physics OFF!', physicsOn
                     ? 'Only real, stable molecules and real orbits, following the rules of nature'
@@ -6428,6 +7540,66 @@
             physicsEl.blur(); // so the keyboard keeps steering you
         });
         menuPhysicsEl.addEventListener('click', () => setPhysics(!physicsOn, false));
+
+        // --- Rarity on/off (works everywhere, with physics on or off) ---
+        const rarityEl = document.getElementById('rarity-btn');
+        const menuRarityEl = document.getElementById('menu-rarity');
+        const SPAWN_MODE_TEXT = {
+            normal: { label: '\u{1F3B2} Spawning: Normal', toast: 'Normal spawning',
+                      about: 'Things spawn the way they always did, before the rarity system' },
+            real: { label: '\u{1F48E} Rarity: ON', toast: 'Rarity ON',
+                    about: 'Things spawn as often as they really do: Ubiquitous things everywhere, Godly things almost never' },
+            equal: { label: '\u{1F48E} Rarity: OFF', toast: 'Rarity OFF',
+                     about: 'Every kind of thing has the same chance of spawning' },
+        };
+        function showRarityButton() {
+            const next = SPAWN_MODE_TEXT[SPAWN_MODES[(SPAWN_MODES.indexOf(spawnMode) + 1) % SPAWN_MODES.length]];
+            for (const el of [rarityEl, menuRarityEl]) {
+                el.textContent = SPAWN_MODE_TEXT[spawnMode].label;
+                el.classList.toggle('off', spawnMode === 'equal');
+                el.classList.toggle('normal', spawnMode === 'normal');
+                el.title = `${SPAWN_MODE_TEXT[spawnMode].about}. Tap for ${next.toast}. Rarities, most common first: ${RARITIES.join(', ')}`;
+            }
+        }
+        // Everything far off screen gets rolled again, so the change shows up right away
+        function rerollOffScreen() {
+            if (stage === 'nebula') {
+                spaceNebulas.length = 0;
+                return;
+            }
+            const halfW = window.innerWidth / 2 / view.zoom + 300, halfH = window.innerHeight / 2 / view.zoom + 300;
+            const seenR = Math.hypot(window.innerWidth, window.innerHeight) / 2 / view.zoom * 1.1;
+            for (let k = free.length - 1; k >= 0; k--) {
+                const q = free[k];
+                if (q.huge || q.orbit || q.bonded || q.shard || q.falling || q === selected || q === playerOrbit?.target ||
+                    q.burning !== undefined || q.breakIn !== undefined || q.rocheFragment) continue;
+                const dx = Math.abs(q.x - camera.x), dy = Math.abs(q.y - camera.y);
+                if (stage === 'dust' ? Math.hypot(dx, dy) < seenR : dx < halfW && dy < halfH) continue;
+                free.splice(k, 1);
+            }
+            if (stage === 'dust') {
+                for (const n of [...spaceNebulas]) if (n !== selected) removeSpaceNebula(n);
+                manageDust();
+            } else {
+                replenish(true);
+            }
+        }
+        function setSpawnMode(mode, announce) {
+            spawnMode = mode;
+            try { localStorage.setItem(RARITY_KEY, { normal: 'normal', real: 'on', equal: 'off' }[mode]); } catch (err) { /* still works this game */ }
+            showRarityButton();
+            rerollOffScreen();
+            if (selected) showInfo(selected);
+            if (announce) showToast(SPAWN_MODE_TEXT[mode].toast, SPAWN_MODE_TEXT[mode].about);
+        }
+        // Normal -> Rarity ON -> Rarity OFF -> Normal ...
+        const nextSpawnMode = () => SPAWN_MODES[(SPAWN_MODES.indexOf(spawnMode) + 1) % SPAWN_MODES.length];
+        showRarityButton();
+        rarityEl.addEventListener('click', () => {
+            setSpawnMode(nextSpawnMode(), true);
+            rarityEl.blur(); // so the keyboard keeps steering you
+        });
+        menuRarityEl.addEventListener('click', () => setSpawnMode(nextSpawnMode(), false));
 
         // --- Merging on/off (physics off only) ---
         const mergeEl = document.getElementById('merge-btn');
@@ -6533,8 +7705,12 @@
             document.body.classList.add('menu-open');
         }
         document.getElementById('play').addEventListener('click', () => {
-            if (physicsOn) closeOverlays(); // real physics: everyone starts as an up quark
+            if (physicsOn) closeOverlays(); // real physics: start as an up quark (or a nebula, the other button)
             else openPicker(false);
+        });
+        document.getElementById('play-nebula').addEventListener('click', () => {
+            closeOverlays();
+            enterNebulaStage();
         });
         document.getElementById('picker-close').addEventListener('click', () => {
             pickerEl.classList.remove('open');
@@ -6589,6 +7765,11 @@
         }
 
         function pickParticle(type) {
+            if (type === NEBULA_TYPE && !pickerMidGame) {
+                closeOverlays();
+                enterNebulaStage();
+                return;
+            }
             if (pickerMidGame && stage === 'molecule' && isGiant(type)) {
                 closeOverlays();
                 becomeParticle(type); // giants are big enough to be at molecule scale: no need to start over
@@ -6615,6 +7796,7 @@
                 ['Atomic nucleus', t => t.kind === 'nucleus'],
                 ['Hypothetical particles and mathematical shapes', t => t.kind === 'hypothetical'],
                 ['Mystery particles', t => isGiant(t)],
+                ['Space', t => t === NEBULA_TYPE],
             ];
             const ball = (look) => `radial-gradient(circle at 35% 30%, ${look.light}, ${look.base} 50%, ${look.dark})`;
             for (const [title, match] of groups) {
@@ -6622,7 +7804,7 @@
                 h.textContent = title;
                 const grid = document.createElement('div');
                 grid.className = 'pick-grid';
-                for (const t of [...TYPES, OCAMATHRON, HIEMADECTICUS].filter(match)) {
+                for (const t of [...TYPES, OCAMATHRON, HIEMADECTICUS, NEBULA_TYPE].filter(match)) {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'pick';
@@ -6634,6 +7816,7 @@
                         : t.kind === 'nucleus' ? ball(PROTON_LOOK) : ball(t.look);
                     if (t.look === ELECTRON_LOOK) sw.style.color = '#222';
                     if (isGiant(t)) sw.style.boxShadow = `0 0 12px ${t.glow}`; // it glows
+                    if (t === NEBULA_TYPE) sw.style.background = 'radial-gradient(circle at 40% 40%, #fff8, #ff5f9a 30%, #8a6cff 55%, #5ab0ff 70%, #0000 76%)';
                     sw.textContent = t.sym;
                     if (t.bar) sw.style.textDecoration = 'overline';
                     const name = document.createElement('span');
@@ -6650,11 +7833,13 @@
         const startParams = new URLSearchParams(location.search);
         const startAs = startParams.get('as');
         if (startAs) history.replaceState(null, '', location.pathname); // so Start over shows the menu again
-        const startType = startAs && [...TYPES, OCAMATHRON, HIEMADECTICUS].find(t => t.id === startAs);
+        const startType = startAs && [...TYPES, OCAMATHRON, HIEMADECTICUS, NEBULA_TYPE].find(t => t.id === startAs);
         const devStage = startParams.get('devstage');
         if (devStage) history.replaceState(null, '', location.pathname);
-        const startAsParticle = startType && !physicsOn;
-        if (startAsParticle) becomeParticle(startType);
+        const startAsNebula = startType === NEBULA_TYPE; // with physics on or off
+        const startAsParticle = startType && !physicsOn && !startAsNebula;
+        if (startAsNebula) enterNebulaStage();
+        else if (startAsParticle) becomeParticle(startType);
 
         // Dev powers act on the current game in this browser.
         function initDevPowers(initialPower) {
@@ -6671,29 +7856,28 @@
             function devBecome(size) {
                 if (stage !== 'dust') enterDustStage();
                 if (dust.blackHole) return;
-                delete player.remnant;
-                delete player.remnantKg;
-                delete player.massR;
-                delete player.drawR;
-                dust.quake = null;
-                dust.quakeReady = 0;
-                player.r = dust.r0 * Math.pow(size / DUST.startSize, 1 / DUST_EXP);
-                player.mass = player.r * player.r;
-                const tier = dustTierOf(player.r);
-                dust.tier = tier; // already "puffed up" if it's gas, so no double puff
-                dust.won = tier === DUST_TIERS.length - 1;
-                player.type = DUST_TYPES[tier];
-                player.look = tier >= T_DWARF ? pickDustLook(tier, player.r) : DUST_LOOKS[0];
-                playerOrbit = null;
-                free.length = 0;      // new neighbors to match your new size
-                manageDust(true);
+                setSpaceSize(size);
                 if (selected) hideInfo();
                 updateStats();
                 updateSupernovaButton();
                 showToast(`DEV: ${player.type.name}`, `About ${formatSize(dustRealSize(player.r))} across, ${formatMassKg(dustMassKg(player), true)}`);
             }
 
+            // Be a black hole this many Suns heavy, right away
+            function devBlackHole(suns) {
+                if (stage !== 'dust' || !dust.blackHole) { devBecome(starSize(110)); goSupernova(REMNANTS.blackhole); }
+                dust.bhKg = suns * SUN_KG;
+                sizeRemnant(player, REMNANTS.blackhole, dust.bhKg);
+                camera.zoom = DUST.screenR / player.r;
+                free.length = 0;
+                spaceNebulas.length = 0;
+                manageDust(true);
+                updateStats();
+                if (selected === player) showInfo(player);
+                showToast(`DEV: ${blackHoleClass(suns)} black hole`, formatMassKg(dust.bhKg, true));
+            }
             const DEV_POWERS = {
+                nebula: () => { neb = null; enterNebulaStage(); },
                 dust: () => devBecome(DUST.startSize),
                 planet: () => devBecome(1.3e7),   // about Earth
                 gas: () => devBecome(1.4e8),      // about Jupiter
@@ -6703,6 +7887,9 @@
                 blackhole: () => {
                     if (!dust || !dust.blackHole) { devBecome(starSize(110)); goSupernova(REMNANTS.blackhole); }
                 },
+                imbh: () => devBlackHole(1000),
+                smbh: () => devBlackHole(4e6),
+                giantbh: () => devBlackHole(6.5e9),
                 double: () => {
                     if (stage !== 'dust') enterDustStage();
                     if (dust.blackHole) {
@@ -6726,7 +7913,7 @@
             // The dust world has no atoms left in it, so going back down from there
             // starts a fresh map (the only way back)
             const fromDust = (key) => {
-                if (stage !== 'dust') return false;
+                if (stage !== 'dust' && stage !== 'nebula') return false;
                 location.replace(location.pathname + '?devstage=' + encodeURIComponent({ atomic: 'hydrogen', molecular: 'oxygen' }[key] || key));
                 return true;
             };
@@ -6807,7 +7994,7 @@
             return initialPower && runDevPower(initialPower);
         }
         const startedWithDev = initDevPowers(devStage);
-        if (!startAsParticle && !startParams.has('dust') && !startedWithDev) openMenu();
+        if (!startAsParticle && !startAsNebula && !startParams.has('dust') && !startedWithDev) openMenu();
 
         const STEP = LOW_POWER ? 1 / 60 : 1 / 120;
         const MAX_STEPS = LOW_POWER ? 2 : 3; // catch-up steps per frame
