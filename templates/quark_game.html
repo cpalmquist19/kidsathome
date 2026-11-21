@@ -118,6 +118,9 @@
         #giants-btn:hover { background: rgba(30, 55, 120, 0.8); }
         #giants-btn.off, #dustgrow-btn.off { border-color: rgba(200, 200, 210, 0.5); background: rgba(40, 40, 50, 0.65); color: #c8c8d4; }
         body.physics-off #giants-btn { display: block; }
+        #enemies-btn { border: 1px solid #ff8a7a; background: rgba(80, 25, 25, 0.65); color: #ffd6d0; }
+        #enemies-btn:hover { background: rgba(120, 35, 35, 0.8); }
+        #enemies-btn.off { border-color: rgba(200, 200, 210, 0.5); background: rgba(40, 40, 50, 0.65); color: #c8c8d4; }
         #dustgrow-btn { border: 1px solid #d8b890; background: rgba(60, 40, 20, 0.65); color: #f5dcc0; }
         #dustgrow-btn:hover { background: rgba(90, 60, 30, 0.8); }
         body.in-dust #dustgrow-btn { display: none; }
@@ -445,7 +448,8 @@
         <button id="cleanup-btn" type="button">&#129529; Cleanup: OFF</button>
         <button id="rarity-btn" type="button">&#128142; Rarity: ON</button>
         <button id="nebula-btn" type="button" title="Go back to being your nebula, and pick another star">&#9729; Back to your nebula</button>
-        <button id="giants-btn" type="button">&#10024; Ocamathrons: ON</button>
+        <button id="giants-btn" type="button">&#10024; Mystery particles: ON</button>
+        <button id="enemies-btn" type="button">&#9876; Enemies: ON</button>
         <button id="dustgrow-btn" type="button">&#127761; Become dust: ON</button>
         <button id="pick-btn" type="button" title="Start over as any particle you like">&#127922; Pick a particle</button>
         <button id="supernova" type="button" title="Choose what your star becomes">&#128165; Go supernova</button>
@@ -476,6 +480,8 @@
         <button type="button" data-dev="oxygen">Oxygen atom (molecule scale)</button>
         <button type="button" data-dev="ocamathron">Ocamathron (physics OFF)</button>
         <button type="button" data-dev="hiemadecticus">Hiemadecticus (physics OFF)</button>
+        <button type="button" data-dev="zephyr">Zephyr-Philgem (physics OFF)</button>
+        <button type="button" data-dev="zephyrSpawn">Spawn a Zephyr-Philgem nearby (physics OFF)</button>
         <button type="button" data-dev="bigOn">Biggest molecule (physics ON)</button>
         <button type="button" data-dev="bigOff">Biggest molecule (physics OFF)</button>
         <b>Space</b>
@@ -943,6 +949,35 @@
         HIEMADECTICUS.radius = OCAMATHRON.radius / 3;
         OCAMATHRON.rarity = HIEMADECTICUS.rarity = TIER.GODLY; // made up: as far from real life as it gets
         const isGiant = (t) => t === OCAMATHRON || t === HIEMADECTICUS;
+
+        // The Zephyr-Philgem: a mystery particle shaped like a squishy rainbow ring
+        // with two little fins inside (physics off only). It's 1.3145926 times as
+        // wide as a squark, and it has −∞ mass and +∞ mass at the same time: the −∞
+        // pushes everything away, so nothing can ever get to it, and the +∞ pulls
+        // everything in, so nothing can ever get away from it. Everything in the
+        // subatomic world ends up orbiting it. Only the light of an Ocamathron or a
+        // Hiemadecticus can stop it: it splits into three Calabi–Yau manifolds.
+        const ZEPHYR = {
+            id: 'zephyrphilgem', name: 'Zephyr-Philgem', sym: 'ZP', kind: 'mystery',
+            kindLabel: 'Mystery particle (physics off only)', offOnly: true,
+            mass: 0, // −∞ and +∞ at once: there's no number for that, so sums count it as nothing
+            look: flat('#ff3d97', '#ffd0e6', '#8c4fd6'), glow: '#ff7ac0',
+            massLabel: '−∞ and +∞ at the same time!',
+            compareLabel: 'Infinitely lighter AND infinitely heavier',
+            info: {
+                charge: '0',
+                desc: 'A rainbow mystery particle that only exists when physics is off. It has negative infinity mass and positive infinity mass at the same time! The negative infinity pushes everything away, so nothing can ever get to it. The positive infinity pulls everything in, so nothing can ever get away from it. Everything in the subatomic world gets caught orbiting it. Only an Ocamathron or a Hiemadecticus can stop it: if it gets inside the circle of their light, it splits into three Calabi–Yau manifolds that fly apart. Only about 1 in 25 billion new particles is a Zephyr-Philgem.',
+            },
+        };
+        ZEPHYR.radius = 1.3145926 * TYPES.find(t => t.id === 'squark').radius;
+        ZEPHYR.rarity = TIER.GODLY;
+        const ZEPHYR_CHANCE = 1 / 25e9; // each new particle has a 1 in 25 billion chance of being one
+        const ZEPHYR_KEEP = 2.6;        // nothing gets closer than this many of its radii (from its middle)
+        const ZEPHYR_HOLD = 22;         // ...or farther: anything past this gets reeled back in
+        const ZEPHYR_SWIRL = 240;       // orbit speed at the inner edge (slower farther out)
+        const ZEPHYR_REEL = 1200;       // how fast it reels in things that are too far away
+        const ZEPHYR_LAUNCH = 650;      // how fast its three Calabi–Yau manifolds fly apart
+        const ZEPHYR_LAUNCH_TIME = 1.4; // seconds you fly when you're one of them
         const giantPush = (e) => e.type === OCAMATHRON ? OCAMATHRON_PUSH : OCAMATHRON_PUSH / 3;
         const HIEM_COUNT = 3;
         const HIEM_PULL_RANGE = OCAMATHRON.radius * OCAMATHRON_REACH; // 2.5× an Ocamathron's diameter
@@ -1040,7 +1075,7 @@
                 chem: false, formula: undefined, layout: undefined, rot: undefined, rotSpeed: undefined,
                 orbit: undefined, burning: undefined, breakIn: undefined, breakFrom: undefined, breakMax: undefined,
                 breakSpeed: undefined, shard: false, huge: false, falling: false, drawR: undefined, pulseHit: undefined,
-                ck: 0, gone: false,
+                ck: 0, gone: false, launched: false, zOf: null, zTarget: 0,
             };
         }
 
@@ -1142,6 +1177,7 @@
             return e;
         }
         function manageGiants() {
+            manageZephyr();
             const oc = findOcamathron();
             const hiems = freeHiems();
             if (physicsOn || !(stage === 'particles' || stage === 'molecule')) {
@@ -1183,6 +1219,105 @@
             }
         }
         setInterval(manageGiants, 500); // notice deaths quickly (replenish only runs every 2s)
+
+        // --- The Zephyr-Philgem ---
+        let zephyrLaunch = null; // you just split out of one: you fly off for a moment
+        const findZephyr = () => free.find(p => p.type === ZEPHYR);
+        // The one everything is orbiting right now (only in the subatomic world, physics off)
+        function zephyrNow() {
+            if (physicsOn || stage !== 'particles') return null;
+            return player.type === ZEPHYR ? player : findZephyr() || null;
+        }
+        // Mystery particle spawning off, physics on, or not in the subatomic world: it's gone.
+        // There's only ever one, so if you become one, the other one goes away.
+        function manageZephyr() {
+            const z = findZephyr();
+            if (z && (physicsOn || stage !== 'particles' || !giantsOn || player.type === ZEPHYR)) removeFree(z);
+        }
+        // n new particles just spawned: each one had a 1 in 25 billion chance of being a Zephyr-Philgem
+        function rollZephyr(n) {
+            if (!(n > 0) || physicsOn || !giantsOn || stage !== 'particles' || zephyrNow()) return;
+            if (Math.random() >= -Math.expm1(n * Math.log1p(-ZEPHYR_CHANCE))) return;
+            spawnZephyr();
+        }
+        function spawnZephyr(x, y) {
+            if (x === undefined) [x, y] = spawnPoint(ZEPHYR.radius);
+            const z = makeEntity(ZEPHYR, x, y);
+            z.drawR = ZEPHYR.radius * ZEPHYR_KEEP;
+            free.push(z);
+            if (navigator.vibrate) navigator.vibrate([40, 40, 40, 40, 120]);
+            showToast('\ud83c\udf08 A Zephyr-Philgem appeared! (Godly: 1 in 25 billion)',
+                "Everything in the subatomic world is being pulled into orbit around it, and nothing can get to it. Only an Ocamathron's or Hiemadecticus's light can break it!");
+            return z;
+        }
+        // Where something orbiting it moves this step: around it (faster up close),
+        // never closer than its push lets anything get, and reeled in to its orbit
+        // (target: how far out it orbits; by default, wherever it is, but no farther than the edge)
+        function zephyrOrbitStep(e, z, extent, dt, target) {
+            let dx = e.x - z.x, dy = e.y - z.y, d = Math.hypot(dx, dy);
+            if (d < 0.001) { dx = 1; dy = 0; d = 1; }
+            const keep = z.r * ZEPHYR_KEEP, inner = keep + extent, outer = z.r * ZEPHYR_HOLD;
+            const want = Math.max(inner, target ?? Math.min(d, outer));
+            const reel = d > want ? Math.min(ZEPHYR_REEL, (d - want) * 1.5 + 60) : 0;
+            const nd = Math.max(inner, d > want ? Math.max(want, d - reel * dt) : d);
+            const vt = ZEPHYR_SWIRL * Math.sqrt(keep / Math.max(d, keep));
+            const a = Math.atan2(dy, dx) + vt / Math.max(d, 1) * dt;
+            const ca = Math.cos(a), sa = Math.sin(a);
+            const carry = z === player ? 0 : 1; // a free one drifts (you already moved this step)
+            return {
+                x: z.x + z.vx * dt * carry + ca * nd, y: z.y + z.vy * dt * carry + sa * nd,
+                vx: z.vx - sa * vt - ca * reel, vy: z.vy + ca * vt - sa * reel, out: d >= outer, ux: dx / d, uy: dy / d,
+            };
+        }
+        function holdByZephyr(p, z, dt) {
+            if (p.zOf !== z) { // just caught: it orbits where it is, or if it's too far out, somewhere in the disk
+                p.zOf = z;
+                const d = Math.hypot(p.x - z.x, p.y - z.y), keep = z.r * ZEPHYR_KEEP, outer = z.r * ZEPHYR_HOLD;
+                p.zTarget = d <= outer ? d : keep + (outer - keep) * Math.sqrt(Math.random()); // spread evenly over the disk
+            }
+            const o = zephyrOrbitStep(p, z, p.r, dt, p.zTarget);
+            p.x = o.x; p.y = o.y; p.vx = o.vx; p.vy = o.vy;
+        }
+        // You orbit it too (whatever you're made of comes along). You can steer
+        // around it, but you can't get closer, and you can't run away.
+        function holdPlayerByZephyr(z, dt) {
+            const b = clusterBounds();
+            const o = zephyrOrbitStep({ x: b.cx, y: b.cy }, z, b.extent, dt);
+            const sx = o.x - b.cx, sy = o.y - b.cy;
+            for (const q of cluster) { q.x += sx; q.y += sy; }
+            if (o.out) { // trying to get away: moving outward does nothing
+                const vr = player.vx * o.ux + player.vy * o.uy;
+                if (vr > 0) { player.vx -= o.ux * vr; player.vy -= o.uy * vr; }
+            }
+        }
+        // An Ocamathron's or Hiemadecticus's light reached it: it splits into three
+        // Calabi–Yau manifolds that fly apart, a third of a circle apart
+        function splitZephyr(z, oc) {
+            const wasYou = z === player, a0 = Math.atan2(z.y - oc.y, z.x - oc.x);
+            const zx = z.x, zy = z.y, zr = z.r;
+            if (!wasYou) removeFree(z);
+            for (let i = 0; i < 3; i++) {
+                const a = a0 + i * Math.PI * 2 / 3, ux = Math.cos(a), uy = Math.sin(a);
+                const x = zx + ux * zr * 0.6, y = zy + uy * zr * 0.6;
+                if (wasYou && i === 0) { // you're one of the three
+                    becomeParticle(CALABI_YAU, null, true);
+                    player.x = x; player.y = y;
+                    zephyrLaunch = { vx: ux * ZEPHYR_LAUNCH, vy: uy * ZEPHYR_LAUNCH, t: ZEPHYR_LAUNCH_TIME };
+                    playerOrbit = null;
+                    continue;
+                }
+                const e = makeEntity(CALABI_YAU, x, y);
+                e.vx = ux * ZEPHYR_LAUNCH; e.vy = uy * ZEPHYR_LAUNCH;
+                e.launched = true;
+                e.shard = true; // it stays on the map
+                free.push(e);
+            }
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50, 30, 50]);
+            const name = oc.type.name;
+            showToast(wasYou ? 'You split apart!' : oc === player ? 'You broke the Zephyr-Philgem!' : 'A Zephyr-Philgem split apart!', wasYou
+                ? `The ${name}'s light split you into three Calabi–Yau manifolds. You're one of them, flying off!`
+                : "It split into three Calabi–Yau manifolds that flew apart. Nothing is stuck orbiting it anymore!");
+        }
 
         // Hiemadecticus pull on each other when they're close, stick when they
         // touch, and fuse when all three are touching
@@ -1329,7 +1464,7 @@
             const counts = new Map();
             let particles = 0;
             for (const p of free) {
-                if (p.chem || p.huge) continue;
+                if (p.chem || p.huge || p.type === ZEPHYR) continue;
                 counts.set(p.type, (counts.get(p.type) || 0) + 1);
                 particles++;
             }
@@ -1337,7 +1472,7 @@
             const weights = spawnableTypes().reduce((s, t) => s + rarityWeight(t.rarity), 0);
             for (let k = free.length - 1; k >= 0; k--) {
                 const q = free[k];
-                if (q.huge || q.chem || q.orbit || q.bonded || q === selected || q.burning !== undefined || q.breakIn !== undefined) continue;
+                if (q.huge || q.type === ZEPHYR || q.chem || q.orbit || q.bonded || q === selected || q.burning !== undefined || q.breakIn !== undefined) continue;
                 if (q.shard && free.length < SHARD_LIMIT) continue; // pieces of what an Ocamathron broke stay
                 if (!offScreen(q)) continue;
                 // The Ocamathron breaks things into lots of pieces: don't let them pile up forever
@@ -1355,6 +1490,7 @@
                 free.push(makeEntity(type, x, y));
                 announceRare(type.rarity, type.name);
             }
+            rollZephyr(Math.min(missing, fillAll ? Infinity : 60));
         }
         // Normal mode: keep a set number of each kind, like the game always did
         function replenishNormal(fillAll, offScreen) {
@@ -1364,19 +1500,22 @@
             for (let k = free.length - 1; k >= 0; k--) {
                 const q = free[k];
                 const extra = (counts.get(q.type) || 0) - q.type.count * 2;
-                if (extra <= 0 || q.huge || q.chem || q.orbit || q === selected) continue;
+                if (!(extra > 0) || q.huge || q.chem || q.orbit || q === selected) continue;
                 if (q.shard && free.length < SHARD_LIMIT) continue; // pieces of what an Ocamathron broke stay
                 if (!offScreen(q)) continue;
                 free.splice(k, 1);
                 counts.set(q.type, counts.get(q.type) - 1);
             }
+            let made = 0;
             for (const type of spawnableTypes()) {
                 const missing = type.count - (counts.get(type) || 0);
                 for (let i = 0; i < Math.min(missing, fillAll ? Infinity : 5); i++) {
                     const [x, y] = spawnPoint(type.radius);
                     free.push(makeEntity(type, x, y));
+                    made++;
                 }
             }
+            rollZephyr(made);
         }
         setInterval(replenish, 2000);
 
@@ -1941,9 +2080,10 @@
         function spreadPulse(dt) {
             pulse.r += PULSE_SPEED * dt;
             const r2 = pulse.r * pulse.r;
+            for (const e of enemies) if (!e.gone && (e.x - pulse.x) ** 2 + (e.y - pulse.y) ** 2 < r2) destroyEnemy(e); // it destroys enemies
             for (let i = free.length - 1; i >= 0; i--) {
                 const q = free[i];
-                if (!q || q.falling || q.pulseHit === pulse) continue;
+                if (!q || q.falling || q.pulseHit === pulse || q.type === ZEPHYR) continue; // −∞ and +∞ mass: nothing moves it
                 const dx = q.x - pulse.x, dy = q.y - pulse.y, d2 = dx * dx + dy * dy;
                 if (d2 >= r2) continue;
                 q.pulseHit = pulse;
@@ -5352,6 +5492,1282 @@
             ctx.restore();
         }
 
+        // =====================================================================
+        // Enemies: things that attack you at every scale, from antimatter at the
+        // quark scale to rival black holes. A toggle turns them on and off.
+        // They're on the map with physics on or off, but they can only hurt you
+        // with real physics on: with physics off they doze and drift harmlessly.
+        // (The Nullon is the exception: it's a mystery particle, so it only
+        // exists with physics off, and it's wide awake then.)
+        // Anything smaller than you, you can eat. Anything bigger knocks pieces
+        // off you. The Ocamathron's Hyper Pulse (and its light) destroys them.
+        // =====================================================================
+        const ENEMIES_KEY = 'matterEaterEnemies';
+        let enemiesOn = true;
+        try { enemiesOn = localStorage.getItem(ENEMIES_KEY) !== 'off'; } catch (err) { /* keep the default */ }
+        const E_TAU = Math.PI * 2;
+        const SCALE_LABEL = {
+            subatomic: 'Sub-atomic', atomic: 'Atomic', molecule: 'Molecule', dust: 'Dust and planets',
+            star: 'Stars', blackhole: 'Black holes and galaxies', nebula: 'Nebula', mystery: 'Mystery (physics off only)',
+        };
+        // size: how big it is compared to you when it shows up; speed: screen pixels per second
+        const ENEMY_DEFS = {
+            antimatter: { scale: 'subatomic', name: 'Antimatter Hunter', sym: 'ē', color: '#2fd2e2', size: [0.6, 1.4], speed: 170,
+                does: 'Chases you. If it touches you, you both vanish in a flash of light, and you lose a piece',
+                basis: 'Matter and antimatter destroy each other and turn into pure energy (light)' },
+            wboson: { scale: 'subatomic', name: 'W Boson Shifter', sym: 'W', color: '#ff9a3c', size: [0.5, 1.2], speed: 200,
+                does: 'Zaps you and changes what you are made of: an up quark becomes a down quark, or a proton becomes a neutron',
+                basis: 'W bosons carry the weak force, which changes one kind of quark into another. That\'s how radioactive beta decay works' },
+            gluonsnapper: { scale: 'subatomic', name: 'Gluon Snapper', sym: 'g', color: '#ffd84a', size: [0.9, 1.8], speed: 120,
+                does: 'A stretchy string that whips around and snaps the gluon bonds holding your group together',
+                basis: 'Quarks are tied together by the strong force like a string. Pull hard enough and the string snaps, making new particles' },
+            cosmicray: { scale: 'subatomic', scales: ['subatomic', 'atomic'], name: 'Cosmic Ray Bolt', sym: 'cr', color: '#bfe4ff', event: true, eatable: false,
+                does: 'A flashing line warns you, then a super-fast bolt streaks across. If it hits you, a piece gets knocked off',
+                basis: 'Cosmic rays are particles from exploding stars that hit Earth at nearly the speed of light' },
+            ionizer: { scale: 'atomic', name: 'Ionizer', sym: 'γ', color: '#b36bff', size: [0.35, 0.7], speed: 900,
+                does: 'A UV or X-ray photon that charges up, then dashes at you and knocks off an electron',
+                basis: 'Ultraviolet light and X-rays have enough energy to knock electrons off atoms. That\'s called ionization' },
+            electronthief: { scale: 'atomic', name: 'Electron Thief', sym: 'F', color: '#c7ec5a', size: [0.7, 1.4], speed: 150,
+                does: 'A fluorine atom that chases you, steals one of your electrons, and runs away with it',
+                basis: 'Fluorine grabs electrons harder than any other element' },
+            neutronbomber: { scale: 'atomic', name: 'Neutron Bomber', sym: 'n', color: '#9aa0ad', size: [0.5, 1.0], speed: 160,
+                does: 'Sneaks an extra neutron into your nucleus. A moment later you\'re unstable and decay into a lighter element',
+                basis: 'Extra neutrons can make a nucleus radioactive, so it decays by shooting out pieces of itself' },
+            radioactive: { scale: 'atomic', name: 'Radioactive Atom', sym: '☢', color: '#62f06a', size: [0.8, 1.5], speed: 90,
+                does: 'Keeps its distance and shoots alpha and beta particles at you. Each hit chips off a piece',
+                basis: 'Radioactive atoms like uranium give off alpha particles (helium nuclei) and beta particles (fast electrons)' },
+            decayshot: { scale: 'atomic', hidden: true, name: 'Radiation', sym: 'α', color: '#ff7a8a', eatable: false,
+                does: 'An alpha or beta particle shot by a radioactive atom. It chips off a piece if it hits you',
+                basis: 'Alpha particles are helium nuclei, and beta particles are fast electrons' },
+            freeradical: { scale: 'molecule', name: 'Free Radical', sym: 'OH', color: '#ff5a4a', size: [0.5, 1.1], speed: 230,
+                does: 'A hyperactive OH molecule that chases you and rips an atom off. Then it calms down into water',
+                basis: 'Free radicals have an unpaired electron, so they grab atoms from other molecules. They damage molecules in your body' },
+            enzyme: { scale: 'molecule', name: 'Enzyme Scissors', sym: 'E', color: '#6fd08a', size: [1.2, 2.0], speed: 100,
+                does: 'A big protein that chomps one of your bonds and cuts your molecule in two. You keep the bigger half',
+                basis: 'Enzymes are proteins that cut molecules apart, like the ones in your stomach that digest food' },
+            oxidizer: { scale: 'molecule', name: 'Oxidizer', sym: 'O₃', color: '#ff8a3a', size: [0.6, 1.2], speed: 150,
+                does: 'An ozone molecule that oxidizes one of your atoms and carries it away, a bit like rusting you',
+                basis: 'Oxidation is when oxygen grabs onto atoms. It\'s what makes iron rust and fires burn' },
+            heatpocket: { scale: 'molecule', name: 'Heat Pocket', sym: '∿', color: '#ff6a2a', size: [2.2, 3.4], speed: 25, eatable: false, zone: true,
+                does: 'A hot zone. Stay in it too long and atoms shake loose from your molecule',
+                basis: 'Heat makes atoms jiggle faster and faster, until bonds break' },
+            asteroid: { scale: 'dust', name: 'Asteroid Swarm', sym: '☄', color: '#9a8f86', size: [0.35, 1.3], speed: 260,
+                does: 'A group of rocks flying at you. Small ones you can eat, but big ones chip mass off you',
+                basis: 'Asteroids crash into planets all the time. The craters on the Moon are from asteroid impacts' },
+            bully: { scale: 'dust', name: 'Bully Planet', sym: 'B', color: '#b0603a', size: [1.6, 2.8], speed: 90,
+                does: 'A bigger planet whose gravity pulls you in so it can gobble your mass. Outrun it, or grow big enough to eat it!',
+                basis: 'Gravity: the bigger something is, the harder it pulls' },
+            solarflare: { scale: 'dust', name: 'Solar Flare', sym: '☀', color: '#ffa63a', event: true, eatable: false,
+                does: 'A wave of hot gas from a nearby star. It shoves you and strips off some of your mass',
+                basis: 'Stars blow out a wind of hot gas, and flares send out huge bursts of it' },
+            comet: { scale: 'dust', name: 'Comet', sym: 'C', color: '#bfe8ff', size: [0.5, 1.3], speed: 450,
+                does: 'Zooms by with its glowing tail. If it hits you, it knocks you off course and chips off mass',
+                basis: 'Comets are icy rocks. Near a star their ice boils off into a long glowing tail' },
+            vampire: { scale: 'star', name: 'Vampire Star', sym: 'V', color: '#c8283c', size: [0.7, 1.4], speed: 120,
+                does: 'A companion star that latches on and sucks a stream of gas off you, growing as it feeds',
+                basis: 'In close pairs of stars, one star can pull gas off the other' },
+            roguebh: { scale: 'star', name: 'Rogue Black Hole', sym: '', color: '#ff8a3a', size: [0.6, 1.6], speed: 130,
+                does: 'Hunts you. Its pull gets stronger the closer you get, and if it catches you it takes a big bite',
+                basis: 'Some black holes wander through space on their own, with no star to orbit' },
+            grb: { scale: 'star', name: 'Gamma-Ray Burst', sym: 'γ', color: '#d8b8ff', event: true, eatable: false,
+                does: 'A thin line warns you, then a powerful beam sweeps across space. Get out of the way!',
+                basis: 'Gamma-ray bursts are the brightest explosions in the universe, shooting out two narrow beams' },
+            supernova: { scale: 'star', name: 'Supernova Shockwave', sym: '✷', color: '#ffe6a0', event: true, eatable: false,
+                does: 'A nearby star flickers, then explodes! The shockwave blows you away and strips off your outer layers',
+                basis: 'When a giant star runs out of fuel it explodes as a supernova, sending a shockwave through space' },
+            rivalbh: { scale: 'blackhole', name: 'Rival Black Hole', sym: '', color: '#b06bff', size: [0.6, 1.8], speed: 120,
+                does: 'A tug-of-war: you pull on each other. If you touch, the heavier black hole wins and takes a big bite of the other',
+                basis: 'When two black holes meet, they spiral together and merge into one bigger black hole' },
+            quasarjet: { scale: 'blackhole', name: 'Quasar Jet', sym: 'Q', color: '#9fd8ff', event: true, eatable: false,
+                does: 'A rival black hole fires twin jets that sweep across space, blasting stars out of your star cluster or galaxy',
+                basis: 'Quasars are supermassive black holes feeding so fast they shoot jets of matter across their whole galaxy' },
+            photoevap: { scale: 'nebula', name: 'Photoevaporator', sym: 'O', color: '#9fc4ff', eatable: false,
+                does: 'A hot blue star near your edge whose light boils your gas away',
+                basis: 'Light from hot young stars erodes gas clouds. That\'s how the Pillars of Creation are being worn away' },
+            nebshock: { scale: 'nebula', name: 'Supernova Shockwave', sym: '✷', color: '#bff0ff', event: true, eatable: false,
+                does: 'A shockwave from a faraway supernova blasts gas out of your nebula, but the squeeze also sets off a new star',
+                basis: 'Supernova shockwaves squeeze gas clouds, which can trigger new stars to form' },
+            nullon: { scale: 'mystery', name: 'Nullon', sym: 'Ø', color: '#7a3cff', eatable: false,
+                does: 'Pulls in everything near it and drinks up its mass: watch things shrink and stream into it! It drains you too. Only an Ocamathron\'s light or Hyper Pulse can destroy it, and then everything it stole bursts back out',
+                basis: 'Made up! It\'s a mystery particle, so it only exists with physics off' },
+        };
+        for (const [id, def] of Object.entries(ENEMY_DEFS)) Object.assign(def, { id, kind: 'enemy' });
+        // What roams each scale, and what sweeps through now and then
+        const ENEMY_CREATURES = {
+            subatomic: ['antimatter', 'wboson', 'gluonsnapper'], atomic: ['ionizer', 'electronthief', 'neutronbomber', 'radioactive'],
+            molecule: ['freeradical', 'enzyme', 'oxidizer', 'heatpocket'], dust: ['asteroid', 'bully', 'comet'],
+            star: ['vampire', 'roguebh'], blackhole: ['rivalbh'], nebula: ['photoevap'],
+        };
+        const ENEMY_EVENTS = {
+            subatomic: ['cosmicray'], atomic: ['cosmicray'], molecule: [], dust: ['solarflare'],
+            star: ['grb', 'supernova'], blackhole: ['quasarjet'], nebula: ['nebshock'],
+        };
+        const ENEMY_MAX = { blackhole: 2, nebula: 1 };
+
+        const enemies = [];
+        let enemyStage = null, enemyTick = 0, creatureIn = 3, eventIn = 15, nullonIn = 8;
+        let hurtGrace = 0, hurtFlash = -1e9, enemyKnock = null, enemyDecay = null;
+        const enemyBooms = [];
+
+        function enemyScale() {
+            if (stage === 'particles') return player.atom ? 'atomic' : 'subatomic';
+            if (stage === 'molecule') return 'molecule';
+            if (stage === 'nebula') return 'nebula';
+            if (dust.blackHole) return 'blackhole';
+            return remnantOf(player) || dustTierOf(player.r) >= T_STAR ? 'star' : 'dust';
+        }
+        const enemyPx = () => 1 / camera.zoom; // world units in one screen pixel
+        const screenHalf = () => Math.hypot(window.innerWidth, window.innerHeight) / 2 / camera.zoom;
+        const boxed = () => stage === 'particles' || stage === 'molecule'; // these worlds have walls
+        // Where you are and how big you are (your whole group or molecule)
+        function youNow() {
+            if (stage === 'dust' || stage === 'nebula') return { x: player.x, y: player.y, r: player.r };
+            const b = clusterBounds();
+            return { x: b.cx, y: b.cy, r: Math.max(player.r, b.extent) };
+        }
+        const enemyLive = (e) => e.kind === 'nullon' ? !physicsOn : physicsOn;
+        const canEat = (e, you) => e.def.eatable !== false && !e.event &&
+            (stage === 'dust' && dust.blackHole && e.kg ? e.kg < dust.bhKg * 0.95 : e.r < you.r * 0.9);
+        const rgbaOf = (hex, a) => { const [r, g, b] = rgbOf(hex); return `rgba(${r}, ${g}, ${b}, ${a})`; };
+        function segDist(x, y, ax, ay, bx, by) {
+            const vx = bx - ax, vy = by - ay, l2 = vx * vx + vy * vy || 1;
+            const t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / l2));
+            return Math.hypot(x - ax - vx * t, y - ay - vy * t);
+        }
+        // A message that floats up off something (never skipped, unlike floatText)
+        const say = (p, text) => floaters.push({ x: p.x, y: p.y - p.r - 10, text, born: performance.now() });
+
+        function enemySpawnPoint() {
+            const half = screenHalf();
+            let x = player.x, y = player.y;
+            for (let t = 0; t < 16; t++) {
+                const a = rand(0, E_TAU), d = half * rand(1.1, 1.5);
+                x = player.x + Math.cos(a) * d; y = player.y + Math.sin(a) * d;
+                if (!boxed() || (x > 0 && y > 0 && x < WORLD.width && y < WORLD.height)) return [x, y];
+            }
+            return [Math.max(50, Math.min(WORLD.width - 50, x)), Math.max(50, Math.min(WORLD.height - 50, y))];
+        }
+        function bounceInWorld(e) {
+            if (e.x < e.r) { e.x = e.r; e.vx = Math.abs(e.vx); }
+            if (e.x > WORLD.width - e.r) { e.x = WORLD.width - e.r; e.vx = -Math.abs(e.vx); }
+            if (e.y < e.r) { e.y = e.r; e.vy = Math.abs(e.vy); }
+            if (e.y > WORLD.height - e.r) { e.y = WORLD.height - e.r; e.vy = -Math.abs(e.vy); }
+        }
+
+        // --- Spawning ---
+        function spawnEnemy(kind, near) {
+            const def = ENEMY_DEFS[kind], you = youNow(), px = enemyPx(), half = screenHalf();
+            const make = (x, y, r) => ({ kind, def, type: def, x, y, vx: 0, vy: 0, r, age: 0, cool: 0, event: !!def.event,
+                gone: false, seed: rand(0, 1000), heat: 0, drainT: 0, state: 0, t: 0, life: Infinity });
+            if (def.event) { // these come from out of sight, whatever you ask
+                const e = make(player.x, player.y, 10 * px);
+                const a = rand(0, E_TAU), ux = Math.cos(a), uy = Math.sin(a);
+                if (kind === 'cosmicray') {
+                    const off = rand(-0.25, 0.25) * half, ax = you.x - uy * off, ay = you.y + ux * off;
+                    Object.assign(e, { x: ax - ux * half * 1.4, y: ay - uy * half * 1.4, ux, uy, len: half * 2.8, spd: 2600 * px, warn: 1, trail: 260 * px });
+                } else if (kind === 'solarflare' || kind === 'nebshock') { // speeds and widths are on-screen pixels (see ringStep)
+                    Object.assign(e, { x: you.x + ux * half * 1.6, y: you.y + uy * half * 1.6, R: 0, spdPx: kind === 'nebshock' ? 800 : 700,
+                        bandPx: 90, endF: 3.2 });
+                } else if (kind === 'supernova') {
+                    Object.assign(e, { x: you.x + ux * half * 0.55, y: you.y + uy * half * 0.55, sr: you.r * rand(0.6, 1), warn: 2.2, R: 0,
+                        spdPx: 900, bandPx: 100, endF: 2.2, flash: 0 });
+                } else { // a beam (a gamma-ray burst, or a quasar's twin jets) from far away
+                    const sx = you.x + ux * half * 1.7, sy = you.y + uy * half * 1.7;
+                    Object.assign(e, { x: sx, y: sy, ang: Math.atan2(you.y - sy, you.x - sx) + rand(-0.22, 0.22),
+                        spin: rand(0.12, 0.2) * (Math.random() < 0.5 ? -1 : 1), warn: 1.4, on: kind === 'quasarjet' ? 3 : 2.6,
+                        widthPx: kind === 'quasarjet' ? 50 : 34, width: 0, len: 0, twin: kind === 'quasarjet', tick: 0 });
+                }
+                enemies.push(e);
+                return e;
+            }
+            const r = kind === 'nullon' ? Math.max(30, you.r) * rand(1, 1.3)
+                : kind === 'photoevap' ? player.r * 0.07
+                : def.size ? you.r * rand(def.size[0], def.size[1]) : you.r * 0.3;
+            let x, y;
+            if (near) {
+                const a = rand(0, E_TAU), d = you.r * 3 + r * 2 + 120 * px;
+                x = you.x + Math.cos(a) * d; y = you.y + Math.sin(a) * d;
+            } else [x, y] = enemySpawnPoint();
+            if (kind === 'asteroid') { // a whole swarm, all heading your way
+                const n = 5 + Math.floor(Math.random() * 3), a = Math.atan2(you.y - y, you.x - x);
+                let first = null;
+                for (let i = 0; i < n; i++) {
+                    const e = make(x + rand(-3, 3) * you.r, y + rand(-3, 3) * you.r, you.r * rand(def.size[0], def.size[1]));
+                    const aa = a + rand(-0.12, 0.12), s = def.speed * px * rand(0.85, 1.15);
+                    e.vx = Math.cos(aa) * s; e.vy = Math.sin(aa) * s;
+                    e.life = 30;
+                    e.lumps = Array.from({ length: 9 }, () => rand(0.75, 1.05));
+                    e.rot = rand(0, E_TAU); e.rotSpeed = rand(-1, 1);
+                    enemies.push(e);
+                    first = first || e;
+                }
+                return first;
+            }
+            const e = make(x, y, r);
+            if (kind === 'ionizer') e.t = rand(0.5, 1.5);
+            if (kind === 'radioactive') e.t = 1.5;
+            if (kind === 'heatpocket') e.life = 45;
+            if (kind === 'photoevap') { e.ang = rand(0, E_TAU); e.life = 45; }
+            if (kind === 'comet') {
+                const a = Math.atan2(you.y - y, you.x - x) + rand(-0.3, 0.3);
+                e.vx = Math.cos(a) * def.speed * px; e.vy = Math.sin(a) * def.speed * px;
+                e.life = 25;
+            }
+            if (kind === 'rivalbh') {
+                e.kg = dust.bhKg * Math.exp(rand(Math.log(0.3), Math.log(3)));
+                e.r = dustRForSize(eventHorizonM(e.kg));
+            }
+            if (kind === 'nullon') { e.r0 = e.r; e.stolen = []; e.victims = []; }
+            enemies.push(e);
+            return e;
+        }
+        function removeEnemy(e) {
+            e.gone = true;
+            if (selected === e) hideInfo();
+        }
+        function clearEnemies() {
+            if (selected && selected.type && selected.type.kind === 'enemy') hideInfo();
+            enemies.length = 0;
+            enemyKnock = null;
+            enemyDecay = null;
+        }
+        function compactEnemies() {
+            let w = 0;
+            for (const e of enemies) if (!e.gone) enemies[w++] = e;
+            enemies.length = w;
+        }
+        function boom(e, color) {
+            enemyBooms.push({ x: e.x, y: e.y, r: Math.max(e.r, 8 / camera.zoom), born: performance.now(), color: color || e.def.color });
+        }
+
+        // Keep a few enemies around you (the right ones for your scale), and
+        // send something sweeping through now and then
+        function manageEnemies() {
+            if (stage !== enemyStage) { // a new world: the old enemies don't belong here
+                clearEnemies();
+                enemyStage = stage;
+                creatureIn = 3;
+                eventIn = rand(12, 20);
+            }
+            if (!enemiesOn) { if (enemies.length) clearEnemies(); return; }
+            // (measured by your size too, so zooming way in doesn't make nearby enemies count as far away)
+            const scale = enemyScale(), half = Math.max(screenHalf(), youNow().r * 8);
+            const nullonOk = !physicsOn && giantsOn && boxed();
+            for (const e of enemies) {
+                if (e.gone || e.event) continue;
+                const d = Math.hypot(e.x - player.x, e.y - player.y);
+                const wrong = e.kind === 'nullon' ? !nullonOk : e.def.scale !== scale && e.kind !== 'decayshot';
+                if (d > half * 4 + e.r || (wrong && (d > half * 1.05 + e.r || e.kind === 'nullon'))) removeEnemy(e);
+            }
+            creatureIn -= 0.5;
+            if (creatureIn <= 0) {
+                creatureIn = rand(4, 9);
+                const kinds = ENEMY_CREATURES[scale] || [];
+                const have = enemies.filter(e => !e.gone && !e.event && e.def.scale === scale && e.kind !== 'decayshot').length;
+                if (kinds.length && have < (ENEMY_MAX[scale] ?? (LOW_POWER ? 2 : 3))) spawnEnemy(pickAny(kinds));
+            }
+            eventIn -= 0.5;
+            if (eventIn <= 0) {
+                eventIn = rand(20, 35);
+                const kinds = ENEMY_EVENTS[scale] || [];
+                if (kinds.length) spawnEnemy(pickAny(kinds));
+            }
+            nullonIn -= 0.5;
+            if (nullonOk && nullonIn <= 0 && !enemies.some(e => !e.gone && e.kind === 'nullon')) {
+                nullonIn = rand(25, 45);
+                spawnEnemy('nullon');
+            }
+            compactEnemies();
+        }
+
+        // --- Losing pieces ---
+        // Throw something off you, away from whatever hit you
+        function fling(q, e, speed = 420) {
+            const you = youNow(), a = Math.atan2(you.y - e.y, you.x - e.x) + rand(-0.7, 0.7);
+            const out = you.r + q.r + 8 / camera.zoom;
+            q.x = you.x + Math.cos(a) * out; q.y = you.y + Math.sin(a) * out;
+            const s = speed / camera.zoom;
+            q.vx = Math.cos(a) * s; q.vy = Math.sin(a) * s;
+            return q;
+        }
+        function knockYou(e, speed) { // a shove that carries you off for a moment
+            const you = youNow(), a = Math.atan2(you.y - e.y, you.x - e.x);
+            enemyKnock = { vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, t: 0.6, T: 0.6 };
+            playerOrbit = null;
+        }
+        // An electron, neutron or proton knocked off your atom
+        function knockFromAtom(e) {
+            const a = player.atom;
+            let id;
+            if (a.E > 0) { a.E--; id = 'electron'; }
+            else if (a.N > 0 && (a.Z <= 1 || a.N > minNeutrons(a.Z))) { a.N--; id = 'neutron'; }
+            else if (a.Z > 1) { a.Z--; id = 'proton'; }
+            else if (a.N > 0) { a.N--; id = 'neutron'; }
+            else return null;
+            refreshAtom();
+            const q = makeEntity(TYPES.find(t => t.id === id), player.x, player.y);
+            free.push(fling(q, e, id === 'electron' ? 650 : 420));
+            q.shard = true;
+            return `−1 ${id}`;
+        }
+        // Take these atoms out of your molecule, and anything left hanging on by nothing
+        function dropAtoms(list, e) {
+            const out = new Set(list), keep = new Set([player]), todo = [player];
+            while (todo.length) {
+                const c = todo.pop();
+                for (const [x, y] of bonds) {
+                    const o = x === c ? y : y === c ? x : null;
+                    if (o && !out.has(o) && !keep.has(o)) { keep.add(o); todo.push(o); }
+                }
+            }
+            const drop = cluster.filter(m => !keep.has(m));
+            for (let k = bonds.length - 1; k >= 0; k--) {
+                const [a, b] = bonds[k];
+                if (keep.has(a) && keep.has(b)) continue;
+                if (keep.has(a)) a.deg = Math.max(0, (a.deg || 0) - 1);
+                if (keep.has(b)) b.deg = Math.max(0, (b.deg || 0) - 1);
+                bonds.splice(k, 1);
+            }
+            for (const m of drop) {
+                cluster.splice(cluster.indexOf(m), 1);
+                const atom = makeChemEntity(ELEMENTS[m.Z - 1][0], m.x, m.y);
+                atom.shard = true;
+                free.push(fling(atom, e, 260));
+            }
+            refreshMolecule(false);
+            return drop.length;
+        }
+        function knockFromMolecule(e) {
+            if (stuck.length) { // a molecule that was stuck to you comes loose first
+                const s = stuck.pop();
+                free.push(fling(s, e, 260));
+                updateStats();
+                return `−1 ${s.type.name}`;
+            }
+            if (cluster.length < 2) return null;
+            // an atom on the end of a chain (any atom, if it's all rings), nearest whatever hit you
+            const links = new Map(cluster.map(m => [m, 0]));
+            for (const [a, b] of bonds) { links.set(a, links.get(a) + 1); links.set(b, links.get(b) + 1); }
+            const others = cluster.filter(m => m !== player), ends = others.filter(m => links.get(m) <= 1);
+            const near = (m) => Math.hypot(m.x - e.x, m.y - e.y);
+            const m = (ends.length ? ends : others).reduce((best, c) => near(c) < near(best) ? c : best);
+            const n = dropAtoms([m], e);
+            return `−${n} atom${n > 1 ? 's' : ''}`;
+        }
+        // Enzyme scissors: snip a bond that splits your molecule in two (one at
+        // random, so it's usually a small piece), and you keep the bigger half
+        function cutMolecule(e) {
+            if (stage !== 'molecule' || cluster.length < 3) return losePiece(e);
+            const cuts = [], next = new Map(cluster.map(m => [m, []])); // each atom's bonds: [neighbor, bond number]
+            bonds.forEach(([a, b], k) => { next.get(a)?.push([b, k]); next.get(b)?.push([a, k]); });
+            bonds.forEach((_, k) => {
+                // everything still joined to you if bond k is cut
+                const side = new Set([player]), todo = [player];
+                while (todo.length) {
+                    for (const [o, j] of next.get(todo.pop()) || []) {
+                        if (j !== k && !side.has(o)) { side.add(o); todo.push(o); }
+                    }
+                }
+                const other = cluster.length - side.size;
+                if (other >= 1 && other <= side.size) cuts.push(side);
+            });
+            if (!cuts.length) return knockFromMolecule(e);
+            const keep = pickAny(cuts), n = dropAtoms(cluster.filter(m => !keep.has(m)), e);
+            return `Snip! −${n} atom${n > 1 ? 's' : ''}`;
+        }
+        // Something hits you: you lose a piece (your group, atom or molecule gets smaller)
+        function losePiece(e) {
+            if (stage === 'molecule') return knockFromMolecule(e);
+            if (stage !== 'particles') return null;
+            if (cluster.length > 1) { // the last quark to join your group flies off
+                forming = null;
+                const m = cluster.pop();
+                m.bonded = false;
+                for (let k = bonds.length - 1; k >= 0; k--) if (bonds[k][0] === m || bonds[k][1] === m) bonds.splice(k, 1);
+                free.push(fling(m, e));
+                updateStats();
+                return `−1 ${lowerName(m.type.name)}`;
+            }
+            if (player.parts && player.parts.length > 1) { // physics off: a made-up particle loses one of its parts
+                const part = player.parts.pop(), t = mixedTypeFor(player.parts);
+                player.type = t; player.inner = t.inner; player.r = t.radius; player.mass = player.r * player.r;
+                const q = makeEntity(part.type, player.x, player.y);
+                if (part.color) q.color = part.color;
+                free.push(fling(q, e));
+                updateStats();
+                return `−1 ${lowerName(part.type.name)}`;
+            }
+            const a = player.atom;
+            if (a && a.Z + a.N + a.E > 1) return knockFromAtom(e);
+            // a proton, neutron or other hadron: it breaks into its quarks
+            if (a || player.type.kind === 'hadron' || player.type.kind === 'nucleus') return blastApart(e, e.def.name) ? 'Broken apart!' : null;
+            return null;
+        }
+        // In space you lose mass (and in a nebula, gas)
+        function loseMass(e, frac) {
+            const pct = frac * 100, txt = pct < 2 ? pct.toFixed(1) : Math.round(pct);
+            if (stage === 'nebula') {
+                if (neb.gasSuns < 5) return null;
+                neb.gasSuns *= 1 - frac;
+                neb.r0 = Math.max(NEB_R * 0.35, neb.r0 * Math.sqrt(1 - frac));
+                updateStats();
+                return `−${txt}% of your gas`;
+            }
+            if (dust.blackHole) {
+                const min = 3 * SUN_KG;
+                if (dust.bhKg <= min) return null;
+                dust.bhKg = Math.max(min, dust.bhKg * (1 - frac));
+                sizeRemnant(player, REMNANTS.blackhole, dust.bhKg);
+            } else if (player.remnant) {
+                player.remnantKg *= 1 - frac;
+                sizeRemnant(player, player.remnant, player.remnantKg);
+            } else {
+                if (player.r <= dust.r0 * 1.01) return null;
+                const before = dustTierOf(player.r), chunk = player.r * Math.sqrt(frac);
+                player.r = Math.max(dust.r0, player.r * Math.sqrt(1 - frac));
+                player.mass = player.r * player.r;
+                const tier = dustTierOf(player.r);
+                if (tier !== before) {
+                    dust.tier = tier;
+                    player.type = DUST_TYPES[tier];
+                    player.look = tier >= T_DWARF ? pickDustLook(tier, player.r) : DUST_LOOKS[0];
+                    showToast(`You shrank into ${aOrAn(player.type.name)} ${player.type.name.toLowerCase()}!`,
+                        `The ${e.def.name.toLowerCase()} knocked a lot off you. Eat things smaller than you to grow back!`);
+                } else if (tier === T_STAR) player.look = starLookFor(dustRealSize(player.r));
+                // a chunk of you flies off (fast, and too hot to swallow straight back for a moment)
+                const bit = fling(makeDustEntity(chunk, player.x, player.y), e, 650);
+                bit.rocheGrace = 2.5;
+                free.push(bit);
+            }
+            updateStats();
+            updateSupernovaButton();
+            if (selected === player) showInfo(player);
+            return `−${txt}% mass`;
+        }
+        // Hurt by an enemy. Returns whether you lost anything.
+        function hurt(e, o = {}) {
+            if (player.type.kind === 'mystery') return false; // giants and the Zephyr-Philgem shrug it off
+            if (!o.noGrace) {
+                if (hurtGrace > 0) return false;
+                hurtGrace = 1.1; // a moment to get away before the next hit
+            }
+            if (!o.quiet) hurtFlash = performance.now(); // (slow drains have their own streams instead of a flash)
+            const lost = o.how ? o.how() : stage === 'dust' || stage === 'nebula' ? loseMass(e, o.frac ?? 0.06) : losePiece(e);
+            if (!lost && boxed()) knockYou(e, 380 / camera.zoom); // nothing to lose: you just get knocked back
+            const text = lost ? `${o.verb ? o.verb + ' ' : ''}${lost}` : `The ${e.def.name.toLowerCase()} hit you!`;
+            if (o.quiet) floatText(player, text); else say(player, text);
+            if (lost && !o.quiet && navigator.vibrate) navigator.vibrate(40);
+            return !!lost;
+        }
+        // The W boson's zap: one kind of quark turns into another (the weak force)
+        const WEAK_NEXT = { up: 'down', down: 'up', strange: 'up', charm: 'strange', bottom: 'charm', top: 'bottom' };
+        function weakFlip() {
+            const a = player.atom;
+            if (stage === 'particles' && a) {
+                if (a.Z >= 1) {
+                    a.Z--; a.N++;
+                    if (a.E > a.Z) a.E = a.Z;
+                    refreshAtom();
+                    return `It turned one of your protons into a neutron (that's beta decay). You're ${aOrAn(player.type.name)} ${lowerName(player.type.name)} now`;
+                }
+                if (a.N >= 1) { a.N--; a.Z++; refreshAtom(); return `It turned a neutron into a proton. You're ${aOrAn(player.type.name)} ${lowerName(player.type.name)} now`; }
+                return null;
+            }
+            if (stage !== 'particles') return null;
+            const quarks = cluster.filter(q => isQuarkKind(q.type) && WEAK_NEXT[q.type.id.replace(/^anti/, '')]);
+            if (!quarks.length) return null;
+            const q = pickAny(quarks), anti = q.type.id.startsWith('anti');
+            const was = q.type.name, nt = TYPES.find(t => t.id === (anti ? 'anti' : '') + WEAK_NEXT[q.type.id.replace(/^anti/, '')]);
+            q.type = nt;
+            q.r = nt.radius;
+            q.mass = q.r * q.r;
+            updateStats();
+            if (selected === player) showInfo(player);
+            return `Your ${lowerName(was)} turned into ${aOrAn(nt.name)} ${lowerName(nt.name)}!`;
+        }
+        // You ate it! In space, you grow
+        function eatEnemy(e) {
+            removeEnemy(e);
+            boom(e, '#9dff9d');
+            say(player, `You ate the ${e.def.name.toLowerCase()}!`);
+            if (stage === 'dust') eatDust({ dust: true, r: e.r, kg: e.kg ?? 1330 * dustVolume(dustRealSize(e.r)) });
+        }
+        // The Hyper Pulse (or an Ocamathron's light) destroys it. A Nullon lets go
+        // of everything it stole.
+        function destroyEnemy(e) {
+            if (e.gone) return;
+            removeEnemy(e);
+            boom(e, '#ffffff');
+            if (e.kind === 'nullon') {
+                for (const s of e.stolen.slice(0, 30)) {
+                    const q = s.formula ? makeChemEntity(s.formula, e.x, e.y) : makeEntity(s.type, e.x, e.y);
+                    if (s.color) q.color = s.color;
+                    const a = rand(0, E_TAU), sp = rand(200, 420) / camera.zoom;
+                    q.x = e.x + Math.cos(a) * e.r; q.y = e.y + Math.sin(a) * e.r;
+                    q.vx = Math.cos(a) * sp; q.vy = Math.sin(a) * sp;
+                    q.shard = true;
+                    free.push(q);
+                }
+                say(e, `The Nullon burst! ${e.stolen.length ? 'Everything it stole flew back out' : ''}`);
+            } else say(e, `${e.def.name} destroyed!`);
+        }
+
+        // --- How each enemy moves ---
+        function wander(e, dt, px) {
+            e.wa = (e.wa ?? rand(0, E_TAU)) + rand(-1.5, 1.5) * dt;
+            const s = 30 * px, k = 1 - Math.exp(-1.5 * dt);
+            e.vx += (Math.cos(e.wa) * s - e.vx) * k;
+            e.vy += (Math.sin(e.wa) * s - e.vy) * k;
+        }
+        // Chase you, or run away if you're big enough to eat it (physics off: doze)
+        function hunt(e, you, dt, px, live, speed = e.def.speed) {
+            if (!live) return wander(e, dt, px);
+            const dx = you.x - e.x, dy = you.y - e.y, d = Math.hypot(dx, dy) || 1;
+            const s = speed * px * (canEat(e, you) ? -0.6 : 1), k = 1 - Math.exp(-2.5 * dt);
+            e.vx += (dx / d * s - e.vx) * k;
+            e.vy += (dy / d * s - e.vy) * k;
+        }
+        // Circle around you at a distance
+        function hover(e, you, dt, px, want, speed) {
+            const dx = e.x - you.x, dy = e.y - you.y, d = Math.hypot(dx, dy) || 1;
+            const radial = (want - d) * 2, tang = speed * 0.5 * px;
+            let vx = dx / d * radial - dy / d * tang, vy = dy / d * radial + dx / d * tang;
+            const cap = speed * px, s = Math.hypot(vx, vy);
+            if (s > cap) { vx *= cap / s; vy *= cap / s; }
+            const k = 1 - Math.exp(-3 * dt);
+            e.vx += (vx - e.vx) * k;
+            e.vy += (vy - e.vy) * k;
+        }
+        // Its gravity drags you toward it (you can still get away if you try)
+        function pullYou(e, you, dt, px, range, strength) {
+            const dx = e.x - you.x, dy = e.y - you.y, d = Math.hypot(dx, dy) || 1;
+            if (d > range || playerOrbit) return;
+            const v = strength * px * (1 - d / range) * dt;
+            for (const q of cluster) { q.x += dx / d * v; q.y += dy / d * v; }
+        }
+        // Rings that sweep past (flares, shockwaves): they spread at the same speed
+        // on screen however far you're zoomed. Returns false once it's gone.
+        function ringStep(e, dt, px) {
+            e.band = e.bandPx * px;
+            e.R += e.spdPx * px * dt;
+            if (e.R > Math.max(screenHalf(), player.r * 10) * e.endF) { removeEnemy(e); return false; }
+            return true;
+        }
+        // ...and did it just reach you?
+        function ringReaches(e, you) {
+            return !e.hit && Math.abs(Math.hypot(you.x - e.x, you.y - e.y) - e.R) < e.band / 2 + you.r;
+        }
+        function stepNullon(e, dt, you, px, live) {
+            if (!live) { removeEnemy(e); return; }
+            const dx = you.x - e.x, dy = you.y - e.y, d = Math.hypot(dx, dy) || 1;
+            const k = 1 - Math.exp(-dt);
+            e.vx += (dx / d * 35 * px - e.vx) * k; e.vy += (dy / d * 35 * px - e.vy) * k; // drifts your way
+            e.rot = (e.rot || 0) + dt * 1.2;
+            // Everything nearby gets pulled in and shrinks as its mass streams into the Nullon
+            const R = e.r * 6, eaten = [];
+            e.victims.length = 0;
+            for (const q of free) {
+                const qx = e.x - q.x, qy = e.y - q.y;
+                if (Math.abs(qx) > R || Math.abs(qy) > R) continue;
+                if (q.huge || q.type === ZEPHYR || q.orbit || q.falling || q.burning !== undefined) continue;
+                const qd = Math.hypot(qx, qy) || 1;
+                if (qd > R) continue;
+                if (e.victims.length < 24) e.victims.push(q);
+                // slowly, so you can watch it happen
+                const pullV = (25 + 80 * (1 - qd / R)) * px, kk = 1 - Math.exp(-2 * dt);
+                q.vx += (qx / qd * pullV - q.vx) * kk;
+                q.vy += (qy / qd * pullV - q.vy) * kk;
+                if (!q.chem) q.r = Math.max(0.5, q.r * Math.exp(-0.3 * dt));
+                if (qd < e.r * 0.8 || (!q.chem && q.r < q.type.radius * 0.25)) eaten.push(q);
+            }
+            for (const q of eaten) {
+                removeFree(q);
+                if (e.stolen.length < 40) e.stolen.push(q.chem ? { formula: q.formula } : { type: q.type, color: q.color });
+                e.r = Math.min(e.r0 * 3, Math.hypot(e.r, q.r * 0.35));
+            }
+            // ...you too
+            e.drinkingYou = d < R + you.r && player.type.kind !== 'mystery';
+            if (e.drinkingYou) {
+                e.drainT += dt;
+                if (e.drainT >= 1.4) { e.drainT = 0; hurt(e, { noGrace: true, verb: 'Drained!' }); }
+            }
+        }
+        const ENEMY_STEP = {
+            antimatter: (e, dt, you, px, live) => hunt(e, you, dt, px, live),
+            wboson: (e, dt, you, px, live) => hunt(e, you, dt, px, live),
+            gluonsnapper: (e, dt, you, px, live) => { e.spin = (e.spin || 0) + (live ? 3 : 0.6) * dt; hunt(e, you, dt, px, live); },
+            ionizer: (e, dt, you, px, live) => {
+                if (!live) return wander(e, dt, px);
+                e.t -= dt;
+                if (e.state === 0) { // charging up at a distance...
+                    hover(e, you, dt, px, you.r * 5 + e.r, 140);
+                    if (e.t <= 0) { // ...then dashes straight at you
+                        const dx = you.x - e.x, dy = you.y - e.y, d = Math.hypot(dx, dy) || 1;
+                        e.state = 1; e.t = 0.9;
+                        e.vx = dx / d * e.def.speed * px; e.vy = dy / d * e.def.speed * px;
+                    }
+                } else if (e.t <= 0) { e.state = 0; e.t = rand(1.2, 2); }
+            },
+            electronthief: (e, dt, you, px, live) => {
+                if (!e.full) return hunt(e, you, dt, px, live);
+                const dx = e.x - you.x, dy = e.y - you.y, d = Math.hypot(dx, dy) || 1; // runs off with it
+                e.vx = dx / d * 220 * px; e.vy = dy / d * 220 * px;
+            },
+            neutronbomber: (e, dt, you, px, live) => hunt(e, you, dt, px, live),
+            radioactive: (e, dt, you, px, live) => {
+                if (!live) return wander(e, dt, px);
+                if (canEat(e, you)) return hunt(e, you, dt, px, live);
+                hover(e, you, dt, px, you.r * 4 + e.r + 150 * px, e.def.speed);
+                e.t -= dt;
+                if (e.t <= 0) { // fire!
+                    e.t = rand(1.8, 2.6);
+                    const shot = spawnEnemy('decayshot', false);
+                    const alpha = Math.random() < 0.5, dx = you.x - e.x, dy = you.y - e.y, d = Math.hypot(dx, dy) || 1;
+                    Object.assign(shot, { x: e.x + dx / d * e.r, y: e.y + dy / d * e.r, r: Math.max(e.r * 0.25, 4 * px),
+                        vx: dx / d * 420 * px, vy: dy / d * 420 * px, life: 3.5, alpha, sym: alpha ? 'α' : 'β' });
+                }
+            },
+            decayshot: (e, dt) => { e.life -= dt; if (e.life <= 0) removeEnemy(e); },
+            freeradical: (e, dt, you, px, live) => {
+                hunt(e, you, dt, px, live);
+                if (live) { e.vx += rand(-1, 1) * 900 * px * dt; e.vy += rand(-1, 1) * 900 * px * dt; } // jittery
+            },
+            enzyme: (e, dt, you, px, live) => hunt(e, you, dt, px, live),
+            oxidizer: (e, dt, you, px, live) => hunt(e, you, dt, px, live),
+            heatpocket: (e, dt, you, px, live) => {
+                wander(e, dt, px);
+                e.life -= dt;
+                if (e.life <= 0) return removeEnemy(e);
+                if (live && Math.hypot(e.x - you.x, e.y - you.y) < e.r) {
+                    e.heat += dt;
+                    if (e.heat >= 1.6) { e.heat = 0; hurt(e, { noGrace: true, verb: 'Too hot!' }); }
+                } else e.heat = Math.max(0, e.heat - dt);
+            },
+            asteroid: (e, dt) => { e.rot += e.rotSpeed * dt; e.life -= dt; if (e.life <= 0) removeEnemy(e); },
+            bully: (e, dt, you, px, live) => {
+                hunt(e, you, dt, px, live);
+                if (live && !canEat(e, you)) pullYou(e, you, dt, px, e.r * 7, 240);
+            },
+            comet: (e, dt, you, px, live) => {
+                e.life -= dt;
+                if (e.life <= 0) return removeEnemy(e);
+                if (!live) return;
+                const sp = Math.hypot(e.vx, e.vy) || 1, a = Math.atan2(e.vy, e.vx);
+                const want = Math.atan2(you.y - e.y, you.x - e.x);
+                const turn = Math.atan2(Math.sin(want - a), Math.cos(want - a));
+                const na = a + Math.max(-0.35 * dt, Math.min(0.35 * dt, turn)); // curves toward you a little
+                e.vx = Math.cos(na) * sp; e.vy = Math.sin(na) * sp;
+            },
+            vampire: (e, dt, you, px, live) => {
+                e.latched = false;
+                if (!live) return wander(e, dt, px);
+                if (canEat(e, you)) return hunt(e, you, dt, px, live); // you're bigger: it runs
+                const d = Math.hypot(e.x - you.x, e.y - you.y), reach = 3.2 * (e.r + you.r);
+                if (d > reach * 0.8) hunt(e, you, dt, px, live); else hover(e, you, dt, px, reach * 0.7, e.def.speed);
+                e.latched = d < reach;
+                if (e.latched) {
+                    e.drainT += dt;
+                    if (e.drainT >= 0.5) {
+                        e.drainT = 0;
+                        if (hurt(e, { frac: 0.01, noGrace: true, quiet: true, verb: 'Sucked away:' })) e.r *= 1.01;
+                    }
+                }
+            },
+            roguebh: (e, dt, you, px, live) => {
+                hunt(e, you, dt, px, live);
+                if (live && !canEat(e, you)) pullYou(e, you, dt, px, e.r * 9, 360);
+            },
+            rivalbh: (e, dt, you, px, live) => {
+                hunt(e, you, dt, px, live);
+                if (live && !canEat(e, you)) pullYou(e, you, dt, px, (e.r + you.r) * 10, 300 * Math.min(2, e.kg / dust.bhKg));
+            },
+            photoevap: (e, dt, you, px, live) => {
+                e.life -= dt;
+                if (e.life <= 0) return removeEnemy(e);
+                e.ang += 0.08 * dt;
+                e.r = player.r * 0.07;
+                e.x = player.x + Math.cos(e.ang) * player.r * 1.15;
+                e.y = player.y + Math.sin(e.ang) * player.r * 1.15;
+                e.vx = e.vy = 0;
+                if (!live) return;
+                e.drainT += dt;
+                if (e.drainT >= 0.5) { e.drainT = 0; hurt(e, { frac: 0.005, noGrace: true, quiet: true, verb: 'Boiled away:' }); }
+            },
+            nullon: stepNullon,
+            // Things that sweep through
+            cosmicray: (e, dt, you, px, live) => {
+                e.t += dt;
+                const run = e.t - e.warn;
+                if (run > e.len / e.spd + 0.4) return removeEnemy(e);
+                if (run <= 0 || e.hit || !live) return;
+                const head = Math.min(run * e.spd, e.len), hx = e.x + e.ux * head, hy = e.y + e.uy * head;
+                if (segDist(you.x, you.y, hx - e.ux * e.trail, hy - e.uy * e.trail, hx, hy) < you.r + 6 * px) {
+                    e.hit = true;
+                    hurt(e, { verb: 'Cosmic ray hit!' });
+                }
+            },
+            solarflare: (e, dt, you, px, live) => {
+                if (!ringStep(e, dt, px) || !ringReaches(e, you)) return;
+                e.hit = true;
+                if (live) { knockYou(e, 500 * px); hurt(e, { frac: 0.08, verb: 'Solar flare!' }); }
+            },
+            nebshock: (e, dt, you, px, live) => {
+                if (!ringStep(e, dt, px) || !ringReaches(e, you)) return;
+                e.hit = true;
+                if (!live) return;
+                hurt(e, { frac: 0.1, verb: 'Shockwave!' });
+                neb.formIn = 0; // the squeeze sets off a new star
+                showToast('A supernova shockwave hit your nebula!', 'It blew some of your gas away, but the squeeze is setting off a new star!');
+            },
+            supernova: (e, dt, you, px, live) => {
+                e.t += dt;
+                if (e.t < e.warn) return;
+                if (!e.boom) { e.boom = true; e.flash = 1; }
+                e.flash = Math.max(0, e.flash - dt * 1.2);
+                if (!ringStep(e, dt, px) || !ringReaches(e, you)) return;
+                e.hit = true;
+                if (live) { knockYou(e, 650 * px); hurt(e, { frac: 0.1, verb: 'Supernova!' }); }
+            },
+            grb: (e, dt, you, px, live) => stepBeam(e, dt, you, px, live),
+            quasarjet: (e, dt, you, px, live) => stepBeam(e, dt, you, px, live),
+        };
+        function stepBeam(e, dt, you, px, live) {
+            e.t += dt;
+            e.width = e.widthPx * px; // the same width on screen however far you're zoomed
+            e.len = Math.max(screenHalf(), player.r * 10) * 4;
+            if (e.t > e.warn + e.on) return removeEnemy(e);
+            if (e.t > e.warn) e.ang += e.spin * dt;
+            if (e.t < e.warn || !live) return;
+            e.tick -= dt;
+            if (e.tick > 0) return;
+            // a quasar's jets hit your star cluster or galaxy, which is much bigger than you
+            const sys = e.kind === 'quasarjet' && dust.system;
+            const hitR = sys ? player.r * systemReach(dust.system) : you.r;
+            for (const a of e.twin ? [e.ang, e.ang + Math.PI] : [e.ang]) {
+                const ux = Math.cos(a), uy = Math.sin(a), dx = you.x - e.x, dy = you.y - e.y;
+                const along = dx * ux + dy * uy, across = Math.abs(dx * uy - dy * ux);
+                if (along <= 0 || across > hitR + e.width / 2) continue;
+                e.tick = 0.3;
+                if (sys && dust.system.stars.length > 20) {
+                    const stars = dust.system.stars, n = Math.max(1, Math.round(stars.length * 0.03));
+                    for (let i = 0; i < n; i++) stars.splice(Math.floor(Math.random() * stars.length), 1);
+                    floatText(player, `−${n} stars blasted out of your ${dust.system.kind === 'galaxy' ? 'galaxy' : 'star cluster'}!`);
+                    hurtFlash = performance.now();
+                } else hurt(e, { frac: 0.03, noGrace: true, quiet: true, verb: e.kind === 'grb' ? 'Gamma rays!' : 'Quasar jet!' });
+                break;
+            }
+        }
+        // What happens when it touches you (it only gets here if it's awake and
+        // you're too small to eat it)
+        const ENEMY_TOUCH = {
+            antimatter: (e) => { boom(e, '#ffffff'); removeEnemy(e); hurt(e, { verb: 'Annihilated!' }); },
+            wboson: (e) => {
+                removeEnemy(e);
+                const msg = weakFlip();
+                if (!msg) return hurt(e);
+                hurtGrace = 1.1; hurtFlash = performance.now();
+                showToast('A W boson zapped you!', msg);
+            },
+            gluonsnapper: (e) => { e.cool = 2.5; hurt(e, { verb: 'Snap!' }); },
+            ionizer: (e) => { boom(e); removeEnemy(e); hurt(e, { verb: 'Ionized!' }); },
+            electronthief: (e) => {
+                if (e.full) return;
+                e.full = true;
+                const a = player.atom;
+                if (stage === 'particles' && a && a.E > 0) {
+                    a.E--;
+                    refreshAtom();
+                    hurtGrace = 1.1; hurtFlash = performance.now();
+                    say(player, 'An electron was stolen!');
+                } else say(e, 'No electrons to steal!');
+            },
+            neutronbomber: (e) => {
+                removeEnemy(e);
+                const a = player.atom;
+                if (stage !== 'particles' || !a || a.Z < 1 || enemyDecay) return hurt(e);
+                a.N++;
+                refreshAtom();
+                enemyDecay = { t: 1.6 };
+                hurtFlash = performance.now();
+                say(player, 'An extra neutron! You\'re unstable...');
+            },
+            radioactive: (e) => { e.cool = 1.5; hurt(e); },
+            decayshot: (e) => { removeEnemy(e); hurt(e, { verb: e.alpha ? 'Alpha hit!' : 'Beta hit!' }); },
+            freeradical: (e) => {
+                if (hurt(e, { verb: 'Ripped off:' })) { say(e, 'It grabbed an atom and became water!'); removeEnemy(e); } else e.cool = 1.5;
+            },
+            enzyme: (e) => { e.cool = 3; hurt(e, { how: () => cutMolecule(e) }); },
+            oxidizer: (e) => { if (hurt(e, { verb: 'Oxidized!' })) removeEnemy(e); else e.cool = 1.5; },
+            asteroid: (e) => { boom(e); removeEnemy(e); hurt(e, { frac: 0.06, verb: 'Smash!' }); },
+            bully: (e) => { e.cool = 0.7; hurt(e, { frac: 0.05, noGrace: true, verb: 'Gobbled:' }); },
+            comet: (e, you, px) => { e.cool = 2; knockYou(e, 500 * px); hurt(e, { frac: 0.04, verb: 'Comet strike!' }); },
+            vampire: (e) => { e.cool = 1; },
+            roguebh: (e, you, px) => { e.cool = 2; knockYou(e, 600 * px); hurt(e, { frac: 0.15, verb: 'Big bite!' }); },
+            rivalbh: (e, you, px) => {
+                e.cool = 3;
+                knockYou(e, 700 * px);
+                const bite = dust.bhKg * 0.25;
+                if (hurt(e, { frac: 0.25, verb: 'The rival won the tug-of-war:' })) {
+                    e.kg += bite;
+                    e.r = dustRForSize(eventHorizonM(e.kg));
+                }
+            },
+        };
+
+        function stepEnemies(dt) {
+            enemyTick -= dt;
+            if (enemyTick <= 0) { enemyTick = 0.5; manageEnemies(); }
+            if (hurtGrace > 0) hurtGrace -= dt;
+            if (enemyKnock) { // shoved: you slide off for a moment
+                const k = enemyKnock.t / enemyKnock.T;
+                for (const q of cluster) {
+                    q.x += enemyKnock.vx * k * dt; q.y += enemyKnock.vy * k * dt;
+                    if (boxed()) keepInWorld(q);
+                }
+                enemyKnock.t -= dt;
+                if (enemyKnock.t <= 0) enemyKnock = null;
+            }
+            if (enemyDecay && (enemyDecay.t -= dt) <= 0) { // the extra neutron: radioactive decay!
+                enemyDecay = null;
+                const a = player.atom;
+                if (stage === 'particles' && a && physicsOn) {
+                    if (a.Z >= 3 && a.N >= 2) {
+                        a.Z -= 2; a.N -= 2; a.E = Math.min(a.E, a.Z);
+                        refreshAtom();
+                        const alpha = makeEntity(TYPES.find(t => t.id === 'alpha'), player.x, player.y);
+                        alpha.shard = true;
+                        free.push(fling(alpha, { x: player.x + rand(-1, 1), y: player.y + rand(-1, 1) }));
+                        hurtFlash = performance.now();
+                        showToast('Radioactive decay!', `You shot out an alpha particle (2 protons and 2 neutrons) and became ${aOrAn(player.type.name)} ${lowerName(player.type.name)}`);
+                    } else hurt({ x: player.x + 1, y: player.y, def: { name: 'Radioactive decay' } }, { noGrace: true, verb: 'Decay!' });
+                }
+            }
+            if (!enemies.length) return;
+            const you = youNow(), px = enemyPx(), n = enemies.length;
+            for (let i = 0; i < n; i++) {
+                const e = enemies[i];
+                if (e.gone) continue;
+                e.age += dt;
+                if (e.cool > 0) e.cool -= dt;
+                const live = enemyLive(e);
+                ENEMY_STEP[e.kind](e, dt, you, px, live);
+                if (e.gone || e.event) continue;
+                e.x += e.vx * dt;
+                e.y += e.vy * dt;
+                if (boxed()) bounceInWorld(e);
+                if (e.kind === 'photoevap') continue;
+                // Touching you: you eat it if it's smaller, otherwise it gets you
+                const dx = e.x - you.x, dy = e.y - you.y, d = Math.hypot(dx, dy) || 0.001;
+                if (d >= e.r + you.r) continue;
+                if (canEat(e, you)) { eatEnemy(e); continue; }
+                if (e.def.zone) continue;
+                if (live && e.cool <= 0 && ENEMY_TOUCH[e.kind]) ENEMY_TOUCH[e.kind](e, you, px);
+                if (e.gone) continue;
+                e.x = you.x + dx / d * (e.r + you.r); // it can't pass through you
+                e.y = you.y + dy / d * (e.r + you.r);
+                const vn = (e.vx * dx + e.vy * dy) / d;
+                if (vn < 0) { e.vx -= dx / d * vn * 1.5; e.vy -= dy / d * vn * 1.5; }
+            }
+            compactEnemies();
+        }
+
+        // --- Drawing ---
+        // Text drawn on the screen, so it stays readable at any zoom
+        function screenLabel(text, wx, wy, sizePx) {
+            ctx.save();
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            drawLabel(text, (wx - view.x) * view.zoom, (wy - view.y) * view.zoom, sizePx, false, false);
+            ctx.restore();
+        }
+        function enemyBall(x, y, r, color, sym, px) {
+            const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+            g.addColorStop(0, shade(color, 0.55));
+            g.addColorStop(0.55, color);
+            g.addColorStop(1, shade(color, -0.55));
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, E_TAU);
+            ctx.fill();
+            if (sym && r / px > 7) screenLabel(sym, x, y, Math.min(40, r / px * 0.85));
+        }
+        // A star: white-hot in the middle, its color at the edge (no dark side)
+        function enemyStar(x, y, r, color) {
+            const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+            g.addColorStop(0, '#ffffff');
+            g.addColorStop(0.45, shade(color, 0.45));
+            g.addColorStop(1, color);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, E_TAU);
+            ctx.fill();
+        }
+        function enemyGlow(x, y, r, color, alpha) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+            g.addColorStop(0, rgbaOf(color, alpha));
+            g.addColorStop(1, rgbaOf(color, 0));
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, E_TAU);
+            ctx.fill();
+            ctx.restore();
+        }
+        function ringStroke(x, y, R, width, color, alpha) {
+            ctx.lineWidth = width;
+            ctx.strokeStyle = rgbaOf(color, alpha);
+            ctx.beginPath();
+            ctx.arc(x, y, R, 0, E_TAU);
+            ctx.stroke();
+        }
+        // A stream of little dots flowing from (ax, ay) into (bx, by)
+        function drawStream(ax, ay, bx, by, color, dotR, time, n = 8) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            for (let i = 0; i < n; i++) {
+                const f = (i / n + time / 900) % 1, x = ax + (bx - ax) * f, y = ay + (by - ay) * f, rr = dotR * (1 - f * 0.6);
+                ctx.moveTo(x + rr, y);
+                ctx.arc(x, y, rr, 0, E_TAU);
+            }
+            ctx.fill();
+        }
+        function drawBeamLine(x, y, ang, len, width, color, alpha, dashed, px) {
+            ctx.save();
+            if (dashed) ctx.setLineDash([12 * px, 10 * px]);
+            ctx.lineWidth = width;
+            ctx.strokeStyle = rgbaOf(color, alpha);
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len);
+            ctx.stroke();
+            ctx.restore();
+        }
+        const ENEMY_DRAW = {
+            antimatter: (e, time, px) => {
+                enemyGlow(e.x, e.y, e.r * 2, e.def.color, 0.3);
+                enemyBall(e.x, e.y, e.r, e.def.color, e.def.sym, px);
+                ctx.lineWidth = e.r * 0.12;
+                ctx.strokeStyle = 'rgba(10, 40, 70, 0.85)';
+                for (let k = 0; k < 3; k++) {
+                    const a = time / 300 + k * E_TAU / 3;
+                    ctx.beginPath(); ctx.arc(e.x, e.y, e.r * 1.15, a, a + 1.2); ctx.stroke();
+                }
+            },
+            wboson: (e, time, px) => {
+                enemyGlow(e.x, e.y, e.r * 2, e.def.color, 0.3);
+                enemyBall(e.x, e.y, e.r, e.def.color, e.def.sym, px);
+                ctx.strokeStyle = '#fff2a0';
+                ctx.lineWidth = 1.5 * px;
+                const s = Math.floor(time / 90);
+                for (let k = 0; k < 3; k++) { // crackling lightning
+                    let a = ((s * 7 + k * 13) % 17) / 17 * E_TAU, x = e.x + Math.cos(a) * e.r, y = e.y + Math.sin(a) * e.r;
+                    ctx.beginPath(); ctx.moveTo(x, y);
+                    for (let j = 1; j <= 3; j++) {
+                        a += (((s + j * k) % 5) - 2) * 0.25;
+                        x = e.x + Math.cos(a) * e.r * (1 + j * 0.22); y = e.y + Math.sin(a) * e.r * (1 + j * 0.22);
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+            },
+            gluonsnapper: (e, time, px) => {
+                const a = e.spin || 0, cx = Math.cos(a) * e.r, cy = Math.sin(a) * e.r;
+                drawGluon(e.x - cx, e.y - cy, e.r * 0.28, e.x + cx, e.y + cy, e.r * 0.28, time, Math.max(3 * px, e.r * 0.12));
+                enemyBall(e.x - cx, e.y - cy, e.r * 0.28, e.def.color, '', px);
+                enemyBall(e.x + cx, e.y + cy, e.r * 0.28, e.def.color, '', px);
+            },
+            ionizer: (e, time, px) => {
+                const a = e.state === 1 ? Math.atan2(e.vy, e.vx) : time / 400 + e.seed, ux = Math.cos(a), uy = Math.sin(a);
+                ctx.strokeStyle = rgbaOf(e.def.color, 0.9);
+                ctx.lineWidth = e.r * 0.3;
+                ctx.beginPath();
+                for (let i = 0; i <= 24; i++) { // a wavy ray of light
+                    const f = i / 24, back = f * e.r * 3, wob = Math.sin(f * 18 - time / 50) * e.r * 0.35;
+                    const x = e.x - ux * back - uy * wob, y = e.y - uy * back + ux * wob;
+                    if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+                }
+                ctx.stroke();
+                if (e.state === 0) enemyGlow(e.x, e.y, e.r * (1.8 + 0.4 * Math.sin(time / 80)), e.def.color, 0.5); // charging
+                enemyBall(e.x, e.y, e.r * 0.6, '#e0c8ff', '', px);
+            },
+            electronthief: (e, time, px) => {
+                enemyBall(e.x, e.y, e.r, e.def.color, e.full ? 'F⁻' : 'F', px);
+                if (e.full) { // the electron it stole, circling it
+                    const a = time / 250;
+                    enemyBall(e.x + Math.cos(a) * e.r * 1.35, e.y + Math.sin(a) * e.r * 1.35, Math.max(e.r * 0.18, 2 * px), '#5aa0ff', '', px);
+                }
+            },
+            neutronbomber: (e, time, px) => {
+                enemyBall(e.x, e.y, e.r, e.def.color, e.def.sym, px);
+                enemyGlow(e.x + e.r * 0.5, e.y - e.r * 0.9, e.r * (0.5 + 0.25 * Math.random()), '#ffb040', 0.9); // a sparking fuse
+            },
+            radioactive: (e, time, px) => {
+                enemyGlow(e.x, e.y, e.r * (2.1 + 0.2 * Math.sin(time / 200)), e.def.color, 0.35);
+                enemyBall(e.x, e.y, e.r, e.def.color, e.def.sym, px);
+            },
+            decayshot: (e, time, px) => {
+                const c = e.alpha ? '#ff7a8a' : '#6aa8ff', sp = Math.hypot(e.vx, e.vy) || 1;
+                drawBeamLine(e.x, e.y, Math.atan2(-e.vy, -e.vx), e.r * 4, e.r * 0.9, c, 0.45, false, px);
+                enemyGlow(e.x, e.y, e.r * 2.2, c, 0.5);
+                enemyBall(e.x, e.y, e.r, c, '', px);
+            },
+            freeradical: (e, time, px) => {
+                const a = time / 400 + e.seed;
+                enemyBall(e.x + Math.cos(a) * e.r * 0.75, e.y + Math.sin(a) * e.r * 0.75, e.r * 0.45, '#f2f2f2', 'H', px);
+                enemyBall(e.x, e.y, e.r * 0.75, e.def.color, 'O', px);
+                const j = Math.floor(time / 70) * 2.3; // its unpaired electron, buzzing around
+                enemyGlow(e.x + Math.cos(j) * e.r * 0.95, e.y + Math.sin(j) * e.r * 0.95, Math.max(e.r * 0.3, 3 * px), '#fff27a', 0.9);
+            },
+            enzyme: (e, time, px) => {
+                const f = Math.hypot(e.vx, e.vy) > 1e-9 ? Math.atan2(e.vy, e.vx) : 0;
+                const m = 0.12 + 0.32 * Math.abs(Math.sin(time / 160 + e.seed)); // chomp, chomp
+                const g = ctx.createRadialGradient(e.x - e.r * 0.3, e.y - e.r * 0.3, e.r * 0.1, e.x, e.y, e.r);
+                g.addColorStop(0, shade(e.def.color, 0.5)); g.addColorStop(1, shade(e.def.color, -0.45));
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.moveTo(e.x, e.y);
+                ctx.arc(e.x, e.y, e.r, f + m, f + E_TAU - m);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#123018';
+                ctx.beginPath();
+                ctx.arc(e.x + Math.cos(f - 1.1) * e.r * 0.5, e.y + Math.sin(f - 1.1) * e.r * 0.5, e.r * 0.1, 0, E_TAU);
+                ctx.fill();
+            },
+            oxidizer: (e, time, px) => {
+                enemyGlow(e.x, e.y, e.r * 1.8, e.def.color, 0.3);
+                const a = time / 700 + e.seed;
+                for (const s of [-1, 1]) enemyBall(e.x + Math.cos(a + s * 1.05) * e.r * 0.6, e.y + Math.sin(a + s * 1.05) * e.r * 0.6, e.r * 0.42, '#ff5a4a', 'O', px);
+                enemyBall(e.x, e.y, e.r * 0.45, '#ff5a4a', 'O', px);
+            },
+            heatpocket: (e, time, px) => {
+                const g = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, e.r);
+                g.addColorStop(0, 'rgba(255, 150, 60, 0.32)');
+                g.addColorStop(0.7, 'rgba(255, 90, 30, 0.18)');
+                g.addColorStop(1, 'rgba(255, 60, 20, 0)');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, E_TAU); ctx.fill();
+                ctx.save();
+                ctx.setLineDash([8 * px, 8 * px]);
+                ctx.lineDashOffset = time / 40 * px;
+                ringStroke(e.x, e.y, e.r * (0.92 + 0.04 * Math.sin(time / 150)), 2 * px, '#ffa050', 0.45 + 0.4 * e.heat / 1.6);
+                ctx.restore();
+            },
+            asteroid: (e, time, px) => {
+                ctx.fillStyle = '#857a70';
+                ctx.strokeStyle = '#3d3630';
+                ctx.lineWidth = Math.max(1 * px, e.r * 0.06);
+                ctx.beginPath();
+                e.lumps.forEach((l, i) => {
+                    const a = e.rot + i / e.lumps.length * E_TAU, x = e.x + Math.cos(a) * e.r * l, y = e.y + Math.sin(a) * e.r * l;
+                    if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            },
+            bully: (e, time, px, live, you) => {
+                enemyGlow(e.x, e.y, e.r * 1.6, '#ff4030', 0.22);
+                enemyBall(e.x, e.y, e.r, e.def.color, '', px);
+                ctx.save();
+                ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, E_TAU); ctx.clip();
+                ctx.fillStyle = 'rgba(60, 20, 10, 0.3)';
+                for (const b of [-0.45, 0.1, 0.55]) ctx.fillRect(e.x - e.r, e.y + b * e.r, e.r * 2, e.r * 0.16);
+                ctx.restore();
+                if (live && !canEat(e, you)) { // how far its gravity reaches
+                    ctx.save();
+                    ctx.setLineDash([10 * px, 12 * px]);
+                    ringStroke(e.x, e.y, e.r * 7, 1.5 * px, '#ff6a50', 0.2);
+                    ctx.restore();
+                }
+            },
+            comet: (e, time, px) => {
+                const a = Math.atan2(e.vy, e.vx), ux = Math.cos(a), uy = Math.sin(a), len = e.r * 7;
+                const g = ctx.createLinearGradient(e.x, e.y, e.x - ux * len, e.y - uy * len);
+                g.addColorStop(0, 'rgba(200, 235, 255, 0.65)');
+                g.addColorStop(1, 'rgba(200, 235, 255, 0)');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.moveTo(e.x - uy * e.r * 0.9, e.y + ux * e.r * 0.9);
+                ctx.lineTo(e.x - ux * len, e.y - uy * len);
+                ctx.lineTo(e.x + uy * e.r * 0.9, e.y - ux * e.r * 0.9);
+                ctx.closePath();
+                ctx.fill();
+                enemyGlow(e.x, e.y, e.r * 1.8, '#bfe8ff', 0.4);
+                enemyBall(e.x, e.y, e.r, '#dff4ff', '', px);
+            },
+            vampire: (e, time, px, live, you) => {
+                if (e.latched) drawStream(you.x, you.y, e.x, e.y, 'rgba(255, 210, 120, 0.85)', Math.max(e.r * 0.14, 2 * px), time, 12);
+                enemyGlow(e.x, e.y, e.r * 2.2, '#ff3050', 0.35);
+                enemyStar(e.x, e.y, e.r, e.def.color);
+            },
+            roguebh: (e, time, px) => {
+                enemyGlow(e.x, e.y, e.r * 2.4, '#ff8a3a', 0.22);
+                ctx.save();
+                ctx.translate(e.x, e.y);
+                ctx.rotate(e.seed);
+                ctx.scale(1, 0.35);
+                ringStroke(0, 0, e.r * 1.55, e.r * 0.35, '#ff9a4a', 0.75);
+                ctx.restore();
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(e.x, e.y, e.r * 0.8, 0, E_TAU); ctx.fill();
+                ringStroke(e.x, e.y, e.r * 0.85, e.r * 0.06, '#ffc080', 0.8);
+            },
+            rivalbh: (e, time, px) => {
+                enemyGlow(e.x, e.y, e.r * 3, '#b06bff', 0.25);
+                ctx.save();
+                ctx.translate(e.x, e.y);
+                ctx.rotate(e.seed + time / 4000);
+                ctx.scale(1, 0.4);
+                ringStroke(0, 0, e.r * 1.7, e.r * 0.4, '#c69aff', 0.7);
+                ctx.restore();
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, E_TAU); ctx.fill();
+                ringStroke(e.x, e.y, e.r * 1.05, e.r * 0.07, '#e0c8ff', 0.8);
+            },
+            photoevap: (e, time, px, live) => {
+                if (live) { // its light streams into your gas, boiling it off
+                    for (let k = -2; k <= 2; k++) {
+                        const a = Math.atan2(player.y - e.y, player.x - e.x) + k * 0.18;
+                        drawBeamLine(e.x, e.y, a, player.r * 0.6, e.r * 0.6, '#cfe0ff', 0.2 + 0.08 * Math.sin(time / 200 + k), false, px);
+                    }
+                }
+                enemyGlow(e.x, e.y, e.r * 3.5, e.def.color, 0.55);
+                enemyStar(e.x, e.y, e.r, '#7fb0ff');
+            },
+            nullon: (e, time, px, live, you) => {
+                // Mass streaming in from everything it's draining
+                for (const v of e.victims) {
+                    ctx.strokeStyle = 'rgba(150, 90, 255, 0.18)';
+                    ctx.lineWidth = Math.max(1 * px, v.r * 0.3);
+                    ctx.beginPath(); ctx.moveTo(v.x, v.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+                    drawStream(v.x, v.y, e.x, e.y, dotColor(v), Math.max(v.r * 0.35, 1.5 * px), time + v.x, 6);
+                    ringStroke(v.x, v.y, v.r * 1.15, Math.max(1 * px, v.r * 0.12), '#a070ff', 0.6);
+                }
+                if (e.drinkingYou) drawStream(you.x, you.y, e.x, e.y, 'rgba(255, 255, 255, 0.85)', Math.max(e.r * 0.12, 2 * px), time, 12);
+                enemyGlow(e.x, e.y, e.r * 2.4, '#7a3cff', 0.45);
+                ctx.fillStyle = '#05010c';
+                ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, E_TAU); ctx.fill();
+                ctx.lineWidth = e.r * 0.1;
+                for (let k = 0; k < 3; k++) { // swirling inward
+                    const a = -e.rot * 2 + k * E_TAU / 3;
+                    ctx.strokeStyle = 'rgba(190, 140, 255, 0.75)';
+                    ctx.beginPath(); ctx.arc(e.x, e.y, e.r * 0.65, a, a + 1.4); ctx.stroke();
+                }
+                ringStroke(e.x, e.y, e.r, e.r * 0.1, '#b07aff', 0.9);
+                ctx.save();
+                ctx.setLineDash([6 * px, 10 * px]);
+                ctx.lineDashOffset = time / 30 * px;
+                ringStroke(e.x, e.y, e.r * 6, 1.5 * px, '#a070ff', 0.25); // how far its pull reaches
+                ctx.restore();
+            },
+            cosmicray: (e, time, px) => {
+                if (e.t < e.warn) { // a warning line where it's about to go
+                    drawBeamLine(e.x, e.y, Math.atan2(e.uy, e.ux), e.len, 2 * px, '#ff5a5a', 0.25 + 0.35 * Math.abs(Math.sin(time / 90)), true, px);
+                    return;
+                }
+                const head = Math.min((e.t - e.warn) * e.spd, e.len), hx = e.x + e.ux * head, hy = e.y + e.uy * head;
+                const g = ctx.createLinearGradient(hx - e.ux * e.trail, hy - e.uy * e.trail, hx, hy);
+                g.addColorStop(0, 'rgba(180, 220, 255, 0)');
+                g.addColorStop(1, 'rgba(240, 250, 255, 0.95)');
+                ctx.strokeStyle = g;
+                ctx.lineWidth = 5 * px;
+                ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(hx - e.ux * e.trail, hy - e.uy * e.trail); ctx.lineTo(hx, hy); ctx.stroke();
+                enemyGlow(hx, hy, 18 * px, '#cfe8ff', 0.8);
+            },
+            solarflare: (e, time, px) => {
+                ringStroke(e.x, e.y, e.R, e.band, '#ff9a3a', 0.28);
+                ringStroke(e.x, e.y, e.R, e.band * 0.25, '#ffe0a0', 0.55);
+            },
+            nebshock: (e, time, px) => {
+                ringStroke(e.x, e.y, e.R, e.band, '#9fe8ff', 0.25);
+                ringStroke(e.x, e.y, e.R, e.band * 0.25, '#ffffff', 0.5);
+            },
+            supernova: (e, time, px) => {
+                if (!e.boom) { // flickering, swelling, about to blow
+                    const k = e.t / e.warn, r = e.sr * (1 + 0.4 * k + 0.08 * Math.sin(time / 45));
+                    enemyGlow(e.x, e.y, r * (2.5 + 2 * k), '#ffd27a', 0.35 + 0.4 * k);
+                    enemyStar(e.x, e.y, r, '#ffb050');
+                    return;
+                }
+                if (e.flash > 0) enemyGlow(e.x, e.y, e.sr * 10, '#ffffff', e.flash * 0.8);
+                ringStroke(e.x, e.y, e.R, e.band, '#ffd27a', 0.3);
+                ringStroke(e.x, e.y, e.R, e.band * 0.25, '#ffffff', 0.6);
+            },
+            grb: (e, time, px) => drawBeams(e, time, px, '#d8b8ff'),
+            quasarjet: (e, time, px) => {
+                enemyGlow(e.x, e.y, 60 * px, '#9fd8ff', 0.8);
+                drawBeams(e, time, px, '#9fd8ff');
+            },
+        };
+        function drawBeams(e, time, px, color) {
+            for (const a of e.twin ? [e.ang, e.ang + Math.PI] : [e.ang]) {
+                if (e.t < e.warn) { drawBeamLine(e.x, e.y, a, e.len, 2 * px, '#ff5a5a', 0.25 + 0.35 * Math.abs(Math.sin(time / 90)), true, px); continue; }
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                drawBeamLine(e.x, e.y, a, e.len, e.width, color, 0.35, false, px);
+                drawBeamLine(e.x, e.y, a, e.len, e.width * 0.3, '#ffffff', 0.7, false, px);
+                ctx.restore();
+            }
+        }
+        // A dashed ring around each enemy: red if it's dangerous, green if you
+        // can eat it, gray if it's asleep (physics off)
+        function drawEnemyRing(e, time, px, live, you) {
+            const color = !live ? '#b8b8c8' : canEat(e, you) ? '#7dff9a' : '#ff5a5a';
+            ctx.save();
+            ctx.setLineDash([6 * px, 5 * px]);
+            ctx.lineDashOffset = -time / 50 * px;
+            ringStroke(e.x, e.y, e.r * 1.3 + 4 * px, 2 * px, color, live ? 0.55 + 0.25 * Math.sin(time / 180) : 0.35);
+            ctx.restore();
+        }
+        function drawEnemies(time, camX, camY, viewW, viewH) {
+            const px = 1 / view.zoom, now = performance.now();
+            const you = (enemies.length || now - hurtFlash < 600) ? youNow() : null;
+            for (const e of enemies) {
+                if (e.gone) continue;
+                const reach = e.r * 8 + 60 * px;
+                if (!e.event && (e.x + reach < camX || e.x - reach > camX + viewW || e.y + reach < camY || e.y - reach > camY + viewH)) continue;
+                const live = enemyLive(e);
+                ctx.save();
+                if (!live && !e.event) ctx.globalAlpha = 0.6; // asleep
+                ENEMY_DRAW[e.kind](e, time, px, live, you);
+                ctx.restore();
+                if (e.event) continue;
+                if (!e.def.zone && e.kind !== 'decayshot' && e.kind !== 'photoevap') drawEnemyRing(e, time, px, live, you);
+                if (selected === e) screenLabel(e.def.name, e.x, e.y + e.r * 1.4 + 16 * px, 14);
+                if (!live && e.kind !== 'decayshot') screenLabel('z z', e.x + e.r * 0.8, e.y - e.r * 1.2 - ((time / 1500 + e.seed) % 1) * 12 * px, 11);
+            }
+            for (let k = enemyBooms.length - 1; k >= 0; k--) { // pops when something is eaten or destroyed
+                const b = enemyBooms[k], age = (now - b.born) / 600;
+                if (age >= 1) { enemyBooms.splice(k, 1); continue; }
+                ringStroke(b.x, b.y, b.r * (1 + age * 2.5), 3 * px, b.color, 0.8 * (1 - age));
+            }
+            if (you && now - hurtFlash < 600) { // you got hurt: a red flash
+                const k = (now - hurtFlash) / 600;
+                ringStroke(you.x, you.y, you.r * (1.15 + k * 0.5), 4 * px, '#ff4040', 0.8 * (1 - k));
+            }
+        }
+        // Clicking an enemy: what it is, what it does, and whether you can eat it
+        function showEnemyInfo(e) {
+            const def = e.def, live = enemyLive(e);
+            infoName.textContent = def.name;
+            infoKind.textContent = `Enemy · ${SCALE_LABEL[def.scale]}`;
+            infoSwatch.style.background = `radial-gradient(circle at 35% 30%, ${shade(def.color, 0.5)}, ${def.color} 50%, ${shade(def.color, -0.55)})`;
+            infoSwatch.textContent = e.sym || def.sym;
+            infoSwatch.style.textDecoration = 'none';
+            infoSwatch.style.color = '#fff';
+            infoFacts.replaceChildren();
+            addFact('What it does', def.does);
+            addFact('Real-life idea', def.basis);
+            addFact('Can you eat it?', def.eatable === false ? 'No, you can\'t eat this one'
+                : canEat(e, youNow()) ? 'Yes! It\'s smaller than you' : 'Not yet: it\'s bigger than you. Watch out!');
+            addFact('Right now', e.kind === 'nullon' ? 'Awake! It only exists with physics off'
+                : live ? 'Awake: real physics is on, so it can hurt you' : 'Asleep: physics is off, so it can\'t hurt you');
+            infoDesc.textContent = e.kind === 'nullon' || live ? '' : 'Turn real physics on to wake it up.';
+            infoEl.classList.add('open');
+        }
+
         // --- Messages ---
         const aOrAn = (word) => /^[aeiou]/i.test(word) ? 'an' : 'a';
         const floaters = []; // little messages that float up off particles
@@ -5667,6 +7083,16 @@
                 keepInWorld(q);
             }
             if (playerOrbit) orbitAroundTarget(dt);
+            if (zephyrLaunch) { // you split out of a Zephyr-Philgem: you fly off, slowing down
+                const k = zephyrLaunch.t / ZEPHYR_LAUNCH_TIME;
+                for (const q of cluster) { q.x += zephyrLaunch.vx * k * dt; q.y += zephyrLaunch.vy * k * dt; keepInWorld(q); }
+                zephyrLaunch.t -= dt;
+                if (zephyrLaunch.t <= 0 || stage !== 'particles') zephyrLaunch = null;
+            }
+            // A Zephyr-Philgem: everything in the subatomic world orbits it (you too, unless
+            // you're an Ocamathron or Hiemadecticus: they're the only things that can reach it)
+            const zephyr = zephyrNow();
+            if (zephyr && zephyr !== player && !playerOrbit && !isGiant(player.type)) holdPlayerByZephyr(zephyr, dt);
             if (stage === 'nebula') stepNebula(dt);
             else if (inSpace) stepSpaceNebulas(dt);
             if (stuck.length) { // molecules stuck to you come along
@@ -5744,6 +7170,18 @@
                     if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
                     continue;
                 }
+                if (zephyr && p !== zephyr && !p.huge) { // caught orbiting the Zephyr-Philgem
+                    holdByZephyr(p, zephyr, dt);
+                    if (p.spin !== undefined) p.spin += p.spinSpeed * dt;
+                    if (p.rot !== undefined) p.rot += p.rotSpeed * dt;
+                    keepInWorld(p);
+                    continue;
+                }
+                if (p.launched) { // flung out of a Zephyr-Philgem: slows down to a normal drift
+                    const f = Math.exp(-0.7 * dt);
+                    p.vx *= f; p.vy *= f;
+                    if (Math.hypot(p.vx, p.vy) < 40) p.launched = false;
+                }
                 if (pullsElectrons && (physicsOn || mergeOn) && p.type.id === 'electron') {
                     const dx = player.x - p.x, dy = player.y - p.y;
                     const d = Math.hypot(dx, dy);
@@ -5790,6 +7228,7 @@
                 if (Math.abs(p.x - bounds.cx) > near || Math.abs(p.y - bounds.cy) > near) continue;
                 if (p.orbit) continue; // orbiting things never touch you
                 if (p.burning !== undefined) continue; // nor does something burning away
+                if (p.type === ZEPHYR) continue; // nothing can get to a Zephyr-Philgem
                 if (stage === 'molecule' && !p.chem && !p.huge) continue; // subatomic debris is far too small to touch at this scale
                 if (p.type === HIEMADECTICUS && player.type === HIEMADECTICUS) continue; // Hiemadecticus handle each other (stepHiems)
                 if (playerOrbit && p === playerOrbit.target && !(stage === 'dust' && dust.blackHole)) continue; // nor does what you orbit (unless you're a black hole)
@@ -5811,8 +7250,9 @@
                         floatText(p, `The ${p.type.name} is far too big to merge with!`);
                     } else if (!physicsOn && !mergeOn) {
                         // Merging is turned off: you just bounce off things
-                    } else if (isGiant(player.type)) {
+                    } else if (isGiant(player.type) || player.type === ZEPHYR) {
                         // You're an Ocamathron or Hiemadecticus: far too big for anything to merge with you
+                        // (or a Zephyr-Philgem: nothing can even touch you)
                     } else if (offGroup) {
                         if (!forming) { joinCluster(p, c); break; }
                     } else if (offMerge) {
@@ -5860,6 +7300,10 @@
                 for (const oc of lights) {
                     const reach = oc.r * OCAMATHRON_REACH;
                     const push = giantPush(oc), name = oc.type.name;
+                    // You're a Zephyr-Philgem and you're in its light: you split apart
+                    if (player.type === ZEPHYR && Math.hypot(player.x - oc.x, player.y - oc.y) < reach + player.r) splitZephyr(player, oc);
+                    // Its light destroys enemies (even a Nullon)
+                    for (const en of enemies) if (!en.gone && Math.hypot(en.x - oc.x, en.y - oc.y) < reach + en.r) destroyEnemy(en);
                     // Its light never pushes or breaks you while you're a giant yourself
                     const hitsYou = oc !== player && !isGiant(player.type);
                     // Its light pushes everything in the circle outward: hardest up close,
@@ -5923,12 +7367,15 @@
                         if (Math.abs(dx) > edge || Math.abs(dy) > edge) continue;
                         const d2 = dx * dx + dy * dy;
                         if (d2 >= edge * edge || q === oc || q.huge || q.falling || q.orbit) continue;
+                        if (q.type === ZEPHYR) { splitZephyr(q, oc); continue; } // its light splits a Zephyr-Philgem
                         if (torn < 8 && !(q.chem && q.layout.Zs.length > 1 && !moleculeTouches(q, oc, reach)) &&
                             tearFree(q, oc, Infinity, [180, 340], true)) { torn++; continue; } // all the way down: nothing whole leaves the circle
                         if (d2 < reach * reach) pushOut(q, 450);
                     }
                 }
             }
+
+            stepEnemies(dt);
 
             if (pulse) {
                 if ((stage === 'particles' || stage === 'molecule')) spreadPulse(dt);
@@ -5943,6 +7390,7 @@
             // --- Camera follows the player (the middle of your molecule) ---
             let focus = stage === 'molecule' && !isGiant(player.type) ? clusterBounds()
                 : stage === 'dust' || stage === 'nebula' ? { cx: player.x, cy: player.y, extent: player.r }
+                : player.type === ZEPHYR ? { cx: player.x, cy: player.y, extent: player.r * 9 } // see what's orbiting you
                 : isGiant(player.type)
                 // zoomed out to see what your light tears apart; during a Hyper Pulse,
                 // pull way back to watch the shockwave sweep across the map
@@ -6571,6 +8019,140 @@
             drawLabel(p.type.name, x, y + r + 26, Math.max(18, 13 / view.zoom), false, false);
         }
 
+        // The Zephyr-Philgem: a squishy rainbow tie-dye ring (a rounded square with a
+        // round hole in it), with two flared fins reaching into the hole from opposite
+        // sides that almost touch. Painted once, then spun.
+        const ZEPHYR_DYE = ['#41b7e0', '#ff3d97', '#c9ef3f', '#ff8a24', '#8c4fd6', '#ff8a24', '#c9ef3f', '#ff3d97'];
+        const ZEPHYR_SWATCH = `radial-gradient(circle, #14121c 0 27%, transparent 29%), conic-gradient(from -80deg, ${[...ZEPHYR_DYE, ZEPHYR_DYE[0]].join(', ')})`;
+        let zephyrSprite = null;
+        function makeZephyrSprite() {
+            const px = LOW_POWER ? 192 : 320, u = px / 2.3; // u: one of its radii, in sprite pixels
+            const TAU = Math.PI * 2, s = 0.9 * u, hole = 0.5 * u;
+            const cv = document.createElement('canvas');
+            cv.width = cv.height = px;
+            const g = cv.getContext('2d');
+            g.translate(px / 2, px / 2);
+            const roundSquare = (path, h, cr) => {
+                path.moveTo(-h + cr, -h);
+                path.arcTo(h, -h, h, h, cr); path.arcTo(h, h, -h, h, cr);
+                path.arcTo(-h, h, -h, -h, cr); path.arcTo(-h, -h, h, -h, cr);
+                path.closePath();
+            };
+            const outer = new Path2D();
+            roundSquare(outer, s, 0.42 * u);
+            const ring = new Path2D(outer);
+            ring.moveTo(hole, 0);
+            ring.arc(0, 0, hole, 0, TAU);
+            // Tie-dye: wedges of color around the ring with wavy edges, a little blurred
+            g.save();
+            g.clip(ring, 'evenodd');
+            if ('filter' in g) g.filter = `blur(${(u * 0.05).toFixed(1)}px)`;
+            let seed = 11;
+            const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+            const n = ZEPHYR_DYE.length, R = 1.7 * u;
+            const waves = ZEPHYR_DYE.map(() => [rnd() * TAU, 0.16 + rnd() * 0.14, rnd() * TAU]);
+            const edge = (i, rho) => {
+                const [p1, w, p2] = waves[i % n];
+                return i / n * TAU - 3.09 + w * Math.sin(rho / u * 6 + p1) + 0.06 * Math.sin(rho / u * 15 + p2);
+            };
+            for (let i = 0; i < n; i++) {
+                g.fillStyle = ZEPHYR_DYE[i];
+                g.beginPath();
+                g.moveTo(0, 0);
+                for (let k = 0; k <= 24; k++) { const rho = R * k / 24, a = edge(i, rho); g.lineTo(Math.cos(a) * rho, Math.sin(a) * rho); }
+                for (let k = 24; k >= 0; k--) { const rho = R * k / 24, a = edge(i + 1, rho) + 0.03; g.lineTo(Math.cos(a) * rho, Math.sin(a) * rho); }
+                g.fill();
+            }
+            g.filter = 'none';
+            // Soft and squishy: darker down into the hole and around the outside, a shine on top
+            const big = () => g.fillRect(-px, -px, px * 2, px * 2);
+            const pit = g.createRadialGradient(0, 0, hole, 0, 0, hole + 0.16 * u);
+            pit.addColorStop(0, 'rgba(25, 0, 35, 0.45)');
+            pit.addColorStop(1, 'rgba(25, 0, 35, 0)');
+            g.fillStyle = pit; big();
+            g.lineWidth = 0.14 * u;
+            g.strokeStyle = 'rgba(30, 0, 40, 0.28)';
+            g.stroke(outer);
+            const shine = g.createLinearGradient(-s, -s, s, s);
+            shine.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+            shine.addColorStop(0.45, 'rgba(255, 255, 255, 0)');
+            shine.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
+            g.fillStyle = shine; big();
+            g.restore();
+            // The two fins: the second is the first one turned all the way around
+            const fin = (turn, base, tip) => {
+                g.save();
+                g.scale(turn, turn);
+                // a broad foot in the ring, a narrow neck, then a cone that flares
+                // out into a wide flat face (like a suction cup)
+                const gap = 0.035 * u, top = -hole - 0.12 * u, neck = -0.3 * u, mid = (top + neck) / 2;
+                const path = new Path2D();
+                path.moveTo(-0.38 * u, top);
+                path.lineTo(-0.04 * u, top);
+                path.quadraticCurveTo(-0.08 * u, mid, -0.12 * u, neck);
+                path.quadraticCurveTo(-0.1 * u, -0.13 * u, 0.17 * u, -gap);
+                path.lineTo(-0.47 * u, -gap);
+                path.quadraticCurveTo(-0.3 * u, -0.13 * u, -0.28 * u, neck);
+                path.quadraticCurveTo(-0.32 * u, mid, -0.38 * u, top);
+                path.closePath();
+                const fill = g.createLinearGradient(0, top, 0, -gap);
+                fill.addColorStop(0, base);
+                fill.addColorStop(0.45, base);
+                fill.addColorStop(0.85, tip);
+                fill.addColorStop(1, shade(tip, -0.25));
+                g.fillStyle = fill;
+                g.fill(path);
+                const side = g.createLinearGradient(-0.47 * u, 0, 0.17 * u, 0);
+                side.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
+                side.addColorStop(0.55, 'rgba(255, 255, 255, 0)');
+                side.addColorStop(1, 'rgba(40, 0, 40, 0.28)');
+                g.fillStyle = side;
+                g.fill(path);
+                // its flat face, where it almost touches the other fin
+                g.strokeStyle = 'rgba(40, 0, 50, 0.35)';
+                g.lineWidth = 0.02 * u;
+                g.beginPath();
+                g.moveTo(-0.47 * u, -gap);
+                g.lineTo(0.17 * u, -gap);
+                g.stroke();
+                g.restore();
+            };
+            fin(1, '#ff3d97', '#ff7cbc');
+            fin(-1, '#ff8a24', '#d6ec3a');
+            return cv;
+        }
+        function drawZephyr(p, time) {
+            const { x, y, r } = p, TAU = Math.PI * 2;
+            // How close anything can get: a shimmering ring that slowly changes color
+            ctx.save();
+            ctx.setLineDash([10 / view.zoom, 14 / view.zoom]);
+            ctx.lineDashOffset = time / 50 / view.zoom;
+            ctx.lineWidth = 2 / view.zoom;
+            ctx.strokeStyle = `hsla(${(time / 20) % 360}, 90%, 70%, 0.35)`;
+            ctx.beginPath();
+            ctx.arc(x, y, r * ZEPHYR_KEEP, 0, TAU);
+            ctx.stroke();
+            // A soft glow
+            ctx.globalCompositeOperation = 'lighter';
+            const hue = (time / 30) % 360;
+            const halo = ctx.createRadialGradient(x, y, r * 0.6, x, y, r * 2.2);
+            halo.addColorStop(0, `hsla(${hue}, 100%, 65%, 0.35)`);
+            halo.addColorStop(1, `hsla(${hue}, 100%, 65%, 0)`);
+            ctx.fillStyle = halo;
+            ctx.beginPath();
+            ctx.arc(x, y, r * 2.2, 0, TAU);
+            ctx.fill();
+            ctx.restore();
+            const img = zephyrSprite || (zephyrSprite = makeZephyrSprite());
+            const size = r * 2.3;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(time / 1000 * 0.4);
+            ctx.drawImage(img, -size / 2, -size / 2, size, size);
+            ctx.restore();
+            drawLabel(p.type.name, x, y + r * 1.15 + 26, Math.max(18, 13 / view.zoom), false, false);
+        }
+
         // Flames licking up around something burning away
         function drawFlames(p, time) {
             const k = p.burning / BURN_TIME, r = p.r, TAU = Math.PI * 2;
@@ -6611,6 +8193,7 @@
                 drawFlames(p, time);
             }
             else if (isGiant(p.type)) drawOcamathron(p, time);
+            else if (p.type === ZEPHYR) drawZephyr(p, time);
             else if (p.dust) drawDust(p);
             else if (p.chem) drawMolecule(p);
             else if (p.type.kind === 'nucleus') drawAlpha(p);
@@ -6795,6 +8378,8 @@
             for (const s of stuck) drawMolecule(s, true);
             if (stage === 'molecule' && !isGiant(player.type)) drawPlayerMolecule();
             else if (stage !== 'nebula') for (const q of cluster) drawFree(q, time);
+
+            drawEnemies(time, camX, camY, viewW, viewH);
 
             // Floating messages (kept readable when zoomed out)
             const now = performance.now();
@@ -7091,7 +8676,8 @@
             // Tiny particles get a bigger click target.
             // (In your nebula, its stars come first: the cloud is all around them.)
             let best = null, bestD = Infinity;
-            const lists = stage === 'nebula' ? [neb.stars, spaceNebulas, cluster] : [cluster, stuck, free, spaceNebulas];
+            const foes = enemies.filter(e => !e.gone && !e.event);
+            const lists = stage === 'nebula' ? [foes, neb.stars, spaceNebulas, cluster] : [cluster, stuck, foes, free, spaceNebulas];
             for (const list of lists) {
                 for (const p of list) {
                     const d = Math.hypot(p.x - wx, p.y - wy);
@@ -7129,6 +8715,7 @@
         function showInfo(p) {
             selected = p;
             const t = p.type;
+            if (t.kind === 'enemy') { showEnemyInfo(p); return; }
             if (t.kind === 'dust') { showDustInfo(p); return; }
             if (t.kind === 'nebula') { showNebulaInfo(p); return; }
             if (t.kind === 'nebstar') { showNebStarInfo(p); return; }
@@ -7145,6 +8732,7 @@
             if (t.kind === 'hadron') infoSwatch.style.background = 'radial-gradient(circle at 35% 30%, #d0d0d8, #8a8a98)';
             if (t.kind === 'atom') infoSwatch.style.background = 'radial-gradient(circle at 50% 50%, #e0555a 0 30%, #5a4aa0 34%, #2a2160)';
             if (t.kind === 'nucleus') infoSwatch.style.background = 'radial-gradient(circle at 35% 30%, #ffb4b4, #e0555a 50%, #7a1a1e)';
+            if (t === ZEPHYR) infoSwatch.style.background = ZEPHYR_SWATCH;
             if (t.kind === 'element') {
                 const c = atomColor(t.Z);
                 infoSwatch.style.background = `radial-gradient(circle at 35% 30%, ${shade(c, 0.6)}, ${c} 50%, ${shade(c, -0.55)})`;
@@ -7198,6 +8786,7 @@
             }
             if (t.kind === 'nucleus') addFact('Made of', '2 protons + 2 neutrons');
             if (p.bonded && !p.isPlayer && !p.chem) addFact('Status', 'Bound to you by gluons');
+            if (t === ZEPHYR) addFact('Spawn chance', '1 in 25 billion new particles');
             addRarityFact(rarityOfThing(p));
 
             infoDesc.textContent = info.desc;
@@ -7412,6 +9001,7 @@
         // Right-click / long-press: make something orbit you, or orbit it yourself
         function orbitActionAt(clientX, clientY) {
             const p = particleAt(...toWorld({ clientX, clientY }));
+            if (p && p.type && p.type.kind === 'enemy') { floatText(p, "You can't orbit an enemy!"); return; }
             if (stage === 'nebula') { // in your nebula: right-click a star to go and play as it
                 if (p && p.nebStar) playAsNebulaStar(p);
                 else if (p && p.nebula) floatText(p, physicsOn || mergeOn ? 'Fly into this nebula to merge your clouds!' : 'Merging is off, so you float right through it');
@@ -7420,6 +9010,8 @@
                 return;
             }
             if (p && p.nebula) { floatText(p, "A nebula is light-years across: far too big to orbit!"); return; }
+            if (p && p.type === ZEPHYR && p !== player) { floatText(p, 'Nothing can get to it, and everything already orbits it!'); return; }
+            if (p && player.type === ZEPHYR && p !== player) { floatText(p, 'Everything already orbits you!'); return; }
             if (!p || cluster.includes(p) || stuck.includes(p)) return;
             const name = p.type.name.toLowerCase();
             if (stage === 'molecule' && physicsOn) {
@@ -7641,14 +9233,15 @@
             showToast(cleanupOn ? 'Cleanup ON' : 'Cleanup OFF', detail);
         });
 
-        // --- Ocamathron / Hiemadecticus spawning on/off (physics off only) ---
+        // --- Mystery particle spawning on/off (physics off only): the Ocamathron,
+        // the Hiemadecticus and the Zephyr-Philgem ---
         const giantsEl = document.getElementById('giants-btn');
         function showGiantsButton() {
-            giantsEl.textContent = giantsOn ? '\u2728 Ocamathrons: ON' : '\u2728 Ocamathrons: OFF';
+            giantsEl.textContent = giantsOn ? '\u2728 Mystery particles: ON' : '\u2728 Mystery particles: OFF';
             giantsEl.classList.toggle('off', !giantsOn);
             giantsEl.title = giantsOn
-                ? 'Three Hiemadecticus roam the subatomic, atomic and molecule worlds, and can fuse into an Ocamathron. Tap to stop them spawning'
-                : "No Ocamathrons or Hiemadecticus spawn (you can still pick one to be). Tap to let them spawn again";
+                ? 'Three Hiemadecticus roam the subatomic, atomic and molecule worlds, and can fuse into an Ocamathron. Very rarely (1 in 25 billion), a Zephyr-Philgem appears. Tap to stop mystery particles spawning'
+                : 'No Ocamathrons, Hiemadecticus or Zephyr-Philgems spawn (you can still pick one to be). Tap to let them spawn again';
         }
         showGiantsButton();
         giantsEl.addEventListener('click', () => {
@@ -7657,9 +9250,31 @@
             showGiantsButton();
             manageGiants();
             giantsEl.blur(); // so the keyboard keeps steering you
-            showToast(giantsOn ? 'Ocamathrons ON' : 'Ocamathrons OFF', giantsOn
-                ? 'Three Hiemadecticus are back on the map. If all three touch, they fuse into an Ocamathron'
-                : 'No more Ocamathrons or Hiemadecticus on the map');
+            showToast(giantsOn ? 'Mystery particles ON' : 'Mystery particles OFF', giantsOn
+                ? 'Three Hiemadecticus are back on the map (if all three touch, they fuse into an Ocamathron), and a Zephyr-Philgem might appear: 1 in 25 billion!'
+                : 'No more Ocamathrons, Hiemadecticus or Zephyr-Philgems on the map');
+        });
+
+        // --- Enemies on/off (physics on or off: they only hurt you with physics on) ---
+        const enemiesEl = document.getElementById('enemies-btn');
+        function showEnemiesButton() {
+            enemiesEl.textContent = enemiesOn ? '\u2694 Enemies: ON' : '\u2694 Enemies: OFF';
+            enemiesEl.classList.toggle('off', !enemiesOn);
+            enemiesEl.title = enemiesOn
+                ? 'Enemies roam every scale. Eat ones smaller than you; bigger ones knock pieces off you (only with real physics on). Tap to turn them off'
+                : 'No enemies. Tap to let them spawn again';
+        }
+        showEnemiesButton();
+        enemiesEl.addEventListener('click', () => {
+            enemiesOn = !enemiesOn;
+            try { localStorage.setItem(ENEMIES_KEY, enemiesOn ? 'on' : 'off'); } catch (err) { /* still works this game */ }
+            showEnemiesButton();
+            if (!enemiesOn) clearEnemies();
+            else { creatureIn = 1; eventIn = rand(10, 18); nullonIn = 4; }
+            enemiesEl.blur(); // so the keyboard keeps steering you
+            showToast(enemiesOn ? 'Enemies ON' : 'Enemies OFF', !enemiesOn ? 'No more enemies anywhere'
+                : physicsOn ? 'Enemies roam every scale! Eat the ones smaller than you (green rings). Bigger ones (red rings) knock pieces off you'
+                : "Enemies are on the map, but physics is off, so they're asleep and can't hurt you. Watch out for the Nullon, though!");
         });
 
         // --- Becoming a dust grain on/off (works with physics on or off) ---
@@ -7756,8 +9371,11 @@
             if (selected === player) showInfo(player);
             document.body.classList.toggle('is-ocamathron', type === OCAMATHRON);
             if (isGiant(type) || isGiant(oldType)) manageGiants(); // always exactly three Hiemadecticus
-            if (!quiet && !isGiant(type)) startedAs = { type, color: player.color }; // what an Ocamathron breaks you back down to
-            if (!quiet) showToast(`You're ${aOrAn(type.name)} ${isGiant(type) ? type.name : type.name.toLowerCase()}!`, type === OCAMATHRON
+            manageZephyr(); // there's only ever one Zephyr-Philgem
+            if (!quiet && type.kind !== 'mystery') startedAs = { type, color: player.color }; // what an Ocamathron breaks you back down to
+            if (!quiet) showToast(`You're ${aOrAn(type.name)} ${type.kind === 'mystery' ? type.name : type.name.toLowerCase()}!`, type === ZEPHYR
+                ? "Everything in the subatomic world orbits you, and nothing can get to you. Watch out: an Ocamathron's or Hiemadecticus's light splits you into three Calabi–Yau manifolds!"
+                : type === OCAMATHRON
                 ? 'Your light tears apart anything that comes close. Press Space or tap 💥 Hyper Pulse to blast the whole map!'
                 : type === HIEMADECTICUS
                 ? "Your light tears apart anything grouped that comes close. Find the other two Hiemadecticus: if all three of you touch, you'll fuse into an Ocamathron!"
@@ -7795,7 +9413,7 @@
                 ['Made of quarks (hadrons)', t => t.kind === 'hadron'],
                 ['Atomic nucleus', t => t.kind === 'nucleus'],
                 ['Hypothetical particles and mathematical shapes', t => t.kind === 'hypothetical'],
-                ['Mystery particles', t => isGiant(t)],
+                ['Mystery particles', t => t.kind === 'mystery'],
                 ['Space', t => t === NEBULA_TYPE],
             ];
             const ball = (look) => `radial-gradient(circle at 35% 30%, ${look.light}, ${look.base} 50%, ${look.dark})`;
@@ -7804,7 +9422,7 @@
                 h.textContent = title;
                 const grid = document.createElement('div');
                 grid.className = 'pick-grid';
-                for (const t of [...TYPES, OCAMATHRON, HIEMADECTICUS, NEBULA_TYPE].filter(match)) {
+                for (const t of [...TYPES, OCAMATHRON, HIEMADECTICUS, ZEPHYR, NEBULA_TYPE].filter(match)) {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'pick';
@@ -7816,6 +9434,11 @@
                         : t.kind === 'nucleus' ? ball(PROTON_LOOK) : ball(t.look);
                     if (t.look === ELECTRON_LOOK) sw.style.color = '#222';
                     if (isGiant(t)) sw.style.boxShadow = `0 0 12px ${t.glow}`; // it glows
+                    if (t === ZEPHYR) {
+                        sw.style.background = ZEPHYR_SWATCH;
+                        sw.style.borderRadius = '30%';
+                        sw.style.boxShadow = `0 0 12px ${t.glow}`;
+                    }
                     if (t === NEBULA_TYPE) sw.style.background = 'radial-gradient(circle at 40% 40%, #fff8, #ff5f9a 30%, #8a6cff 55%, #5ab0ff 70%, #0000 76%)';
                     sw.textContent = t.sym;
                     if (t.bar) sw.style.textDecoration = 'overline';
@@ -7833,7 +9456,7 @@
         const startParams = new URLSearchParams(location.search);
         const startAs = startParams.get('as');
         if (startAs) history.replaceState(null, '', location.pathname); // so Start over shows the menu again
-        const startType = startAs && [...TYPES, OCAMATHRON, HIEMADECTICUS, NEBULA_TYPE].find(t => t.id === startAs);
+        const startType = startAs && [...TYPES, OCAMATHRON, HIEMADECTICUS, ZEPHYR, NEBULA_TYPE].find(t => t.id === startAs);
         const devStage = startParams.get('devstage');
         if (devStage) history.replaceState(null, '', location.pathname);
         const startAsNebula = startType === NEBULA_TYPE; // with physics on or off
@@ -7845,6 +9468,33 @@
         function initDevPowers(initialPower) {
             const devPanel = document.getElementById('dev-panel');
             const devButton = document.getElementById('dev-btn');
+            // One button for every enemy: it shows up right next to you
+            const enemyHead = document.createElement('b');
+            enemyHead.textContent = 'Enemies (spawn one near you)';
+            devPanel.append(enemyHead);
+            for (const [kind, def] of Object.entries(ENEMY_DEFS)) {
+                if (def.hidden) continue;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.dataset.dev = 'enemy:' + kind;
+                btn.textContent = `${def.name} (${SCALE_LABEL[def.scale]})`;
+                devPanel.append(btn);
+            }
+            function devSpawnEnemy(kind) {
+                const def = ENEMY_DEFS[kind];
+                const ok = def.scale === 'mystery' ? !physicsOn && boxed() : (def.scales || [def.scale]).includes(enemyScale());
+                if (!ok) {
+                    showToast(`DEV: the ${def.name} lives at the ${SCALE_LABEL[def.scale].toLowerCase()} scale`, def.scale === 'mystery'
+                        ? 'Turn physics off and go to the subatomic, atomic or molecule world first'
+                        : 'Use the scale and become buttons to get there first');
+                    return;
+                }
+                if (!enemiesOn) enemiesEl.click();
+                if (def.scale === 'mystery' && !giantsOn) giantsEl.click();
+                enemyStage = stage; // so it isn't cleared as a "new world" on the next check
+                spawnEnemy(kind, true);
+                showToast(`DEV: ${def.name}`, kind === 'nullon' || physicsOn ? def.does : "Physics is off, so it's asleep and can't hurt you");
+            }
             devButton.addEventListener('click', () => {
                 devButton.setAttribute('aria-expanded', String(devPanel.classList.toggle('open')));
             });
@@ -7878,6 +9528,20 @@
             }
             const DEV_POWERS = {
                 nebula: () => { neb = null; enterNebulaStage(); },
+                // A Zephyr-Philgem shows up right next to you (you become an up quark if you're one)
+                zephyrSpawn: () => {
+                    if (stage === 'dust' || stage === 'nebula') {
+                        location.replace(location.pathname + '?devstage=zephyrSpawn');
+                        return;
+                    }
+                    if (physicsOn) setPhysics(false, false);
+                    if (!giantsOn) giantsEl.click(); // mystery particles have to be on for it to stay
+                    if (stage === 'molecule' || player.type === ZEPHYR) devParticle('up', 'red');
+                    const old = findZephyr();
+                    if (old) removeFree(old);
+                    const x = Math.min(WORLD.width - ZEPHYR.radius, player.x + ZEPHYR.radius * 7);
+                    spawnZephyr(x, player.y);
+                },
                 dust: () => devBecome(DUST.startSize),
                 planet: () => devBecome(1.3e7),   // about Earth
                 gas: () => devBecome(1.4e8),      // about Jupiter
@@ -7969,6 +9633,11 @@
                 oxygen: () => devMolecule('O'),
                 ocamathron: () => devGiant(OCAMATHRON),
                 hiemadecticus: () => devGiant(HIEMADECTICUS),
+                zephyr: () => {
+                    if (physicsOn) setPhysics(false, false);
+                    devClear();
+                    becomeParticle(ZEPHYR, null, true);
+                },
                 bigOn: () => { setPhysics(true, false); devMolecule(BIGGEST_REAL); },
                 bigOff: () => { setPhysics(false, false); devMolecule(BIGGEST_OFF); },
             };
@@ -7981,6 +9650,7 @@
                 showToast(`DEV: ${player.type.name}`, `${stage === 'molecule' ? 'Molecule' : 'Atomic'} scale${size} · physics ${physicsOn ? 'ON' : 'OFF'}`);
             }
             function runDevPower(power) {
+                if (power.startsWith('enemy:')) { devSpawnEnemy(power.slice(6)); return true; }
                 if (Object.hasOwn(DEV_STAGES, power)) runDevStage(power);
                 else if (Object.hasOwn(DEV_POWERS, power)) DEV_POWERS[power]();
                 else return false;
