@@ -52,7 +52,7 @@
   var attQ = new THREE.Quaternion(), defQ = new THREE.Quaternion();
   var speed = Number(query('speed')) || 1;
   var hitStop = 0, slowT = 0, introT = 0, koT = 0, defFade = 1;
-  var hitTimes = [], fightStart = 0, lastFx = -1, lastShatter = -1, lastWarp = -1, lastTrip = -1, flashTimes = [];
+  var hitTimes = [], fightStart = 0, lastFx = -1, lastShatter = -1, lastWarp = -1, lastTrip = -1, lastGlitch = -1, lastDream = -1, flashTimes = [];
   var labelDue = false, lastLabel = 0, koAt = 0;
   var hudDirty = true, waitT = 0;
 
@@ -219,9 +219,11 @@
   }
   // "Damage per hit: 1,000" for numbers, "Next hit: 7! = 5,040" for functions
   function refreshAttackerText() {
-    var txt = fight.isFunction
-      ? 'Next hit: ' + fight.label() + ' = ' + MBF.V.fmt(fight.damage())
-      : 'Damage per hit: ' + MBF.V.fmt(fight.damage());
+    var dmg = fight.damage(), val = MBF.V.fmt(dmg), txt;
+    if (fight.isFunction) {
+      txt = 'Next hit: ' + fight.label() + (val !== fight.label() ? ' = ' + val : '');
+      if (dmg.estimate) txt += ' (nobody knows its real size; this is a guess)';
+    } else txt = 'Damage per hit: ' + val;
     $('att-dmg').textContent = txt;
   }
 
@@ -351,6 +353,19 @@
       if (!busy) R.fx.ring(world.def.x, world.def.y, a.aura, world.def.r * 0.4, world.def.r * (3 + t5), 0.8, 0.035);
     }
     // level 6: kaleidoscope mirror and echoing trails, stronger the deeper into Graham's sequence
+    // level 7: datamosh - the picture breaks into jumping, smearing, checkerboard blocks
+    if (res.level >= 7 && (!busy || now - lastGlitch > 300)) {
+      var t7 = res.level > 7 ? 1 : res.t;
+      lastGlitch = now;
+      R.fx.glitch(calm ? 0.15 : 0.55 + 0.45 * t7);
+      R.fx.debris(ev.x, ev.y, Math.round((calm ? 8 : 20) + 20 * t7), (300 + 200 * t7) * m, 7 * m + 6, [1, 1, 1]);
+    }
+    // level 8: fever dream - everything flows, drips and melts into a mirror of itself
+    if (res.level >= 8 && (!busy || now - lastDream > 500)) {
+      lastDream = now;
+      R.fx.dream(calm ? 0.2 : 0.75 + 0.25 * res.t);
+      R.fx.swirl((calm ? 0.3 : 0.9) * (Math.random() < 0.5 ? -1 : 1), world.def.x, world.def.y);
+    }
     if (res.level >= 6 && (!busy || now - lastTrip > 450)) {
       var t6 = res.level > 6 ? 1 : res.t;
       lastTrip = now;
@@ -410,6 +425,8 @@
       if (!calm) R.fx.kaleido(1);
       R.fx.feedback(calm ? 0.4 : 0.9);
     }
+    if (res.level >= 8) R.fx.glitch(calm ? 0.2 : 1);
+    if (res.level >= 9) R.fx.dream(calm ? 0.3 : 1.2);
     damageNumber('-' + MBF.V.fmt(res.damage), ev.x + ev.nx * 26 * m, ev.y + ev.ny * 26 * m + 18 * m, Math.min(res.level, 4), res.t, false);
     damageNumber('K.O.!', dx, dy + dr * 0.2, Math.min(res.level, 3), 1, true);
     world.defGone = true;
@@ -511,6 +528,8 @@
         attV.setLabel(fight.label());
         refreshAttackerText();
       }
+      var fnK = fight.attacker.fn;
+      if (fnK === 'tree' || fnK === 'fish7') attV.setK(fight.over ? fight.input - 1 : fight.input);   // TREE seed colours / Fish count
     }
 
     if (world && attV) {
@@ -525,6 +544,8 @@
       defV.setPos(world.def.x, world.def.y);
       attV.setOrientation(attQ);
       defV.setOrientation(defQ);
+      defV.lookAt(A.x, A.y);                       // Rayo's eye follows its opponent
+      attV.lookAt(world.def.x, world.def.y);
       if (phase === 'ko' || phase === 'done') {
         defV.setFade(defFade);
         defV.scale += dt * 0.6 * defFade;

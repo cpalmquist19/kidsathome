@@ -41,6 +41,9 @@
       return { m: BM.fromLog10(lg) };
     },
     hyper: function (arrows, x, name) { return { h: { a: arrows, x: x }, name: name }; },
+    // growth-class value: class r at input n. Anything in a higher class beats anything lower.
+    //   1 TREE · 2 SCG · 3 Loader · 10 Busy Beaver · 11 Rayo · 11.5 Fish 7 · 12 BIG FOOT · 13 Oblivion · 14 Utter Oblivion
+    cls: function (r, n, name) { return { g: { r: r, n: n }, name: name }; },
     zero: function () { return { b: 0n }; },
     isExact: function (v) { return v.b !== undefined; },
     isHyper: function (v) { return v.h !== undefined; },
@@ -51,6 +54,12 @@
     },
     mag: function (v) { return v.m || BM.fromBig(v.b); },
     cmp: function (a, b) {
+      if (a.g || b.g) {
+        if (!a.g) return -1;
+        if (!b.g) return 1;
+        if (a.g.r !== b.g.r) return a.g.r < b.g.r ? -1 : 1;
+        return V.cmp(a.g.n, b.g.n);
+      }
       if (a.h || b.h) {
         if (!a.h) return -1;
         if (!b.h) return 1;
@@ -64,13 +73,13 @@
     add: function (a, b) {
       if (a.b === 0n) return b;
       if (b.b === 0n) return a;
-      if (a.h || b.h) return V.cmp(a, b) >= 0 ? a : b;     // the smaller one vanishes
+      if (a.h || b.h || a.g || b.g) return V.cmp(a, b) >= 0 ? a : b;     // the smaller one vanishes
       if (a.b !== undefined && b.b !== undefined) return V.big(a.b + b.b);
       return { m: BM.add(V.mag(a), V.mag(b)) };
     },
     // one level of log10 off a huge value (for "how many hits of 10^n")
     down: function (v) {
-      if (v.h) return v;
+      if (v.h || v.g) return v;
       var m = V.mag(v);
       if (m.L <= 1) return { b: BigInt(Math.ceil(BM.log10(m))) };
       return { m: { L: m.L - 1, t: m.t } };
@@ -79,12 +88,14 @@
       if (v.name) return v.name;
       if (v.b !== undefined) return MBF.fmt(v.b);
       if (v.m) return BM.format(v.m);
+      if (v.g) return (CLASS_NAMES[v.g.r] || 'f') + '(' + V.fmt(v.g.n) + ')';
       var a = v.h.a;
       if (a.b !== undefined && a.b <= 5n) return '10' + '↑'.repeat(Number(a.b)) + v.h.x;
       return '10↑^(' + V.fmt(a) + ') ' + v.h.x;
     }
   };
 
+  var CLASS_NAMES = { 1: 'TREE', 2: 'SCG-class', 3: 'Loader-class', 10: 'BB', 11: 'Rayo', 11.5: 'F₇', 12: 'FOOT', 13: 'Oblivion', 14: 'Utter Oblivion' };
   var SUB = '₀₁₂₃₄₅₆₇₈₉';
   function sub(n) { return String(n).replace(/[0-9]/g, function (c) { return SUB[c]; }); }
   function arrows(k) { return k <= 5 ? '↑'.repeat(k) : '↑' + sup(k); }
@@ -104,6 +115,15 @@
     if (ball.value !== undefined) return V.big(BigInt(ball.value));
     if (ball.mag) return { m: { L: ball.mag.L, t: ball.mag.t }, name: ball.valueName };
     if (ball.special === 'graham') return MBF.grahamValue(64);
+    if (ball.special === 'tree3') return V.cls(1, { b: 3n }, 'TREE(3)');
+    if (ball.special === 'scg13') return scgClass(13, true, 'SCG(13)');
+    if (ball.special === 'loader') return V.cls(3, { b: 5n }, "Loader's number");   // D^5(99)
+    if (ball.special === 'rayo') return V.cls(11, { b: 10n ** 100n }, "Rayo's number");
+    if (ball.special === 'bigfoot') return V.cls(12, { b: 1n }, 'BIG FOOT');
+    if (ball.special === 'sscg3') return sscg(3);
+    if (ball.special === 'fish7') return fish7(63);
+    if (ball.special === 'oblivion') return V.cls(13, { b: 1n }, 'Oblivion');
+    if (ball.special === 'utter') return V.cls(14, { b: 1n }, 'Utter Oblivion');
     if (ball.special === 'moser') {
       // 2 inside a mega-gon. Roughly 10 ↑^(mega) 10, with mega itself a tower about 257 tens tall.
       return V.hyper({ m: { L: 257, t: 1 } }, 10, "Moser's number");
@@ -166,9 +186,126 @@
       case 'pow10': return n < EXACT_DIGITS ? { b: 10n ** BigInt(n) } : { m: BM.fromLog10(n) };
       case 'ack': return ackermann(n);
       case 'graham': return MBF.grahamValue(n);
+      case 'tree': return n === 1 ? { b: 1n } : n === 2 ? { b: 3n } : V.cls(1, { b: BigInt(n) }, 'TREE(' + n + ')');
+      case 'bb': return busyBeaver(n);
+      case 'sscg': return sscg(n);
+      case 'arrows': return upArrows(n);
+      case 'tet': return n === 1 ? { b: 10n } : n === 2 ? { b: 10000000000n } : { m: { L: n, t: 1 }, name: '10↑↑' + n };
+      case 'circle': return circle(n);
+      case 'loaderD': return loaderD(n);
+      case 'rayo': return guessed(tower2(n / 1500), 'Rayo(' + n + ')');
+      case 'foot': return guessed(tower2(n / 1000), 'FOOT(' + n + ')');
+      case 'fish7': return fish7(n);
+      case 'scg': return scg(n);
     }
     throw new Error('unknown function ' + fn);
   };
+
+  // Knuth's up-arrows: 3↑3 = 27, 3↑↑3 = 7,625,597,484,987, 3↑↑↑3, 3↑↑↑↑3 (= G(1))...
+  function upArrows(n) {
+    if (n === 1) return { b: 27n };
+    if (n === 2) return { b: 7625597484987n };
+    var name = '3' + arrows(n) + '3';
+    if (n === 3) return { m: { L: 7625597484986, t: 1 }, name: name };   // a tower of 3s that tall
+    return V.hyper({ b: BigInt(n) }, 3, name);
+  }
+
+  // Steinhaus-Moser: n in a triangle = n^n, in a square = n inside n nested triangles,
+  // in a circle = n inside n nested squares. Circle(2) is "mega", about 10↑↑257.
+  // Moser's number is 2 inside a polygon with mega sides, far beyond any Circle(n).
+  function circle(n) {
+    if (n === 1) return { b: 1n };
+    if (n === 2) return { m: { L: 257, t: 1 }, name: 'mega' };
+    return V.hyper({ b: 3n }, n + 0.5, 'Circle(' + n + ')');            // rough: about 10↑↑↑(n+½)
+  }
+
+  // Loader's D program applied n times to 99. D^5(99) is Loader's number. Nobody knows
+  // how big the earlier steps are, so D^1..D^4 sit in the same class below it (a guess).
+  function loaderD(n) {
+    var v = V.cls(3, { b: BigInt(n) }, n === 5 ? "D⁵(99), Loader's number" : 'D' + sup(n) + '(99)');
+    if (n !== 5) v.estimate = true;
+    return v;
+  }
+
+  // Rayo(n) and FOOT(n) stay small until n is in the thousands, and nobody knows their values.
+  // The game guesses a tower of 2s that grows slowly with n (Rayo: one level per 1,500 hits).
+  function guessed(v, name) {
+    var w = { name: name, estimate: true };
+    for (var k in v) if (k !== 'name') w[k] = v[k];
+    return w;
+  }
+  // 2↑↑H for a real height H (smooth between whole heights)
+  function tower2(H) {
+    var k = Math.floor(H), lg = Math.log10(Math.pow(2, H - k)), m = null;
+    for (var i = 0; i < k; i++) {
+      if (m) { m = BM.up(m); continue; }
+      var nl = Math.pow(10, lg) * Math.log10(2);
+      if (isFinite(nl)) lg = nl;
+      else m = BM.up(BM.fromLog10(lg + Math.log10(Math.log10(2))));
+    }
+    if (m) return { m: m };
+    return lg < 15 ? { b: BigInt(Math.max(1, Math.round(Math.pow(10, lg)))) } : { m: BM.fromLog10(lg) };
+  }
+  // smallest n with f(n) >= hp, by bisection (the hits before it are a rounding error)
+  function towerHits(fn, hp) {
+    var scale = fn === 'rayo' ? 1500 : 1000, lo = 1, hi = 2;
+    while (V.cmp(tower2(hi / scale), hp) < 0) { hi *= 2; if (hi > 1e12) return null; }
+    while (hi - lo > 1) { var mid = Math.floor((lo + hi) / 2); if (V.cmp(tower2(mid / scale), hp) >= 0) hi = mid; else lo = mid; }
+    return { b: BigInt(hi) };
+  }
+
+  // Fish number 7 = F7^63(10^100): Fish's F7 function (an extension of Rayo's) applied 63
+  // times to a googol. One application already reaches at least Rayo(10^100), so the whole
+  // sequence sits in its own class just above Rayo's number (11.5), counted by applications.
+  function fish7(n) {
+    return V.cls(11.5, { b: BigInt(n) }, n === 63 ? 'Fish number 7' : 'F₇' + sup(n) + '(10¹⁰⁰)');
+  }
+
+  // SSCG / SCG - Friedman's graph sequences. Both live in the "SCG" growth class (2).
+  // Inside that class values are ordered by an SSCG-equivalent index, stored doubled:
+  //   SSCG(n) -> 2n.   SCG(n) is only known to sit between SSCG(n) and SSCG(4n+3), so the
+  //   game guesses the middle, SSCG(2n+1) -> 4n+2. That makes SCG(13) about SSCG(27).
+  function scgClass(n, isScg, name) {
+    return V.cls(2, { b: isScg ? BigInt(4 * n + 2) : BigInt(2 * n) }, name);
+  }
+  var sscgCache = [];
+  function sscg(n) {
+    if (sscgCache[n]) return sscgCache[n];
+    var v;
+    if (n === 1) v = { b: 5n };
+    else if (n === 2) { v = { m: BM.fromLog10(3.5775e28) }; v.name = 'about 3 × 2^(3 × 2⁹⁵)'; }
+    else v = scgClass(n, false, 'SSCG(' + n + ')');      // SSCG(3) is already far past TREE(3)
+    return (sscgCache[n] = v);
+  }
+  var scgCache = [];
+  function scg(n) {
+    if (!scgCache[n]) { scgCache[n] = scgClass(n, true, 'SCG(' + n + ')'); scgCache[n].estimate = true; }
+    return scgCache[n];
+  }
+
+  // Busy Beaver: the most steps an n-state Turing machine can run and still stop.
+  // BB(1)-BB(5) are known exactly; BB(6) is known to be more than 2↑↑↑5.
+  // Beyond that NOBODY knows - the game uses a rough guess (marked estimate) that
+  // climbs through Graham, TREE, SCG and Loader territory before going uncomputable.
+  var BB_EXACT = [0n, 1n, 6n, 21n, 107n, 47176870n];
+  var bbCache = [];
+  function busyBeaver(n) {
+    if (bbCache[n]) return bbCache[n];
+    var v;
+    if (n <= 5) v = { b: BB_EXACT[n] };
+    else if (n === 6) v = V.hyper({ b: 3n }, 5, 'more than 2↑↑↑5');
+    else {
+      var name = 'BB(' + n + ')';
+      if (n === 7) v = V.hyper({ b: 12n }, 10, name);
+      else if (n <= 16) v = V.hyper(MBF.grahamValue(Math.round((n - 7) * 64 / 9)).h.a, 3, name);
+      else if (n <= 30) v = V.cls(1, { b: BigInt(n - 14) }, name);
+      else if (n <= 40) v = scgClass(n - 18, true, name);        // BB(31) ~ SCG(13)
+      else if (n <= 60) v = V.cls(3, { b: BigInt(n - 36) }, name);        // BB(41) ~ Loader's number
+      else v = V.cls(10, { b: BigInt(n) }, name);
+      v.estimate = true;
+    }
+    return (bbCache[n] = v);
+  }
 
   // A(n, n) = 2 ↑^(n-2) (n+3) - 3:  3, 7, 61, 2↑↑7 - 3, 2↑↑↑8 - 3, ...
   var ackCache = [];
@@ -202,16 +339,27 @@
 
   // Smallest number of hits m with S(m) >= hp, as a value.
   function hitsToDestroy(fn, hp) {
-    if (fn === 'ack' || fn === 'graham') {
+    if (fn === 'rayo' || fn === 'foot') {
+      if (fn === 'rayo' && hp.g && hp.g.r === 11) return hp.g.n;        // Rayo(n) reaches Rayo's number at n = 10^100
+      var dealtR = V.zero();
+      for (var i = 1; i <= 20000; i++) {                                 // early on, the small hits add up
+        dealtR = V.add(dealtR, MBF.fnValue(fn, i));
+        if (V.cmp(dealtR, hp) >= 0) return { b: BigInt(i) };
+      }
+      if (hp.m) { var th = towerHits(fn, hp); if (th) return th; }
+      return hp;
+    }
+    if (fn === 'ack' || fn === 'graham' || fn === 'tree' || fn === 'bb' || fn === 'sscg' || fn === 'scg' ||
+        fn === 'arrows' || fn === 'tet' || fn === 'circle' || fn === 'loaderD' || fn === 'fish7') {
       // these explode so fast that the total is just the latest hit: walk forward
       var dealt = V.zero();
-      for (var k = 1; k <= 80; k++) {
+      for (var k = 1; k <= 200; k++) {
         dealt = V.add(dealt, MBF.fnValue(fn, k));
         if (V.cmp(dealt, hp) >= 0) return { b: BigInt(k) };
       }
       // Ackermann needs about as many hits as the defender has arrows
-      if (hp.h) return hp.h.a;
-      return hp;
+      if ((fn === 'ack' || fn === 'arrows') && hp.h) return hp.h.a;   // one more arrow per hit
+      return hp;                              // stuck in a lower class: about as many hits as the number itself
     }
     if (V.isExact(hp)) {
       var target = hp.b, hi = 1n;
@@ -248,7 +396,7 @@
   // Level comes from the size of the damage, not the share of health.
   //   0: 1-9   1: 10-999   2: up to 10^15   3: up to a googol   4: up to a googolplex
   //   5+: later phases (Moser, Graham, TREE, Rayo ...)
-  MBF.MAX_LEVEL = 8;
+  MBF.MAX_LEVEL = 9;
   //   5: beyond a googolplex up to Moser (taller towers, Ackermann, up-arrows)
   //   6: Graham's sequence (the number of arrows is itself an up-arrow number)
   function nesting(v) { var d = 0; while (v.h) { d++; v = v.h.a; } return d; }
@@ -261,6 +409,11 @@
       }
     } else if (lg <= 1e100 * (1 + 1e-12)) {
       level = 4; t = (Math.log10(lg) - 2) / 98;
+    } else if (damage.g) {
+      // 7: TREE / SCG / Loader (computable, far past Graham)   8: uncomputable (BB, Rayo, BIG FOOT)
+      var r = damage.g.r;
+      if (r < 10) { level = 7; t = Math.min(1, (r - 1) / 2.5 + 0.05 * Math.min(4, V.log10(damage.g.n))); }
+      else { level = 8; t = Math.min(1, (r - 10) / 2); }
     } else if (!damage.h) {
       var m = V.mag(damage);                                 // towers: googolplexplex, Skewes, A(4,4)
       level = 5; t = Math.min(0.45, 0.12 * (m.L - 3) + 0.02 * m.t);
@@ -385,7 +538,7 @@
       if (f.negligible()) {
         var dealtTxt = V.fmt(f.dealt);
         if (dealtTxt.indexOf('−') >= 0) dealtTxt = '(' + dealtTxt + ')';
-        return 'HP: ' + (maxHp.name && maxHp.h ? maxHp.name : def.label) + ' − ' + dealtTxt;
+        return 'HP: ' + (maxHp.name && (maxHp.h || maxHp.g) ? maxHp.name : def.label) + ' − ' + dealtTxt;
       }
       if (V.isExact(maxHp) && V.isExact(f.dealt)) {
         var rem = maxHp.b - f.dealt.b;

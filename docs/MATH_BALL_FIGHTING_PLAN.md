@@ -107,5 +107,23 @@ Effects stack.
    New "up-arrow" value kind 10↑^a x where the arrow count is itself a value, so Graham's number is
    G(64) nested 64 deep and G(n) vs Graham's number really takes 64 hits.
    Levels 5 (spiral warp + vortex) and 6 (kaleidoscope + frame-feedback trails).
-4. TREE, SCG, Loader's, BB, Rayo, the showcase TREE / Rayo designs, levels 7–8.
+4. ✅ **Phase 4:** TREE(3), SCG(13), Loader's number, Rayo's number, BIG FOOT; functions TREE(n) and BB(n).
+   Growth-class values (TREE < SCG < Loader < Busy Beaver < Rayo < BIG FOOT) for numbers past any
+   up-arrow description. Showcase designs: TREE (crystal orb, glowing tree with n seed colours, purple-teal
+   rim) and Rayo (crimson scales engraved with ∀ ∃ ∈ ¬, a slit eye that tracks its opponent).
+   Uncomputable balls flicker and tear. Levels 7 (datamosh: jumping, smearing and checkerboard blocks,
+   tearing) and 8 (fever dream: the screen flows, drips, mirrors into itself and shifts hue); K.O.s reach 9.
+   - BB(1)–BB(5) are exact and BB(6) > 2↑↑↑5; from BB(7) on the game uses a labelled guess.
+   - Rayo(n) was left out: its values are unknown and it stays tiny for thousands of hits.
+   - Added after: Oblivion (black hole) and Utter Oblivion (endless tunnel of rings), Jonathan Bowers'
+     numbers ranked above BIG FOOT. Their fact cards say they are not precisely defined.
+   - Added after: functions SSCG(n) (SSCG(1) = 5, SSCG(2) ≈ 3 × 2^(3 × 2⁹⁵), SSCG(3) past TREE(3)) and SCG(n).
+     SCG(n) is only known to lie between SSCG(n) and SSCG(4n+3); the game guesses SSCG(2n+1) and labels it.
+   - Added after: the functions behind the existing numbers - Tetration 10↑↑n (towers like googolplex and
+     Skewes), up-arrows 3↑ⁿ3 (3↑↑↑↑3 = G(1)), Steinhaus-Moser Circle(n) (Circle(2) = mega), Loader's Dⁿ(99)
+     (D⁵(99) = Loader's number), Rayo(n) and FOOT(n). Rayo(n), FOOT(n) and D¹–D⁴(99) are labelled guesses;
+     Rayo(n) vs Rayo's number really takes a googol hits.
+   - Added after: SSCG(3) as a number, and Fish number 7 (= F₇⁶³(10¹⁰⁰), a school of 63 glowing fish) with its
+     function F₇ⁿ(10¹⁰⁰), which wins on hit 63. Fish 7 is placed above Rayo's number (one F₇ application already
+     reaches Rayo(10¹⁰⁰)) and below BIG FOOT; the fact card says the comparison isn't proven.
 5. Sound, Shorts (9:16) layout, Calm-effects tuning, polish.

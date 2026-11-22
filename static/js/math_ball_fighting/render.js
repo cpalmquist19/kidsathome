@@ -61,7 +61,8 @@
       tScene: { value: rt.texture }, tPrev: { value: outB.texture }, uRes: { value: new THREE.Vector2(1, 1) },
       uCenter: { value: new THREE.Vector2(0.5, 0.5) }, uCA: { value: 0 }, uShatter: { value: 0 },
       uSeed: { value: 0 }, uTime: { value: 0 },
-      uSwirl: { value: 0 }, uSwirlC: { value: new THREE.Vector2(0.5, 0.5) }, uKaleido: { value: 0 }, uFeedback: { value: 0 }
+      uSwirl: { value: 0 }, uSwirlC: { value: new THREE.Vector2(0.5, 0.5) }, uKaleido: { value: 0 }, uFeedback: { value: 0 },
+      uGlitch: { value: 0 }, uDream: { value: 0 }
     };
     var postScene = new THREE.Scene();
     var postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
@@ -164,6 +165,7 @@
         uTime: { value: 0 }, uHit: { value: 0 }, uHp: { value: 1 }, uPx: { value: 0.01 },
         uSeed: { value: Math.random() * 10 }, uSpin: { value: 0 }, uFade: { value: 1 },
         uRot: { value: new THREE.Matrix3() },
+        uK: { value: ball.k || 1 }, uGlitch: { value: ball.glitch || 0 }, uLook: { value: new THREE.Vector2(0, 0) },
         uAura: { value: new THREE.Color(ball.aura[0], ball.aura[1], ball.aura[2]) }
       };
       var src = materialCache[ball.texture] || (materialCache[ball.texture] = S.ballFragment(ball.texture));
@@ -220,6 +222,12 @@
         v.refreshPx();
       };
       v.setHp = function (f) { v.u.uHp.value = f; };
+      v.setK = function (k) { v.u.uK.value = k; };
+      // eyes (Rayo) look toward world point (x, y)
+      v.lookAt = function (x, y) {
+        var dx = x - group.position.x, dy = y - group.position.y, L = Math.hypot(dx, dy) || 1;
+        v.u.uLook.value.set(dx / L, dy / L);
+      };
       v.setLabel = function (text) {
         if (text === v.labelText) return;
         v.labelText = text;
@@ -413,7 +421,7 @@
 
     // ------------------------------------------------------------ shake / punch / flash
     var trauma = 0, punch = 0, flashAmt = 0, pulse = 0, ca = 0, shatter = 0;
-    var swirl = 0, kaleido = 0, feedback = 0;
+    var swirl = 0, kaleido = 0, feedback = 0, glitch = 0, dream = 0;
     var shakeSeed = Math.random() * 100;
 
     R.fx = {
@@ -477,6 +485,10 @@
       },
       // level 6: kaleidoscope mirror and echoing trails
       kaleido: function (amount) { kaleido = Math.max(kaleido, amount); },
+      // level 7: datamosh - blocks jump, smear, tear and turn to checkerboard
+      glitch: function (amount) { glitch = Math.max(glitch, amount); },
+      // level 8: fever dream - the screen flows, drips, mirrors into itself and shifts colour
+      dream: function (amount) { dream = Math.max(dream, Math.min(1.2, amount)); },
       feedback: function (amount) { feedback = Math.max(feedback, Math.min(0.85, amount)); },
       // sparks circling (x, y) at radius r, like water down a drain
       vortex: function (x, y, r, count, speed, color) {
@@ -535,6 +547,12 @@
       if (Math.abs(swirl) < 0.002) swirl = 0;
       if (kaleido < 0.002) kaleido = 0;
       if (feedback < 0.01) feedback = 0;
+      glitch *= Math.exp(-dt * 2.2);
+      dream *= Math.exp(-dt * 0.55);
+      if (glitch < 0.005) glitch = 0;
+      if (dream < 0.005) dream = 0;
+      postU.uGlitch.value = glitch;
+      postU.uDream.value = dream;
       postU.uSwirl.value = swirl;
       postU.uKaleido.value = kaleido;
       postU.uFeedback.value = feedback;
