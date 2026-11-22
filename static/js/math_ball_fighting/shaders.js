@@ -684,6 +684,71 @@
     '}'
   ].join('\n');
 
+  // Infinity - a glowing figure-eight (lemniscate) with a bright spark racing round it forever
+  SURF.infinity = SEGD + '\n' + [
+    'vec2 lem(float s) { float den = 1.0 + sin(s) * sin(s); return 0.8 * vec2(cos(s), sin(s) * cos(s)) / den; }',
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  float dl = 9.0;',
+    '  vec2 prev = lem(0.0);',
+    '  for (int i = 1; i <= 64; i++) {',
+    '    vec2 cur = lem(float(i) / 64.0 * TAU);',
+    '    dl = min(dl, segd(q, prev, cur));',
+    '    prev = cur;',
+    '  }',
+    '  float head = min(length(q - lem(t * 1.3)), length(q - lem(t * 1.3 + PI)));',
+    '  vec3 hue = hsv2rgb(vec3(fract(t * 0.05 + atan(q.y, q.x) / TAU), 0.45, 1.0));',
+    '  vec2 sg = q * 60.0; float sh = hash2(floor(sg));',
+    '  float star = step(0.96, sh) * smoothstep(0.3, 0.0, length(fract(sg) - 0.5)) * (0.6 + 0.4 * sin(t * 3.0 + sh * 40.0));',
+    '  alb = vec3(0.01, 0.01, 0.03);',
+    '  emit = hue * (exp(-dl * 50.0) * 1.7 + exp(-dl * 9.0) * 0.4) + vec3(1.0, 0.95, 0.8) * exp(-head * 22.0) * 2.6 + vec3(star) * 0.7;',
+    '  gloss = 1.0;',
+    '}'
+  ].join('\n');
+
+  // Fictional numbers - one shader, eight looks. uK (0-999) comes from a hash of the
+  // number's name: it picks the template and seeds its shape, so every name looks different
+  // and always the same.
+  SURF.fictional = [
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  float tmpl = mod(floor(uK), 8.0);',
+    '  float s1 = hash2(vec2(uK, 1.3)), s2 = hash2(vec2(uK, 7.1)), s3 = hash2(vec2(uK, 3.7));',
+    '  vec3 c1 = uAura, c2 = hsv2rgb(vec3(fract(s1 + 0.45), 0.7, 1.0));',
+    '  float r = length(q), a = atan(q.y, q.x);',
+    '  vec2 qq = rot2(t * (s2 - 0.5) * 0.6) * q;',
+    '  float v;',
+    '  if (tmpl < 0.5) {',
+    '    float n = 3.0 + floor(s2 * 7.0);',
+    '    float aa = abs(mod(atan(qq.y, qq.x), TAU / n) - PI / n);',
+    '    vec2 kp = vec2(cos(aa), sin(aa)) * r;',
+    '    v = smoothstep(0.035, 0.0, abs(kp.y - 0.15 * sin(kp.x * 12.0 + t))) + 0.5 * smoothstep(0.05, 0.0, abs(fract(r * 6.0 - t * 0.3) - 0.5) - 0.45);',
+    '  } else if (tmpl < 1.5) {',
+    '    float n1 = fbm3(vec3(qq * 2.5 + s1 * 10.0, t * 0.1));',
+    '    v = smoothstep(0.35, 0.85, fbm3(vec3(qq * 5.0 + n1 * 2.0, t * 0.07)));',
+    '  } else if (tmpl < 2.5) {',
+    '    v = pow(0.5 + 0.5 * sin(r * (20.0 + s2 * 30.0) - t * 2.0 + sin(a * (2.0 + floor(s3 * 5.0))) * 1.5), 6.0);',
+    '  } else if (tmpl < 3.5) {',
+    '    vec3 vo = voronoi3(d * (3.0 + s2 * 5.0) + s1 * 20.0);',
+    '    v = smoothstep(0.08, 0.0, vo.y) + vo.z * 0.4;',
+    '  } else if (tmpl < 4.5) {',
+    '    v = 0.5 + 0.5 * sin(qq.x * 9.0 * (0.6 + s2) + t) * sin(qq.y * 7.0 * (0.6 + s3) - t * 1.3) + 0.25 * sin(r * 14.0 - t * 2.0);',
+    '  } else if (tmpl < 5.5) {',
+    '    float arms = 2.0 + floor(s2 * 4.0);',
+    '    v = smoothstep(0.2, 1.0, sin(arms * (a - 2.5 * log(r + 0.03)) - t * 0.6)) * (1.0 - r) + exp(-r * r * 25.0);',
+    '  } else if (tmpl < 6.5) {',
+    '    vec2 w = qq * (5.0 + s2 * 6.0) + vec2(sin(qq.y * 4.0 + t), cos(qq.x * 4.0 - t)) * 0.6;',
+    '    v = step(0.0, sin(w.x * PI) * sin(w.y * PI));',
+    '  } else {',
+    '    float rays = 8.0 + floor(s2 * 16.0);',
+    '    v = pow(abs(cos(a * rays * 0.5 + t * 0.4)), 12.0) * (1.2 - r) + exp(-r * 8.0) * 0.8;',
+    '  }',
+    '  v = clamp(v, 0.0, 1.5);',
+    '  vec3 col = mix(c1 * 0.12, mix(c1, c2, smoothstep(0.0, 1.0, r)), clamp(v, 0.0, 1.0));',
+    '  alb = col * 0.45;',
+    '  emit = col * 0.9 * v + c1 * 0.05;',
+    '  gloss = 0.8;',
+    '}'
+  ].join('\n');
+
   // Functions - a knurled metal ring around a dark core with glowing circuit traces
   SURF.fnring = [
     'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',

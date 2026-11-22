@@ -70,23 +70,52 @@
   .overlay h1 { margin: 6px 0 2px; font: 900 clamp(28px, 5.5vw, 56px) system-ui, sans-serif; text-align: center;
                 background: linear-gradient(180deg, #fff, #ffd479 50%, #ff5c8a); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .sub { color: #a896d8; font-size: clamp(13px, 1.6vw, 16px); text-align: center; max-width: 640px; margin: 0 0 14px; line-height: 1.45; }
-  #pickers { display: flex; gap: 18px; width: min(1100px, 100%); align-items: stretch; flex-wrap: wrap; justify-content: center; }
-  .col { flex: 1 1 320px; background: rgba(22, 14, 42, .7); border: 1px solid #2e2252; border-radius: 16px; padding: 12px; }
-  .col h2 { margin: 0 0 8px; font: 800 14px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; color: #8f7ccf; }
-  .col h2 b { color: #ffd479; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
-  .tile { background: #120b24; border: 2px solid #241a44; border-radius: 12px; padding: 6px 4px 7px; cursor: pointer; text-align: center; color: #d9ccff; transition: transform .12s, border-color .12s; }
-  .tile:hover { transform: translateY(-2px); border-color: #6a55b8; }
-  .tile.sel { border-color: #ffd479; box-shadow: 0 0 16px rgba(255,212,121,.35); background: #1d1236; }
-  .tile.off { opacity: .3; cursor: not-allowed; }
-  .tile img { width: 64px; height: 64px; display: block; margin: 0 auto 3px; }
-  .tile .nm { font: 700 12px system-ui, sans-serif; }
-  #vs { margin: 14px 0 4px; display: flex; align-items: center; gap: 14px; justify-content: center; flex-wrap: wrap; }
-  #vs .side { text-align: center; width: 230px; }
-  #vs img { width: 96px; height: 96px; }
-  #vs .vsn { font: 800 18px system-ui, sans-serif; }
-  #vs .vsf { font-size: 12px; color: #9c8cc8; margin-top: 2px; min-height: 2.6em; }
-  #vs .vs { font: 900 34px system-ui, sans-serif; color: #ff5c8a; text-shadow: 0 0 18px rgba(255,92,138,.6); }
+  #slots { display: flex; gap: 14px; align-items: stretch; justify-content: center; flex-wrap: wrap; width: min(820px, 100%); margin: 4px 0; }
+  .slot { flex: 1 1 260px; max-width: 360px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 10px 12px;
+          background: rgba(22, 14, 42, .75); border: 2px solid #2e2252; border-radius: 16px; color: #e8dcff; cursor: pointer; font: inherit; }
+  .slot.on { border-color: #ffd479; box-shadow: 0 0 22px rgba(255,212,121,.35); background: #1d1236; }
+  .slot .tag { font: 800 12px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; color: #8f7ccf; }
+  .slot.on .tag { color: #ffd479; }
+  .slot img { width: 96px; height: 96px; }
+  .slot .sname { font: 800 17px system-ui, sans-serif; text-align: center; overflow-wrap: anywhere; }
+  .slot .sfact { font-size: 12px; color: #9c8cc8; text-align: center; min-height: 2.6em; }
+  #slots .vs { align-self: center; font: 900 30px system-ui, sans-serif; color: #ff5c8a; text-shadow: 0 0 18px rgba(255,92,138,.6); }
+  #pick-hint { margin: 16px 0 6px; color: #b9a3ff; font: 600 14px system-ui, sans-serif; text-align: center; }
+  #browser { width: min(1100px, 100%); }
+  .pk-bar { position: sticky; top: -22px; z-index: 2; background: rgba(8, 4, 20, .96); padding: 10px 0 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-bottom: 1px solid #2e2252; }
+  .pk-search { flex: 1 1 260px; padding: 10px 12px; border-radius: 10px; border: 1px solid #3d2d66; background: #0d0820; color: #f2ecff; font: 500 15px system-ui, sans-serif; }
+  .pk-chips, .pk-tools { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pk-chip, .pk-tool { font: 600 13px system-ui, sans-serif; color: #b6a6e6; background: #120b24; border: 1px solid #33275c; border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+  .pk-chip.on { color: #12051f; background: #b9a3ff; border-color: #b9a3ff; }
+  .pk-chip:disabled { opacity: .35; cursor: not-allowed; }
+  .pk-random { color: #2a1200; background: linear-gradient(180deg, #ffe27a, #ff9d3b); border: 0; font-weight: 800; }
+  .pk-status { flex-basis: 100%; font: 500 12px ui-monospace, Menlo, Consolas, monospace; color: #8f7ccf; min-height: 1em; }
+  .pk-bar.painting .pk-status::after { content: attr(data-painting); color: #6f60a0; margin-left: 8px; }
+  .pk-cat { margin: 8px 0; background: rgba(22, 14, 42, .55); border: 1px solid #2e2252; border-radius: 12px; }
+  .pk-cat > summary { cursor: pointer; list-style: none; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;
+                      font: 800 14px system-ui, sans-serif; color: #e8dcff; user-select: none; }
+  .pk-cat > summary::-webkit-details-marker { display: none; }
+  .pk-cat > summary::before { content: '▸'; color: #8f7ccf; margin-right: 8px; transition: transform .15s; display: inline-block; }
+  .pk-cat[open] > summary::before { transform: rotate(90deg); }
+  .pk-title { flex: 1; }
+  .pk-count { font: 600 12px ui-monospace, Menlo, Consolas, monospace; color: #8f7ccf; background: #120b24; border-radius: 999px; padding: 2px 9px; }
+  .pk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; padding: 0 10px 10px; }
+  .pk-group > .pk-grid { display: block; padding: 0 8px 4px; }
+  .pk-group .pk-cat { background: rgba(14, 8, 30, .6); }
+  .tile { background: #120b24; border: 2px solid #241a44; border-radius: 12px; padding: 6px 4px 7px; cursor: pointer; text-align: center; color: #d9ccff; font: inherit;
+          content-visibility: auto; contain-intrinsic-size: 84px 100px; position: relative; }
+  .tile:hover { border-color: #6a55b8; }
+  .tile .pic { display: block; width: 64px; height: 64px; margin: 0 auto 3px; background-repeat: no-repeat; }
+  .tile .pic.pending { border-radius: 50%; transform: scale(.76); }
+  .tile .nm { font: 700 11px system-ui, sans-serif; overflow-wrap: anywhere; display: block; }
+  .tile.sel-att { border-color: #ffd479; box-shadow: 0 0 14px rgba(255,212,121,.4); }
+  .tile.sel-def { border-color: #ff5c8a; box-shadow: 0 0 14px rgba(255,92,138,.4); }
+  .tile.sel-att::after, .tile.sel-def::after { position: absolute; top: 3px; right: 5px; font: 900 10px ui-monospace, monospace; }
+  .tile.sel-att::after { content: 'A'; color: #ffd479; }
+  .tile.sel-def::after { content: 'D'; color: #ff5c8a; }
+  .tile.sel-att.sel-def::after { content: 'A D'; color: #fff; }
+  .tile.flash { animation: tile-flash 1.2s ease-out; }
+  @keyframes tile-flash { 0%, 40% { box-shadow: 0 0 0 4px #fff, 0 0 30px #ffd479; } 100% { box-shadow: none; } }
   #pick-error { color: #ff8f8f; min-height: 1.3em; font-size: 14px; margin: 4px 0; }
   .opts { display: flex; flex-direction: column; gap: 8px; align-items: center; margin: 4px 0 10px; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
@@ -103,7 +132,7 @@
 </style>
 </head>
 <body>
-<div id="stage" aria-label="Math Ball Fighting arena"></div>
+<div id="stage" aria-label="Math Ball Fighting arena" data-fictional="{{ static_file('data/math_ball_fighting/fictional.json') }}"></div>
 <div id="touch-zone"></div>
 <div id="dmg"></div>
 
@@ -135,14 +164,14 @@
 <div id="menu" class="overlay on">
   <h1>Math Ball Fighting</h1>
   <p class="sub">Pick any attacker and any number to defend. Every bounce does the attacker's value as damage. Small numbers can beat big ones&hellip; if you are willing to wait.</p>
-  <div id="pickers">
-    <div class="col"><h2><b>Attacker</b> &middot; does the damage</h2><div id="pick-att" class="grid"></div></div>
-    <div class="col"><h2><b>Defender</b> &middot; sits in the middle</h2><div id="pick-def" class="grid"></div></div>
-  </div>
-  <div id="vs">
-    <div class="side"><img id="vs-a-img" alt=""><div id="vs-a-name" class="vsn"></div><div id="vs-a-fact" class="vsf"></div></div>
+  <div id="slots">
+    <button class="slot on" data-slot="att" type="button">
+      <span class="tag">Attacker</span><img id="slot-a-img" alt=""><span class="sname" id="slot-a-name"></span><span class="sfact" id="slot-a-fact"></span>
+    </button>
     <div class="vs">VS</div>
-    <div class="side"><img id="vs-d-img" alt=""><div id="vs-d-name" class="vsn"></div><div id="vs-d-fact" class="vsf"></div></div>
+    <button class="slot" data-slot="def" type="button">
+      <span class="tag">Defender</span><img id="slot-d-img" alt=""><span class="sname" id="slot-d-name"></span><span class="sfact" id="slot-d-fact"></span>
+    </button>
   </div>
   <div id="pick-error"></div>
   <div class="opts">
@@ -155,6 +184,11 @@
     <button id="btn-resume" class="quiet" type="button" style="display:none">Resume</button>
     <a class="quiet" href="/">Back to games</a>
   </div>
+  <div id="pick-hint"></div>
+  <div id="browser"></div>
+  <p id="credits">Fictional numbers: names from the <a href="https://fictional-googology.fandom.com/" target="_blank" rel="noopener">Fictional Googology Wiki</a>
+    (CC BY-SA 3.0). They are made up, not real maths: in this game they all beat Infinity, and newer wiki entries beat older ones.
+    A few names were left out to keep the game kid-friendly.</p>
 </div>
 
 <div id="ko" class="overlay">
@@ -175,6 +209,8 @@
 <script src="{{ static_file('js/math_ball_fighting/render.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/physics.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/input.js') }}"></script>
+<script src="{{ static_file('js/math_ball_fighting/sheets.js') }}"></script>
+<script src="{{ static_file('js/math_ball_fighting/picker.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/main.js') }}"></script>
 </body>
 </html>

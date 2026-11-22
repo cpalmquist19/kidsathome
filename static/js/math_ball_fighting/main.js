@@ -25,11 +25,13 @@
     if (saved) for (var k in settings) if (saved[k] !== undefined) settings[k] = saved[k];
   } catch (e) { /* storage may be blocked */ }
   function save() { try { root.localStorage.setItem(SAVE_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } }
-  if (query('a') && MBF.ballById(query('a'))) settings.att = query('a');
-  if (query('d') && MBF.ballById(query('d'))) settings.def = query('d');
+  if (query('a') && (MBF.ballById(query('a')) || /^fx/.test(query('a')))) settings.att = query('a');
+  if (query('d') && (MBF.ballById(query('d')) || /^fx/.test(query('d')))) settings.def = query('d');
   if (query('mode') === 'watch' || query('mode') === 'fight') settings.mode = query('mode');
-  if (!MBF.ballById(settings.att)) settings.att = 'n1';
-  if (!MBF.ballById(settings.def)) settings.def = 'n1';
+  // fictional ids (fx...) only exist once their data file has loaded
+  if (!MBF.ballById(settings.att) && !/^fx/.test(settings.att)) settings.att = 'n1';
+  if (!MBF.ballById(settings.def) && !/^fx/.test(settings.def)) settings.def = 'n1';
+  function pick(id) { return MBF.ballById(id) || MBF.ballById('n1'); }
 
   // ------------------------------------------------------------ setup
   var R = MBF.createRenderer($('stage'));
@@ -42,8 +44,14 @@
   if (touch) markTouch();
   root.addEventListener('pointerdown', function (e) { if (e.pointerType === 'touch') markTouch(); }, true);
 
+  // Slot previews (the two big balls at the top of the menu) are rendered one at a time;
+  // every picker tile comes from a cached sprite sheet (sheets.js).
   var thumbs = {};
-  MBF.roster.forEach(function (b) { thumbs[b.id] = R.thumbnail(b, 128); });
+  function thumbUrl(ball) {
+    if (!thumbs[ball.id]) thumbs[ball.id] = R.thumbnail(ball, 128);
+    return thumbs[ball.id];
+  }
+  var sheets = MBF.createSheets(R);
 
   // ------------------------------------------------------------ game state
   var phase = 'menu';             // menu | intro | fight | ko | paused
@@ -60,11 +68,14 @@
   // Function balls are a medium size whatever their current value.
   var numberRank = {};
   (function () {
-    var nums = MBF.roster.filter(function (b) { return b.kind === 'number'; });
+    var nums = MBF.roster.filter(function (b) { return b.kind === 'number' && !b.fictional; });
     nums.sort(function (x, y) { return MBF.V.cmp(MBF.valueOf(x), MBF.valueOf(y)); });
     nums.forEach(function (b, i) { numberRank[b.id] = nums.length > 1 ? i / (nums.length - 1) : 0; });
   })();
-  function sizeFrac(ball) { return ball.kind === 'number' ? numberRank[ball.id] : 0.55; }
+  function sizeFrac(ball) {
+    if (ball.fictional) return 1;                     // beyond infinity: as big as balls get
+    return ball.kind === 'number' ? numberRank[ball.id] : 0.55;
+  }
   function radii() {
     var m = Math.min(R.W, R.H) / 800;
     return {
@@ -74,28 +85,33 @@
   }
 
   // ------------------------------------------------------------ menu / picker
-  function tile(ball, side) {
-    var el = document.createElement('div');
-    el.className = 'tile';
-    el.innerHTML = '<img alt=""><div class="nm"></div>';
-    el.querySelector('img').src = thumbs[ball.id];
-    el.querySelector('.nm').textContent = ball.label;
-    el.title = ball.name + ' - ' + ball.fact;
-    if (side === 'def' && ball.kind !== 'number') {
-      el.classList.add('off');
-      el.title = ball.name + ' is a function. Functions can only attack numbers.';
+  // Two slots at the top (attacker, defender); tap one, then tap any ball below.
+  var activeSlot = 'att';
+  var picker = MBF.createPicker($('browser'), {
+    sheets: sheets,
+    onPick: function (ball) {
+      if (activeSlot === 'def' && ball.kind !== 'number') return;
+      settings[activeSlot] = ball.id; save(); refreshMenu();
     }
-    el.addEventListener('click', function () {
-      if (el.classList.contains('off')) return;
-      settings[side] = ball.id; save(); refreshMenu();
-    });
-    el.dataset.id = ball.id;
-    return el;
-  }
-  MBF.roster.forEach(function (b) {
-    $('pick-att').appendChild(tile(b, 'att'));
-    $('pick-def').appendChild(tile(b, 'def'));
   });
+  function setSlot(slot) {
+    activeSlot = slot;
+    picker.setSlot(slot);
+    refreshMenu();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.slot'), function (b) {
+    b.addEventListener('click', function () {
+      if (activeSlot === b.dataset.slot) picker.reveal(settings[activeSlot]);   // tap again: jump to it
+      else setSlot(b.dataset.slot);
+    });
+  });
+  function showBalls() {
+    picker.setBalls(MBF.roster);
+    sheets.setBalls(MBF.roster);
+    refreshMenu();
+  }
+  showBalls();
+
   Array.prototype.forEach.call(document.querySelectorAll('.opt'), function (b) {
     b.addEventListener('click', function () {
       var key = b.dataset.opt, val = b.dataset.val;
@@ -106,11 +122,16 @@
   });
 
   function refreshMenu() {
-    var a = MBF.ballById(settings.att), d = MBF.ballById(settings.def);
-    Array.prototype.forEach.call(document.querySelectorAll('#pick-att .tile'), function (t) { t.classList.toggle('sel', t.dataset.id === a.id); });
-    Array.prototype.forEach.call(document.querySelectorAll('#pick-def .tile'), function (t) { t.classList.toggle('sel', t.dataset.id === d.id); });
-    $('vs-a-img').src = thumbs[a.id]; $('vs-a-name').textContent = a.name; $('vs-a-fact').textContent = a.fact;
-    $('vs-d-img').src = thumbs[d.id]; $('vs-d-name').textContent = d.name; $('vs-d-fact').textContent = d.fact;
+    var a = pick(settings.att), d = pick(settings.def);
+    picker.setSelected(a.id, d.id);
+    $('slot-a-img').src = thumbUrl(a); $('slot-a-name').textContent = a.name; $('slot-a-fact').textContent = a.fact;
+    $('slot-d-img').src = thumbUrl(d); $('slot-d-name').textContent = d.name; $('slot-d-fact').textContent = d.fact;
+    Array.prototype.forEach.call(document.querySelectorAll('.slot'), function (b) {
+      b.classList.toggle('on', b.dataset.slot === activeSlot);
+    });
+    $('pick-hint').textContent = activeSlot === 'att'
+      ? 'Choosing the ATTACKER: tap any ball below. Tap the Defender box to choose the defender.'
+      : 'Choosing the DEFENDER: tap any number below. Tap the Attacker box to switch back.';
     var ok = MBF.canFight(a, d);
     $('pick-error').textContent = ok.ok ? '' : ok.reason;
     $('btn-start').disabled = !ok.ok;
@@ -169,7 +190,7 @@
 
   // ------------------------------------------------------------ start a fight
   function startFight() {
-    var a = MBF.ballById(settings.att), d = MBF.ballById(settings.def);
+    var a = pick(settings.att), d = pick(settings.def);
     if (!MBF.canFight(a, d).ok) return;
     if (attV) attV.dispose();
     if (defV) defV.dispose();
@@ -242,7 +263,8 @@
     if (hudDirty || waitT <= 0) {
       var rate = hitsPerSecond();
       $('stat-wait').textContent = fight.over ? '' :
-        (rate > 0 ? 'About ' + fight.waitText(rate) + ' to go at this pace' :
+        (rate > 0 ? (fight.totalHits === MBF.INFINITY ? 'Forever: no number of hits is ever enough'
+          : 'About ' + fight.waitText(rate) + ' to go at this pace') :
           (settings.mode === 'fight' ? 'Ram into the ball in the middle!' : ''));
       waitT = 0.5;
     }
@@ -570,6 +592,29 @@
 
   refreshMenu();
   refreshSpeed();
-  if (query('go') === '1') startFight();
+  function fictionalReady() {
+    if (!MBF.ballById(settings.att)) settings.att = 'n1';
+    if (!MBF.ballById(settings.def)) settings.def = 'n1';
+    showBalls();
+    sheets.prune();
+    if (query('go') === '1') startFight();
+  }
+  var fxUrl = $('stage').getAttribute('data-fictional');
+  function useFictional(data) { if (data && data.numbers) MBF.addFictional(data); fictionalReady(); }
+  if (fxUrl && root.fetch) {
+    var dataKey = 'data:' + fxUrl;                        // the URL carries a version, so updates miss the cache
+    MBF.cache.get(dataKey).then(function (cached) {
+      if (cached) return useFictional(cached);
+      root.fetch(fxUrl).then(function (r) { return r.json(); })
+        .then(function (data) {
+          MBF.cache.keys().then(function (keys) {           // drop older copies of the list
+            (keys || []).forEach(function (k) { if (/^data:/.test(k) && k !== dataKey) MBF.cache.del(k); });
+          });
+          MBF.cache.put(dataKey, data);
+          useFictional(data);
+        })
+        .catch(function () { fictionalReady(); });
+    });
+  } else fictionalReady();
   root.requestAnimationFrame(frame);
 })(window);

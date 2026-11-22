@@ -129,4 +129,18 @@ Effects stack.
    - Added after: the Large Number Garden Number (= f¹⁰(10↑¹⁰10), a night garden with 10 blooming flowers),
      ranked above BIG FOOT and below Oblivion, with its function fⁿ(10↑¹⁰10) that wins on hit 10.
      f¹ to f⁹ are placed just below it, a labelled guess.
+   - Added after: Infinity (∞, a glowing lemniscate) and 2,645 fictional numbers from the Fictional Googology
+     Wiki (static/data/math_ball_fighting/fictional.json, names only, CC BY-SA credit in the menu). Of the
+     category's 2,697 entries, 30 were not numbers (user pages, templates, categories) and 22 were left out as
+     not kid-friendly (word filter + a full read-through). Fictional numbers all beat Infinity; between
+     themselves, newer wiki pages beat older ones. They share one shader with 8 looks seeded by the name, load
+     after the page opens, and appear in a searchable, paged picker section with lazily rendered previews.
+     Real numbers can never beat Infinity: the HUD shows ∞ hits and "forever".
+   - Picker + performance pass: one browser for both slots (tap Attacker or Defender at the top, then a
+     ball), collapsible categories with counts (Small, Big, Giant, Beyond Graham's, Infinity, Functions,
+     Fictional A-Z), Expand all / Collapse all, search across everything, filter chips, and Surprise me.
+     Functions are hidden while choosing a defender. Ball pictures are drawn 256 at a time into sprite
+     sheets (render.js renderSheet) and cached in IndexedDB with the fictional list (sheets.js), keyed by
+     a fingerprint of the shaders, so repeat visits load every picture instantly; expanding all ~2,700
+     tiles takes about 50 ms.
 5. Sound, Shorts (9:16) layout, Calm-effects tuning, polish.

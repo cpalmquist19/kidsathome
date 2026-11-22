@@ -184,11 +184,14 @@
       var mesh = new THREE.Mesh(new THREE.PlaneGeometry(2 * S.QUAD, 2 * S.QUAD), mat);
       mesh.renderOrder = 2;
       group.add(mesh);
-      var lmat = new THREE.MeshBasicMaterial({ map: labelTexture(ball), transparent: true,
+      var lmat = opts.noLabel ? null : new THREE.MeshBasicMaterial({ map: labelTexture(ball), transparent: true,
         depthTest: false, depthWrite: false });
-      var label = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), lmat);
-      label.renderOrder = 3;
-      group.add(label);
+      var label = null;
+      if (lmat) {
+        label = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), lmat);
+        label.renderOrder = 3;
+        group.add(label);
+      }
       (opts.scene || scene).add(group);
 
       var v = {
@@ -229,15 +232,15 @@
         v.u.uLook.value.set(dx / L, dy / L);
       };
       v.setLabel = function (text) {
-        if (text === v.labelText) return;
+        if (text === v.labelText || !lmat) return;
         v.labelText = text;
         lmat.map.redraw(text);
       };
-      v.setFade = function (f) { v.u.uFade.value = f; lmat.opacity = f; };
+      v.setFade = function (f) { v.u.uFade.value = f; if (lmat) lmat.opacity = f; };
       v.dispose = function () {
         (opts.scene || scene).remove(group);
         mesh.geometry.dispose(); mat.dispose();
-        label.geometry.dispose(); lmat.map.dispose(); lmat.dispose();
+        if (label) { label.geometry.dispose(); lmat.map.dispose(); lmat.dispose(); }
         var i = R.balls.indexOf(v); if (i >= 0) R.balls.splice(i, 1);
       };
       if (!opts.scene) R.balls.push(v);
@@ -589,6 +592,54 @@
 
     // ------------------------------------------------------------ thumbnails
     // Render a ball once into an image (data URL) for the picker.
+    // Draw many balls into one image (a sprite sheet): cols x rows cells of `cell` pixels.
+    // One render and one read-back for the whole sheet, instead of one per ball.
+    // Returns a canvas with transparent background.
+    R.renderSheet = function (balls, cell, cols) {
+      var rows = Math.max(1, Math.ceil(balls.length / cols));
+      var W = cols * cell, H = rows * cell;
+      var sheet = new THREE.Scene();
+      var cam = new THREE.OrthographicCamera(0, cols, 0, -rows, -10, 10);
+      var q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.35, -0.5, 0));
+      var rad = 0.38, views = [];
+      for (var i = 0; i < balls.length; i++) {
+        var v = R.makeBall(balls[i], rad, { scene: sheet, pxScale: cell, noLabel: !!balls[i].fictional });
+        v.group.position.set(i % cols + 0.5, -(Math.floor(i / cols) + 0.5), 0);
+        v.group.scale.set(rad, rad, 1);
+        v.u.uTime.value = 1.7;
+        v.setOrientation(q);
+        v.refreshPx();
+        views.push(v);
+      }
+      var target = new THREE.WebGLRenderTarget(W, H);
+      renderer.setRenderTarget(target);
+      renderer.setClearColor(0x000000, 0);
+      renderer.clear();
+      renderer.render(sheet, cam);
+      var px = new Uint8Array(W * H * 4);
+      renderer.readRenderTargetPixels(target, 0, 0, W, H, px);
+      renderer.setRenderTarget(null);
+      renderer.setClearColor(0x000000, 1);
+      target.dispose();
+      for (var k = 0; k < views.length; k++) views[k].dispose();
+      var c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      var g = c.getContext('2d');
+      var img = g.createImageData(W, H), out = img.data;
+      for (var y = 0; y < H; y++) {
+        var si = (H - 1 - y) * W * 4, di = y * W * 4;      // WebGL rows are bottom-up
+        for (var x = 0; x < W * 4; x += 4) {
+          var a = px[si + x + 3], kk = a > 0 ? 255 / a : 0;  // un-premultiply
+          out[di + x] = Math.min(255, px[si + x] * kk);
+          out[di + x + 1] = Math.min(255, px[si + x + 1] * kk);
+          out[di + x + 2] = Math.min(255, px[si + x + 2] * kk);
+          out[di + x + 3] = a;
+        }
+      }
+      g.putImageData(img, 0, 0);
+      return c;
+    };
+
     R.thumbnail = function (ball, size, time) {
       size = size || 160;
       var tscene = new THREE.Scene();

@@ -105,6 +105,10 @@
       texture: 'endless', aura: [0.8, 0.75, 1.0], ink: ['#ffffff', '#000000'],
       fact: 'Oblivion, but for systems of systems of systems... It sits at the very top of the famous lists, and is even less defined than Oblivion.' },
 
+    { id: 'infinity', kind: 'number', name: 'Infinity', special: 'infinity', label: '∞', labelAt: 'banner', glitch: 0.4,
+      texture: 'infinity', aura: [1.0, 1.0, 0.85], ink: ['#ffffff', '#2a1a00'],
+      fact: 'Not a number you can reach by counting. No amount of hits from a real number can ever take it down.' },
+
     // ---- functions: attack only. Input starts at 1 and goes up by one every hit.
     { id: 'f_succ', kind: 'function', fn: 'succ', name: 'Plus One', formula: 'n+1', labelAt: 'center',
       texture: 'fnring', aura: [0.4, 1.0, 0.5], ink: ['#eaffef', '#06351a'],
@@ -192,6 +196,43 @@
     return ball.formula;
   };
   MBF.roster.forEach(function (b) { if (b.kind === 'function') b.label = b.formula; });
+
+  // Fictional numbers from the Fictional Googology Wiki (static/data/math_ball_fighting/fictional.json).
+  // Not real maths: they all sit above Infinity, and newer wiki entries beat older ones.
+  function strHash(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function hsl(h, s, l) {
+    var a = s * Math.min(l, 1 - l), f = function (n) {
+      var k = (n + h * 12) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    };
+    return [f(0), f(8), f(4)];
+  }
+  MBF.shortLabel = function (name) {
+    var chars = Array.from(name);
+    return chars.length <= 22 ? name : chars.slice(0, 20).join('') + '…';
+  };
+  MBF.fictional = [];
+  MBF.addFictional = function (data) {
+    var list = data.numbers, out = [];
+    for (var i = 0; i < list.length; i++) {
+      var name = list[i][0], h = strHash(name);
+      var aura = hsl((h % 360) / 360, 0.75, 0.62);
+      var b = {
+        id: 'fx' + list[i][1], kind: 'number', fictional: true, frank: i, name: name,
+        label: MBF.shortLabel(name), labelAt: 'banner', glitch: 0.35,
+        texture: 'fictional', k: (h % 100000) / 100, aura: aura, ink: ['#ffffff', '#140a24'],
+        fact: 'Fictional number #' + (i + 1).toLocaleString('en-US') + ' of ' + list.length.toLocaleString('en-US') +
+          ' from the Fictional Googology Wiki. Not real maths: it beats Infinity, and newer entries beat older ones.'
+      };
+      out.push(b);
+      MBF.roster.push(b);
+    }
+    MBF.fictional = out;
+    return out;
+  };
 
   MBF.ballById = function (id) {
     for (var i = 0; i < MBF.roster.length; i++) if (MBF.roster[i].id === id) return MBF.roster[i];

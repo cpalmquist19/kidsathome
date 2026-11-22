@@ -42,7 +42,8 @@
     },
     hyper: function (arrows, x, name) { return { h: { a: arrows, x: x }, name: name }; },
     // growth-class value: class r at input n. Anything in a higher class beats anything lower.
-    //   1 TREE · 2 SCG · 3 Loader · 10 Busy Beaver · 11 Rayo · 11.5 Fish 7 · 12 BIG FOOT · 12.5 Garden · 13 Oblivion · 14 Utter Oblivion
+    //   1 TREE · 2 SCG · 3 Loader · 10 Busy Beaver · 11 Rayo · 11.5 Fish 7 · 12 BIG FOOT · 12.5 Garden
+    //   13 Oblivion · 14 Utter Oblivion · 1000 Infinity · 2000 fictional numbers (beyond infinity) · 13 Oblivion · 14 Utter Oblivion
     cls: function (r, n, name) { return { g: { r: r, n: n }, name: name }; },
     zero: function () { return { b: 0n }; },
     isExact: function (v) { return v.b !== undefined; },
@@ -95,8 +96,11 @@
     }
   };
 
-  var CLASS_NAMES = { 1: 'TREE', 2: 'SCG-class', 3: 'Loader-class', 10: 'BB', 11: 'Rayo', 11.5: 'F₇', 12: 'FOOT', 12.5: 'Garden f', 13: 'Oblivion', 14: 'Utter Oblivion' };
+  var CLASS_NAMES = { 1000: '∞', 2000: 'Fictional', 1: 'TREE', 2: 'SCG-class', 3: 'Loader-class', 10: 'BB', 11: 'Rayo', 11.5: 'F₇', 12: 'FOOT', 12.5: 'Garden f', 13: 'Oblivion', 14: 'Utter Oblivion' };
   var SUB = '₀₁₂₃₄₅₆₇₈₉';
+  // Infinity: no number of finite hits ever reaches it. Fictional numbers sit above it.
+  MBF.INFINITY = { g: { r: 1000, n: { b: 0n } }, name: '∞' };
+  function unreachable(hp) { return hp.g && hp.g.r >= 1000; }
   function sub(n) { return String(n).replace(/[0-9]/g, function (c) { return SUB[c]; }); }
   function arrows(k) { return k <= 5 ? '↑'.repeat(k) : '↑' + sup(k); }
 
@@ -123,6 +127,8 @@
     if (ball.special === 'sscg3') return sscg(3);
     if (ball.special === 'fish7') return fish7(63);
     if (ball.special === 'lngn') return gardenF(10);
+    if (ball.special === 'infinity') return MBF.INFINITY;
+    if (ball.fictional) return V.cls(2000, { b: BigInt(ball.frank) }, ball.name);
     if (ball.special === 'oblivion') return V.cls(13, { b: 1n }, 'Oblivion');
     if (ball.special === 'utter') return V.cls(14, { b: 1n }, 'Utter Oblivion');
     if (ball.special === 'moser') {
@@ -495,6 +501,7 @@
     } else if (V.cmp(constDmg, maxHp) >= 0) totalHits = { b: 1n };
     else if (!isFinite(V.log10(maxHp))) totalHits = maxHp;   // dividing doesn't dent it
     else totalHits = V.lg10(V.log10(maxHp) - V.log10(constDmg));
+    if (unreachable(maxHp) && !V.isExact(totalHits)) totalHits = MBF.INFINITY;
     f.totalHits = totalHits;
 
     // damage the next hit will do
@@ -575,6 +582,7 @@
     f.waitText = function (hitsPerSecond) {
       if (!(hitsPerSecond > 0) || f.over) return '';
       var left = f.hitsToKo(), lg = V.log10(left);
+      if (left === MBF.INFINITY) return 'forever: no number of hits is ever enough';
       if (!isFinite(lg)) {
         // so big that seconds, years or lifetimes of the universe make no difference
         return V.fmt(left) + ' years (far, far beyond the heat death of the universe)';
