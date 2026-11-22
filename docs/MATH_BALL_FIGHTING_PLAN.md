@@ -102,6 +102,10 @@ Effects stack.
 2. ✅ **Phase 2:** Million, Billion, Googol, Googolplex, functions n+1, 2n, n², n!, 10ⁿ with live labels,
    shared magnitude module, exact hits-to-K.O. solver for functions, "Googol − 37" / "0.000…%" health text,
    post-processing pass, levels 3 (colour fringing, lightning) and 4 (glass shatter, flying shards).
-3. Skewes, Googolplexplex, Moser, Graham's, Ackermann, levels 5–6.
+3. ✅ **Phase 3:** Skewes (Ulam prime spiral), Googolplexplex (galaxy of galaxies), Moser (nested shapes),
+   Graham's (spinning tesseract), functions Ackermann A(n,n) and Graham's sequence G(n).
+   New "up-arrow" value kind 10↑^a x where the arrow count is itself a value, so Graham's number is
+   G(64) nested 64 deep and G(n) vs Graham's number really takes 64 hits.
+   Levels 5 (spiral warp + vortex) and 6 (kaleidoscope + frame-feedback trails).
 4. TREE, SCG, Loader's, BB, Rayo, the showcase TREE / Rayo designs, levels 7–8.
 5. Sound, Shorts (9:16) layout, Calm-effects tuning, polish.

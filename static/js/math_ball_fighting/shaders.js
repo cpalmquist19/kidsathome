@@ -310,6 +310,121 @@
     '}'
   ].join('\n');
 
+  // Skewes - an Ulam spiral: count 1, 2, 3... in a square spiral and light up the primes
+  SURF.ulam = [
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  vec2 g = (rot2(t * 0.05) * q) * 15.5;',
+    '  vec2 c = floor(g + 0.5); vec2 f = g - c;',
+    '  float k = max(abs(c.x), abs(c.y));',
+    '  float side = 2.0 * k, start = (2.0 * k - 1.0) * (2.0 * k - 1.0);',
+    '  float n;',
+    '  if (k < 0.5) n = 1.0;',
+    '  else if (c.x > k - 0.5 && c.y > -k + 0.5) n = start + c.y + k;',
+    '  else if (c.y > k - 0.5) n = start + side + (k - c.x);',
+    '  else if (c.x < -k + 0.5) n = start + 2.0 * side + (k - c.y);',
+    '  else n = start + 3.0 * side + (c.x + k);',
+    '  float prime = n < 1.5 ? 0.0 : 1.0;',
+    '  for (int i = 2; i < 40; i++) {',
+    '    float fi = float(i);',
+    '    if (fi * fi > n + 0.5) break;',
+    '    if (mod(n + 0.5, fi) < 1.0) { prime = 0.0; break; }',
+    '  }',
+    '  float sq = smoothstep(0.44, 0.32, max(abs(f.x), abs(f.y)));',
+    '  alb = vec3(0.06, 0.035, 0.1) + vec3(0.12, 0.07, 0.18) * sq * (1.0 - prime);',
+    '  float pulse = 0.65 + 0.35 * sin(t * 2.0 - k * 0.5);',
+    '  emit = vec3(1.0, 0.74, 0.28) * sq * prime * 1.6 * pulse;',
+    '  emit += vec3(1.0, 0.9, 0.6) * sq * step(n, 1.5) * 1.5;',
+    '  gloss = 0.8;',
+    '}'
+  ].join('\n');
+
+  // Googolplexplex - a galaxy made of galaxies
+  SURF.galaxies = [
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  vec2 p = rot2(t * 0.04) * q * 3.4;',
+    '  vec2 ip = floor(p), fp = fract(p);',
+    '  vec3 col = vec3(0.0);',
+    '  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {',
+    '    vec2 b = vec2(float(i), float(j)); vec2 id = ip + b; float h = hash2(id);',
+    '    vec2 o = vec2(hash2(id + 3.1), hash2(id + 7.7)) * 0.6 + 0.2;',
+    '    float sz = 0.16 + 0.24 * h;',
+    '    vec2 lp = rot2(t * (0.25 + h * 0.4) + h * 6.0) * (b + o - fp) / sz;',
+    '    float r = length(lp);',
+    '    if (r < 1.0) {',
+    '      float a = atan(lp.y, lp.x);',
+    '      float arm = smoothstep(0.15, 1.0, sin(2.0 * (a - 2.3 * log(r + 0.03)))) * (1.0 - r);',
+    '      vec3 gc = hsv2rgb(vec3(fract(h * 3.0 + 0.55), 0.55, 1.0));',
+    '      col += gc * arm * 0.9 + vec3(1.0, 0.9, 0.8) * exp(-r * r * 30.0) * 1.2;',
+    '    }',
+    '  }',
+    '  vec2 sg = q * 80.0; float sh = hash2(floor(sg));',
+    '  float star = step(0.965, sh) * smoothstep(0.3, 0.0, length(fract(sg) - 0.5));',
+    '  alb = vec3(0.01, 0.01, 0.03);',
+    '  emit = col + vec3(star) * 0.9;',
+    '  gloss = 0.95;',
+    '}'
+  ].join('\n');
+
+  // Moser - shapes inside shapes: circle, square, triangle, again and again
+  SURF.moser = [
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  float r = length(q), a = atan(q.y, q.x);',
+    '  vec3 col = vec3(0.0);',
+    '  float s = 0.93;',
+    '  for (int i = 0; i < 9; i++) {',
+    '    float fi = float(i), kind = mod(fi, 3.0);',
+    '    float n = kind < 0.5 ? 64.0 : (kind < 1.5 ? 4.0 : 3.0);',
+    '    float seg = TAU / n;',
+    '    float aa = a + t * 0.35 * (mod(fi, 2.0) * 2.0 - 1.0) + fi * 0.5;',
+    '    float pr = s * cos(PI / n) / cos(mod(aa, seg) - seg * 0.5);',
+    '    float w = 0.007 + 0.009 * s;',
+    '    float line = smoothstep(w, 0.0, abs(r - pr));',
+    '    col += hsv2rgb(vec3(0.02 + fi * 0.06, 0.75, 1.0)) * line * (1.0 + 0.3 * sin(t * 3.0 + fi));',
+    '    s *= cos(PI / n);',
+    '  }',
+    '  alb = vec3(0.12, 0.03, 0.03) * (0.6 + 0.4 * fbm3(d * 3.0));',
+    '  emit = col * 1.5 + vec3(1.0, 0.6, 0.3) * exp(-r * r * 400.0) * 2.0;',
+    '  gloss = 0.7;',
+    '}'
+  ].join('\n');
+
+  // Graham's - a spinning 4D hypercube (tesseract) over rising up-arrow runes
+  SURF.hypercube = [
+    'vec2 proj4(vec4 v, float t) {',
+    '  float c1 = cos(t * 0.5), s1 = sin(t * 0.5), c2 = cos(t * 0.37), s2 = sin(t * 0.37);',
+    '  v = vec4(v.x * c1 - v.w * s1, v.y * c2 - v.z * s2, v.y * s2 + v.z * c2, v.x * s1 + v.w * c1);',
+    '  vec3 p = v.xyz / (2.8 - v.w);',
+    '  float c3 = cos(0.5), s3 = sin(0.5);',
+    '  p = vec3(p.x * c3 + p.z * s3, p.y, -p.x * s3 + p.z * c3);',
+    '  return p.xy / (2.4 - p.z) * 2.1;',
+    '}',
+    'float segd(vec2 p, vec2 a, vec2 b) {',
+    '  vec2 pa = p - a, ba = b - a;',
+    '  return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));',
+    '}',
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  float dl = 9.0, dv = 9.0;',
+    '  for (int i = 0; i < 16; i++) {',
+    '    float fi = float(i);',
+    '    vec4 v = vec4(mod(fi, 2.0), mod(floor(fi / 2.0), 2.0), mod(floor(fi / 4.0), 2.0), mod(floor(fi / 8.0), 2.0)) * 2.0 - 1.0;',
+    '    vec2 pv = proj4(v, t);',
+    '    dv = min(dv, length(q - pv));',
+    '    if (v.x < 0.0) dl = min(dl, segd(q, pv, proj4(vec4(1.0, v.yzw), t)));',
+    '    if (v.y < 0.0) dl = min(dl, segd(q, pv, proj4(vec4(v.x, 1.0, v.zw), t)));',
+    '    if (v.z < 0.0) dl = min(dl, segd(q, pv, proj4(vec4(v.xy, 1.0, v.w), t)));',
+    '    if (v.w < 0.0) dl = min(dl, segd(q, pv, proj4(vec4(v.xyz, 1.0), t)));',
+    '  }',
+    // faint up-arrow runes drifting upward
+    '  vec2 g = q * 9.0 + vec2(0.0, -t * 0.6);',
+    '  vec2 cf = fract(g) - 0.5; float h = hash2(floor(g));',
+    '  float chev = smoothstep(0.06, 0.02, abs(cf.y - 0.12 + abs(cf.x) * 0.9)) * step(abs(cf.x), 0.28) * step(0.55, h);',
+    '  alb = vec3(0.02, 0.04, 0.12) + vec3(0.05, 0.1, 0.25) * chev;',
+    '  emit = vec3(0.4, 0.75, 1.0) * (exp(-dl * 90.0) * 1.5 + exp(-dl * 22.0) * 0.35)',
+    '       + vec3(1.0) * exp(-dv * 60.0) * 1.2 + vec3(0.25, 0.45, 1.0) * chev * 0.35;',
+    '  gloss = 0.85;',
+    '}'
+  ].join('\n');
+
   // Functions - a knurled metal ring around a dark core with glowing circuit traces
   SURF.fnring = [
     'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
@@ -462,16 +577,27 @@
   //             slide and tilt apart, with rainbow edges and dark seams
   //   uCA       (level 3+) chromatic aberration: red and blue pulled apart
   S.postFragment = COMMON + [
-    'uniform sampler2D tScene;',
-    'uniform vec2 uRes, uCenter;',
-    'uniform float uCA, uShatter, uSeed, uTime;',
+    'uniform sampler2D tScene, tPrev;',
+    'uniform vec2 uRes, uCenter, uSwirlC;',
+    'uniform float uCA, uShatter, uSeed, uTime, uSwirl, uKaleido, uFeedback;',
     'vec2 hash22(vec2 p) {',
     '  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));',
     '  return fract(sin(p) * 43758.5453);',
     '}',
+    'vec3 sampleCA(vec2 uv) {',
+    '  vec2 cd = uv - 0.5; float k = uCA * 0.014;',
+    '  return vec3(texture2D(tScene, uv + cd * k).r, texture2D(tScene, uv).g, texture2D(tScene, uv - cd * k).b);',
+    '}',
     'void main() {',
     '  vec2 uv = vUv;',
     '  vec2 asp = vec2(uRes.x / uRes.y, 1.0);',
+    // level 5: the screen twists into a whirlpool around the hit
+    '  if (uSwirl > 0.001) {',
+    '    vec2 p = (uv - uSwirlC) * asp;',
+    '    float r = length(p);',
+    '    float ang = uSwirl * exp(-r * 2.0) * (1.0 + 0.25 * sin(uTime * 5.0 - r * 12.0));',
+    '    uv = rot2(ang) * p / asp + uSwirlC;',
+    '  }',
     '  vec3 edgeCol = vec3(0.0); float seam = 0.0;',
     '  if (uShatter > 0.002) {',
     '    vec2 p = (uv - uCenter) * asp;',
@@ -503,15 +629,34 @@
     // each pane catches the light a little differently
     '    edgeCol += vec3(0.6, 0.7, 1.0) * pow(h.y, 6.0) * uShatter * 0.25;',
     '  }',
-    '  vec2 cd = uv - 0.5;',
-    '  float k = uCA * 0.014;',
-    '  vec3 col;',
-    '  col.r = texture2D(tScene, uv + cd * k).r;',
-    '  col.g = texture2D(tScene, uv).g;',
-    '  col.b = texture2D(tScene, uv - cd * k).b;',
+    '  vec3 col = sampleCA(uv);',
+    // level 6: six-way kaleidoscope mirror, slowly turning
+    '  if (uKaleido > 0.001) {',
+    '    vec2 p = (uv - 0.5) * asp;',
+    '    float r = length(p), a = atan(p.y, p.x) + uTime * 0.4;',
+    '    float seg = TAU / 6.0;',
+    '    a = abs(mod(a, seg) - seg * 0.5);',
+    '    vec2 kuv = vec2(cos(a), sin(a)) * r / asp + 0.5;',
+    '    col = mix(col, sampleCA(kuv), clamp(uKaleido, 0.0, 1.0));',
+    '  }',
     '  col = col * (1.0 - seam) + edgeCol;',
+    // level 6: feedback - the last frame echoes back, zoomed, turned and hue-shifted
+    '  if (uFeedback > 0.001) {',
+    '    vec2 p = (vUv - 0.5) * asp;',
+    '    p = rot2(0.03) * p * 0.965;',
+    '    vec3 prev = texture2D(tPrev, p / asp + 0.5).rgb;',
+    '    prev = mix(prev, prev.gbr, 0.12);',
+    '    col = max(col, prev * uFeedback * 0.9);',
+    '  }',
     '  gl_FragColor = vec4(col, 1.0);',
     '}'
+  ].join('\n');
+
+  S.copyFragment = [
+    'precision highp float;',
+    'varying vec2 vUv;',
+    'uniform sampler2D tSrc;',
+    'void main() { gl_FragColor = vec4(texture2D(tSrc, vUv).rgb, 1.0); }'
   ].join('\n');
 
   // ------------------------------------------------------------------ lightning

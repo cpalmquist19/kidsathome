@@ -80,9 +80,10 @@
       return mant.toFixed(2) + ' × 10' + sup(e);
     }
     if (isFinite(lg)) return '10^(' + BM.format(BM.fromLog10(Math.log10(lg))) + ')';
+    if (m.L > 5) return '10↑↑' + Math.round(m.L).toLocaleString('en-US');   // a tower of L tens
     var s = '';
-    for (var i = 0; i < m.L; i++) s += '10^';
-    return s + m.t.toFixed(2);
+    for (var i = 0; i < m.L - 1; i++) s += '10^';
+    return s + Math.round(Math.pow(10, m.t)).toLocaleString('en-US');   // 10^10^10^100
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = BM;

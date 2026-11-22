@@ -28,33 +28,100 @@
   MBF.log10Big = BM.log10Big;
 
   // ---------------------------------------------------------------- values
+  //  { b }  exact BigInt
+  //  { m }  magnitude: a tower of tens (see magnitude.js)
+  //  { h }  up-arrow value 10 ↑^a x, too tall for any tower we could store.
+  //         h.a (the number of arrows) is itself a value, so Graham's number is
+  //         64 of these nested inside each other. Compared by arrows, then x.
+  //  Any value may carry a display name (e.g. "Moser's number").
   var V = MBF.V = {
     big: function (b) { return BM.log10Big(b) < EXACT_DIGITS ? { b: b } : { m: BM.fromBig(b) }; },
     lg10: function (lg) {
       if (lg < 15) return { b: BigInt(Math.round(Math.pow(10, lg))) };
       return { m: BM.fromLog10(lg) };
     },
+    hyper: function (arrows, x, name) { return { h: { a: arrows, x: x }, name: name }; },
     zero: function () { return { b: 0n }; },
     isExact: function (v) { return v.b !== undefined; },
-    log10: function (v) { return v.b !== undefined ? BM.log10Big(v.b) : BM.log10(v.m); },
+    isHyper: function (v) { return v.h !== undefined; },
+    log10: function (v) {
+      if (v.b !== undefined) return BM.log10Big(v.b);
+      if (v.m) return BM.log10(v.m);
+      return Infinity;
+    },
     mag: function (v) { return v.m || BM.fromBig(v.b); },
     cmp: function (a, b) {
+      if (a.h || b.h) {
+        if (!a.h) return -1;
+        if (!b.h) return 1;
+        var c = V.cmp(a.h.a, b.h.a);
+        if (c) return c;
+        return a.h.x < b.h.x ? -1 : a.h.x > b.h.x ? 1 : 0;
+      }
       if (a.b !== undefined && b.b !== undefined) return a.b < b.b ? -1 : a.b > b.b ? 1 : 0;
       return BM.cmp(V.mag(a), V.mag(b));
     },
     add: function (a, b) {
-      if (a.b !== undefined && b.b !== undefined) return V.big(a.b + b.b);
       if (a.b === 0n) return b;
       if (b.b === 0n) return a;
+      if (a.h || b.h) return V.cmp(a, b) >= 0 ? a : b;     // the smaller one vanishes
+      if (a.b !== undefined && b.b !== undefined) return V.big(a.b + b.b);
       return { m: BM.add(V.mag(a), V.mag(b)) };
     },
-    fmt: function (v) { return v.b !== undefined ? MBF.fmt(v.b) : BM.format(v.m); }
+    // one level of log10 off a huge value (for "how many hits of 10^n")
+    down: function (v) {
+      if (v.h) return v;
+      var m = V.mag(v);
+      if (m.L <= 1) return { b: BigInt(Math.ceil(BM.log10(m))) };
+      return { m: { L: m.L - 1, t: m.t } };
+    },
+    fmt: function (v) {
+      if (v.name) return v.name;
+      if (v.b !== undefined) return MBF.fmt(v.b);
+      if (v.m) return BM.format(v.m);
+      var a = v.h.a;
+      if (a.b !== undefined && a.b <= 5n) return '10' + '↑'.repeat(Number(a.b)) + v.h.x;
+      return '10↑^(' + V.fmt(a) + ') ' + v.h.x;
+    }
+  };
+
+  var SUB = '₀₁₂₃₄₅₆₇₈₉';
+  function sub(n) { return String(n).replace(/[0-9]/g, function (c) { return SUB[c]; }); }
+  function arrows(k) { return k <= 5 ? '↑'.repeat(k) : '↑' + sup(k); }
+
+  // Graham's sequence: G(1) = 3↑↑↑↑3, G(n) = 3 ↑^G(n-1) 3. G(64) is Graham's number.
+  var grahamCache = [];
+  MBF.grahamValue = function (n) {
+    if (!grahamCache[n]) {
+      var a = n === 1 ? { b: 4n } : MBF.grahamValue(n - 1);
+      var name = n === 64 ? "Graham's number" : 'G' + sub(n);
+      grahamCache[n] = V.hyper(a, 3, name);
+    }
+    return grahamCache[n];
   };
 
   MBF.valueOf = function (ball) {
     if (ball.value !== undefined) return V.big(BigInt(ball.value));
+    if (ball.mag) return { m: { L: ball.mag.L, t: ball.mag.t }, name: ball.valueName };
+    if (ball.special === 'graham') return MBF.grahamValue(64);
+    if (ball.special === 'moser') {
+      // 2 inside a mega-gon. Roughly 10 ↑^(mega) 10, with mega itself a tower about 257 tens tall.
+      return V.hyper({ m: { L: 257, t: 1 } }, 10, "Moser's number");
+    }
     return { m: BM.fromLog10(ball.log10) };
   };
+
+  // 2^v for any value (used to build Ackermann towers)
+  function pow2(v) {
+    if (v.b !== undefined && v.b < 3000n) return V.big(2n ** v.b);
+    var lgv = V.log10(v);
+    if (isFinite(lgv)) {
+      var lg2 = lgv + Math.log10(Math.LOG10E * Math.LN2);    // log10(log10(2^v))
+      if (lg2 < 300) return { m: BM.fromLog10(Math.pow(10, lg2)) };
+      return { m: BM.up(BM.fromLog10(lg2)) };
+    }
+    return { m: BM.up(v.m) };
+  }
 
   // ---------------------------------------------------------------- matchups
   MBF.canFight = function (att, def) {
@@ -97,9 +164,30 @@
       case 'square': return { b: BigInt(n) * BigInt(n) };
       case 'fact': return n <= FACT_EXACT_MAX ? { b: factExact(n) } : { m: BM.fromLog10(lgFact(n)) };
       case 'pow10': return n < EXACT_DIGITS ? { b: 10n ** BigInt(n) } : { m: BM.fromLog10(n) };
+      case 'ack': return ackermann(n);
+      case 'graham': return MBF.grahamValue(n);
     }
     throw new Error('unknown function ' + fn);
   };
+
+  // A(n, n) = 2 ↑^(n-2) (n+3) - 3:  3, 7, 61, 2↑↑7 - 3, 2↑↑↑8 - 3, ...
+  var ackCache = [];
+  function ackermann(n) {
+    if (ackCache[n]) return ackCache[n];
+    var v;
+    if (n === 1) v = { b: 3n };
+    else if (n === 2) v = { b: 7n };
+    else if (n === 3) v = { b: 61n };
+    else if (n === 4) {
+      var t = { b: 1n };
+      for (var i = 0; i < 7; i++) t = pow2(t);                 // 2↑↑7
+      v = t.b !== undefined ? { b: t.b - 3n } : { m: t.m };
+      v.name = '2↑↑7 − 3';
+    } else {
+      v = V.hyper({ b: BigInt(n - 2) }, n + 3, '2' + arrows(n - 2) + (n + 3) + ' − 3');
+    }
+    return (ackCache[n] = v);
+  }
 
   // Total damage after m hits, S(m) = f(1) + ... + f(m), exact (m is a BigInt, small enough).
   function sumExact(fn, m) {
@@ -114,6 +202,17 @@
 
   // Smallest number of hits m with S(m) >= hp, as a value.
   function hitsToDestroy(fn, hp) {
+    if (fn === 'ack' || fn === 'graham') {
+      // these explode so fast that the total is just the latest hit: walk forward
+      var dealt = V.zero();
+      for (var k = 1; k <= 80; k++) {
+        dealt = V.add(dealt, MBF.fnValue(fn, k));
+        if (V.cmp(dealt, hp) >= 0) return { b: BigInt(k) };
+      }
+      // Ackermann needs about as many hits as the defender has arrows
+      if (hp.h) return hp.h.a;
+      return hp;
+    }
     if (V.isExact(hp)) {
       var target = hp.b, hi = 1n;
       while (sumExact(fn, hi) < target) hi *= 2n;
@@ -126,7 +225,11 @@
       return { b: hi };
     }
     var lg = V.log10(hp);
-    if (!isFinite(lg)) return hp;            // beyond doubles: hits needed ~ the number itself
+    if (!isFinite(lg)) {
+      // beyond doubles: square roots don't dent these, but 10^n / n! need about log10(hp) hits
+      if (fn === 'pow10' || fn === 'fact') return V.down(hp);
+      return hp;
+    }
     switch (fn) {
       case 'succ': return V.lg10((lg + Math.log10(2)) / 2);
       case 'double': return V.lg10(lg / 2);
@@ -146,6 +249,9 @@
   //   0: 1-9   1: 10-999   2: up to 10^15   3: up to a googol   4: up to a googolplex
   //   5+: later phases (Moser, Graham, TREE, Rayo ...)
   MBF.MAX_LEVEL = 8;
+  //   5: beyond a googolplex up to Moser (taller towers, Ackermann, up-arrows)
+  //   6: Graham's sequence (the number of arrows is itself an up-arrow number)
+  function nesting(v) { var d = 0; while (v.h) { d++; v = v.h.a; } return d; }
   MBF.impactOf = function (damage, ko) {
     var lg = V.log10(damage), level, t;
     var edges = [0, 1, 3, 15, 100];
@@ -155,8 +261,15 @@
       }
     } else if (lg <= 1e100 * (1 + 1e-12)) {
       level = 4; t = (Math.log10(lg) - 2) / 98;
+    } else if (!damage.h) {
+      var m = V.mag(damage);                                 // towers: googolplexplex, Skewes, A(4,4)
+      level = 5; t = Math.min(0.45, 0.12 * (m.L - 3) + 0.02 * m.t);
+    } else if (nesting(damage) >= 2) {
+      level = 6; t = Math.min(1, (nesting(damage) - 1) / 63);
     } else {
-      level = 5; t = 0;
+      var a = damage.h.a;                                    // up-arrows: Ackermann, Moser
+      level = 5;
+      t = a.b !== undefined ? 0.5 + 0.4 * Math.min(1, Math.log10(Number(a.b)) / 2) : 0.95;
     }
     if (ko) level += 1;
     return { level: Math.min(level, MBF.MAX_LEVEL), t: Math.max(0, Math.min(1, t)) };
@@ -215,6 +328,7 @@
     else if (V.isExact(maxHp) && V.isExact(constDmg)) {
       totalHits = { b: (maxHp.b + constDmg.b - 1n) / constDmg.b };
     } else if (V.cmp(constDmg, maxHp) >= 0) totalHits = { b: 1n };
+    else if (!isFinite(V.log10(maxHp))) totalHits = maxHp;   // dividing doesn't dent it
     else totalHits = V.lg10(V.log10(maxHp) - V.log10(constDmg));
     f.totalHits = totalHits;
 
@@ -249,6 +363,7 @@
         if (BM.log10Big(maxHp.b) < 15) return Number(rem) / Number(maxHp.b);
         return Number((rem * 1000000n) / maxHp.b) / 1e6;
       }
+      if (!isFinite(V.log10(maxHp))) return V.cmp(f.dealt, maxHp) < 0 ? 1 : 0;
       var d = V.log10(f.dealt) - V.log10(maxHp);
       if (d < -9) return 1;
       return Math.max(0, 1 - Math.pow(10, d));
@@ -257,6 +372,7 @@
     // true when the damage so far is too small to show up as a number
     f.negligible = function () {
       if (f.dealt.b === 0n) return false;
+      if (!isFinite(V.log10(maxHp))) return V.cmp(f.dealt, maxHp) < 0;
       return V.log10(f.dealt) < V.log10(maxHp) - 6;
     };
 
@@ -264,8 +380,13 @@
     f.hpText = function () {
       if (f.over) return 'HP 0';
       var bigHp = V.log10(maxHp) >= 15;
+      if (bigHp && f.dealt.b === 0n && maxHp.name) return 'HP: ' + maxHp.name;
       if (bigHp && f.dealt.b === 0n) return 'HP: ' + def.label + ' (' + V.fmt(maxHp) + ')';
-      if (f.negligible()) return 'HP: ' + def.label + ' − ' + V.fmt(f.dealt);
+      if (f.negligible()) {
+        var dealtTxt = V.fmt(f.dealt);
+        if (dealtTxt.indexOf('−') >= 0) dealtTxt = '(' + dealtTxt + ')';
+        return 'HP: ' + (maxHp.name && maxHp.h ? maxHp.name : def.label) + ' − ' + dealtTxt;
+      }
       if (V.isExact(maxHp) && V.isExact(f.dealt)) {
         var rem = maxHp.b - f.dealt.b;
         if (BM.log10Big(maxHp.b) < 15) return 'HP ' + MBF.fmt(rem) + ' / ' + MBF.fmt(maxHp.b);
@@ -277,6 +398,9 @@
     // "Damage so far: 0.000…% (97 zeros after the point)" once the bar cannot show it
     f.percentText = function () {
       if (f.over || f.dealt.b === 0n) return '';
+      if (!isFinite(V.log10(maxHp))) {
+        return f.negligible() ? 'Damage so far: 0.000…% (more zeros after the point than could ever be written)' : '';
+      }
       var lgPct = V.log10(f.dealt) - V.log10(maxHp) + 2;
       if (lgPct > -2) return '';
       return 'Damage so far: ' + MBF.describePercent(lgPct);
@@ -285,7 +409,12 @@
     // wait text for the remaining hits at hitsPerSecond
     f.waitText = function (hitsPerSecond) {
       if (!(hitsPerSecond > 0) || f.over) return '';
-      return MBF.describeWait(V.log10(f.hitsToKo()) - Math.log10(hitsPerSecond));
+      var left = f.hitsToKo(), lg = V.log10(left);
+      if (!isFinite(lg)) {
+        // so big that seconds, years or lifetimes of the universe make no difference
+        return V.fmt(left) + ' years (far, far beyond the heat death of the universe)';
+      }
+      return MBF.describeWait(lg - Math.log10(hitsPerSecond));
     };
 
     return f;

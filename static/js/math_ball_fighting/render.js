@@ -52,16 +52,27 @@
 
     // ------------------------------------------------------------ post-processing
     // The scene renders into rt; a full-screen pass adds aberration and shatter.
-    var rt = new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+    // The post pass writes into one of two "out" targets (ping-pong) so the next
+    // frame can read the last one back for feedback trails; a copy pass shows it.
+    var rtOpts = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter };
+    var rt = new THREE.WebGLRenderTarget(4, 4, rtOpts);
+    var outA = new THREE.WebGLRenderTarget(4, 4, rtOpts), outB = new THREE.WebGLRenderTarget(4, 4, rtOpts);
     var postU = {
-      tScene: { value: rt.texture }, uRes: { value: new THREE.Vector2(1, 1) },
+      tScene: { value: rt.texture }, tPrev: { value: outB.texture }, uRes: { value: new THREE.Vector2(1, 1) },
       uCenter: { value: new THREE.Vector2(0.5, 0.5) }, uCA: { value: 0 }, uShatter: { value: 0 },
-      uSeed: { value: 0 }, uTime: { value: 0 }
+      uSeed: { value: 0 }, uTime: { value: 0 },
+      uSwirl: { value: 0 }, uSwirlC: { value: new THREE.Vector2(0.5, 0.5) }, uKaleido: { value: 0 }, uFeedback: { value: 0 }
     };
     var postScene = new THREE.Scene();
     var postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
     postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
       uniforms: postU, vertexShader: S.vertex, fragmentShader: S.postFragment,
+      depthTest: false, depthWrite: false
+    })));
+    var copyU = { tSrc: { value: outA.texture } };
+    var copyScene = new THREE.Scene();
+    copyScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+      uniforms: copyU, vertexShader: S.vertex, fragmentShader: S.copyFragment,
       depthTest: false, depthWrite: false
     })));
 
@@ -70,6 +81,8 @@
       R.W = W; R.H = H;
       renderer.setSize(W, H);
       rt.setSize(Math.round(W * dpr), Math.round(H * dpr));
+      outA.setSize(Math.round(W * dpr), Math.round(H * dpr));
+      outB.setSize(Math.round(W * dpr), Math.round(H * dpr));
       postU.uRes.value.set(W, H);
       camera.left = -W / 2; camera.right = W / 2; camera.top = H / 2; camera.bottom = -H / 2;
       camera.updateProjectionMatrix();
@@ -400,6 +413,7 @@
 
     // ------------------------------------------------------------ shake / punch / flash
     var trauma = 0, punch = 0, flashAmt = 0, pulse = 0, ca = 0, shatter = 0;
+    var swirl = 0, kaleido = 0, feedback = 0;
     var shakeSeed = Math.random() * 100;
 
     R.fx = {
@@ -456,6 +470,25 @@
         }
         shatter = Math.max(shatter, amount);
       },
+      // level 5: twist the screen into a whirlpool around world (x, y); sign picks the direction
+      swirl: function (amount, x, y) {
+        if (Math.abs(amount) > Math.abs(swirl) * 0.5) postU.uSwirlC.value.set(0.5 + x / R.W, 0.5 + y / R.H);
+        swirl = Math.abs(amount) > Math.abs(swirl) ? amount : swirl;
+      },
+      // level 6: kaleidoscope mirror and echoing trails
+      kaleido: function (amount) { kaleido = Math.max(kaleido, amount); },
+      feedback: function (amount) { feedback = Math.max(feedback, Math.min(0.85, amount)); },
+      // sparks circling (x, y) at radius r, like water down a drain
+      vortex: function (x, y, r, count, speed, color) {
+        for (var i = 0; i < count; i++) {
+          var a = Math.random() * Math.PI * 2, rr = r * (0.8 + Math.random() * 0.8);
+          var px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
+          var s = speed * (0.6 + Math.random() * 0.7);
+          spawn(px, py, -Math.sin(a) * s - Math.cos(a) * s * 0.35, Math.cos(a) * s - Math.sin(a) * s * 0.35,
+            0.6 + Math.random() * 0.6, 3 + Math.random() * 5, 0.3, 1.2,
+            Math.random() < 0.3 ? 1 : color[0], Math.random() < 0.3 ? 1 : color[1], Math.random() < 0.3 ? 1 : color[2]);
+        }
+      },
       // a crackling bolt from (x0, y0) to (x1, y1)
       lightning: function (x0, y0, x1, y1, color, width, life, calm) {
         var b = bolts[boltNext]; boltNext = (boltNext + 1) % bolts.length;
@@ -496,6 +529,15 @@
       ca *= Math.exp(-dt * 4);
       shatter *= Math.exp(-dt * 2.6);
       if (shatter < 0.002) shatter = 0;
+      swirl *= Math.exp(-dt * 1.8);
+      kaleido *= Math.exp(-dt * 1.3);
+      feedback *= Math.exp(-dt * 0.8);
+      if (Math.abs(swirl) < 0.002) swirl = 0;
+      if (kaleido < 0.002) kaleido = 0;
+      if (feedback < 0.01) feedback = 0;
+      postU.uSwirl.value = swirl;
+      postU.uKaleido.value = kaleido;
+      postU.uFeedback.value = feedback;
       postU.uCA.value = ca;
       postU.uShatter.value = shatter;
       postU.uTime.value = R.time;
@@ -517,8 +559,14 @@
     R.render = function () {
       renderer.setRenderTarget(rt);
       renderer.render(scene, camera);
-      renderer.setRenderTarget(null);
+      var write = outA, read = outB;
+      postU.tPrev.value = read.texture;
+      renderer.setRenderTarget(write);
       renderer.render(postScene, postCam);
+      renderer.setRenderTarget(null);
+      copyU.tSrc.value = write.texture;
+      renderer.render(copyScene, postCam);
+      outA = read; outB = write;                         // swap for next frame
     };
 
     // ------------------------------------------------------------ thumbnails

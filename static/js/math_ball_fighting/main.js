@@ -52,7 +52,7 @@
   var attQ = new THREE.Quaternion(), defQ = new THREE.Quaternion();
   var speed = Number(query('speed')) || 1;
   var hitStop = 0, slowT = 0, introT = 0, koT = 0, defFade = 1;
-  var hitTimes = [], fightStart = 0, lastFx = -1, lastShatter = -1, flashTimes = [];
+  var hitTimes = [], fightStart = 0, lastFx = -1, lastShatter = -1, lastWarp = -1, lastTrip = -1, flashTimes = [];
   var labelDue = false, lastLabel = 0, koAt = 0;
   var hudDirty = true, waitT = 0;
 
@@ -322,10 +322,11 @@
     }
     // level 4: the screen cracks like glass and shards fly out of the hit
     if (res.level >= 4) {
-      var t4 = res.t;
+      var t4 = res.level > 4 ? 1 : res.t;
       if (!busy || now - lastShatter > 350) {
         lastShatter = now;
-        R.fx.shatter((calm ? 0.3 : 0.6) + (calm ? 0.15 : 0.4) * t4, ev.x, ev.y);
+        var crack = res.level >= 6 ? 0.45 : 1;                // let the kaleidoscope show through at level 6
+        R.fx.shatter(((calm ? 0.3 : 0.6) + (calm ? 0.15 : 0.4) * t4) * crack, ev.x, ev.y);
       }
       R.fx.shards(ev.x, ev.y, ev.nx, ev.ny, Math.round((calm ? 6 : 12) + 18 * t4),
         (520 + 360 * t4) * m, (14 + 12 * t4) * m, 2.6);
@@ -336,6 +337,25 @@
         var ang = Math.atan2(ev.ny, ev.nx) + (Math.random() - 0.5) * 2.2, len = (180 + 260 * Math.random()) * m;
         R.fx.lightning(ev.x, ev.y, ev.x + Math.cos(ang) * len, ev.y + Math.sin(ang) * len, a.aura, 5 * m, 0.28, calm);
       }
+    }
+    // level 5: the whole screen twists into a whirlpool around the defender
+    if (res.level >= 5) {
+      var t5 = res.level > 5 ? 1 : res.t;
+      var dir = Math.random() < 0.5 ? -1 : 1;
+      if (!busy || now - lastWarp > 300) {
+        lastWarp = now;
+        R.fx.swirl(dir * ((calm ? 0.35 : 1.1) + (calm ? 0.2 : 1.3) * t5), world.def.x, world.def.y);
+      }
+      R.fx.vortex(world.def.x, world.def.y, world.def.r * 1.3, Math.round(((calm ? 20 : 40) + 50 * t5) * (busy ? 0.4 : 1)),
+        (260 + 200 * t5) * m * dir, a.aura);
+      if (!busy) R.fx.ring(world.def.x, world.def.y, a.aura, world.def.r * 0.4, world.def.r * (3 + t5), 0.8, 0.035);
+    }
+    // level 6: kaleidoscope mirror and echoing trails, stronger the deeper into Graham's sequence
+    if (res.level >= 6 && (!busy || now - lastTrip > 450)) {
+      var t6 = res.level > 6 ? 1 : res.t;
+      lastTrip = now;
+      if (!calm) R.fx.kaleido(0.5 + 0.5 * t6);
+      R.fx.feedback(calm ? 0.3 : 0.55 + 0.25 * t6);
     }
   }
 
@@ -382,6 +402,14 @@
         R.fx.lightning(dx, dy, dx + Math.cos(ang) * len, dy + Math.sin(ang) * len, d.aura, 6 * m, 0.4, calm);
       }
     }
+    if (res.level >= 6) {
+      R.fx.swirl((calm ? 0.5 : 2.2) * (Math.random() < 0.5 ? -1 : 1), dx, dy);
+      R.fx.vortex(dx, dy, dr * 1.2, calm ? 40 : 120, 520 * m, a.aura);
+    }
+    if (res.level >= 7) {
+      if (!calm) R.fx.kaleido(1);
+      R.fx.feedback(calm ? 0.4 : 0.9);
+    }
     damageNumber('-' + MBF.V.fmt(res.damage), ev.x + ev.nx * 26 * m, ev.y + ev.ny * 26 * m + 18 * m, Math.min(res.level, 4), res.t, false);
     damageNumber('K.O.!', dx, dy + dr * 0.2, Math.min(res.level, 3), 1, true);
     world.defGone = true;
@@ -412,7 +440,7 @@
     if (V.isExact(fight.dealt) && V.isExact(fight.maxHp)) {
       var over = fight.dealt.b - fight.maxHp.b;
       if (over > 0n) html += '<br>Overkill: <b>' + MBF.fmt(over) + '</b> extra damage.';
-    } else if (V.log10(fight.dealt) > V.log10(fight.maxHp) + 0.01) {
+    } else if (V.cmp(fight.dealt, fight.maxHp) > 0 && !(V.log10(fight.dealt) < V.log10(fight.maxHp) + 0.01)) {
       html += '<br>Overkill: about <b>' + esc(V.fmt(fight.dealt)) + '</b> damage in total.';
     }
     if (fight.isFunction) html += '<br>Final hit: <b>' + esc(MBF.fnLabel(a, fight.input - 1)) + '</b>.';

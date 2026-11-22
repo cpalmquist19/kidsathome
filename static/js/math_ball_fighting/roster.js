@@ -60,6 +60,20 @@
     { id: 'googolplex', kind: 'number', name: 'Googolplex', log10: 1e100, label: 'Googolplex', labelAt: 'banner',
       texture: 'galaxy', aura: [0.75, 0.55, 1.0], ink: ['#f3eaff', '#1c0640'],
       fact: '1 followed by a googol zeros. There is not enough room in the universe to write it out.' },
+    { id: 'skewes', kind: 'number', name: "Skewes's Number", mag: { L: 4, t: 1.5308 }, valueName: '10^10^10^34',
+      label: 'Skewes', labelAt: 'banner',
+      texture: 'ulam', aura: [1.0, 0.78, 0.3], ink: ['#fff3d0', '#3d2600'],
+      fact: 'Came from a question about prime numbers. About 10^10^10^34: bigger than a googolplex.' },
+    { id: 'googolplexplex', kind: 'number', name: 'Googolplexplex', mag: { L: 4, t: 2 }, valueName: '10^10^10^100',
+      label: 'Googolplexplex', labelAt: 'banner',
+      texture: 'galaxies', aura: [0.45, 0.75, 1.0], ink: ['#e6f2ff', '#061a3d'],
+      fact: '1 followed by a googolplex zeros. Like a galaxy made of galaxies.' },
+    { id: 'moser', kind: 'number', name: "Moser's Number", special: 'moser', label: 'Moser', labelAt: 'banner',
+      texture: 'moser', aura: [1.0, 0.45, 0.3], ink: ['#fff0ea', '#4a1206'],
+      fact: 'Built from shapes inside shapes: triangles, squares and circles. Too tall for any tower of tens you could write.' },
+    { id: 'graham', kind: 'number', name: "Graham's Number", special: 'graham', label: "Graham's", labelAt: 'banner',
+      texture: 'hypercube', aura: [0.35, 0.6, 1.0], ink: ['#e8f0ff', '#081a44'],
+      fact: 'Came from coloring the corners of hypercubes. Built 64 times over, each time using the last one as its number of up-arrows.' },
 
     // ---- functions: attack only. Input starts at 1 and goes up by one every hit.
     { id: 'f_succ', kind: 'function', fn: 'succ', name: 'Plus One', formula: 'n+1', labelAt: 'center',
@@ -76,7 +90,13 @@
       fact: 'Multiply every number up to n: 1, 2, 6, 24, 120... It explodes fast.' },
     { id: 'f_pow10', kind: 'function', fn: 'pow10', name: 'Power of Ten', formula: '10ⁿ', labelAt: 'center',
       texture: 'fnring', aura: [0.8, 0.5, 1.0], ink: ['#f6eeff', '#24083f'],
-      fact: 'A 1 with n zeros: 10, 100, 1,000... Adds a zero every hit.' }
+      fact: 'A 1 with n zeros: 10, 100, 1,000... Adds a zero every hit.' },
+    { id: 'f_ack', kind: 'function', fn: 'ack', name: 'Ackermann', formula: 'A(n,n)', labelAt: 'center',
+      texture: 'fnring', aura: [1.0, 0.55, 0.2], ink: ['#fff1e0', '#3d1800'],
+      fact: 'A(1,1) = 3, A(2,2) = 7, A(3,3) = 61... and A(4,4) already has more than 10^19727 digits.' },
+    { id: 'f_graham', kind: 'function', fn: 'graham', name: 'Graham Sequence', formula: 'G(n)', labelAt: 'center',
+      texture: 'hypercube', aura: [0.4, 0.85, 1.0], ink: ['#e8f8ff', '#062a44'],
+      fact: "G(1) = 3↑↑↑↑3. Each next one uses the last as its number of arrows. G(64) is Graham's number." }
   ];
 
   // what a function ball shows for input n
@@ -88,6 +108,8 @@
       case 'square': return s + '²';
       case 'fact': return s + '!';
       case 'pow10': return '10' + s.replace(/[0-9]/g, function (c) { return '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]; });
+      case 'ack': return 'A(' + s + ',' + s + ')';
+      case 'graham': return 'G(' + s + ')';
     }
     return ball.formula;
   };
