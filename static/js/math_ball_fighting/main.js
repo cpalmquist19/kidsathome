@@ -529,7 +529,7 @@
         refreshAttackerText();
       }
       var fnK = fight.attacker.fn;
-      if (fnK === 'tree' || fnK === 'fish7') attV.setK(fight.over ? fight.input - 1 : fight.input);   // TREE seed colours / Fish count
+      if (fnK === 'tree' || fnK === 'fish7' || fnK === 'garden') attV.setK(fight.over ? fight.input - 1 : fight.input);   // TREE seed colours / Fish count
     }
 
     if (world && attV) {

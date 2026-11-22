@@ -95,6 +95,9 @@
     { id: 'bigfoot', kind: 'number', name: 'BIG FOOT', special: 'bigfoot', label: 'BIG FOOT', labelAt: 'banner', glitch: 1,
       texture: 'bigfoot', aura: [0.9, 0.6, 0.3], ink: ['#fff0e0', '#2e1500'],
       fact: "Like Rayo's number, but using an even stronger math language. Bigger than Rayo's number." },
+    { id: 'lngn', kind: 'number', name: 'Large Number Garden Number', special: 'lngn', label: 'Garden Number', labelAt: 'banner',
+      glitch: 1, k: 10, texture: 'garden', aura: [0.55, 1.0, 0.6], ink: ['#f0fff0', '#063300'],
+      fact: 'Coined by Googology Wiki user P-adic-daisuki-bot: a function built from set theory, applied 10 times to 10↑¹⁰10. Called the largest well-defined googologism that is not a "salad number".' },
     { id: 'oblivion', kind: 'number', name: 'Oblivion', special: 'oblivion', label: 'Oblivion', labelAt: 'banner', glitch: 1,
       texture: 'void', aura: [0.6, 0.5, 1.0], ink: ['#efeaff', '#0a0020'],
       fact: 'Named by Jonathan Bowers: the biggest number any math system that fits in a googolplex symbols can make. Mathematicians argue it is not really defined.' },
@@ -156,7 +159,10 @@
       fact: 'Like Rayo(n) but in a stronger math language. Its values are unknown, so the game guesses. BIG FOOT applies FOOT ten times to a googol.' },
     { id: 'f_fish7', kind: 'function', fn: 'fish7', name: 'Fish F₇', formula: 'F₇ⁿ(10¹⁰⁰)', labelAt: 'banner', glitch: 0.7, k: 1,
       texture: 'fish', aura: [0.35, 0.9, 1.0], ink: ['#e6faff', '#002a3d'],
-      fact: "Fish's F₇ applied n times to a googol, one more fish every hit. At n = 63 it is Fish number 7." }
+      fact: "Fish's F₇ applied n times to a googol, one more fish every hit. At n = 63 it is Fish number 7." },
+    { id: 'f_garden', kind: 'function', fn: 'garden', name: 'Garden f', formula: 'fⁿ(10↑¹⁰10)', labelAt: 'banner', glitch: 0.7, k: 1,
+      texture: 'garden', aura: [0.6, 1.0, 0.55], ink: ['#f0fff0', '#063300'],
+      fact: 'The Large Number Garden function applied n times to 10↑¹⁰10, one more flower every hit. At n = 10 it is the Large Number Garden Number. Its earlier steps are a guess.' }
   ];
 
   // what a function ball shows for input n
@@ -179,6 +185,7 @@
       case 'loaderD': return 'D' + s.replace(/[0-9]/g, function (c) { return '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]; }) + '(99)';
       case 'rayo': return 'Rayo(' + s + ')';
       case 'foot': return 'FOOT(' + s + ')';
+      case 'garden': return 'f' + s.replace(/[0-9]/g, function (c) { return '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]; }) + '(10↑¹⁰10)';
       case 'fish7': return 'F₇' + s.replace(/[0-9]/g, function (c) { return '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]; }) + '(10¹⁰⁰)';
       case 'scg': return 'SCG(' + s + ')';
     }

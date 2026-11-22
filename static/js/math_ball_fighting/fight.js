@@ -42,7 +42,7 @@
     },
     hyper: function (arrows, x, name) { return { h: { a: arrows, x: x }, name: name }; },
     // growth-class value: class r at input n. Anything in a higher class beats anything lower.
-    //   1 TREE · 2 SCG · 3 Loader · 10 Busy Beaver · 11 Rayo · 11.5 Fish 7 · 12 BIG FOOT · 13 Oblivion · 14 Utter Oblivion
+    //   1 TREE · 2 SCG · 3 Loader · 10 Busy Beaver · 11 Rayo · 11.5 Fish 7 · 12 BIG FOOT · 12.5 Garden · 13 Oblivion · 14 Utter Oblivion
     cls: function (r, n, name) { return { g: { r: r, n: n }, name: name }; },
     zero: function () { return { b: 0n }; },
     isExact: function (v) { return v.b !== undefined; },
@@ -95,7 +95,7 @@
     }
   };
 
-  var CLASS_NAMES = { 1: 'TREE', 2: 'SCG-class', 3: 'Loader-class', 10: 'BB', 11: 'Rayo', 11.5: 'F₇', 12: 'FOOT', 13: 'Oblivion', 14: 'Utter Oblivion' };
+  var CLASS_NAMES = { 1: 'TREE', 2: 'SCG-class', 3: 'Loader-class', 10: 'BB', 11: 'Rayo', 11.5: 'F₇', 12: 'FOOT', 12.5: 'Garden f', 13: 'Oblivion', 14: 'Utter Oblivion' };
   var SUB = '₀₁₂₃₄₅₆₇₈₉';
   function sub(n) { return String(n).replace(/[0-9]/g, function (c) { return SUB[c]; }); }
   function arrows(k) { return k <= 5 ? '↑'.repeat(k) : '↑' + sup(k); }
@@ -122,6 +122,7 @@
     if (ball.special === 'bigfoot') return V.cls(12, { b: 1n }, 'BIG FOOT');
     if (ball.special === 'sscg3') return sscg(3);
     if (ball.special === 'fish7') return fish7(63);
+    if (ball.special === 'lngn') return gardenF(10);
     if (ball.special === 'oblivion') return V.cls(13, { b: 1n }, 'Oblivion');
     if (ball.special === 'utter') return V.cls(14, { b: 1n }, 'Utter Oblivion');
     if (ball.special === 'moser') {
@@ -196,6 +197,7 @@
       case 'rayo': return guessed(tower2(n / 1500), 'Rayo(' + n + ')');
       case 'foot': return guessed(tower2(n / 1000), 'FOOT(' + n + ')');
       case 'fish7': return fish7(n);
+      case 'garden': return gardenF(n);
       case 'scg': return scg(n);
     }
     throw new Error('unknown function ' + fn);
@@ -259,6 +261,16 @@
   // sequence sits in its own class just above Rayo's number (11.5), counted by applications.
   function fish7(n) {
     return V.cls(11.5, { b: BigInt(n) }, n === 63 ? 'Fish number 7' : 'F₇' + sup(n) + '(10¹⁰⁰)');
+  }
+
+  // Large Number Garden Number = f^10(10↑^10 10), where f is the Large Number Garden function
+  // (built from set theory). It ranks above BIG FOOT and below Oblivion. The steps before
+  // f^10 are placed just below it in the same class, which is a guess.
+  function gardenF(n) {
+    var v = V.cls(12.5, { b: BigInt(n) },
+      n === 10 ? 'Large Number Garden Number' : 'f' + sup(n) + '(10↑¹⁰10)');
+    if (n < 10) v.estimate = true;
+    return v;
   }
 
   // SSCG / SCG - Friedman's graph sequences. Both live in the "SCG" growth class (2).
@@ -350,7 +362,7 @@
       return hp;
     }
     if (fn === 'ack' || fn === 'graham' || fn === 'tree' || fn === 'bb' || fn === 'sscg' || fn === 'scg' ||
-        fn === 'arrows' || fn === 'tet' || fn === 'circle' || fn === 'loaderD' || fn === 'fish7') {
+        fn === 'arrows' || fn === 'tet' || fn === 'circle' || fn === 'loaderD' || fn === 'fish7' || fn === 'garden') {
       // these explode so fast that the total is just the latest hit: walk forward
       var dealt = V.zero();
       for (var k = 1; k <= 200; k++) {

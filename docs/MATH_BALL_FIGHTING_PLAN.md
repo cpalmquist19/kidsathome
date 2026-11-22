@@ -126,4 +126,7 @@ Effects stack.
    - Added after: SSCG(3) as a number, and Fish number 7 (= F₇⁶³(10¹⁰⁰), a school of 63 glowing fish) with its
      function F₇ⁿ(10¹⁰⁰), which wins on hit 63. Fish 7 is placed above Rayo's number (one F₇ application already
      reaches Rayo(10¹⁰⁰)) and below BIG FOOT; the fact card says the comparison isn't proven.
+   - Added after: the Large Number Garden Number (= f¹⁰(10↑¹⁰10), a night garden with 10 blooming flowers),
+     ranked above BIG FOOT and below Oblivion, with its function fⁿ(10↑¹⁰10) that wins on hit 10.
+     f¹ to f⁹ are placed just below it, a labelled guess.
 5. Sound, Shorts (9:16) layout, Calm-effects tuning, polish.

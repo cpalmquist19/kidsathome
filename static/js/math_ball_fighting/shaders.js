@@ -652,6 +652,38 @@
     '}'
   ].join('\n');
 
+  // Large Number Garden - a glowing night garden: uK big flowers bloom in a ring (10 for the
+  // number, one per application of f), with small blossoms and drifting vines around them
+  SURF.garden = [
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  float r = length(q);',
+    '  float grass = fbm3(vec3(q * 5.0, t * 0.1));',
+    '  alb = mix(vec3(0.01, 0.06, 0.03), vec3(0.04, 0.16, 0.07), grass);',
+    '  float vine = smoothstep(0.03, 0.0, abs(sin(q.x * 7.0 + sin(q.y * 5.0 + t * 0.4) * 1.5) * 0.12 - q.y * 0.3 + 0.05 * sin(t)));',
+    '  vec3 col = vec3(0.25, 0.9, 0.4) * vine * 0.5;',
+    '  vec2 sg = rot2(t * 0.05) * q * 9.0; vec2 sc = floor(sg); vec2 sf = fract(sg) - 0.5; float sh = hash2(sc);',
+    '  float small = step(0.72, sh) * smoothstep(0.16, 0.08, length(sf) * (0.8 + 0.4 * cos(5.0 * atan(sf.y, sf.x) + sh * 9.0)));',
+    '  col += hsv2rgb(vec3(fract(sh * 3.7), 0.5, 1.0)) * small * 0.7;',
+    '  float k = clamp(uK, 1.0, 10.0);',
+    '  for (int i = 0; i < 10; i++) {',
+    '    float fi = float(i);',
+    '    if (fi >= k) break;',
+    '    float ang = fi / k * TAU + t * 0.12;',
+    '    vec2 c = (k < 1.5 ? 0.0 : 0.5) * vec2(cos(ang), sin(ang));',
+    '    vec2 lp = rot2(t * 0.3 + fi) * (q - c);',
+    '    float pr = length(lp), pa = atan(lp.y, lp.x);',
+    '    float bloom = 0.17 * (0.5 + 0.5 * cos(5.0 * pa)) * (0.85 + 0.15 * sin(t * 2.0 + fi));',
+    '    float petal = smoothstep(0.012, 0.0, pr - bloom - 0.03);',
+    '    float centre = smoothstep(0.045, 0.035, pr);',
+    '    vec3 pc = hsv2rgb(vec3(fract(0.85 + fi * 0.1), 0.6, 1.0));',
+    '    col = mix(col, pc * (0.6 + 0.6 * (1.0 - pr / 0.2)), petal);',
+    '    col = mix(col, vec3(1.0, 0.85, 0.3) * 1.4, centre);',
+    '  }',
+    '  emit = col;',
+    '  gloss = 0.7;',
+    '}'
+  ].join('\n');
+
   // Functions - a knurled metal ring around a dark core with glowing circuit traces
   SURF.fnring = [
     'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
