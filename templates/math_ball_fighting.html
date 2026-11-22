@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Math Ball Fighting - Kids at Home</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+  body { color: #f2ecff; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-user-select: none; user-select: none; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  #touch-zone { position: fixed; inset: 0; touch-action: none; }
+
+  /* ---------- HUD ---------- */
+  #hud { position: fixed; inset: 0; pointer-events: none; display: none; }
+  #hud.on { display: block; }
+  #hud-top { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); width: min(560px, 86vw); text-align: center; }
+  #def-name { font-weight: 800; font-size: clamp(16px, 2.4vw, 24px); letter-spacing: .03em; text-shadow: 0 2px 10px rgba(0,0,0,.8); }
+  #hp-bar { margin-top: 6px; height: 14px; border-radius: 8px; background: rgba(20,12,36,.8); border: 1px solid rgba(255,255,255,.18); overflow: hidden; position: relative; }
+  #hp-fill { position: absolute; inset: 0; transform-origin: left center; background: linear-gradient(90deg, #ff3b6b, #ffb23b 60%, #ffe27a); transition: transform .12s ease-out; }
+  #hp-ghost { position: absolute; inset: 0; transform-origin: left center; background: rgba(255,255,255,.55); transition: transform .6s ease-in .15s; }
+  #hp-text { margin-top: 4px; font: 600 clamp(12px, 1.5vw, 15px) ui-monospace, Menlo, Consolas, monospace; color: #ffd6a0; text-shadow: 0 1px 6px rgba(0,0,0,.9); }
+  #hud-att { position: absolute; left: 14px; top: 12px; font: 600 13px ui-monospace, Menlo, Consolas, monospace; color: #bfe6ff; text-shadow: 0 1px 6px rgba(0,0,0,.9); max-width: 30vw; }
+  #att-name { font: 800 clamp(14px, 2vw, 20px) system-ui, sans-serif; color: #fff; }
+  #hud-stats { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); text-align: center; font: 600 clamp(12px, 1.6vw, 16px) ui-monospace, Menlo, Consolas, monospace; color: #e8dcff; text-shadow: 0 1px 6px rgba(0,0,0,.95); width: 92vw; }
+  #stat-wait { margin-top: 3px; color: #9fd8ff; font-weight: 400; font-size: .9em; }
+  #hud-buttons { position: absolute; right: 12px; top: 12px; display: flex; gap: 6px; pointer-events: auto; }
+  .hbtn { font: 700 12px ui-monospace, Menlo, Consolas, monospace; color: #cbb8ff; background: rgba(16,10,30,.75); border: 1px solid #3d2d66; border-radius: 7px; padding: 6px 9px; cursor: pointer; }
+  .hbtn.on { color: #12051f; background: #ffd479; border-color: #ffd479; }
+  .hbtn:hover { border-color: #8f74e0; }
+  #speed { display: flex; gap: 4px; }
+  @media (max-width: 760px) {
+    #hud-top { top: 56px; width: 92vw; }
+    #hud-att { max-width: 34vw; }
+    .hbtn { padding: 5px 7px; font-size: 11px; }
+  }
+
+  /* ---------- damage numbers + banners ---------- */
+  #dmg { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .dn { position: absolute; transform: translate(-50%, -50%); font-weight: 900; white-space: nowrap; color: #ffe27a;
+        text-shadow: 0 0 10px rgba(255,140,40,.8), 0 2px 0 #5a2200, 0 0 2px #000; animation: dn-rise .95s ease-out forwards; }
+  .dn.ko { color: #fff; text-shadow: 0 0 18px rgba(255,80,160,.9), 0 3px 0 #4a0030; }
+  @keyframes dn-rise { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.5); } 12% { opacity: 1; transform: translate(-50%, -60%) scale(1.25); }
+                       30% { transform: translate(-50%, -80%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -260%) scale(.9); } }
+  #banner { position: fixed; left: 0; right: 0; top: 14%; text-align: center; pointer-events: none; opacity: 0; }
+  #banner.show { animation: banner-in 1.1s ease-out forwards; }
+  #banner .big { font: 900 clamp(34px, 8vw, 92px) system-ui, sans-serif; letter-spacing: .03em;
+                 background: linear-gradient(180deg, #fff, #ffd479 55%, #ff5c8a); -webkit-background-clip: text; background-clip: text; color: transparent;
+                 filter: drop-shadow(0 4px 18px rgba(255,80,160,.55)); }
+  #banner .small { font: 700 clamp(14px, 2.2vw, 22px) system-ui, sans-serif; color: #d8c9ff; margin-top: 6px; text-shadow: 0 2px 8px #000; }
+  @keyframes banner-in { 0% { opacity: 0; transform: scale(1.6); } 18% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: scale(.96); } }
+
+  /* ---------- touch controls ---------- */
+  #stick-base { position: fixed; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; display: none; pointer-events: none;
+                background: radial-gradient(circle, rgba(140,110,255,.18), rgba(140,110,255,.05)); border: 2px solid rgba(190,170,255,.45); }
+  #stick-knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%;
+                background: radial-gradient(circle at 35% 35%, #fff, #b8a2ff 60%, #6a4fd0); box-shadow: 0 0 18px rgba(170,140,255,.7); }
+  #dash-btn { position: fixed; right: 26px; bottom: 70px; width: 86px; height: 86px; border-radius: 50%; display: none; touch-action: none;
+              font: 900 16px system-ui, sans-serif; color: #2a1200; border: 3px solid #fff3c4;
+              background: radial-gradient(circle at 35% 30%, #fff6d0, #ffc145 55%, #ff7a2f); box-shadow: 0 0 22px rgba(255,170,60,.6); }
+  #dash-btn.down { transform: scale(.9); filter: brightness(1.2); }
+  body.touch.fighting #dash-btn { display: block; }
+  #hint { position: fixed; left: 12px; bottom: 8px; font: 400 11px ui-monospace, Menlo, Consolas, monospace; color: #5d4f80; pointer-events: none; display: none; }
+  body.fighting:not(.touch) #hint { display: block; }
+
+  /* ---------- overlays ---------- */
+  .overlay { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; background: rgba(4, 2, 12, .86); overflow-y: auto; padding: 22px 14px 30px; box-sizing: border-box; }
+  .overlay.on { display: flex; }
+  .overlay h1 { margin: 6px 0 2px; font: 900 clamp(28px, 5.5vw, 56px) system-ui, sans-serif; text-align: center;
+                background: linear-gradient(180deg, #fff, #ffd479 50%, #ff5c8a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { color: #a896d8; font-size: clamp(13px, 1.6vw, 16px); text-align: center; max-width: 640px; margin: 0 0 14px; line-height: 1.45; }
+  #pickers { display: flex; gap: 18px; width: min(1100px, 100%); align-items: stretch; flex-wrap: wrap; justify-content: center; }
+  .col { flex: 1 1 320px; background: rgba(22, 14, 42, .7); border: 1px solid #2e2252; border-radius: 16px; padding: 12px; }
+  .col h2 { margin: 0 0 8px; font: 800 14px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; color: #8f7ccf; }
+  .col h2 b { color: #ffd479; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+  .tile { background: #120b24; border: 2px solid #241a44; border-radius: 12px; padding: 6px 4px 7px; cursor: pointer; text-align: center; color: #d9ccff; transition: transform .12s, border-color .12s; }
+  .tile:hover { transform: translateY(-2px); border-color: #6a55b8; }
+  .tile.sel { border-color: #ffd479; box-shadow: 0 0 16px rgba(255,212,121,.35); background: #1d1236; }
+  .tile.off { opacity: .3; cursor: not-allowed; }
+  .tile img { width: 64px; height: 64px; display: block; margin: 0 auto 3px; }
+  .tile .nm { font: 700 12px system-ui, sans-serif; }
+  #vs { margin: 14px 0 4px; display: flex; align-items: center; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  #vs .side { text-align: center; width: 230px; }
+  #vs img { width: 96px; height: 96px; }
+  #vs .vsn { font: 800 18px system-ui, sans-serif; }
+  #vs .vsf { font-size: 12px; color: #9c8cc8; margin-top: 2px; min-height: 2.6em; }
+  #vs .vs { font: 900 34px system-ui, sans-serif; color: #ff5c8a; text-shadow: 0 0 18px rgba(255,92,138,.6); }
+  #pick-error { color: #ff8f8f; min-height: 1.3em; font-size: 14px; margin: 4px 0; }
+  .opts { display: flex; flex-direction: column; gap: 8px; align-items: center; margin: 4px 0 10px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .row > span { color: #6f60a0; font: 400 12px ui-monospace, Menlo, Consolas, monospace; text-transform: uppercase; letter-spacing: .1em; min-width: 140px; text-align: right; }
+  .opt { font: 600 14px system-ui, sans-serif; color: #b6a6e6; background: #120b24; border: 1px solid #33275c; border-radius: 8px; padding: 8px 16px; cursor: pointer; }
+  .opt.on { color: #12051f; background: #b9a3ff; border-color: #b9a3ff; }
+  .go { font: 900 19px system-ui, sans-serif; color: #2a1200; background: linear-gradient(180deg, #ffe27a, #ff9d3b); border: 0; border-radius: 12px; padding: 13px 44px; cursor: pointer; box-shadow: 0 0 24px rgba(255,170,60,.45); }
+  .go:disabled { filter: grayscale(1) brightness(.6); cursor: not-allowed; }
+  .quiet { font: 600 14px system-ui, sans-serif; background: transparent; border: 1px solid #33275c; color: #8f7ccf; border-radius: 10px; padding: 10px 20px; cursor: pointer; text-decoration: none; }
+  .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+  #ko { justify-content: center; }
+  #ko-text { color: #e2d6ff; font-size: clamp(15px, 2vw, 19px); text-align: center; max-width: 620px; line-height: 1.5; margin: 8px 0 16px; }
+  #ko-text b { color: #ffd479; }
+</style>
+</head>
+<body>
+<div id="stage" aria-label="Math Ball Fighting arena"></div>
+<div id="touch-zone"></div>
+<div id="dmg"></div>
+
+<div id="hud">
+  <div id="hud-top">
+    <div id="def-name"></div>
+    <div id="hp-bar"><div id="hp-ghost"></div><div id="hp-fill"></div></div>
+    <div id="hp-text"></div>
+  </div>
+  <div id="hud-att"><div id="att-name"></div><div id="att-dmg"></div></div>
+  <div id="hud-stats"><div id="stat-hits"></div><div id="stat-wait"></div></div>
+  <div id="hud-buttons">
+    <div id="speed">
+      <button class="hbtn" data-speed="1" type="button">1×</button>
+      <button class="hbtn" data-speed="4" type="button">4×</button>
+      <button class="hbtn" data-speed="16" type="button">16×</button>
+      <button class="hbtn" data-speed="64" type="button">64×</button>
+    </div>
+    <button id="btn-menu" class="hbtn" type="button" title="Menu (Esc)">MENU</button>
+  </div>
+</div>
+
+<div id="banner"><div class="big"></div><div class="small"></div></div>
+<div id="stick-base"><div id="stick-knob"></div></div>
+<button id="dash-btn" type="button">DASH</button>
+<div id="hint">WASD / arrows move &middot; Space dash &middot; Esc menu</div>
+
+<div id="menu" class="overlay on">
+  <h1>Math Ball Fighting</h1>
+  <p class="sub">Pick any attacker and any number to defend. Every bounce does the attacker's value as damage. Small numbers can beat big ones&hellip; if you are willing to wait.</p>
+  <div id="pickers">
+    <div class="col"><h2><b>Attacker</b> &middot; does the damage</h2><div id="pick-att" class="grid"></div></div>
+    <div class="col"><h2><b>Defender</b> &middot; sits in the middle</h2><div id="pick-def" class="grid"></div></div>
+  </div>
+  <div id="vs">
+    <div class="side"><img id="vs-a-img" alt=""><div id="vs-a-name" class="vsn"></div><div id="vs-a-fact" class="vsf"></div></div>
+    <div class="vs">VS</div>
+    <div class="side"><img id="vs-d-img" alt=""><div id="vs-d-name" class="vsn"></div><div id="vs-d-fact" class="vsf"></div></div>
+  </div>
+  <div id="pick-error"></div>
+  <div class="opts">
+    <div class="row"><span>Mode</span><button class="opt" data-opt="mode" data-val="watch" type="button">Watch</button><button class="opt" data-opt="mode" data-val="fight" type="button">Fight (you control the attacker)</button></div>
+    <div class="row"><span>Defender wanders</span><button class="opt" data-opt="wander" data-val="0" type="button">Off</button><button class="opt" data-opt="wander" data-val="1" type="button">On</button></div>
+    <div class="row"><span>Calm effects</span><button class="opt" data-opt="calm" data-val="0" type="button">Off</button><button class="opt" data-opt="calm" data-val="1" type="button">On</button></div>
+  </div>
+  <div class="btns">
+    <button id="btn-start" class="go" type="button">FIGHT!</button>
+    <button id="btn-resume" class="quiet" type="button" style="display:none">Resume</button>
+    <a class="quiet" href="/">Back to games</a>
+  </div>
+</div>
+
+<div id="ko" class="overlay">
+  <h1>K.O.!</h1>
+  <div id="ko-text"></div>
+  <div class="btns">
+    <button id="btn-rematch" class="go" type="button">Rematch</button>
+    <button id="btn-new" class="quiet" type="button">New matchup</button>
+  </div>
+</div>
+
+<noscript>Math Ball Fighting needs JavaScript.</noscript>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="{{ static_file('js/math_ball_fighting/roster.js') }}"></script>
+<script src="{{ static_file('js/math_ball_fighting/fight.js') }}"></script>
+<script src="{{ static_file('js/math_ball_fighting/shaders.js') }}"></script>
+<script src="{{ static_file('js/math_ball_fighting/render.js') }}"></script>
+<script src="{{ static_file('js/math_ball_fighting/physics.js') }}"></script>
+<script src="{{ static_file('js/math_ball_fighting/input.js') }}"></script>
+<script src="{{ static_file('js/math_ball_fighting/main.js') }}"></script>
+</body>
+</html>

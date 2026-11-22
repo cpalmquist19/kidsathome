@@ -1,0 +1,438 @@
+/*
+ * Math Ball Fighting - the game screen.
+ *
+ * fight.js owns the rules, physics.js moves the balls, render.js draws them.
+ * This file owns the menu, HUD, impact effects and the main loop.
+ *
+ * URL options (handy for testing): ?a=n1&d=n1000&mode=watch|fight&go=1&speed=4
+ */
+(function (root) {
+  'use strict';
+  var MBF = root.MBF;
+  var THREE = root.THREE;
+  var $ = function (id) { return document.getElementById(id); };
+  var query = function (k) {
+    var m = new RegExp('[?&]' + k + '=([^&]*)').exec(root.location.search);
+    return m ? decodeURIComponent(m[1]) : null;
+  };
+  var reduceMotion = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ------------------------------------------------------------ settings
+  var SAVE_KEY = 'mbf.settings.v1';
+  var settings = { att: 'n1', def: 'n1', mode: 'watch', wander: 0, calm: reduceMotion ? 1 : 0 };
+  try {
+    var saved = JSON.parse(root.localStorage.getItem(SAVE_KEY) || 'null');
+    if (saved) for (var k in settings) if (saved[k] !== undefined) settings[k] = saved[k];
+  } catch (e) { /* storage may be blocked */ }
+  function save() { try { root.localStorage.setItem(SAVE_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ } }
+  if (query('a') && MBF.ballById(query('a'))) settings.att = query('a');
+  if (query('d') && MBF.ballById(query('d'))) settings.def = query('d');
+  if (query('mode') === 'watch' || query('mode') === 'fight') settings.mode = query('mode');
+  if (!MBF.ballById(settings.att)) settings.att = 'n1';
+  if (!MBF.ballById(settings.def)) settings.def = 'n1';
+
+  // ------------------------------------------------------------ setup
+  var R = MBF.createRenderer($('stage'));
+  var input = MBF.createInput({
+    stickBase: $('stick-base'), stickKnob: $('stick-knob'),
+    dashButton: $('dash-btn'), touchZone: $('touch-zone')
+  });
+  var touch = root.matchMedia && root.matchMedia('(pointer: coarse)').matches;
+  function markTouch() { touch = true; document.body.classList.add('touch'); }
+  if (touch) markTouch();
+  root.addEventListener('pointerdown', function (e) { if (e.pointerType === 'touch') markTouch(); }, true);
+
+  var thumbs = {};
+  MBF.roster.forEach(function (b) { thumbs[b.id] = R.thumbnail(b, 128); });
+
+  // ------------------------------------------------------------ game state
+  var phase = 'menu';             // menu | intro | fight | ko | paused
+  var pausedFrom = null;
+  var fight = null, world = null, attV = null, defV = null;
+  var attQ = new THREE.Quaternion(), defQ = new THREE.Quaternion();
+  var speed = Number(query('speed')) || 1;
+  var hitStop = 0, slowT = 0, introT = 0, koT = 0, defFade = 1;
+  var hitTimes = [], fightStart = 0, lastFx = -1, flashTimes = [];
+  var hudDirty = true, waitT = 0;
+
+  function sizeFrac(ball) {
+    // Phase 1: 1..1,000 maps onto 0..1 by digits. Later phases switch to the size rank.
+    var lg = MBF.log10Big(BigInt(ball.value));
+    return Math.max(0, Math.min(1, lg / 3));
+  }
+  function radii() {
+    var m = Math.min(R.W, R.H) / 800;
+    return {
+      a: m * 800 * (0.05 + 0.03 * sizeFrac(fight.attacker)),
+      d: m * 800 * (0.13 + 0.07 * sizeFrac(fight.defender))
+    };
+  }
+
+  // ------------------------------------------------------------ menu / picker
+  function tile(ball, side) {
+    var el = document.createElement('div');
+    el.className = 'tile';
+    el.innerHTML = '<img alt=""><div class="nm"></div>';
+    el.querySelector('img').src = thumbs[ball.id];
+    el.querySelector('.nm').textContent = ball.label;
+    el.title = ball.name + ' - ' + ball.fact;
+    if (side === 'def' && ball.kind !== 'number') {
+      el.classList.add('off');
+      el.title = ball.name + ' is a function. Functions can only attack numbers.';
+    }
+    el.addEventListener('click', function () {
+      if (el.classList.contains('off')) return;
+      settings[side] = ball.id; save(); refreshMenu();
+    });
+    el.dataset.id = ball.id;
+    return el;
+  }
+  MBF.roster.forEach(function (b) {
+    $('pick-att').appendChild(tile(b, 'att'));
+    $('pick-def').appendChild(tile(b, 'def'));
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.opt'), function (b) {
+    b.addEventListener('click', function () {
+      var key = b.dataset.opt, val = b.dataset.val;
+      settings[key] = key === 'mode' ? val : Number(val);
+      save(); refreshMenu();
+      if (key === 'wander' && world) world.wander = !!settings.wander;
+    });
+  });
+
+  function refreshMenu() {
+    var a = MBF.ballById(settings.att), d = MBF.ballById(settings.def);
+    Array.prototype.forEach.call(document.querySelectorAll('#pick-att .tile'), function (t) { t.classList.toggle('sel', t.dataset.id === a.id); });
+    Array.prototype.forEach.call(document.querySelectorAll('#pick-def .tile'), function (t) { t.classList.toggle('sel', t.dataset.id === d.id); });
+    $('vs-a-img').src = thumbs[a.id]; $('vs-a-name').textContent = a.name; $('vs-a-fact').textContent = a.fact;
+    $('vs-d-img').src = thumbs[d.id]; $('vs-d-name').textContent = d.name; $('vs-d-fact').textContent = d.fact;
+    var ok = MBF.canFight(a, d);
+    $('pick-error').textContent = ok.ok ? '' : ok.reason;
+    $('btn-start').disabled = !ok.ok;
+    Array.prototype.forEach.call(document.querySelectorAll('.opt'), function (b) {
+      b.classList.toggle('on', String(settings[b.dataset.opt]) === b.dataset.val);
+    });
+  }
+
+  function openMenu() {
+    if (phase === 'intro' || phase === 'fight' || phase === 'ko') { pausedFrom = phase; phase = 'paused'; }
+    $('btn-resume').style.display = phase === 'paused' ? '' : 'none';
+    $('ko').classList.remove('on');
+    $('menu').classList.add('on');
+    input.setEnabled(false);
+    document.body.classList.remove('fighting');
+    refreshMenu();
+  }
+  function closeMenu() { $('menu').classList.remove('on'); }
+
+  function resume() {
+    if (phase !== 'paused') return;
+    var mode = settings.mode;
+    if (mode !== world.mode) { startFight(); return; }   // mode changed: restart
+    closeMenu();
+    phase = pausedFrom;
+    setFightingUi();
+  }
+
+  $('btn-start').addEventListener('click', function () { startFight(); });
+  $('btn-resume').addEventListener('click', resume);
+  $('btn-menu').addEventListener('click', openMenu);
+  $('btn-rematch').addEventListener('click', function () { startFight(); });
+  $('btn-new').addEventListener('click', function () { phase = 'menu'; openMenu(); });
+  root.addEventListener('keydown', function (e) {
+    if (e.code === 'Escape') {
+      if ($('menu').classList.contains('on')) { if (phase === 'paused') resume(); }
+      else openMenu();
+    }
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#speed .hbtn'), function (b) {
+    b.addEventListener('click', function () { speed = Number(b.dataset.speed); refreshSpeed(); });
+  });
+  function refreshSpeed() {
+    Array.prototype.forEach.call(document.querySelectorAll('#speed .hbtn'), function (b) {
+      b.classList.toggle('on', Number(b.dataset.speed) === speed);
+    });
+  }
+
+  function setFightingUi() {
+    $('hud').classList.add('on');
+    $('speed').style.display = settings.mode === 'watch' ? 'flex' : 'none';
+    var fighting = settings.mode === 'fight';
+    document.body.classList.toggle('fighting', fighting);
+    input.setEnabled(fighting && phase !== 'ko');
+  }
+
+  // ------------------------------------------------------------ start a fight
+  function startFight() {
+    var a = MBF.ballById(settings.att), d = MBF.ballById(settings.def);
+    if (!MBF.canFight(a, d).ok) return;
+    if (attV) attV.dispose();
+    if (defV) defV.dispose();
+    fight = MBF.createFight(a, d);
+    world = MBF.createWorld({ W: R.W, H: R.H, mode: settings.mode, wander: !!settings.wander });
+    var r = radii();
+    world.place(r.a, r.d);
+    defV = R.makeBall(d, r.d);
+    attV = R.makeBall(a, r.a);
+    attQ.setFromEuler(new THREE.Euler(Math.random() * 6, Math.random() * 6, 0));
+    defQ.setFromEuler(new THREE.Euler(0.3, -0.4, 0));
+    defFade = 1; hitStop = 0; slowT = 0; koT = 0;
+    hitTimes = []; lastFx = -1; hudDirty = true; waitT = 0;
+    closeMenu();
+    $('ko').classList.remove('on');
+    phase = 'intro'; introT = 1.15;
+    setFightingUi();
+    refreshSpeed();
+    $('def-name').textContent = d.name + ' (' + d.label + ')';
+    $('att-name').textContent = a.name;
+    $('att-dmg').textContent = 'Damage per hit: ' + MBF.fmt(fight.damage());
+    setHpBar(1, true);
+    banner(a.label + '  VS  ' + d.label, a.name + ' vs ' + d.name);
+    fightStart = performance.now();
+  }
+
+  // ------------------------------------------------------------ HUD
+  function setHpBar(f, instant) {
+    var fill = $('hp-fill'), ghost = $('hp-ghost');
+    if (instant) { fill.style.transition = ghost.style.transition = 'none'; }
+    fill.style.transform = 'scaleX(' + f + ')';
+    ghost.style.transform = 'scaleX(' + f + ')';
+    if (instant) { void fill.offsetWidth; fill.style.transition = ghost.style.transition = ''; }
+  }
+  function hitsPerSecond() {
+    if (hitTimes.length < 3) return 0;
+    var span = (hitTimes[hitTimes.length - 1] - hitTimes[0]) / 1000;
+    var sinceLast = (performance.now() - hitTimes[hitTimes.length - 1]) / 1000;
+    span = Math.max(span, 0.001);
+    var rate = (hitTimes.length - 1) / span;
+    // if hits have stopped coming (player idle), let the estimate drift down
+    var gap = span / (hitTimes.length - 1);
+    if (sinceLast > gap * 2) rate = Math.min(rate, 1 / sinceLast);
+    return rate;
+  }
+  function updateHud(dt) {
+    if (!fight) return;
+    waitT -= dt;
+    if (!hudDirty && waitT > 0) return;
+    if (hudDirty) {
+      $('hp-text').textContent = 'HP ' + MBF.fmt(fight.hp) + ' / ' + MBF.fmt(fight.maxHp);
+      setHpBar(fight.hpFraction(), false);
+      var h = fight.hits === 1n ? '1 hit' : MBF.fmt(fight.hits) + ' hits';
+      $('stat-hits').textContent = fight.over ? h + ' · K.O.!'
+        : h + ' · Hits to K.O.: ' + MBF.fmt(fight.hitsToKo());
+    }
+    if (hudDirty || waitT <= 0) {
+      var rate = hitsPerSecond();
+      $('stat-wait').textContent = fight.over ? '' :
+        (rate > 0 ? 'About ' + fight.waitText(rate) + ' to go at this pace' :
+          (settings.mode === 'fight' ? 'Ram into the ball in the middle!' : ''));
+      waitT = 0.5;
+    }
+    hudDirty = false;
+  }
+
+  function banner(big, small) {
+    var b = $('banner');
+    b.querySelector('.big').textContent = big;
+    b.querySelector('.small').textContent = small || '';
+    b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
+  }
+
+  var dmgLayer = $('dmg');
+  function damageNumber(text, x, y, level, t, ko) {
+    while (dmgLayer.childNodes.length > 14) dmgLayer.removeChild(dmgLayer.firstChild);
+    var el = document.createElement('div');
+    el.className = 'dn' + (ko ? ' ko' : '');
+    el.textContent = text;
+    el.style.left = (R.W / 2 + x) + 'px';
+    el.style.top = (R.H / 2 - y) + 'px';
+    el.style.fontSize = Math.round(18 + level * 9 + t * 8 + (ko ? 18 : 0)) + 'px';
+    dmgLayer.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1000);
+  }
+
+  // ------------------------------------------------------------ impact effects
+  function canFlash(now) {
+    while (flashTimes.length && now - flashTimes[0] > 1000) flashTimes.shift();
+    if (flashTimes.length >= 3) return false;       // never more than 3 flashes a second
+    flashTimes.push(now);
+    return true;
+  }
+
+  function impact(ev, res) {
+    var now = performance.now();
+    var a = fight.attacker, d = fight.defender;
+    var m = world.scale(), calm = !!settings.calm;
+    var s = res.level + res.t;                       // effect strength, grows with damage
+    var busy = speed > 1 && settings.mode === 'watch';
+    var throttled = !res.ko && (now - lastFx) < (busy ? 110 : 30);
+
+    attV.boing(0.1 + 0.04 * s, throttled);
+    defV.boing(0.03 + 0.025 * s, throttled || busy);
+    if (throttled) return;
+    lastFx = now;
+
+    var tx = -ev.ny, ty = ev.nx;                     // tangent along the defender's surface
+    // level 0+: spark pop thrown back toward the attacker and along the surface
+    R.fx.sparks(ev.x, ev.y, ev.nx, ev.ny, Math.round(8 + 12 * s), (320 + 200 * s) * m, 1.5 + 0.35 * s, a.aura);
+    R.fx.sparks(ev.x, ev.y, tx, ty, Math.round(3 + 4 * s), (260 + 120 * s) * m, 0.5, d.aura, 0.3);
+    R.fx.sparks(ev.x, ev.y, -tx, -ty, Math.round(3 + 4 * s), (260 + 120 * s) * m, 0.5, d.aura, 0.3);
+    damageNumber('-' + MBF.fmt(res.damage), ev.x + ev.nx * 26 * m, ev.y + ev.ny * 26 * m + 18 * m, res.level, res.t, false);
+
+    // level 1+: shockwave ring + light shake
+    if (res.level >= 1) {
+      R.fx.ring(ev.x, ev.y, a.aura, 8 * m, (70 + 70 * res.t + 40 * (res.level - 1)) * m, 0.45, 0.07);
+      R.fx.shake((calm ? 0.04 : 0.1) + (calm ? 0.02 : 0.1) * res.t);
+    }
+    // level 2+: flash, hit-stop, debris, a ring around the defender, camera punch
+    if (res.level >= 2) {
+      var dr = world.def.r;
+      R.fx.ring(world.def.x, world.def.y, d.aura, dr * 1.02, dr * (1.7 + 0.5 * res.t), 0.6, 0.04);
+      R.fx.debris(ev.x, ev.y, Math.round(10 + 22 * res.t), (200 + 120 * res.t) * m, 9 + 6 * res.t, d.aura);
+      R.fx.shake(calm ? 0.06 : 0.2 + 0.15 * res.t);
+      R.fx.punch(calm ? 0.01 : 0.02 + 0.025 * res.t);
+      R.fx.pulse(0.4 + 0.4 * res.t, a.aura);
+      if (!busy) hitStop = Math.max(hitStop, 0.05 + 0.05 * res.t);
+      if (!busy && canFlash(now)) R.fx.flash(calm ? 0.08 : 0.22 + 0.2 * res.t, [1, 0.95, 0.85], ev.x, ev.y);
+    }
+  }
+
+  function knockout(ev, res) {
+    var now = performance.now();
+    var a = fight.attacker, d = fight.defender;
+    var m = world.scale(), calm = !!settings.calm;
+    var s = res.level + res.t;
+    var dx = world.def.x, dy = world.def.y, dr = world.def.r;
+    attV.boing(0.25); defV.boing(0.2);
+    slowT = calm ? 0.4 : 0.9;
+    hitStop = 0.12;
+    R.fx.ring(dx, dy, d.aura, dr, dr * 3.2, 0.9, 0.05);
+    R.fx.ring(dx, dy, a.aura, dr * 0.5, dr * 4.5, 1.2, 0.03);
+    R.fx.ring(ev.x, ev.y, [1, 1, 1], 6 * m, dr * 2, 0.5, 0.08);
+    R.fx.debris(dx, dy, Math.round(50 + 25 * s), (260 + 80 * s) * m, 10 + 3 * s, d.aura);
+    R.fx.sparks(dx, dy, 1, 0, Math.round(60 + 20 * s), (500 + 120 * s) * m, Math.PI * 2, a.aura, 0.5);
+    R.fx.shake(calm ? 0.15 : 0.55 + 0.1 * s);
+    R.fx.punch(calm ? 0.02 : 0.06);
+    R.fx.pulse(1, d.aura);
+    if (canFlash(now)) R.fx.flash(calm ? 0.12 : 0.55, [1, 0.9, 0.95], dx, dy);
+    damageNumber('-' + MBF.fmt(res.damage), ev.x + ev.nx * 26 * m, ev.y + ev.ny * 26 * m + 18 * m, res.level, res.t, false);
+    damageNumber('K.O.!', dx, dy + dr * 0.2, Math.min(res.level, 3), 1, true);
+    world.defGone = true;
+    $('banner').classList.remove('show');
+    phase = 'ko'; koT = 1.7;
+    input.setEnabled(false);
+  }
+
+  function onHit(ev) {
+    var res = fight.hit();
+    if (!res) return;
+    hitTimes.push(performance.now());
+    if (hitTimes.length > 24) hitTimes.shift();
+    hudDirty = true;
+    defV.setHp(fight.hpFraction());
+    if (res.ko) knockout(ev, res); else impact(ev, res);
+  }
+
+  function showKoCard() {
+    var a = fight.attacker, d = fight.defender;
+    var secs = (performance.now() - fightStart) / 1000;
+    var hits = fight.hits === 1n ? '<b>1</b> hit' : '<b>' + MBF.fmt(fight.hits) + '</b> hits';
+    var html = '<b>' + esc(a.name) + '</b> destroyed <b>' + esc(d.name) + '</b> in ' + hits +
+      ' (' + MBF.describeWait(Math.log10(Math.max(1, secs))) + ').';
+    var over = fight.dealt - fight.maxHp;
+    if (over > 0n) html += '<br>Overkill: <b>' + MBF.fmt(over) + '</b> extra damage.';
+    $('ko-text').innerHTML = html;
+    $('ko').classList.add('on');
+    document.body.classList.remove('fighting');
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  // ------------------------------------------------------------ loop
+  var axis = new THREE.Vector3(), dq = new THREE.Quaternion();
+  function spin(q, b, dt) {
+    var w = Math.hypot(b.wx, b.wy, b.wz);
+    if (w < 1e-6) return;
+    var ang = Math.min(w * dt, 0.7);
+    axis.set(b.wx / w, b.wy / w, b.wz / w);
+    dq.setFromAxisAngle(axis, ang);
+    q.premultiply(dq);
+  }
+
+  var last = performance.now();
+  function frame(now) {
+    root.requestAnimationFrame(frame);
+    var dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+    last = now;
+
+    if (phase === 'intro') {
+      introT -= dt;
+      if (introT <= 0) { phase = 'fight'; banner('FIGHT!', ''); fightStart = performance.now(); }
+    }
+    if ((phase === 'fight' || phase === 'ko') && world) {
+      var ts = 1;
+      if (hitStop > 0) { hitStop -= dt; ts = 0; }
+      if (slowT > 0) { slowT -= dt; ts *= 0.25; }
+      if (settings.mode === 'watch') ts *= speed;
+      var simDt = dt * ts;
+      var inp = settings.mode === 'fight' && phase === 'fight' ? input.read() : null;
+      var n = Math.min(400, Math.ceil(simDt * 240));
+      var h = n ? simDt / n : 0;
+      for (var i = 0; i < n; i++) {
+        var evs = world.step(h, inp);
+        if (inp) inp.dash = false;
+        for (var j = 0; j < evs.length && !fight.over; j++) onHit(evs[j]);
+        if (hitStop > 0) break;
+      }
+      if (world.dashed) {
+        world.dashed = false;
+        var aa = world.att;
+        R.fx.sparks(aa.x, aa.y, -aa.vx, -aa.vy, 14, 260 * world.scale(), 0.9, fight.attacker.aura, 0.5);
+      }
+      spin(attQ, world.att, simDt);
+      spin(defQ, world.def, simDt);
+      if (phase === 'ko') {
+        koT -= dt;
+        defFade = Math.max(0, defFade - dt * 2.2);
+        if (koT <= 0) { phase = 'done'; showKoCard(); }
+      }
+    }
+
+    if (world && attV) {
+      // comet trail behind the attacker
+      var A = world.att, sp = Math.hypot(A.vx, A.vy);
+      if (sp > 60 && phase !== 'paused') {
+        var c = fight.attacker.aura;
+        R.fx.sparks(A.x - A.vx / sp * A.r * 0.6, A.y - A.vy / sp * A.r * 0.6, -A.vx, -A.vy,
+          1, sp * 0.15, 0.6, c, 0.15);
+      }
+      attV.setPos(A.x, A.y);
+      defV.setPos(world.def.x, world.def.y);
+      attV.setOrientation(attQ);
+      defV.setOrientation(defQ);
+      if (phase === 'ko' || phase === 'done') {
+        defV.setFade(defFade);
+        defV.scale += dt * 0.6 * defFade;
+      }
+      attV.tick(dt, R.time);
+      defV.tick(dt, R.time);
+    }
+    updateHud(dt);
+    R.update(dt);
+    R.render();
+  }
+
+  root.addEventListener('resize', function () {
+    R.resize();
+    if (world && fight) {
+      world.resize(R.W, R.H);
+      var r = radii();
+      world.att.r = r.a; world.def.r = r.d;
+      attV.setRadius(r.a); defV.setRadius(r.d);
+    }
+  });
+
+  refreshMenu();
+  refreshSpeed();
+  if (query('go') === '1') startFight();
+  root.requestAnimationFrame(frame);
+})(window);

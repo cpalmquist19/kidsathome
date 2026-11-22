@@ -409,6 +409,10 @@ def system_generator():
 def matter_eater():
     return render_template('quark_game.html')
 
+@app.route('/math_ball_fighting')
+def math_ball_fighting():
+    return render_template('math_ball_fighting.html')
+
 @app.route('/unieat')
 def unieat():
     return render_template('unieat.html')
