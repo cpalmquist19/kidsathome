@@ -50,10 +50,27 @@
     flash.renderOrder = 5;
     scene.add(flash);
 
+    // ------------------------------------------------------------ post-processing
+    // The scene renders into rt; a full-screen pass adds aberration and shatter.
+    var rt = new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+    var postU = {
+      tScene: { value: rt.texture }, uRes: { value: new THREE.Vector2(1, 1) },
+      uCenter: { value: new THREE.Vector2(0.5, 0.5) }, uCA: { value: 0 }, uShatter: { value: 0 },
+      uSeed: { value: 0 }, uTime: { value: 0 }
+    };
+    var postScene = new THREE.Scene();
+    var postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
+    postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+      uniforms: postU, vertexShader: S.vertex, fragmentShader: S.postFragment,
+      depthTest: false, depthWrite: false
+    })));
+
     R.resize = function () {
       var W = host.clientWidth || root.innerWidth, H = host.clientHeight || root.innerHeight;
       R.W = W; R.H = H;
       renderer.setSize(W, H);
+      rt.setSize(Math.round(W * dpr), Math.round(H * dpr));
+      postU.uRes.value.set(W, H);
       camera.left = -W / 2; camera.right = W / 2; camera.top = H / 2; camera.bottom = -H / 2;
       camera.updateProjectionMatrix();
       bg.scale.set(W + 80, H + 80, 1);
@@ -63,11 +80,21 @@
     };
 
     // ------------------------------------------------------------ labels
+    // Draws a ball's label into a canvas texture; redraw(text) updates it in place.
     function labelTexture(ball) {
       var c = document.createElement('canvas');
       c.width = c.height = 512;
+      var tex = new THREE.CanvasTexture(c);
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.anisotropy = 4;
+      tex.redraw = function (text) { drawLabel(c, ball, text); tex.needsUpdate = true; };
+      tex.redraw(ball.label);
+      return tex;
+    }
+    function drawLabel(c, ball, text) {
       var g = c.getContext('2d');
-      var text = ball.label;
+      g.clearRect(0, 0, 512, 512);
+      g.save();
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.lineJoin = 'round';
@@ -98,10 +125,7 @@
         g.fillStyle = fill;
         g.fillText(text, 256, 268);
       }
-      var tex = new THREE.CanvasTexture(c);
-      tex.minFilter = THREE.LinearMipmapLinearFilter;
-      tex.anisotropy = 4;
-      return tex;
+      g.restore();
     }
     function fitFont(g, text, maxW, start) {
       var s = start;
@@ -154,7 +178,7 @@
 
       var v = {
         ball: ball, group: group, mesh: mesh, label: label, u: mat.uniforms,
-        r: radius, scale: 1, scaleV: 0, hit: 0, pxScale: opts.pxScale || 1
+        r: radius, scale: 1, scaleV: 0, hit: 0, pxScale: opts.pxScale || 1, labelText: ball.label
       };
       v.setRadius = function (r) { v.r = r; v.refreshPx(); };
       v.refreshPx = function () { v.u.uPx.value = 1 / Math.max(4, v.r * v.scale * v.pxScale); };
@@ -183,6 +207,11 @@
         v.refreshPx();
       };
       v.setHp = function (f) { v.u.uHp.value = f; };
+      v.setLabel = function (text) {
+        if (text === v.labelText) return;
+        v.labelText = text;
+        lmat.map.redraw(text);
+      };
       v.setFade = function (f) { v.u.uFade.value = f; lmat.opacity = f; };
       v.dispose = function () {
         (opts.scene || scene).remove(group);
@@ -275,8 +304,102 @@
       }
     }
 
+    // ------------------------------------------------------------ lightning
+    // Each bolt is a jagged strip re-randomised a few times a frame so it crackles.
+    var SEG = 22;
+    var bolts = [];
+    for (var bi = 0; bi < 14; bi++) {
+      var bg2 = new THREE.BufferGeometry();
+      var bpos = new Float32Array((SEG + 1) * 2 * 3), buv = new Float32Array((SEG + 1) * 2 * 2), bidx = [];
+      for (var s2 = 0; s2 <= SEG; s2++) {
+        buv[s2 * 4] = s2 / SEG; buv[s2 * 4 + 1] = 0; buv[s2 * 4 + 2] = s2 / SEG; buv[s2 * 4 + 3] = 1;
+        if (s2 < SEG) { var o = s2 * 2; bidx.push(o, o + 1, o + 2, o + 1, o + 3, o + 2); }
+      }
+      bg2.setAttribute('position', new THREE.BufferAttribute(bpos, 3));
+      bg2.setAttribute('uv', new THREE.BufferAttribute(buv, 2));
+      bg2.setIndex(bidx);
+      var bu = { uColor: { value: new THREE.Color(1, 1, 1) }, uAlpha: { value: 0 } };
+      var bm = new THREE.Mesh(bg2, new THREE.ShaderMaterial({
+        uniforms: bu, vertexShader: S.vertex, fragmentShader: S.boltFragment,
+        transparent: true, premultipliedAlpha: true, blending: THREE.AdditiveBlending,
+        depthTest: false, depthWrite: false, side: THREE.DoubleSide
+      }));
+      bm.renderOrder = 4; bm.visible = false; bm.frustumCulled = false;
+      scene.add(bm);
+      bolts.push({ mesh: bm, u: bu, pos: bpos, age: 0, life: 0, x0: 0, y0: 0, x1: 0, y1: 0, w: 4, jag: 0.15, rejit: 0 });
+    }
+    var boltNext = 0;
+    function shapeBolt(b) {
+      var dx = b.x1 - b.x0, dy = b.y1 - b.y0, L = Math.hypot(dx, dy) || 1;
+      var nx = -dy / L, ny = dx / L, off = 0, pts = [];
+      for (var i = 0; i <= SEG; i++) {
+        var f = i / SEG;
+        off += (Math.random() - 0.5) * L * b.jag * 0.5;
+        off *= 0.85;
+        var env = Math.sin(f * Math.PI);                  // pinned at both ends
+        pts.push([b.x0 + dx * f + nx * off * env, b.y0 + dy * f + ny * off * env]);
+      }
+      for (var k = 0; k <= SEG; k++) {
+        var a = pts[Math.max(0, k - 1)], c = pts[Math.min(SEG, k + 1)];
+        var tx = c[0] - a[0], ty = c[1] - a[1], tl = Math.hypot(tx, ty) || 1;
+        var w = b.w * (0.4 + 0.6 * Math.sin((k / SEG) * Math.PI));
+        var px = -ty / tl * w, py = tx / tl * w;
+        b.pos[k * 6] = pts[k][0] + px; b.pos[k * 6 + 1] = pts[k][1] + py; b.pos[k * 6 + 2] = 0;
+        b.pos[k * 6 + 3] = pts[k][0] - px; b.pos[k * 6 + 4] = pts[k][1] - py; b.pos[k * 6 + 5] = 0;
+      }
+      b.mesh.geometry.attributes.position.needsUpdate = true;
+    }
+    function updateBolts(dt) {
+      for (var i = 0; i < bolts.length; i++) {
+        var b = bolts[i];
+        if (!b.mesh.visible) continue;
+        b.age += dt;
+        if (b.age >= b.life) { b.mesh.visible = false; continue; }
+        b.rejit -= dt;
+        if (b.rejit <= 0) { shapeBolt(b); b.rejit = 0.035; }
+        var f = 1 - b.age / b.life;
+        b.u.uAlpha.value = f * (b.calm ? 0.8 : (0.55 + 0.45 * Math.random()));
+      }
+    }
+
+    // ------------------------------------------------------------ glass shards
+    var shardGeo = new THREE.BufferGeometry();
+    shardGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 1, 0, -0.32, -0.7, 0, 0.42, -0.45, 0]), 3));
+    shardGeo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array([0, 1, 0, 0, 1, 0]), 2));
+    var shards = [];
+    for (var si2 = 0; si2 < 64; si2++) {
+      var su = { uAlpha: { value: 0 }, uHue: { value: Math.random() }, uGlint: { value: 0 } };
+      var sm = new THREE.Mesh(shardGeo, new THREE.ShaderMaterial({
+        uniforms: su, vertexShader: S.vertex, fragmentShader: S.shardFragment,
+        transparent: true, premultipliedAlpha: true, blending: THREE.AdditiveBlending,
+        depthTest: false, depthWrite: false, side: THREE.DoubleSide
+      }));
+      sm.renderOrder = 4; sm.visible = false;
+      scene.add(sm);
+      shards.push({ mesh: sm, u: su, vx: 0, vy: 0, spin: 0, flip: 0, flipV: 0, age: 0, life: 1, sx: 1, sy: 1 });
+    }
+    var shardNext = 0;
+    function updateShards(dt) {
+      for (var i = 0; i < shards.length; i++) {
+        var s = shards[i];
+        if (!s.mesh.visible) continue;
+        s.age += dt;
+        if (s.age >= s.life) { s.mesh.visible = false; continue; }
+        var k = Math.exp(-dt * 0.8);
+        s.vx *= k; s.vy *= k;
+        s.mesh.position.x += s.vx * dt; s.mesh.position.y += s.vy * dt;
+        s.mesh.rotation.z += s.spin * dt;
+        s.flip += s.flipV * dt;
+        var c = Math.cos(s.flip);
+        s.mesh.scale.set(s.sx * (0.15 + 0.85 * Math.abs(c)), s.sy, 1);   // fake 3D tumble
+        s.u.uGlint.value = Math.pow(Math.abs(Math.sin(s.flip)), 8);
+        var f = 1 - s.age / s.life;
+        s.u.uAlpha.value = Math.min(1, f * 1.6);
+      }
+    }
+
     // ------------------------------------------------------------ shake / punch / flash
-    var trauma = 0, punch = 0, flashAmt = 0, pulse = 0;
+    var trauma = 0, punch = 0, flashAmt = 0, pulse = 0, ca = 0, shatter = 0;
     var shakeSeed = Math.random() * 100;
 
     R.fx = {
@@ -322,6 +445,44 @@
       pulse: function (amount, color) {
         pulse = Math.max(pulse, amount);
         if (color) bgU.uTint.value.setRGB(color[0], color[1], color[2]);
+      },
+      // level 3+: red / blue split across the screen
+      aberration: function (amount) { ca = Math.max(ca, amount); },
+      // level 4: the screen cracks into glass panes around world (x, y)
+      shatter: function (amount, x, y) {
+        if (amount > shatter * 0.6) {
+          postU.uSeed.value = Math.random() * 50;
+          postU.uCenter.value.set(0.5 + x / R.W, 0.5 + y / R.H);
+        }
+        shatter = Math.max(shatter, amount);
+      },
+      // a crackling bolt from (x0, y0) to (x1, y1)
+      lightning: function (x0, y0, x1, y1, color, width, life, calm) {
+        var b = bolts[boltNext]; boltNext = (boltNext + 1) % bolts.length;
+        b.x0 = x0; b.y0 = y0; b.x1 = x1; b.y1 = y1;
+        b.w = width; b.life = life; b.age = 0; b.rejit = 0; b.calm = !!calm;
+        b.jag = 0.22 + Math.random() * 0.12;
+        b.u.uColor.value.setRGB(color[0], color[1], color[2]);
+        b.mesh.visible = true;
+        shapeBolt(b);
+      },
+      // glass shards flying out from (x, y) along (nx, ny) with spread
+      shards: function (x, y, nx, ny, count, speed, size, spread) {
+        var base = Math.atan2(ny, nx);
+        for (var i = 0; i < count; i++) {
+          var s = shards[shardNext]; shardNext = (shardNext + 1) % shards.length;
+          var a = base + (Math.random() - 0.5) * (spread == null ? Math.PI * 2 : spread);
+          var v = speed * (0.3 + Math.random());
+          s.mesh.position.set(x, y, 0);
+          s.vx = Math.cos(a) * v; s.vy = Math.sin(a) * v;
+          s.mesh.rotation.z = Math.random() * Math.PI * 2;
+          s.spin = (Math.random() - 0.5) * 8;
+          s.flip = Math.random() * 6; s.flipV = (Math.random() - 0.5) * 14;
+          s.sx = size * (0.5 + Math.random()); s.sy = size * (0.7 + Math.random() * 1.1);
+          s.age = 0; s.life = 0.8 + Math.random() * 0.9;
+          s.u.uHue.value = Math.random();
+          s.mesh.visible = true;
+        }
       }
     };
 
@@ -330,6 +491,14 @@
       bgU.uTime.value = R.time;
       updateParticles(dt);
       updateRings(dt);
+      updateBolts(dt);
+      updateShards(dt);
+      ca *= Math.exp(-dt * 4);
+      shatter *= Math.exp(-dt * 2.6);
+      if (shatter < 0.002) shatter = 0;
+      postU.uCA.value = ca;
+      postU.uShatter.value = shatter;
+      postU.uTime.value = R.time;
       flashAmt *= Math.exp(-dt * 9);
       flashU.uAmount.value = flashAmt;
       pulse *= Math.exp(-dt * 3);
@@ -345,7 +514,12 @@
       camera.updateProjectionMatrix();
     };
 
-    R.render = function () { renderer.render(scene, camera); };
+    R.render = function () {
+      renderer.setRenderTarget(rt);
+      renderer.render(scene, camera);
+      renderer.setRenderTarget(null);
+      renderer.render(postScene, postCam);
+    };
 
     // ------------------------------------------------------------ thumbnails
     // Render a ball once into an image (data URL) for the picker.

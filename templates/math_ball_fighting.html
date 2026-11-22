@@ -20,6 +20,7 @@
   #hp-fill { position: absolute; inset: 0; transform-origin: left center; background: linear-gradient(90deg, #ff3b6b, #ffb23b 60%, #ffe27a); transition: transform .12s ease-out; }
   #hp-ghost { position: absolute; inset: 0; transform-origin: left center; background: rgba(255,255,255,.55); transition: transform .6s ease-in .15s; }
   #hp-text { margin-top: 4px; font: 600 clamp(12px, 1.5vw, 15px) ui-monospace, Menlo, Consolas, monospace; color: #ffd6a0; text-shadow: 0 1px 6px rgba(0,0,0,.9); }
+  #hp-pct { margin-top: 2px; font: 400 clamp(11px, 1.3vw, 13px) ui-monospace, Menlo, Consolas, monospace; color: #b9a3ff; text-shadow: 0 1px 6px rgba(0,0,0,.9); }
   #hud-att { position: absolute; left: 14px; top: 12px; font: 600 13px ui-monospace, Menlo, Consolas, monospace; color: #bfe6ff; text-shadow: 0 1px 6px rgba(0,0,0,.9); max-width: 30vw; }
   #att-name { font: 800 clamp(14px, 2vw, 20px) system-ui, sans-serif; color: #fff; }
   #hud-stats { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); text-align: center; font: 600 clamp(12px, 1.6vw, 16px) ui-monospace, Menlo, Consolas, monospace; color: #e8dcff; text-shadow: 0 1px 6px rgba(0,0,0,.95); width: 92vw; }
@@ -111,6 +112,7 @@
     <div id="def-name"></div>
     <div id="hp-bar"><div id="hp-ghost"></div><div id="hp-fill"></div></div>
     <div id="hp-text"></div>
+    <div id="hp-pct"></div>
   </div>
   <div id="hud-att"><div id="att-name"></div><div id="att-dmg"></div></div>
   <div id="hud-stats"><div id="stat-hits"></div><div id="stat-wait"></div></div>
@@ -166,6 +168,7 @@
 
 <noscript>Math Ball Fighting needs JavaScript.</noscript>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="{{ static_file('js/bignum/magnitude.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/roster.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/fight.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/shaders.js') }}"></script>

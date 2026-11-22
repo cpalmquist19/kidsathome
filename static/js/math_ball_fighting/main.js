@@ -52,14 +52,19 @@
   var attQ = new THREE.Quaternion(), defQ = new THREE.Quaternion();
   var speed = Number(query('speed')) || 1;
   var hitStop = 0, slowT = 0, introT = 0, koT = 0, defFade = 1;
-  var hitTimes = [], fightStart = 0, lastFx = -1, flashTimes = [];
+  var hitTimes = [], fightStart = 0, lastFx = -1, lastShatter = -1, flashTimes = [];
+  var labelDue = false, lastLabel = 0, koAt = 0;
   var hudDirty = true, waitT = 0;
 
-  function sizeFrac(ball) {
-    // Phase 1: 1..1,000 maps onto 0..1 by digits. Later phases switch to the size rank.
-    var lg = MBF.log10Big(BigInt(ball.value));
-    return Math.max(0, Math.min(1, lg / 3));
-  }
+  // Ball size comes from its rank among the numbers (smallest 0 .. biggest 1).
+  // Function balls are a medium size whatever their current value.
+  var numberRank = {};
+  (function () {
+    var nums = MBF.roster.filter(function (b) { return b.kind === 'number'; });
+    nums.sort(function (x, y) { return MBF.V.cmp(MBF.valueOf(x), MBF.valueOf(y)); });
+    nums.forEach(function (b, i) { numberRank[b.id] = nums.length > 1 ? i / (nums.length - 1) : 0; });
+  })();
+  function sizeFrac(ball) { return ball.kind === 'number' ? numberRank[ball.id] : 0.55; }
   function radii() {
     var m = Math.min(R.W, R.H) / 800;
     return {
@@ -183,11 +188,13 @@
     phase = 'intro'; introT = 1.15;
     setFightingUi();
     refreshSpeed();
-    $('def-name').textContent = d.name + ' (' + d.label + ')';
+    $('def-name').textContent = d.name;
     $('att-name').textContent = a.name;
-    $('att-dmg').textContent = 'Damage per hit: ' + MBF.fmt(fight.damage());
+    attV.setLabel(fight.label());
+    labelDue = false;
+    refreshAttackerText();
     setHpBar(1, true);
-    banner(a.label + '  VS  ' + d.label, a.name + ' vs ' + d.name);
+    banner((a.kind === 'function' ? a.formula : a.label) + '  VS  ' + d.label, a.name + ' vs ' + d.name);
     fightStart = performance.now();
   }
 
@@ -210,16 +217,25 @@
     if (sinceLast > gap * 2) rate = Math.min(rate, 1 / sinceLast);
     return rate;
   }
+  // "Damage per hit: 1,000" for numbers, "Next hit: 7! = 5,040" for functions
+  function refreshAttackerText() {
+    var txt = fight.isFunction
+      ? 'Next hit: ' + fight.label() + ' = ' + MBF.V.fmt(fight.damage())
+      : 'Damage per hit: ' + MBF.V.fmt(fight.damage());
+    $('att-dmg').textContent = txt;
+  }
+
   function updateHud(dt) {
     if (!fight) return;
     waitT -= dt;
     if (!hudDirty && waitT > 0) return;
     if (hudDirty) {
-      $('hp-text').textContent = 'HP ' + MBF.fmt(fight.hp) + ' / ' + MBF.fmt(fight.maxHp);
+      $('hp-text').textContent = fight.hpText();
+      $('hp-pct').textContent = fight.percentText();
       setHpBar(fight.hpFraction(), false);
       var h = fight.hits === 1n ? '1 hit' : MBF.fmt(fight.hits) + ' hits';
       $('stat-hits').textContent = fight.over ? h + ' · K.O.!'
-        : h + ' · Hits to K.O.: ' + MBF.fmt(fight.hitsToKo());
+        : h + ' · Hits to K.O.: ' + MBF.V.fmt(fight.hitsToKo());
     }
     if (hudDirty || waitT <= 0) {
       var rate = hitsPerSecond();
@@ -246,7 +262,9 @@
     el.textContent = text;
     el.style.left = (R.W / 2 + x) + 'px';
     el.style.top = (R.H / 2 - y) + 'px';
-    el.style.fontSize = Math.round(18 + level * 9 + t * 8 + (ko ? 18 : 0)) + 'px';
+    var size = Math.min(46, 18 + level * 7 + t * 6) + (ko ? 18 : 0);
+    if (text.length > 9) size *= Math.max(0.6, 9 / text.length + 0.25);   // long numbers stay on screen
+    el.style.fontSize = Math.round(size) + 'px';
     dmgLayer.appendChild(el);
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1000);
   }
@@ -277,7 +295,7 @@
     R.fx.sparks(ev.x, ev.y, ev.nx, ev.ny, Math.round(8 + 12 * s), (320 + 200 * s) * m, 1.5 + 0.35 * s, a.aura);
     R.fx.sparks(ev.x, ev.y, tx, ty, Math.round(3 + 4 * s), (260 + 120 * s) * m, 0.5, d.aura, 0.3);
     R.fx.sparks(ev.x, ev.y, -tx, -ty, Math.round(3 + 4 * s), (260 + 120 * s) * m, 0.5, d.aura, 0.3);
-    damageNumber('-' + MBF.fmt(res.damage), ev.x + ev.nx * 26 * m, ev.y + ev.ny * 26 * m + 18 * m, res.level, res.t, false);
+    damageNumber('-' + MBF.V.fmt(res.damage), ev.x + ev.nx * 26 * m, ev.y + ev.ny * 26 * m + 18 * m, res.level, res.t, false);
 
     // level 1+: shockwave ring + light shake
     if (res.level >= 1) {
@@ -294,6 +312,41 @@
       R.fx.pulse(0.4 + 0.4 * res.t, a.aura);
       if (!busy) hitStop = Math.max(hitStop, 0.05 + 0.05 * res.t);
       if (!busy && canFlash(now)) R.fx.flash(calm ? 0.08 : 0.22 + 0.2 * res.t, [1, 0.95, 0.85], ev.x, ev.y);
+    }
+    // level 3+: colour fringing and lightning crawling over the defender
+    if (res.level >= 3) {
+      var t3 = res.level > 3 ? 1 : res.t;
+      R.fx.aberration((calm ? 0.25 : 0.7) + (calm ? 0.2 : 0.6) * t3);
+      var nb = calm ? 1 + Math.round(t3) : 2 + Math.round(3 * t3);
+      lightningBurst(ev, nb, a.aura, 1 + 0.5 * t3, calm);
+    }
+    // level 4: the screen cracks like glass and shards fly out of the hit
+    if (res.level >= 4) {
+      var t4 = res.t;
+      if (!busy || now - lastShatter > 350) {
+        lastShatter = now;
+        R.fx.shatter((calm ? 0.3 : 0.6) + (calm ? 0.15 : 0.4) * t4, ev.x, ev.y);
+      }
+      R.fx.shards(ev.x, ev.y, ev.nx, ev.ny, Math.round((calm ? 6 : 12) + 18 * t4),
+        (520 + 360 * t4) * m, (14 + 12 * t4) * m, 2.6);
+      R.fx.aberration((calm ? 0.4 : 1.1) + 0.6 * t4);
+      R.fx.punch(calm ? 0.015 : 0.04 + 0.03 * t4);
+      // bolts that leap out across the arena
+      if (!calm) for (var k = 0; k < 2 + Math.round(3 * t4); k++) {
+        var ang = Math.atan2(ev.ny, ev.nx) + (Math.random() - 0.5) * 2.2, len = (180 + 260 * Math.random()) * m;
+        R.fx.lightning(ev.x, ev.y, ev.x + Math.cos(ang) * len, ev.y + Math.sin(ang) * len, a.aura, 5 * m, 0.28, calm);
+      }
+    }
+  }
+
+  // bolts from the hit point crawling over the defender's surface
+  function lightningBurst(ev, count, color, widthK, calm) {
+    var m = world.scale(), D = world.def, base = Math.atan2(ev.ny, ev.nx);
+    for (var i = 0; i < count; i++) {
+      var ang = base + (Math.random() - 0.5) * 2.6;
+      var rr = D.r * (0.85 + Math.random() * 0.45);
+      R.fx.lightning(ev.x, ev.y, D.x + Math.cos(ang) * rr, D.y + Math.sin(ang) * rr,
+        color, (3 + 2 * Math.random()) * widthK * m, 0.2 + Math.random() * 0.12, calm);
     }
   }
 
@@ -315,9 +368,24 @@
     R.fx.punch(calm ? 0.02 : 0.06);
     R.fx.pulse(1, d.aura);
     if (canFlash(now)) R.fx.flash(calm ? 0.12 : 0.55, [1, 0.9, 0.95], dx, dy);
-    damageNumber('-' + MBF.fmt(res.damage), ev.x + ev.nx * 26 * m, ev.y + ev.ny * 26 * m + 18 * m, res.level, res.t, false);
+    // bigger K.O.s borrow the higher-level effects
+    if (res.level >= 4) {
+      R.fx.aberration(calm ? 0.4 : 1.2);
+      lightningBurst(ev, calm ? 2 : 6, a.aura, 1.4, calm);
+    }
+    if (res.level >= 5) {
+      R.fx.shatter(calm ? 0.45 : 1.0, dx, dy);
+      R.fx.shards(dx, dy, 1, 0, calm ? 16 : 44, 700 * m, 22 * m, Math.PI * 2);
+      R.fx.aberration(calm ? 0.5 : 1.8);
+      if (!calm) for (var k = 0; k < 8; k++) {
+        var ang = Math.random() * Math.PI * 2, len = (260 + 300 * Math.random()) * m;
+        R.fx.lightning(dx, dy, dx + Math.cos(ang) * len, dy + Math.sin(ang) * len, d.aura, 6 * m, 0.4, calm);
+      }
+    }
+    damageNumber('-' + MBF.V.fmt(res.damage), ev.x + ev.nx * 26 * m, ev.y + ev.ny * 26 * m + 18 * m, Math.min(res.level, 4), res.t, false);
     damageNumber('K.O.!', dx, dy + dr * 0.2, Math.min(res.level, 3), 1, true);
     world.defGone = true;
+    koAt = now;
     $('banner').classList.remove('show');
     phase = 'ko'; koT = 1.7;
     input.setEnabled(false);
@@ -329,18 +397,25 @@
     hitTimes.push(performance.now());
     if (hitTimes.length > 24) hitTimes.shift();
     hudDirty = true;
+    if (fight.isFunction) labelDue = true;
     defV.setHp(fight.hpFraction());
     if (res.ko) knockout(ev, res); else impact(ev, res);
   }
 
   function showKoCard() {
     var a = fight.attacker, d = fight.defender;
-    var secs = (performance.now() - fightStart) / 1000;
+    var secs = (koAt - fightStart) / 1000;
     var hits = fight.hits === 1n ? '<b>1</b> hit' : '<b>' + MBF.fmt(fight.hits) + '</b> hits';
     var html = '<b>' + esc(a.name) + '</b> destroyed <b>' + esc(d.name) + '</b> in ' + hits +
       ' (' + MBF.describeWait(Math.log10(Math.max(1, secs))) + ').';
-    var over = fight.dealt - fight.maxHp;
-    if (over > 0n) html += '<br>Overkill: <b>' + MBF.fmt(over) + '</b> extra damage.';
+    var V = MBF.V;
+    if (V.isExact(fight.dealt) && V.isExact(fight.maxHp)) {
+      var over = fight.dealt.b - fight.maxHp.b;
+      if (over > 0n) html += '<br>Overkill: <b>' + MBF.fmt(over) + '</b> extra damage.';
+    } else if (V.log10(fight.dealt) > V.log10(fight.maxHp) + 0.01) {
+      html += '<br>Overkill: about <b>' + esc(V.fmt(fight.dealt)) + '</b> damage in total.';
+    }
+    if (fight.isFunction) html += '<br>Final hit: <b>' + esc(MBF.fnLabel(a, fight.input - 1)) + '</b>.';
     $('ko-text').innerHTML = html;
     $('ko').classList.add('on');
     document.body.classList.remove('fighting');
@@ -394,6 +469,19 @@
         koT -= dt;
         defFade = Math.max(0, defFade - dt * 2.2);
         if (koT <= 0) { phase = 'done'; showKoCard(); }
+      }
+    }
+
+    // function balls relabel after each hit: 1! -> 2! -> 3! (at most ~14 times a second)
+    if (labelDue && fight && now - lastLabel > 70) {
+      labelDue = false; lastLabel = now;
+      if (fight.over) {
+        var finalLabel = MBF.fnLabel(fight.attacker, fight.input - 1);
+        attV.setLabel(finalLabel);
+        $('att-dmg').textContent = 'Final hit: ' + finalLabel;
+      } else {
+        attV.setLabel(fight.label());
+        refreshAttackerText();
       }
     }
 

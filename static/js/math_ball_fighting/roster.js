@@ -47,8 +47,51 @@
       fact: 'Ten tens: a 10 by 10 square has 100 cells.' },
     { id: 'n1000', kind: 'number', name: 'One Thousand', value: '1000', label: '1,000', labelAt: 'center',
       texture: 'mosaic', aura: [1.0, 0.82, 0.45], ink: ['#fffaf0', '#3d2a05'],
-      fact: 'Ten hundreds. This ball is tiled with 1,000 tiles.' }
+      fact: 'Ten hundreds. This ball is tiled with 1,000 tiles.' },
+    { id: 'million', kind: 'number', name: 'One Million', value: '1000000', label: 'Million', labelAt: 'center',
+      texture: 'sand', aura: [1.0, 0.85, 0.5], ink: ['#fff6e0', '#4a3000'],
+      fact: 'A million seconds is about 11 and a half days.' },
+    { id: 'billion', kind: 'number', name: 'One Billion', value: '1000000000', label: 'Billion', labelAt: 'center',
+      texture: 'citylights', aura: [0.45, 0.7, 1.0], ink: ['#fff3d6', '#071a3a'],
+      fact: 'A billion seconds is almost 32 years. About 8 billion people live on Earth.' },
+    { id: 'googol', kind: 'number', name: 'Googol', value: '1' + '0'.repeat(100), label: 'Googol', labelAt: 'banner',
+      texture: 'googol', aura: [0.3, 1.0, 0.9], ink: ['#e6fffb', '#00332c'],
+      fact: '1 followed by 100 zeros. More than all the atoms in the universe.' },
+    { id: 'googolplex', kind: 'number', name: 'Googolplex', log10: 1e100, label: 'Googolplex', labelAt: 'banner',
+      texture: 'galaxy', aura: [0.75, 0.55, 1.0], ink: ['#f3eaff', '#1c0640'],
+      fact: '1 followed by a googol zeros. There is not enough room in the universe to write it out.' },
+
+    // ---- functions: attack only. Input starts at 1 and goes up by one every hit.
+    { id: 'f_succ', kind: 'function', fn: 'succ', name: 'Plus One', formula: 'n+1', labelAt: 'center',
+      texture: 'fnring', aura: [0.4, 1.0, 0.5], ink: ['#eaffef', '#06351a'],
+      fact: 'Adds one: 2, 3, 4, 5... Slow and steady.' },
+    { id: 'f_double', kind: 'function', fn: 'double', name: 'Doubler', formula: '2n', labelAt: 'center',
+      texture: 'fnring', aura: [0.35, 0.8, 1.0], ink: ['#e8f7ff', '#062a45'],
+      fact: 'Two times the input: 2, 4, 6, 8...' },
+    { id: 'f_square', kind: 'function', fn: 'square', name: 'Squarer', formula: 'n²', labelAt: 'center',
+      texture: 'fnring', aura: [1.0, 0.75, 0.3], ink: ['#fff4e0', '#3d2400'],
+      fact: 'The input times itself: 1, 4, 9, 16, 25...' },
+    { id: 'f_fact', kind: 'function', fn: 'fact', name: 'Factorial', formula: 'n!', labelAt: 'center',
+      texture: 'fnring', aura: [1.0, 0.4, 0.6], ink: ['#ffeef4', '#40081e'],
+      fact: 'Multiply every number up to n: 1, 2, 6, 24, 120... It explodes fast.' },
+    { id: 'f_pow10', kind: 'function', fn: 'pow10', name: 'Power of Ten', formula: '10ⁿ', labelAt: 'center',
+      texture: 'fnring', aura: [0.8, 0.5, 1.0], ink: ['#f6eeff', '#24083f'],
+      fact: 'A 1 with n zeros: 10, 100, 1,000... Adds a zero every hit.' }
   ];
+
+  // what a function ball shows for input n
+  MBF.fnLabel = function (ball, n) {
+    var s = String(n);
+    switch (ball.fn) {
+      case 'succ': return s + '+1';
+      case 'double': return '2×' + s;
+      case 'square': return s + '²';
+      case 'fact': return s + '!';
+      case 'pow10': return '10' + s.replace(/[0-9]/g, function (c) { return '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]; });
+    }
+    return ball.formula;
+  };
+  MBF.roster.forEach(function (b) { if (b.kind === 'function') b.label = b.formula; });
 
   MBF.ballById = function (id) {
     for (var i = 0; i < MBF.roster.length; i++) if (MBF.roster[i].id === id) return MBF.roster[i];

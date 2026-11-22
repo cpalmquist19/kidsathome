@@ -37,13 +37,15 @@ Code: `static/js/math_ball_fighting/`
 
 ## Roster
 - Phase 1 numbers: 1, 2, 3, 5, 7, 10, 12, 42, 100, 1,000
-- Later numbers: Million, Billion, Googol, Skewes, Googolplex, Googolplexplex, Moser, Graham's,
-  TREE(3), SCG(13), Loader's, Rayo's, BIG FOOT
+- Phase 2 numbers: Million, Billion, Googol, Googolplex
+- Later numbers: Skewes, Googolplexplex, Moser, Graham's, TREE(3), SCG(13), Loader's, Rayo's, BIG FOOT
+  (Skewes's number, about 10^10^10^34, is bigger than a googolplex, so it lands in Phase 3)
 - Functions (added over time): n+1, 2n, n², n!, 10ⁿ, Ackermann A(n,n), Graham G(n), TREE(n),
   BB(n), Rayo(n)
-- Sizes and ordering reuse `static/data/numbers_vs_operations/named_numbers.json` and the
-  magnitude math from Numbers VS. Operations (to be moved into a shared
-  `static/js/bignum/magnitude.js` in Phase 2).
+- Values are exact BigInts under 1,000 digits, then magnitudes from the shared
+  `static/js/bignum/magnitude.js` (same {L, t} convention as Numbers VS. Operations' engine;
+  that game still uses its own copy). Ball size comes from rank among the numbers.
+- Later phases can pull extra names and ordering from `static/data/numbers_vs_operations/named_numbers.json`.
 
 ## Textures — our own designs, drawn from each number's math
 Shader-drawn (animated, react to hits, no art files). Painted art can override any ball later.
@@ -94,11 +96,12 @@ Effects stack.
 - At high Watch speeds, effects are throttled.
 
 ## Build order
-1. **Phase 1:** numbers 1–1,000 with exact BigInt math, Watch + Fight modes, matchup picker,
+1. ✅ **Phase 1:** numbers 1–1,000 with exact BigInt math, Watch + Fight modes, matchup picker,
    joystick, wander option, speed control, hits-to-KO estimate, impact levels 0–2,
    textures for the starting balls. 1 vs 1 one-shot works.
-2. Numbers up to Googolplex, simple functions (n+1, 2n, n², n!, 10ⁿ), shared magnitude module,
-   post-processing system, levels 3–4.
-3. Moser, Graham's, Ackermann, levels 5–6.
+2. ✅ **Phase 2:** Million, Billion, Googol, Googolplex, functions n+1, 2n, n², n!, 10ⁿ with live labels,
+   shared magnitude module, exact hits-to-K.O. solver for functions, "Googol − 37" / "0.000…%" health text,
+   post-processing pass, levels 3 (colour fringing, lightning) and 4 (glass shatter, flying shards).
+3. Skewes, Googolplexplex, Moser, Graham's, Ackermann, levels 5–6.
 4. TREE, SCG, Loader's, BB, Rayo, the showcase TREE / Rayo designs, levels 7–8.
 5. Sound, Shorts (9:16) layout, Calm-effects tuning, polish.

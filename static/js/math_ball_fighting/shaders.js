@@ -238,11 +238,104 @@
     '}'
   ].join('\n');
 
+  // Million - a ball of sand: about a million grains, with glints
+  SURF.sand = [
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  float g = fbm3(d * 4.0);',
+    '  float grain = hash3(floor(d * 70.0));',
+    '  alb = mix(vec3(0.72, 0.55, 0.3), vec3(0.96, 0.83, 0.56), g) * (0.82 + 0.3 * grain);',
+    '  alb *= 0.9 + 0.1 * sin((d.y + 0.35 * fbm3(d * 2.0)) * 34.0);',
+    '  vec3 cell = floor(d * 110.0);',
+    '  float glint = step(0.985, hash3(cell + floor(t * 2.0 + hash3(cell) * 7.0)));',
+    '  emit = vec3(1.0, 0.96, 0.85) * glint * 2.2;',
+    '  gloss = 0.3;',
+    '}'
+  ].join('\n');
+
+  // Billion - a night-side planet glittering with city lights (about 8 billion people)
+  SURF.citylights = [
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  float land = smoothstep(0.47, 0.53, fbm3(d * 2.4 + 3.0));',
+    '  alb = mix(vec3(0.01, 0.03, 0.09), vec3(0.05, 0.05, 0.04), land);',
+    '  float cl = smoothstep(0.5, 0.75, fbm3(d * 9.0));',
+    '  float pts = step(0.72, hash3(floor(d * 140.0)));',
+    '  float tw = 0.75 + 0.25 * sin(t * 4.0 + hash3(floor(d * 140.0)) * 40.0);',
+    '  emit = vec3(1.0, 0.72, 0.32) * land * (cl * 0.5 + pts * cl * 1.8) * tw;',
+    '  float clouds = smoothstep(0.55, 0.8, fbm3(d * 3.0 + vec3(t * 0.02, 0.0, 0.0)));',
+    '  alb = mix(alb, vec3(0.12, 0.14, 0.2), clouds * 0.6);',
+    '  emit *= 1.0 - clouds * 0.7;',
+    '  gloss = mix(0.75, 0.2, land);',
+    '}'
+  ].join('\n');
+
+  // Googol - a 1 surrounded by exactly 100 glowing zeros in a sunflower spiral
+  SURF.googol = [
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  alb = vec3(0.01, 0.06, 0.07) + vec3(0.0, 0.1, 0.12) * fbm3(d * 3.0);',
+    '  vec2 qq = rot2(t * 0.12) * q;',
+    '  float glow = 0.0;',
+    '  for (int i = 0; i < 100; i++) {',
+    '    float fi = float(i);',
+    '    float rr = 0.17 + 0.72 * sqrt((fi + 0.5) / 100.0);',
+    '    float th = fi * 2.39996;',
+    '    vec2 dd = qq - rr * vec2(cos(th), sin(th));',
+    '    float sz = 0.026 + 0.016 * (fi / 100.0);',
+    '    float e = length(dd * vec2(1.0, 0.72));',
+    '    float ring = smoothstep(sz * 0.42, 0.0, abs(e - sz));',
+    '    glow = max(glow, ring * (0.55 + 0.45 * sin(t * 3.0 + fi * 0.7)));',
+    '  }',
+    '  float one = smoothstep(0.03, 0.012, abs(q.x)) * step(abs(q.y + 0.01), 0.1);',
+    '  one = max(one, smoothstep(0.025, 0.01, abs(q.y - 0.07 + q.x * 0.9)) * step(-0.05, q.x) * step(q.x, 0.0));',
+    '  emit = vec3(0.3, 1.0, 0.9) * glow * 1.5 + vec3(1.0, 1.0, 0.85) * one * 2.0;',
+    '  gloss = 0.9;',
+    '}'
+  ].join('\n');
+
+  // Googolplex - a whole spiral galaxy inside a glass ball
+  SURF.galaxy = [
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  vec2 p = rot2(t * 0.07) * q * 1.12;',
+    '  float r = length(p); float a = atan(p.y, p.x);',
+    '  float s = sin(2.0 * (a - 2.4 * log(r + 0.02)));',
+    '  float dust = fbm3(vec3(p * 6.0, t * 0.02));',
+    '  float arm = smoothstep(0.1, 1.0, s) * smoothstep(1.0, 0.15, r);',
+    '  vec3 armCol = mix(vec3(0.3, 0.5, 1.0), vec3(1.0, 0.55, 0.85), dust) * arm * (0.35 + dust);',
+    '  float lane = smoothstep(0.55, 0.8, fbm3(vec3(p * 11.0, 1.0))) * arm;',
+    '  vec3 core = vec3(1.0, 0.88, 0.7) * (exp(-r * r * 22.0) * 2.2 + exp(-r * 5.0) * 0.3);',
+    '  vec2 sg = q * 70.0; float h = hash2(floor(sg));',
+    '  float star = step(0.955, h) * smoothstep(0.32, 0.0, length(fract(sg) - 0.5)) * (0.6 + 0.4 * sin(t * 2.0 + h * 60.0));',
+    '  alb = vec3(0.012, 0.005, 0.03);',
+    '  emit = core + armCol * 1.3 * (1.0 - lane * 0.7) + vec3(star) * 1.4;',
+    '  gloss = 0.95;',
+    '}'
+  ].join('\n');
+
+  // Functions - a knurled metal ring around a dark core with glowing circuit traces
+  SURF.fnring = [
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  float r = length(q); float a = atan(q.y, q.x);',
+    '  float band = smoothstep(0.74, 0.77, r);',
+    '  vec3 metal = vec3(0.55, 0.57, 0.63) * (0.72 + 0.28 * sin(a * 48.0));',
+    '  float notch = smoothstep(0.05, 0.0, abs(fract(a / TAU * 12.0 + t * 0.05) - 0.5) - 0.42) * band;',
+    '  vec2 g = q * 6.0; vec2 c = floor(g); vec2 f = fract(g) - 0.5; float h = hash2(c);',
+    '  float trace = smoothstep(0.07, 0.0, abs(h < 0.5 ? f.y : f.x)) * step(0.25, fract(h * 7.0));',
+    '  float node = smoothstep(0.14, 0.08, length(f)) * step(0.8, h);',
+    '  float pulse = 0.35 + 0.65 * pow(0.5 + 0.5 * sin(t * 3.0 - length(c) * 0.9), 3.0);',
+    '  alb = mix(vec3(0.02, 0.02, 0.04), metal, band);',
+    '  emit = uAura * (trace * 0.8 + node * 1.5) * pulse * (1.0 - band);',
+    '  emit += uAura * smoothstep(0.025, 0.0, abs(r - 0.755)) * 1.6 + uAura * notch * 1.2;',
+    '  gloss = mix(0.75, 0.9, band);',
+    '}'
+  ].join('\n');
+
   // ------------------------------------------------------------------ ball wrapper
-  var BALL_MAIN = [
+  var BALL_UNIFORMS = [
     'uniform float uTime, uHit, uHp, uPx, uSeed, uSpin, uFade;',
     'uniform mat3 uRot;',
     'uniform vec3 uAura;',
+    ''
+  ].join('\n');
+  var BALL_MAIN = [
     'void main() {',
     '  vec2 p = (vUv * 2.0 - 1.0) * ' + S.QUAD.toFixed(3) + ';',
     '  float r = length(p);',
@@ -280,7 +373,7 @@
 
   S.ballFragment = function (textureId) {
     var surf = SURF[textureId] || SURF.pearl;
-    return COMMON + surf + '\n' + BALL_MAIN;
+    return COMMON + BALL_UNIFORMS + surf + '\n' + BALL_MAIN;
   };
 
   // ------------------------------------------------------------------ background
@@ -360,6 +453,93 @@
     '  float d = length(vUv - uCenter);',
     '  float k = uAmount * (0.55 + 0.45 * exp(-d * 2.5));',
     '  gl_FragColor = vec4(uColor * k, 0.0);',
+    '}'
+  ].join('\n');
+
+  // ------------------------------------------------------------------ post-processing
+  // The scene is drawn into tScene, then this pass adds the screen-wide effects:
+  //   uShatter  (level 4) the screen breaks into glass panes around uCenter that
+  //             slide and tilt apart, with rainbow edges and dark seams
+  //   uCA       (level 3+) chromatic aberration: red and blue pulled apart
+  S.postFragment = COMMON + [
+    'uniform sampler2D tScene;',
+    'uniform vec2 uRes, uCenter;',
+    'uniform float uCA, uShatter, uSeed, uTime;',
+    'vec2 hash22(vec2 p) {',
+    '  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));',
+    '  return fract(sin(p) * 43758.5453);',
+    '}',
+    'void main() {',
+    '  vec2 uv = vUv;',
+    '  vec2 asp = vec2(uRes.x / uRes.y, 1.0);',
+    '  vec3 edgeCol = vec3(0.0); float seam = 0.0;',
+    '  if (uShatter > 0.002) {',
+    '    vec2 p = (uv - uCenter) * asp;',
+    // cells get smaller near the impact, like real cracked glass
+    '    float warp = 1.0 + 1.6 * exp(-length(p) * 3.0);',
+    '    vec2 g = p * 4.2 * warp;',
+    '    vec2 ip = floor(g), fp = fract(g);',
+    '    float d1 = 8.0, d2 = 8.0; vec2 cid = vec2(0.0); vec2 cpos = vec2(0.0);',
+    '    for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {',
+    '      vec2 b = vec2(float(i), float(j));',
+    '      vec2 o = hash22(ip + b + uSeed);',
+    '      vec2 r = b + o - fp; float d = dot(r, r);',
+    '      if (d < d1) { d2 = d1; d1 = d; cid = ip + b; cpos = (ip + b + o) / (4.2 * warp); }',
+    '      else if (d < d2) { d2 = d; }',
+    '    }',
+    '    float edge = sqrt(d2) - sqrt(d1);',
+    '    vec2 h = hash22(cid * 1.37 + uSeed * 3.1);',
+    '    vec2 dir = cpos / (length(cpos) + 1e-3);',
+    '    float push = uShatter * (0.015 + 0.05 * h.x) * (1.0 + 1.2 * length(cpos));',
+    '    float ang = (h.y - 0.5) * uShatter * 0.22;',
+    '    vec2 local = rot2(ang) * (p - cpos);',
+    '    vec2 np = cpos + local - dir * push * 0.6 - (h - 0.5) * uShatter * 0.02;',
+    '    uv = np / asp + uCenter;',
+    '    float w = 0.02 + 0.04 * uShatter;',
+    '    float e = 1.0 - smoothstep(0.0, w, edge);',
+    '    vec3 rainbow = hsv2rgb(vec3(fract(h.x + edge * 3.0 + uTime * 0.2), 0.7, 1.0));',
+    '    edgeCol = (rainbow * 1.2 + vec3(0.8)) * e * uShatter;',
+    '    seam = e * uShatter * 0.5;',
+    // each pane catches the light a little differently
+    '    edgeCol += vec3(0.6, 0.7, 1.0) * pow(h.y, 6.0) * uShatter * 0.25;',
+    '  }',
+    '  vec2 cd = uv - 0.5;',
+    '  float k = uCA * 0.014;',
+    '  vec3 col;',
+    '  col.r = texture2D(tScene, uv + cd * k).r;',
+    '  col.g = texture2D(tScene, uv).g;',
+    '  col.b = texture2D(tScene, uv - cd * k).b;',
+    '  col = col * (1.0 - seam) + edgeCol;',
+    '  gl_FragColor = vec4(col, 1.0);',
+    '}'
+  ].join('\n');
+
+  // ------------------------------------------------------------------ lightning
+  // A bolt is a strip of quads; uv.y runs across the strip (0..1).
+  S.boltFragment = [
+    'precision highp float;',
+    'varying vec2 vUv;',
+    'uniform vec3 uColor;',
+    'uniform float uAlpha;',
+    'void main() {',
+    '  float x = (vUv.y - 0.5) * 2.0;',
+    '  float core = exp(-x * x * 18.0);',
+    '  float glow = exp(-x * x * 2.5) * 0.5;',
+    '  vec3 c = (vec3(1.0) * core + uColor * glow) * uAlpha;',
+    '  gl_FragColor = vec4(c, 0.0);',
+    '}'
+  ].join('\n');
+
+  // ------------------------------------------------------------------ glass shards
+  // uv holds barycentric-style coordinates so edges can glow.
+  S.shardFragment = COMMON + [
+    'uniform float uAlpha, uHue, uGlint;',
+    'void main() {',
+    '  float e = min(min(vUv.x, vUv.y), 1.0 - vUv.x - vUv.y);',
+    '  float edge = smoothstep(0.09, 0.0, e);',
+    '  vec3 rainbow = hsv2rgb(vec3(fract(uHue + vUv.x * 0.6 + vUv.y * 0.3), 0.55, 1.0));',
+    '  vec3 c = rainbow * (0.12 + 0.25 * uGlint) + (vec3(1.0) * 0.8 + rainbow * 0.6) * edge;',
+    '  gl_FragColor = vec4(c * uAlpha, 0.0);',
     '}'
   ].join('\n');
 
