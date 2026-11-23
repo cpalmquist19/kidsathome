@@ -129,6 +129,10 @@ Effects stack.
    - Added after: the Large Number Garden Number (= f¹⁰(10↑¹⁰10), a night garden with 10 blooming flowers),
      ranked above BIG FOOT and below Oblivion, with its function fⁿ(10↑¹⁰10) that wins on hit 10.
      f¹ to f⁹ are placed just below it, a labelled guess.
+   - Added after: Gotchrognathicus = (Rayo's number ^ Rayo's number) × Rayo's number (black-crimson scales
+     with three tracking slit eyes laid out like R^R × R). It sits just above Rayo's number and below Fish 7:
+     growth-class values got an optional tie-break, since it beats Rayo(10¹⁰⁰) but Rayo(10¹⁰⁰ + a few
+     symbols) beats it. Rayo's number attacking it needs exactly Rayo's number ^ Rayo's number hits.
    - Added after: Infinity (∞, a glowing lemniscate) and 2,645 fictional numbers from the Fictional Googology
      Wiki (static/data/math_ball_fighting/fictional.json, names only, CC BY-SA credit in the menu). Of the
      category's 2,697 entries, 30 were not numbers (user pages, templates, categories) and 22 were left out as

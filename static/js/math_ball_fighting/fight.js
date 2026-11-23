@@ -43,8 +43,10 @@
     hyper: function (arrows, x, name) { return { h: { a: arrows, x: x }, name: name }; },
     // growth-class value: class r at input n. Anything in a higher class beats anything lower.
     //   1 TREE · 2 SCG · 3 Loader · 10 Busy Beaver · 11 Rayo · 11.5 Fish 7 · 12 BIG FOOT · 12.5 Garden
-    //   13 Oblivion · 14 Utter Oblivion · 1000 Infinity · 2000 fictional numbers (beyond infinity) · 13 Oblivion · 14 Utter Oblivion
-    cls: function (r, n, name) { return { g: { r: r, n: n }, name: name }; },
+    //   13 Oblivion · 14 Utter Oblivion · 1000 Infinity · 2000 fictional numbers (beyond infinity)
+    // x (optional) breaks ties at the same r and n: "a bit more than f(n)", like Rayo's number
+    // raised to its own power, which is still far below f(n + 1).
+    cls: function (r, n, name, x) { var g = { r: r, n: n }; if (x) g.x = x; return { g: g, name: name }; },
     zero: function () { return { b: 0n }; },
     isExact: function (v) { return v.b !== undefined; },
     isHyper: function (v) { return v.h !== undefined; },
@@ -59,7 +61,7 @@
         if (!a.g) return -1;
         if (!b.g) return 1;
         if (a.g.r !== b.g.r) return a.g.r < b.g.r ? -1 : 1;
-        return V.cmp(a.g.n, b.g.n);
+        return V.cmp(a.g.n, b.g.n) || ((a.g.x || 0) < (b.g.x || 0) ? -1 : (a.g.x || 0) > (b.g.x || 0) ? 1 : 0);
       }
       if (a.h || b.h) {
         if (!a.h) return -1;
@@ -100,6 +102,12 @@
   var SUB = '₀₁₂₃₄₅₆₇₈₉';
   // Infinity: no number of finite hits ever reaches it. Fictional numbers sit above it.
   MBF.INFINITY = { g: { r: 1000, n: { b: 0n } }, name: '∞' };
+  // Gotchrognathicus = (Rayo's number ^ Rayo's number) × Rayo's number. Bigger than Rayo's number,
+  // but a few more symbols of logic (Rayo(10^100 + a little)) already beat it, so it sits just
+  // above Rayo's number in the same class. Rayo's number ^ Rayo's number sits between them.
+  var GOOGOL = 10n ** 100n;
+  MBF.GOTCH = V.cls(11, { b: GOOGOL }, 'Gotchrognathicus', 2);
+  MBF.RAYO_POW_RAYO = V.cls(11, { b: GOOGOL }, "Rayo's number ^ Rayo's number", 1);
   function unreachable(hp) { return hp.g && hp.g.r >= 1000; }
   function sub(n) { return String(n).replace(/[0-9]/g, function (c) { return SUB[c]; }); }
   function arrows(k) { return k <= 5 ? '↑'.repeat(k) : '↑' + sup(k); }
@@ -123,6 +131,7 @@
     if (ball.special === 'scg13') return scgClass(13, true, 'SCG(13)');
     if (ball.special === 'loader') return V.cls(3, { b: 5n }, "Loader's number");   // D^5(99)
     if (ball.special === 'rayo') return V.cls(11, { b: 10n ** 100n }, "Rayo's number");
+    if (ball.special === 'gotch') return MBF.GOTCH;
     if (ball.special === 'bigfoot') return V.cls(12, { b: 1n }, 'BIG FOOT');
     if (ball.special === 'sscg3') return sscg(3);
     if (ball.special === 'fish7') return fish7(63);
@@ -358,7 +367,8 @@
   // Smallest number of hits m with S(m) >= hp, as a value.
   function hitsToDestroy(fn, hp) {
     if (fn === 'rayo' || fn === 'foot') {
-      if (fn === 'rayo' && hp.g && hp.g.r === 11) return hp.g.n;        // Rayo(n) reaches Rayo's number at n = 10^100
+      if (fn === 'rayo' && hp.g && hp.g.r === 11)                        // Rayo(n) reaches Rayo's number at n = 10^100
+        return hp.g.x ? { b: hp.g.n.b + 1n } : hp.g.n;                  // and passes anything just above it one hit later
       var dealtR = V.zero();
       for (var i = 1; i <= 20000; i++) {                                 // early on, the small hits add up
         dealtR = V.add(dealtR, MBF.fnValue(fn, i));
@@ -512,6 +522,8 @@
     } else if (V.cmp(constDmg, maxHp) >= 0) totalHits = { b: 1n };
     else if (!isFinite(V.log10(maxHp))) totalHits = maxHp;   // dividing doesn't dent it
     else totalHits = V.lg10(V.log10(maxHp) - V.log10(constDmg));
+    // (R^R × R) ÷ R = R^R: Rayo's number needs Rayo's number ^ Rayo's number hits
+    if (!isFn && att.special === 'rayo' && def.special === 'gotch') totalHits = MBF.RAYO_POW_RAYO;
     if (unreachable(maxHp) && !V.isExact(totalHits)) totalHits = MBF.INFINITY;
     var fxHits = !isFn && att.fictional && def.fictional ? MBF.fictionalHits(att, def) : -1;
     if (fxHits === 0) totalHits = MBF.INFINITY;

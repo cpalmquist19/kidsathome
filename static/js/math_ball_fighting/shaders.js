@@ -548,6 +548,53 @@
     '}'
   ].join('\n');
 
+  // Gotchrognathicus = (Rayo's number ^ Rayo's number) × Rayo's number - black-crimson
+  // scales with three of Rayo's slit eyes written like the formula: R^R × R (a big eye, a
+  // small raised "exponent" eye, a glowing ×, then another big eye). All three track the opponent.
+  SURF.gotch = SEGD + '\n' + [
+    'void gEye(vec2 e, float s, float off, float t, inout vec3 alb, inout vec3 emit) {',
+    '  e /= s;',
+    '  float ph = fract(t * 0.15 + off);',
+    '  float openK = ph > 0.95 ? abs(ph - 0.975) / 0.025 : 1.0;',
+    '  vec2 ee = e / vec2(0.55, 0.26 * openK + 0.01);',
+    '  float lens = 1.0 - ee.x * ee.x - abs(ee.y);',
+    '  float inside = smoothstep(0.0, 0.06, lens);',
+    '  vec2 ip = e - uLook * vec2(0.2, 0.08);',
+    '  float ir = length(ip);',
+    '  float iris = smoothstep(0.21, 0.19, ir);',
+    '  float stri = 0.65 + 0.35 * sin(atan(ip.y, ip.x) * 26.0 + ir * 30.0);',
+    '  vec3 irisCol = mix(vec3(1.0, 0.85, 0.3), vec3(0.95, 0.1, 0.35), smoothstep(0.0, 0.2, ir)) * stri;',
+    '  float pupil = smoothstep(0.035, 0.02, abs(ip.x) + ip.y * ip.y * 0.8) * step(abs(ip.y), 0.18);',
+    '  vec3 eyeCol = mix(vec3(0.25, 0.05, 0.08), irisCol, iris);',
+    '  eyeCol = mix(eyeCol, vec3(0.0), pupil);',
+    '  eyeCol += vec3(1.0) * exp(-length(ip - vec2(-0.07, 0.07)) * 60.0) * iris;',
+    '  alb = mix(alb, vec3(0.0), inside);',
+    '  emit = mix(emit, eyeCol * 1.7, inside);',
+    '  alb = mix(alb, vec3(0.02, 0.0, 0.0), smoothstep(0.07, 0.0, abs(lens)));',
+    '}',
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  vec3 v = voronoi3(d * 9.0);',
+    '  float edge = smoothstep(0.0, 0.06, v.y);',
+    '  float dome = clamp(1.0 - v.x * 1.3, 0.0, 1.0);',
+    '  alb = mix(vec3(0.08, 0.0, 0.03), vec3(0.5, 0.02, 0.12), dome) * (0.6 + 0.5 * v.z) * edge;',
+    '  emit = vec3(1.0, 0.15, 0.3) * (1.0 - edge) * (0.25 + 0.25 * sin(t * 1.5 + v.z * 12.0));',
+    '  vec2 g = q * 7.0; vec2 c = floor(g); vec2 f = fract(g) - 0.5; float h = hash2(c + 2.7);',
+    '  float gd;',
+    '  if (h < 0.33) gd = min(min(segd(f, vec2(-0.25, 0.3), vec2(0.0, -0.3)), segd(f, vec2(0.25, 0.3), vec2(0.0, -0.3))), segd(f, vec2(-0.13, 0.03), vec2(0.13, 0.03)));',
+    '  else if (h < 0.66) gd = min(segd(f, vec2(0.2, 0.3), vec2(0.2, -0.3)), min(segd(f, vec2(-0.2, 0.3), vec2(0.2, 0.3)), min(segd(f, vec2(-0.14, 0.0), vec2(0.2, 0.0)), segd(f, vec2(-0.2, -0.3), vec2(0.2, -0.3)))));',
+    '  else gd = min(segd(f, vec2(-0.25, 0.08), vec2(0.25, 0.08)), segd(f, vec2(0.25, 0.08), vec2(0.25, -0.16)));',
+    '  emit += vec3(1.0, 0.3, 0.45) * smoothstep(0.05, 0.02, gd) * step(0.55, hash2(c + 6.1)) * (0.3 + 0.3 * sin(t * 2.0 + h * 20.0));',
+    '  gEye(q - vec2(-0.43, -0.03), 0.5, 0.0, t, alb, emit);',     // R
+    '  gEye(q - vec2(-0.06, 0.3), 0.4, 0.31, t, alb, emit);',     // ^R
+    '  float x = min(segd(q, vec2(0.04, -0.09), vec2(0.16, 0.03)), segd(q, vec2(0.04, 0.03), vec2(0.16, -0.09)));',
+    '  float xg = smoothstep(0.03, 0.012, x);',
+    '  alb = mix(alb, vec3(0.0), xg);',
+    '  emit = mix(emit, vec3(1.0, 0.8, 0.5) * (1.3 + 0.3 * sin(t * 3.0)), xg);',   // ×
+    '  gEye(q - vec2(0.45, -0.03), 0.5, 0.63, t, alb, emit);',     // R
+    '  gloss = 0.85;',
+    '}'
+  ].join('\n');
+
   // BIG FOOT - a giant glowing footprint stamped into rough, furry stone
   SURF.bigfoot = [
     'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
