@@ -153,12 +153,5 @@ Effects stack.
      the wiki calls equal take 10 hits either way, and a smaller number can never win. Fictional balls
      are drawn a little bigger the higher their size rank.
 5. Phase 5:
-   - ✅ Sound (static/js/math_ball_fighting/audio.js): everything synthesised with Web Audio, no files.
-     Hit sounds scale with the attacker's size and add layers per effect level (zap, glass, whoosh,
-     shimmer, glitch, melting chord); K.O. boom + victory jingle; dash whoosh. Boss music for every
-     defender from a googol up, built from the number (primes for Skewes, 3:4:5 rhythm for Moser,
-     climbing arpeggios for Graham's, branching 3-bell melody for TREE(3), heartbeat + eye chime for
-     Rayo, Shepard tones falling/rising forever for Utter Oblivion/Infinity...). Fictional numbers use
-     one generator with 4 styles seeded by the name. Sound On/Off in the menu and a 🔊 button in fights;
-     music ducks in the menu; fast watch speeds throttle hits; Calm mode drops the harsh layers.
+   - Sound was built (commit 480202f) and then removed: not wanted. audio.js is in git history.
    - Shorts (9:16) layout, Calm-effects tuning, polish.
