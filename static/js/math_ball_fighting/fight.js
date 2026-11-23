@@ -481,6 +481,17 @@
     return '0.000…% (' + z + ' zeros after the point)';
   };
 
+  // Fictional vs fictional: the bigger size score wins. Close in size takes several hits
+  // (up to FX_HITS when they are level, or when the wiki says the two are equal); a gap of
+  // FX_CLOSE or more is a one-shot. 0 means the attacker is smaller and can never win.
+  var FX_HITS = 10, FX_CLOSE = 1;
+  MBF.fictionalHits = function (att, def) {
+    if (MBF.fxEqual && MBF.fxEqual[att.id + '|' + def.id]) return FX_HITS;
+    var d = att.fscore - def.fscore;
+    if (d < 0) return 0;
+    return Math.max(1, Math.ceil(FX_HITS * (1 - d / FX_CLOSE)));
+  };
+
   // ---------------------------------------------------------------- the fight
   MBF.createFight = function (att, def) {
     var ok = MBF.canFight(att, def);
@@ -502,6 +513,9 @@
     else if (!isFinite(V.log10(maxHp))) totalHits = maxHp;   // dividing doesn't dent it
     else totalHits = V.lg10(V.log10(maxHp) - V.log10(constDmg));
     if (unreachable(maxHp) && !V.isExact(totalHits)) totalHits = MBF.INFINITY;
+    var fxHits = !isFn && att.fictional && def.fictional ? MBF.fictionalHits(att, def) : -1;
+    if (fxHits === 0) totalHits = MBF.INFINITY;
+    else if (fxHits > 0) totalHits = { b: BigInt(fxHits) };
     f.totalHits = totalHits;
 
     // damage the next hit will do
@@ -514,7 +528,7 @@
       f.dealt = V.add(f.dealt, dmg);
       f.hits += 1n;
       if (isFn) f.input += 1;
-      var ko = V.cmp(f.dealt, maxHp) >= 0;
+      var ko = fxHits >= 0 ? fxHits > 0 && f.hits >= BigInt(fxHits) : V.cmp(f.dealt, maxHp) >= 0;
       if (ko) f.over = true;
       var imp = MBF.impactOf(dmg, ko);
       return { damage: dmg, ko: ko, level: imp.level, t: imp.t, input: input };
@@ -530,6 +544,7 @@
     // health left as a fraction 0..1 (bars and cracks)
     f.hpFraction = function () {
       if (f.over) return 0;
+      if (fxHits >= 0) return fxHits > 0 ? 1 - Number(f.hits) / fxHits : 1;
       if (V.isExact(maxHp) && V.isExact(f.dealt)) {
         var rem = maxHp.b - f.dealt.b;
         if (BM.log10Big(maxHp.b) < 15) return Number(rem) / Number(maxHp.b);
@@ -543,7 +558,7 @@
 
     // true when the damage so far is too small to show up as a number
     f.negligible = function () {
-      if (f.dealt.b === 0n) return false;
+      if (f.dealt.b === 0n || fxHits >= 0) return false;
       if (!isFinite(V.log10(maxHp))) return V.cmp(f.dealt, maxHp) < 0;
       return V.log10(f.dealt) < V.log10(maxHp) - 6;
     };
@@ -551,6 +566,10 @@
     // "HP 44 / 100", or "Googol − 37" when the damage is a rounding error
     f.hpText = function () {
       if (f.over) return 'HP 0';
+      if (fxHits >= 0) {
+        var left = fxHits > 0 ? Math.round(100 * f.hpFraction()) + '% left' : 'untouched';
+        return 'HP: ' + def.name + (f.hits > 0n ? ' (' + left + ')' : '');
+      }
       var bigHp = V.log10(maxHp) >= 15;
       if (bigHp && f.dealt.b === 0n && maxHp.name) return 'HP: ' + maxHp.name;
       if (bigHp && f.dealt.b === 0n) return 'HP: ' + def.label + ' (' + V.fmt(maxHp) + ')';
@@ -569,7 +588,7 @@
 
     // "Damage so far: 0.000…% (97 zeros after the point)" once the bar cannot show it
     f.percentText = function () {
-      if (f.over || f.dealt.b === 0n) return '';
+      if (f.over || f.dealt.b === 0n || fxHits >= 0) return '';
       if (!isFinite(V.log10(maxHp))) {
         return f.negligible() ? 'Damage so far: 0.000…% (more zeros after the point than could ever be written)' : '';
       }

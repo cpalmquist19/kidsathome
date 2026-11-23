@@ -198,7 +198,7 @@
   MBF.roster.forEach(function (b) { if (b.kind === 'function') b.label = b.formula; });
 
   // Fictional numbers from the Fictional Googology Wiki (static/data/math_ball_fighting/fictional.json).
-  // Not real maths: they all sit above Infinity, and newer wiki entries beat older ones.
+  // Not real maths: they all sit above Infinity, and the bigger one wins (by the wiki's size lists).
   function strHash(s) {
     var h = 2166136261;
     for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -214,22 +214,37 @@
     var chars = Array.from(name);
     return chars.length <= 22 ? name : chars.slice(0, 20).join('') + '…';
   };
+  // Rows are [name, page id, size score, placed by], smallest first. The size score comes from
+  // the wiki's own "larger / smaller / equal numbers" lists (scripts/build_mbf_fictional.py).
+  var PLACED = [
+    'Its size comes from the wiki\'s lists of bigger and smaller numbers.',
+    'The wiki doesn\'t compare it with other numbers, so it is placed by its wiki class.',
+    'The wiki says nothing about its size, so it is a guess: placed in the middle.'
+  ];
   MBF.fictional = [];
+  MBF.fxEqual = {};
   MBF.addFictional = function (data) {
-    var list = data.numbers, out = [];
+    var list = data.numbers, out = [], rank = 0;
     for (var i = 0; i < list.length; i++) {
-      var name = list[i][0], h = strHash(name);
+      var name = list[i][0], h = strHash(name), score = list[i][2] || 0;
+      if (i === 0 || score !== list[i - 1][2]) rank = i;          // equal scores share a rank
       var aura = hsl((h % 360) / 360, 0.75, 0.62);
       var b = {
-        id: 'fx' + list[i][1], kind: 'number', fictional: true, frank: i, name: name,
+        id: 'fx' + list[i][1], kind: 'number', fictional: true, frank: i, fscore: score,
+        fsize: list.length > 1 ? rank / (list.length - 1) : 1, name: name,
         label: MBF.shortLabel(name), labelAt: 'banner', glitch: 0.35,
         texture: 'fictional', k: (h % 100000) / 100, aura: aura, ink: ['#ffffff', '#140a24'],
-        fact: 'Fictional number #' + (i + 1).toLocaleString('en-US') + ' of ' + list.length.toLocaleString('en-US') +
-          ' from the Fictional Googology Wiki. Not real maths: it beats Infinity, and newer entries beat older ones.'
+        fact: 'Fictional number from the Fictional Googology Wiki, size #' + (rank + 1).toLocaleString('en-US') +
+          ' of ' + list.length.toLocaleString('en-US') + ' (counting up from the smallest). ' +
+          (PLACED[list[i][3]] || PLACED[2]) +
+          ' Not real maths: it beats Infinity. Bigger fictional numbers beat smaller ones; close ones take several hits.'
       };
       out.push(b);
       MBF.roster.push(b);
     }
+    (data.equal || []).forEach(function (p) {
+      MBF.fxEqual['fx' + p[0] + '|fx' + p[1]] = MBF.fxEqual['fx' + p[1] + '|fx' + p[0]] = true;
+    });
     MBF.fictional = out;
     return out;
   };

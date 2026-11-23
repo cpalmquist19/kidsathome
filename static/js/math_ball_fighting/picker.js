@@ -123,7 +123,7 @@
         });
         fx.children.forEach(function (c) {
           fx.body.appendChild(c.el);
-          // browse each letter alphabetically (who-beats-who still follows wiki creation order)
+          // browse each letter alphabetically (who-beats-who follows the wiki's size lists)
           c.balls.sort(function (a, b) { return a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }); });
         });
         fx.el.classList.add('pk-group');

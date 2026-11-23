@@ -75,7 +75,7 @@
     nums.forEach(function (b, i) { numberRank[b.id] = nums.length > 1 ? i / (nums.length - 1) : 0; });
   })();
   function sizeFrac(ball) {
-    if (ball.fictional) return 1;                     // beyond infinity: as big as balls get
+    if (ball.fictional) return 0.8 + 0.2 * (ball.fsize || 0);   // beyond infinity: the biggest balls, by wiki size
     return ball.kind === 'number' ? numberRank[ball.id] : 0.55;
   }
   function radii() {

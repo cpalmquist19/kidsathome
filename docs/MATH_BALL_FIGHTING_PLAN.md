@@ -133,7 +133,7 @@ Effects stack.
      Wiki (static/data/math_ball_fighting/fictional.json, names only, CC BY-SA credit in the menu). Of the
      category's 2,697 entries, 30 were not numbers (user pages, templates, categories) and 22 were left out as
      not kid-friendly (word filter + a full read-through). Fictional numbers all beat Infinity; between
-     themselves, newer wiki pages beat older ones. They share one shader with 8 looks seeded by the name, load
+     themselves, the bigger one wins (see the size-order note below). They share one shader with 8 looks seeded by the name, load
      after the page opens, and appear in a searchable, paged picker section with lazily rendered previews.
      Real numbers can never beat Infinity: the HUD shows ∞ hits and "forever".
    - Picker + performance pass: one browser for both slots (tap Attacker or Defender at the top, then a
@@ -143,6 +143,15 @@ Effects stack.
      sheets (render.js renderSheet) and cached in IndexedDB with the fictional list (sheets.js), keyed by
      a fingerprint of the shaders, so repeat visits load every picture instantly; expanding all ~2,700
      tiles takes about 50 ms.
+   - Size order for fictional numbers (scripts/build_mbf_fictional.py): wiki creation order was wrong
+     36% of the time against the wiki's own comparisons, so the list is now ordered by size. The script
+     reads every page's "larger / smaller / equal numbers" infobox links (~14,000, through redirects and
+     numbers outside the game) and fits one Bradley-Terry size score per number; it agrees with 84% of the
+     direct comparisons (the wiki contradicts itself, so 100% is impossible). Numbers with no comparisons
+     are placed by their wiki class (158) or guessed at the middle (516), and the fact card says which.
+     Fights: the bigger score wins; a gap under 1 takes up to 10 hits (closer = more hits), the 336 pairs
+     the wiki calls equal take 10 hits either way, and a smaller number can never win. Fictional balls
+     are drawn a little bigger the higher their size rank.
 5. Phase 5:
    - ✅ Sound (static/js/math_ball_fighting/audio.js): everything synthesised with Web Audio, no files.
      Hit sounds scale with the attacker's size and add layers per effect level (zap, glass, whoosh,
