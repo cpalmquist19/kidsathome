@@ -85,8 +85,8 @@
         if (b.kind === 'function') return 'fn';
         if (b.fictional) return 'fx-' + letterOf(b.name);
         if (b.special === 'infinity') return 'inf';
-        if (b.special === 'numbers') return 'top';
         var v = MBF.valueOf(b);
+        if (v.g && v.g.r >= 3000) return 'top';            // Numbers and what is built from it
         if (V.cmp(v, t1000) <= 0) return 'small';
         if (V.cmp(v, tGplex) <= 0) return 'big';
         if (V.cmp(v, tGraham) <= 0) return 'giant';

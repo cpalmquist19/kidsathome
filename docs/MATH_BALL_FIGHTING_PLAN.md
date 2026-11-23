@@ -139,6 +139,11 @@ Effects stack.
      gets its own growth class (3000) above them, with n = 6 build steps, leaving room for numbers built
      on top of it. Nothing can take it down ("forever"). Texture: glowing digits and + × ^ ↑ signs pouring
      into a white-hot core. Picker category "Beyond every number", after the fictional numbers.
+   - Added after: Heavenly Angel God Infinity, built from Numbers (N): a tower of N's N tall, built again
+     N times, plus N's multiplied together N times raised to N's N times, then the same pattern with
+     tetration, pentation and hexation. Class 3000 at n = 12 (six steps past Numbers), beating Numbers and
+     everything else. Texture: golden heaven light with rays, a halo, flapping feathered wings and a
+     glowing ∞. Anything in class 3000+ goes in the "Beyond every number" picker category.
    - Added after: Infinity (∞, a glowing lemniscate) and 2,645 fictional numbers from the Fictional Googology
      Wiki (static/data/math_ball_fighting/fictional.json, names only, CC BY-SA credit in the menu). Of the
      category's 2,697 entries, 30 were not numbers (user pages, templates, categories) and 22 were left out as

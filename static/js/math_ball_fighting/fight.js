@@ -44,7 +44,8 @@
     // growth-class value: class r at input n. Anything in a higher class beats anything lower.
     //   1 TREE · 2 SCG · 3 Loader · 10 Busy Beaver · 11 Rayo · 11.5 Fish 7 · 12 BIG FOOT · 12.5 Garden
     //   13 Oblivion · 14 Utter Oblivion · 1000 Infinity · 2000 fictional numbers (beyond infinity)
-    //   3000 built from every number in the game (Numbers), so beyond every fictional number
+    //   3000 built from every number in the game (Numbers 6, Heavenly Angel God Infinity 12),
+    //        so beyond every fictional number
     // x (optional) breaks ties at the same r and n: "a bit more than f(n)", like Rayo's number
     // raised to its own power, which is still far below f(n + 1).
     cls: function (r, n, name, x) { var g = { r: r, n: n }; if (x) g.x = x; return { g: g, name: name }; },
@@ -122,6 +123,11 @@
     'Numbers = Q↑↑↑↑Q (hexate)'
   ];
   MBF.NUMBERS = V.cls(3000, { b: 6n }, 'Numbers');
+  // Heavenly Angel God Infinity, built from Numbers (N):
+  //   a tower of N's, N tall, built again N times, plus N's multiplied together N times, raised
+  //   to N's N times, then the same pattern with tetration, pentation and hexation.
+  // Six more steps on top of Numbers (n = 12); n 7-11 and 13+ are free for numbers in between or above.
+  MBF.HAGI = V.cls(3000, { b: 12n }, 'Heavenly Angel God Infinity');
   function unreachable(hp) { return hp.g && hp.g.r >= 1000; }
   function sub(n) { return String(n).replace(/[0-9]/g, function (c) { return SUB[c]; }); }
   function arrows(k) { return k <= 5 ? '↑'.repeat(k) : '↑' + sup(k); }
@@ -152,6 +158,7 @@
     if (ball.special === 'lngn') return gardenF(10);
     if (ball.special === 'infinity') return MBF.INFINITY;
     if (ball.special === 'numbers') return MBF.NUMBERS;
+    if (ball.special === 'hagi') return MBF.HAGI;
     if (ball.fictional) return V.cls(2000, { b: BigInt(ball.frank) }, ball.name);
     if (ball.special === 'oblivion') return V.cls(13, { b: 1n }, 'Oblivion');
     if (ball.special === 'utter') return V.cls(14, { b: 1n }, 'Utter Oblivion');

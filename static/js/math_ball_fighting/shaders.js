@@ -648,6 +648,61 @@
     '}'
   ].join('\n');
 
+  // Heavenly Angel God Infinity - golden heaven light: turning rays through soft clouds, a halo,
+  // two slowly flapping feathered wings and a glowing ∞ in the middle
+  SURF.hagi = SEGD + '\n' + [
+    'vec2 hLem(float s) { float den = 1.0 + sin(s) * sin(s); return 0.3 * vec2(cos(s), sin(s) * cos(s)) / den; }',
+    // one wing (right side): 7 feathers fanning up and out from the shoulder. x = feather, y = outline
+    'vec2 hWing(vec2 p, float t) {',
+    '  float m = 0.0, edge = 0.0;',
+    '  for (int i = 0; i < 7; i++) {',
+    '    float fi = float(i);',
+    '    float ang = -0.15 + fi * 0.2 + 0.08 * sin(t * 1.8 + fi * 0.15);',
+    '    float len = 0.42 + fi * 0.035;',
+    '    vec2 dir = vec2(cos(ang), sin(ang));',
+    '    vec2 rel = p - vec2(0.3, -0.05);',
+    '    float u = clamp(dot(rel, dir) / len, 0.0, 1.0);',
+    '    float w = 0.085 * sqrt(max(0.0, 1.0 - u * u)) + 0.01;',
+    '    float dd = length(rel - dir * u * len);',
+    '    float f = smoothstep(w, w - 0.012, dd);',
+    '    edge = max(edge * (1.0 - f), smoothstep(0.012, 0.0, abs(dd - w)) * (1.0 - m));',
+    '    m = max(m, f);',
+    '  }',
+    '  return vec2(m, edge);',
+    '}',
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  float r = length(q), a = atan(q.y, q.x);',
+    '  float cloud = fbm3(d * 3.5 + vec3(t * 0.06, 0.0, t * 0.03));',
+    '  alb = mix(vec3(0.85, 0.5, 0.12), vec3(1.0, 0.88, 0.6), smoothstep(0.3, 0.75, cloud)) * mix(0.95, 0.6, r);',
+    '  float rays = pow(0.5 + 0.5 * sin(a * 14.0 + t * 0.4), 8.0) * smoothstep(1.0, 0.2, r);',
+    '  emit = vec3(1.0, 0.8, 0.4) * rays * 0.25;',
+    // wings, mirrored left and right
+    '  vec2 wr = hWing(q, t), wl = hWing(vec2(-q.x, q.y), t);',
+    '  float wing = max(wr.x, wl.x), wedge = max(wr.y, wl.y);',
+    '  alb = mix(alb, vec3(1.0, 0.98, 0.92), wing);',
+    '  alb = mix(alb, vec3(0.6, 0.38, 0.08), wedge * 0.8);',
+    '  emit += vec3(1.0, 0.95, 0.8) * wing * 0.15;',
+    // halo
+    '  vec2 hp = (q - vec2(0.0, 0.5 + 0.02 * sin(t * 1.5))) / vec2(0.3, 0.08);',
+    '  float hd = abs(length(hp) - 1.0) * 0.08;',
+    '  emit += vec3(1.0, 0.85, 0.35) * (smoothstep(0.018, 0.006, hd) * 1.6 + exp(-hd * 40.0) * 0.5);',
+    // the infinity sign
+    '  float dl = 9.0;',
+    '  vec2 prev = hLem(0.0);',
+    '  for (int i = 1; i <= 48; i++) {',
+    '    vec2 cur = hLem(float(i) / 48.0 * TAU);',
+    '    dl = min(dl, segd(q - vec2(0.0, 0.02), prev, cur));',
+    '    prev = cur;',
+    '  }',
+    '  float inf = smoothstep(0.045, 0.03, dl), rim = smoothstep(0.06, 0.045, dl) - inf;',
+    '  alb = mix(alb, vec3(0.25, 0.1, 0.0), max(inf, rim));',
+    '  float run = 0.5 + 0.5 * sin(atan(q.y - 0.02, q.x) * 2.0 - t * 3.0);',
+    '  emit = mix(emit, vec3(1.0, 0.6, 0.1) * (1.0 + 0.6 * run), inf);',
+    '  emit = mix(emit, vec3(0.0), rim);',
+    '  gloss = 0.8;',
+    '}'
+  ].join('\n');
+
   // BIG FOOT - a giant glowing footprint stamped into rough, furry stone
   SURF.bigfoot = [
     'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',

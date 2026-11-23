@@ -114,6 +114,12 @@
 
     { id: 'numbers', kind: 'number', name: 'Numbers', special: 'numbers', label: 'Numbers', labelAt: 'banner', glitch: 0.5,
       texture: 'numbers', aura: [1.0, 0.95, 0.7], ink: ['#ffffff', '#1a1030'], fact: '' },
+    { id: 'hagi', kind: 'number', name: 'Heavenly Angel God Infinity', special: 'hagi', label: 'Heavenly Angel God Infinity',
+      labelAt: 'banner', glitch: 0.3, texture: 'hagi', aura: [1.0, 0.9, 0.55], ink: ['#fffdf0', '#4a3500'],
+      fact: 'Built from Numbers. Start with a tower of Numbers that is Numbers tall, and build that tower again Numbers times. ' +
+        'Add Numbers multiplied together Numbers times, raised to the power of Numbers Numbers times. ' +
+        'Then do the same again with tetration (↑↑), pentation (↑↑↑) and hexation (↑↑↑↑). ' +
+        'It beats Numbers and every other ball in the game.' },
 
     // ---- functions: attack only. Input starts at 1 and goes up by one every hit.
     { id: 'f_succ', kind: 'function', fn: 'succ', name: 'Plus One', formula: 'n+1', labelAt: 'center',
@@ -258,7 +264,7 @@
 
   // Numbers' fact card counts every other number ball, so it is rebuilt when the fictional list loads
   MBF.numbersFact = function () {
-    var count = MBF.roster.filter(function (b) { return b.kind === 'number' && b.special !== 'numbers'; }).length;
+    var count = MBF.roster.filter(function (b) { return b.kind === 'number' && b.special !== 'numbers' && b.special !== 'hagi'; }).length;
     var nb = MBF.ballById('numbers');
     var all = MBF.fictional.length ? 'all ' + count.toLocaleString('en-US') + ' of them, ' : '';
     if (nb) nb.fact = 'Take every number in the game (' + all + 'Infinity and every fictional number too) and add them up. Add on all of them multiplied together. ' +
