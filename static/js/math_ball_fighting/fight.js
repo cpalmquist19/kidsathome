@@ -42,6 +42,7 @@
     },
     hyper: function (arrows, x, name) { return { h: { a: arrows, x: x }, name: name }; },
     // growth-class value: class r at input n. Anything in a higher class beats anything lower.
+    //   0.5 REX from expansion on (past Graham's number, below TREE(3))
     //   1 TREE · 2 SCG · 3 Loader · 10 Busy Beaver · 11 Rayo · 11.5 Fish 7 · 12 BIG FOOT · 12.5 Garden
     //   13 Oblivion · 14 Utter Oblivion · 1000 Infinity · 2000 fictional numbers (beyond infinity)
     //   3000 built from every number in the game (Numbers 6, Heavenly Angel God Infinity 12),
@@ -100,7 +101,7 @@
     }
   };
 
-  var CLASS_NAMES = { 1000: '∞', 2000: 'Fictional', 3000: 'Numbers', 1: 'TREE', 2: 'SCG-class', 3: 'Loader-class', 10: 'BB', 11: 'Rayo', 11.5: 'F₇', 12: 'FOOT', 12.5: 'Garden f', 13: 'Oblivion', 14: 'Utter Oblivion' };
+  var CLASS_NAMES = { 0.5: 'REX', 1000: '∞', 2000: 'Fictional', 3000: 'Numbers', 1: 'TREE', 2: 'SCG-class', 3: 'Loader-class', 10: 'BB', 11: 'Rayo', 11.5: 'F₇', 12: 'FOOT', 12.5: 'Garden f', 13: 'Oblivion', 14: 'Utter Oblivion' };
   var SUB = '₀₁₂₃₄₅₆₇₈₉';
   // Infinity: no number of finite hits ever reaches it. Fictional numbers sit above it.
   MBF.INFINITY = { g: { r: 1000, n: { b: 0n } }, name: '∞' };
@@ -152,6 +153,7 @@
     if (ball.special === 'loader') return V.cls(3, { b: 5n }, "Loader's number");   // D^5(99)
     if (ball.special === 'rayo') return V.cls(11, { b: 10n ** 100n }, "Rayo's number");
     if (ball.special === 'gotch') return MBF.GOTCH;
+    if (ball.special === 'bb6') return MBF.fnValue('bb', 6);          // more than 2↑↑↑5
     if (ball.special === 'bigfoot') return V.cls(12, { b: 1n }, 'BIG FOOT');
     if (ball.special === 'sscg3') return sscg(3);
     if (ball.special === 'fish7') return fish7(63);
@@ -236,6 +238,7 @@
       case 'fish7': return fish7(n);
       case 'garden': return gardenF(n);
       case 'scg': return scg(n);
+      case 'rex': return rex(n);
     }
     throw new Error('unknown function ' + fn);
   };
@@ -291,6 +294,67 @@
     while (V.cmp(tower2(hi / scale), hp) < 0) { hi *= 2; if (hi > 1e12) return null; }
     while (hi - lo > 1) { var mid = Math.floor((lo + hi) / 2); if (V.cmp(tower2(mid / scale), hp) >= 0) hi = mid; else lo = mid; }
     return { b: BigInt(hi) };
+  }
+
+  // REX(n) climbs the operation ladder one rung per hit, starting from 75:
+  //   REX(n) = (REX(n-1) op_n REX(n-1)) × 75
+  // The ladder is every named operation, in order (94 rungs):
+  //  - named hyperoperations: addition (1) ... decation (10), undecation ... vigintation (20),
+  //    trigintation (30), centation (100), chiliation (1,000), myriation (10,000)
+  //  - then the named operations past all hyperoperations, from demonin.com's "Hyperoperator Names"
+  //    list (Bowers, Saibian and others): megation (f_ω), expansion (f_ω+1), explosion (f_ω·2+1),
+  //    detonation, ... megamegamegamegation, and gammation (f_Γ0), where the naming scheme ends.
+  // Past the top rung it keeps applying gammation.
+  // Sizes: from tetration on, x op x is about 10 with one more arrow than op (the ×75 vanishes), so
+  // hyperoperation h is stored as 10 ↑^(h-1) 3.25 (REX(5) just passes G(1)). Megation of x is
+  // x ↑^(x-2) x, so its arrow count is the previous REX (that passes Moser's number and G(2)).
+  // Expansion of x nests that x times, past Graham's number's 64; everything from expansion on
+  // sits in its own class (0.5) between Graham's number and TREE(3), ordered by rung.
+  var REX_HYPER = [[1, 'addition'], [2, 'multiplication'], [3, 'exponentiation'], [4, 'tetration'],
+    [5, 'pentation'], [6, 'hexation'], [7, 'heptation'], [8, 'octation'], [9, 'enneation'], [10, 'decation'],
+    [11, 'undecation'], [12, 'duodecation'], [13, 'tredecation'], [14, 'quattuordecation'], [15, 'quindecation'],
+    [16, 'sexdecation'], [17, 'septendecation'], [18, 'octodecation'], [19, 'novemdecation'], [20, 'vigintation'],
+    [30, 'trigintation'], [100, 'centation'], [1000, 'chiliation'], [10000, 'myriation']];
+  var REX_BEYOND = ['megation', 'mega-addition (expansion)', 'mega-multiplication (multiexpansion)',
+    'mega-exponentiation (powerexpansion)', 'mega-tetration (expandotetration)', 'mega-pentation', 'mega-hexation',
+    'duomegation', 'duomega-addition (explosion)', 'duomega-multiplication (multiexplosion)',
+    'duomega-exponentiation (powerexplosion)', 'duomega-tetration (explodotetration)',
+    'trimegation', 'trimega-addition (detonation)', 'trimega-multiplication', 'trimega-exponentiation', 'trimega-tetration',
+    'quadrimegation', 'quadrimega-addition (pentonation)', 'quintimegation', 'quintimega-addition (hexonation)',
+    'sextimegation', 'sextimega-addition (heptonation)', 'septimegation', 'septimega-addition (octonation)',
+    'octimegation', 'octimega-addition (ennonation)', 'nonimegation', 'nonimega-addition (deconation)',
+    'expomegation', 'expomega-addition (megotion)', 'expomega-multiplication (multimegotion)',
+    'expomega-exponentiation (powermegotion)', 'expomega-tetration (megotetration)', 'expomega-megation',
+    'expomega-mega-addition (megoexpansion)', 'expomega-duomegation', 'expoduomegation',
+    'expoduomega-addition (gigotion)', 'expotrimegation', 'expotrimega-addition (terotion)', 'expoquadrimegation',
+    'expoquadrimega-addition (petotion)', 'duoexpomegation', 'duoexpomega-addition (powiaination)',
+    'duoexpoduomegation', 'triexpomegation', 'quadriexpomegation', 'quintiexpomegation',
+    'tetramegation', 'tetra-by-duomegation', 'tetra-by-expomegation', 'tetra-by-duoexpomegation',
+    'duotetramegation', 'tritetramegation', 'quadritetramegation', 'quintitetramegation',
+    'pentamegation (epsilonation)', 'pentaduomegation', 'duopentamegation', 'hexamegation (zetation)',
+    'heptamegation (etation)', 'megamegation', 'duomegamegation', 'expomegamegation', 'tetramegamegation',
+    'pentamegamegation', 'megamegamegation', 'megamegamegamegation', 'gammation'];
+  MBF.REX_OPS = REX_HYPER.map(function (h) { return h[1]; }).concat(REX_BEYOND);
+  MBF.REX_HYPER_RUNGS = REX_HYPER.length;                    // rungs 1-24 are hyperoperations
+  var REX_TOP = MBF.REX_OPS.length;
+  var rexCache = [];
+  function rex(n) {
+    if (rexCache[n]) return rexCache[n];
+    var v, k = Math.min(n, REX_TOP), op = MBF.REX_OPS[k - 1], p = 'REX(' + (n - 1) + ')';
+    if (n === 1) v = { b: 11250n };                          // (75 + 75) × 75
+    else if (n === 2) v = { b: 11250n * 11250n * 75n };      // 9,492,187,500
+    else if (n === 3) {                                      // x^x × 75
+      var x = 9492187500;
+      v = { m: BM.fromLog10(x * Math.log10(x) + Math.log10(75)) };
+    } else if (k <= REX_HYPER.length) {
+      var h = REX_HYPER[k - 1][0];
+      v = V.hyper({ b: BigInt(h - 1) }, 3.25, op + ': ' + p + ' ' + arrows(h - 2) + ' ' + p + ' × 75');
+    } else if (k === REX_HYPER.length + 1) {
+      v = V.hyper(rex(n - 1), 3.25, op + ': ' + p + ' ↑^' + p + ' ' + p + ' × 75');
+    } else {
+      v = V.cls(0.5, { b: BigInt(n) }, op + ': ' + p + ' ' + op.split(' ')[0] + ' ' + p + ' × 75');
+    }
+    return (rexCache[n] = v);
   }
 
   // Fish number 7 = F7^63(10^100): Fish's F7 function (an extension of Rayo's) applied 63
@@ -400,7 +464,8 @@
       return hp;
     }
     if (fn === 'ack' || fn === 'graham' || fn === 'tree' || fn === 'bb' || fn === 'sscg' || fn === 'scg' ||
-        fn === 'arrows' || fn === 'tet' || fn === 'circle' || fn === 'loaderD' || fn === 'fish7' || fn === 'garden') {
+        fn === 'arrows' || fn === 'tet' || fn === 'circle' || fn === 'loaderD' || fn === 'fish7' || fn === 'garden' ||
+        fn === 'rex') {
       // these explode so fast that the total is just the latest hit: walk forward
       var dealt = V.zero();
       for (var k = 1; k <= 200; k++) {
@@ -644,6 +709,83 @@
     };
 
     return f;
+  };
+
+  // ---------------------------------------------------------------- the defender fights back
+  // With the "Defender fights back" option, each defender attack does the defender's value as
+  // damage to the attacker. A number attacker's health is its value; a function attacker's health
+  // is its current value f(n), so it gets tougher as it climbs. Fictional vs fictional uses the
+  // same close-fight rule as the main fight, the other way round.
+  MBF.createCounter = function (f) {
+    var att = f.attacker, def = f.defender;
+    var dmg = MBF.valueOf(def);
+    var fx = att.fictional && def.fictional ? MBF.fictionalHits(def, att) : -1;
+    var c = { damage: dmg, dealt: V.zero(), hits: 0n, over: false };
+
+    c.hp = function () { return f.isFunction ? f.damage() : MBF.valueOf(att); };   // current health
+
+    c.hit = function () {
+      if (c.over) return null;
+      c.dealt = V.add(c.dealt, dmg);
+      c.hits += 1n;
+      var ko = fx >= 0 ? fx > 0 && c.hits >= BigInt(fx) : V.cmp(c.dealt, c.hp()) >= 0;
+      if (ko) c.over = true;
+      var imp = MBF.impactOf(dmg, ko);
+      return { damage: dmg, ko: ko, level: imp.level, t: imp.t };
+    };
+
+    // health left as a fraction 0..1
+    c.fraction = function () {
+      if (c.over) return 0;
+      if (fx >= 0) return fx > 0 ? 1 - Number(c.hits) / fx : 1;
+      var hp = c.hp();
+      if (c.dealt.b === 0n) return 1;
+      if (V.isExact(hp) && V.isExact(c.dealt)) {
+        var rem = hp.b - c.dealt.b;
+        if (rem <= 0n) return 0;
+        if (BM.log10Big(hp.b) < 15) return Number(rem) / Number(hp.b);
+        return Number((rem * 1000000n) / hp.b) / 1e6;
+      }
+      var lh = V.log10(hp), ld = V.log10(c.dealt);
+      if (!isFinite(lh)) return V.cmp(c.dealt, hp) < 0 ? 1 : 0;
+      var d = ld - lh;
+      if (d < -9) return 1;
+      return Math.max(0, 1 - Math.pow(10, d));
+    };
+
+    // "HP 7 / 10", "HP: Googol", "HP: Googol − 42"
+    c.text = function () {
+      if (c.over) return 'HP 0';
+      var hp = c.hp();
+      if (fx >= 0) return fx > 0 ? 'HP: ' + Math.round(100 * c.fraction()) + '% left' : 'HP: untouchable';
+      if (V.isExact(hp) && V.isExact(c.dealt) && BM.log10Big(hp.b) < 15) {
+        var rem = hp.b - c.dealt.b;
+        return 'HP ' + MBF.fmt(rem > 0n ? rem : 0n) + ' / ' + MBF.fmt(hp.b);
+      }
+      if (c.dealt.b === 0n) return 'HP: ' + V.fmt(hp);
+      var fr = c.fraction();
+      if (fr > 0.999) return 'HP: ' + V.fmt(hp) + ' − ' + V.fmt(c.dealt);
+      return 'HP: ' + Math.max(1, Math.round(100 * fr)) + '% of ' + V.fmt(hp);
+    };
+
+    // defender attacks still needed (numbers only: a function's health keeps growing)
+    c.attacksToKo = function () {
+      if (c.over) return V.zero();
+      if (fx >= 0) return fx > 0 ? { b: BigInt(fx) - c.hits } : MBF.INFINITY;
+      if (f.isFunction) return null;
+      if (def.special === 'rayo' && att.special === 'gotch') return MBF.RAYO_POW_RAYO;   // (R^R × R) ÷ R
+      var hp = c.hp();
+      if (V.isExact(hp) && V.isExact(dmg)) {
+        var left = hp.b - (V.isExact(c.dealt) ? c.dealt.b : 0n);
+        return { b: left <= 0n ? 1n : (left + dmg.b - 1n) / dmg.b };
+      }
+      if (V.cmp(V.add(c.dealt, dmg), hp) >= 0) return { b: 1n };
+      if (unreachable(hp) && !unreachable(dmg)) return MBF.INFINITY;
+      var lh = V.log10(hp), ld = V.log10(dmg);
+      if (isFinite(lh) && isFinite(ld)) return V.lg10(lh - ld);
+      return hp;
+    };
+    return c;
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = MBF;

@@ -144,6 +144,18 @@ Effects stack.
      tetration, pentation and hexation. Class 3000 at n = 12 (six steps past Numbers), beating Numbers and
      everything else. Texture: golden heaven light with rays, a halo, flapping feathered wings and a
      glowing ∞. Anything in class 3000+ goes in the "Beyond every number" picker category.
+   - Added after: the REX function. It climbs the operation ladder one rung per hit, starting from 75:
+     REX(n) = (REX(n-1) op_n REX(n-1)) × 75, through every named operation (94 rungs): the named
+     hyperoperations addition ... decation, undecation ... vigintation, trigintation, centation, chiliation,
+     myriation (10,000th), then the named operations past them from demonin.com's "Hyperoperator Names"
+     list: megation (f_ω), expansion, explosion, detonation, ... megamegamegamegation, gammation (f_Γ0,
+     where that naming scheme ends). Then it keeps gammating.
+     REX(1) = 11,250, REX(2) = 9,492,187,500, REX(3) = about 10^(9.47 × 10¹⁰); hyperoperation h is stored
+     as 10 ↑^(h-1) 3.25 (REX(5) just passes G(1)); megation uses the previous REX as its arrow count
+     (passes Moser's number and G(2) on hit 25); expansion on (hit 26, past Graham's number) is a new
+     class 0.5 between Graham's number and TREE(3), ordered by rung.
+     Texture: a golden ladder on purple scales, one more lit rung per hit with its sign (+ × ^ ↑↑...),
+     cyan ω rungs past the hyperoperations, and a crown at gammation.
    - Added after: Infinity (∞, a glowing lemniscate) and 2,645 fictional numbers from the Fictional Googology
      Wiki (static/data/math_ball_fighting/fictional.json, names only, CC BY-SA credit in the menu). Of the
      category's 2,697 entries, 30 were not numbers (user pages, templates, categories) and 22 were left out as
@@ -168,5 +180,19 @@ Effects stack.
      the wiki calls equal take 10 hits either way, and a smaller number can never win. Fictional balls
      are drawn a little bigger the higher their size rank.
 5. Phase 5:
+   - BB(6) as a number (Busy Beaver 6, proven in 2025 to be more than 2↑↑↑5): the same value as the
+     BB(n) function's 6th hit, between googolplexplex and Moser's number. Tape texture with a gold aura.
+   - "Defender fights back" option (menu toggle, set before the fight; changing it restarts). Every
+     ~2.5-3 s the defender winds up a visible telegraph and fires its own named attack (defense.js);
+     each attack lands at most one hit, doing the defender's value as damage. A number attacker's health
+     is its value; a function attacker's health is its current value f(n), so it toughens as it climbs;
+     fictional vs fictional uses the close-fight rule the other way (fight.js createCounter). The
+     attacker gets a health bar, gets knocked back when hit, and can be K.O.'d (its own K.O. card).
+     Attack kinds: beams (from points on the ball), projectile volleys (fans, rings, homing), limited-range
+     shockwaves, lightning, and a column of light from the sky. Rayo's Number fires an EYE BEAM from its
+     eye and Gotchrognathicus a TRIPLE EYE BEAM, one from each eye; every real number has its own attack
+     (e.g. Pearl Shot, Ten-Shot Ring, Googol Wave, BIG STOMP, Digit Storm, HEAVENLY SMITE) and fictional
+     numbers get one of four by name. Fight mode locks the aim ~0.3 s before firing so you can dodge;
+     Watch mode aims at the last moment and leads the target.
    - Sound was built (commit 480202f) and then removed: not wanted. audio.js is in git history.
    - Shorts (9:16) layout, Calm-effects tuning, polish.

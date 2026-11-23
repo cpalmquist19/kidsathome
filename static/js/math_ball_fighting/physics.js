@@ -47,7 +47,7 @@
         w.att.vx = dx / L * s + (-dy / L) * s * 0.35 * side;
         w.att.vy = dy / L * s + (dx / L) * s * 0.35 * side;
       }
-      w.cooldown = 0; w.dashCd = 0; w.wanderT = 0; w.defGone = false;
+      w.cooldown = 0; w.dashCd = 0; w.wanderT = 0; w.defGone = false; w.attGone = false;
     };
 
     function clampInside(b) {
@@ -94,7 +94,13 @@
       roll(d);
       if (!w.wander) { d.wx = 0.12; d.wy = 0.35; d.wz = 0.05; }   // slow idle turn
 
-      // ---- attacker
+      // ---- attacker (knocked out by the defender: it just drifts to a stop)
+      if (w.attGone) {
+        var st = Math.exp(-dt * 4);
+        a.vx *= st; a.vy *= st; a.x += a.vx * dt; a.y += a.vy * dt;
+        roll(a);
+        return hits;
+      }
       if (w.mode === 'watch') {
         var gx = d.x - a.x, gy = d.y - a.y, gl = Math.hypot(gx, gy) || 1;
         var g = 1400 * m;

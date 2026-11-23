@@ -68,6 +68,11 @@
       label: 'Googolplexplex', labelAt: 'banner',
       texture: 'galaxies', aura: [0.45, 0.75, 1.0], ink: ['#e6f2ff', '#061a3d'],
       fact: '1 followed by a googolplex zeros. Like a galaxy made of galaxies.' },
+    { id: 'bb6', kind: 'number', name: 'BB(6)', special: 'bb6', label: 'BB(6)', labelAt: 'banner', glitch: 0.3,
+      texture: 'tape', aura: [1.0, 0.8, 0.3], ink: ['#fff4dc', '#3d2400'],
+      fact: 'Busy Beaver 6: the most steps a computer with only 6 states can run and still stop. Nobody knows it exactly, ' +
+        'but in 2025 it was proven to be more than 2↑↑↑5 - a tower of 2s so tall that its height is itself a tower of 2s. ' +
+        "Bigger than googolplexplex, smaller than Moser's number." },
     { id: 'moser', kind: 'number', name: "Moser's Number", special: 'moser', label: 'Moser', labelAt: 'banner',
       texture: 'moser', aura: [1.0, 0.45, 0.3], ink: ['#fff0ea', '#4a1206'],
       fact: 'Built from shapes inside shapes: triangles, squares and circles. Too tall for any tower of tens you could write.' },
@@ -178,7 +183,14 @@
       fact: "Fish's F₇ applied n times to a googol, one more fish every hit. At n = 63 it is Fish number 7." },
     { id: 'f_garden', kind: 'function', fn: 'garden', name: 'Garden f', formula: 'fⁿ(10↑¹⁰10)', labelAt: 'banner', glitch: 0.7, k: 1,
       texture: 'garden', aura: [0.6, 1.0, 0.55], ink: ['#f0fff0', '#063300'],
-      fact: 'The Large Number Garden function applied n times to 10↑¹⁰10, one more flower every hit. At n = 10 it is the Large Number Garden Number. Its earlier steps are a guess.' }
+      fact: 'The Large Number Garden function applied n times to 10↑¹⁰10, one more flower every hit. At n = 10 it is the Large Number Garden Number. Its earlier steps are a guess.' },
+    { id: 'f_rex', kind: 'function', fn: 'rex', name: 'REX', formula: 'REX(n)', labelAt: 'banner', k: 1,
+      texture: 'rex', aura: [1.0, 0.75, 0.2], ink: ['#fff6dc', '#3a1a00'],
+      fact: 'Climbs the operation ladder one rung every hit, through every operation that has a name (94 rungs): addition, multiplication, ' +
+        'exponentiation, tetration... vigintation, trigintation, centation, chiliation, myriation (the 10,000th), then past all of them: ' +
+        'megation, expansion, explosion, detonation, pentonation... megamegamegamegation, and finally gammation. ' +
+        'Each rung combines the number with itself and then multiplies by 75. REX(1) = (75 + 75) × 75 = 11,250. ' +
+        "It beats Moser's number on hit 25 and Graham's number on hit 26. At the top it keeps gammating." }
   ];
 
   // what a function ball shows for input n
@@ -204,6 +216,7 @@
       case 'garden': return 'f' + s.replace(/[0-9]/g, function (c) { return '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]; }) + '(10↑¹⁰10)';
       case 'fish7': return 'F₇' + s.replace(/[0-9]/g, function (c) { return '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]; }) + '(10¹⁰⁰)';
       case 'scg': return 'SCG(' + s + ')';
+      case 'rex': return 'REX(' + s + ')';
     }
     return ball.formula;
   };

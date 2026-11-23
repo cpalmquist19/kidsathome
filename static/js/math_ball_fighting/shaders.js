@@ -703,6 +703,65 @@
     '}'
   ].join('\n');
 
+  // REX - the operation ladder: a golden ladder on royal purple scales. Rung j carries its sign
+  // (+, ×, ^, then up-arrows; past the 24 hyperoperations an ω in cyan); uK is the current rung (one
+  // per hit), which sits in the middle and pulses, rungs below it glow, rungs above are dark.
+  // At rung 94 (gammation, the last named operation) a crown appears.
+  SURF.rex = SEGD + '\n' + [
+    'float rArrow(vec2 p) { return min(segd(p, vec2(0.0, -0.05), vec2(0.0, 0.05)), min(segd(p, vec2(-0.03, 0.02), vec2(0.0, 0.05)), segd(p, vec2(0.03, 0.02), vec2(0.0, 0.05)))); }',
+    'float rSign(vec2 p, float j) {',
+    '  if (j < 1.5) return min(segd(p, vec2(-0.05, 0.0), vec2(0.05, 0.0)), segd(p, vec2(0.0, -0.05), vec2(0.0, 0.05)));',
+    '  if (j < 2.5) return min(segd(p, vec2(-0.04, -0.04), vec2(0.04, 0.04)), segd(p, vec2(-0.04, 0.04), vec2(0.04, -0.04)));',
+    '  if (j < 3.5) return min(segd(p, vec2(-0.05, -0.02), vec2(0.0, 0.04)), segd(p, vec2(0.0, 0.04), vec2(0.05, -0.02)));',
+    '  if (j > 24.5) return min(min(segd(p, vec2(-0.065, 0.04), vec2(-0.04, -0.04)), segd(p, vec2(-0.04, -0.04), vec2(0.0, 0.01))),',
+    '    min(segd(p, vec2(0.0, 0.01), vec2(0.04, -0.04)), segd(p, vec2(0.04, -0.04), vec2(0.065, 0.04))));',   // ω
+    '  float na = min(j - 2.0, 6.0), d = 9.0;',                     // up to 6 arrows drawn side by side
+    '  for (int i = 0; i < 6; i++) {',
+    '    float fi = float(i);',
+    '    if (fi >= na) break;',
+    '    d = min(d, rArrow(p - vec2((fi - (na - 1.0) * 0.5) * 0.075, 0.0)));',
+    '  }',
+    '  return d;',
+    '}',
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  vec3 v = voronoi3(d * 8.0);',
+    '  float edge = smoothstep(0.0, 0.06, v.y);',
+    '  alb = mix(vec3(0.12, 0.03, 0.2), vec3(0.35, 0.1, 0.45), clamp(1.0 - v.x * 1.3, 0.0, 1.0)) * (0.6 + 0.5 * v.z) * edge;',
+    '  emit = vec3(1.0, 0.7, 0.2) * (1.0 - edge) * 0.12;',
+    '  float k = max(uK, 1.0), top = 94.0, gap = 0.3;',
+    '  float climbed = min(k, top);',
+    '  float y0 = (climbed - 1.0) * gap;',                           // ladder offset: the current rung at y = 0
+    '  float rail = min(abs(abs(q.x) - 0.32), 9.0);',
+    '  float lyTop = (top - 1.0) * gap - y0 + 0.2, lyBot = -y0 - 0.2;',
+    '  float onLadder = step(lyBot, q.y) * step(q.y, lyTop);',
+    '  float railM = smoothstep(0.03, 0.015, rail) * onLadder;',
+    '  vec3 gold = vec3(1.0, 0.75, 0.25);',
+    '  alb = mix(alb, vec3(0.35, 0.22, 0.05), railM);',
+    '  emit += gold * railM * 0.5;',
+    '  float jf = floor((q.y + y0) / gap + 0.5);',                  // nearest rung index - 1
+    '  float j = jf + 1.0;',
+    '  if (j >= 1.0 && j <= top) {',
+    '    float ry = jf * gap - y0;',
+    '    float rung = smoothstep(0.022, 0.01, abs(q.y - ry)) * step(abs(q.x), 0.32);',
+    '    float sgn = smoothstep(0.018, 0.008, rSign(q - vec2(0.0, ry + 0.1), j));',
+    '    float lit = j < climbed - 0.5 ? 0.8 : j < climbed + 0.5 ? 1.6 + 0.6 * sin(t * 6.0) : 0.08;',
+    '    alb = mix(alb, vec3(0.3, 0.2, 0.05), rung);',
+    '    vec3 rc = j > 24.5 ? vec3(0.3, 0.9, 1.0) : gold;',            // beyond the hyperoperations
+    '    emit += rc * rung * lit + mix(vec3(1.0, 0.95, 0.8), vec3(0.7, 1.0, 1.0), step(24.5, j)) * sgn * lit;',
+    '  }',
+    // the crown at the top of the ladder, once it is reached
+    '  vec2 cp = q - vec2(0.0, (top - 1.0) * gap - y0 + 0.32);',
+    '  float tri = 1.0 - abs(fract(cp.x / 0.1 + 0.5) - 0.5) * 2.0;',      // five points
+    '  float crownD = max(max(abs(cp.x) - 0.2, -0.09 - cp.y), cp.y - 0.11 * tri);',
+    '  float crown = smoothstep(0.008, 0.0, crownD) * (1.0 - 0.5 * smoothstep(0.012, 0.0, abs(cp.y + 0.05)));',
+    '  float jewel = smoothstep(0.025, 0.015, length(cp - vec2(0.0, -0.045)));',
+    '  float shown = step(top - 0.5, k);',
+    '  emit += (gold * 1.4 * crown + vec3(1.0, 0.1, 0.2) * jewel * 1.5) * shown;',
+    '  alb = mix(alb, vec3(0.3, 0.2, 0.0), crown * shown);',
+    '  gloss = 0.8;',
+    '}'
+  ].join('\n');
+
   // BIG FOOT - a giant glowing footprint stamped into rough, furry stone
   SURF.bigfoot = [
     'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
@@ -1194,6 +1253,25 @@
     '  float core = exp(-x * x * 18.0);',
     '  float glow = exp(-x * x * 2.5) * 0.5;',
     '  vec3 c = (vec3(1.0) * core + uColor * glow) * uAlpha;',
+    '  gl_FragColor = vec4(c, 0.0);',
+    '}'
+  ].join('\n');
+
+  // ------------------------------------------------------------------ beams (defender attacks)
+  // A straight strip: uv.x runs along the beam, uv.y across it. White-hot core, coloured glow,
+  // energy streaks running outward, rounded start.
+  S.beamFragment = [
+    'precision highp float;',
+    'varying vec2 vUv;',
+    'uniform vec3 uColor;',
+    'uniform float uAlpha, uTime, uLen;',
+    'void main() {',
+    '  float x = (vUv.y - 0.5) * 2.0;',
+    '  float core = exp(-x * x * 9.0);',
+    '  float glow = exp(-x * x * 1.8) * 0.8;',
+    '  float streak = 0.75 + 0.25 * sin(vUv.x * uLen * 0.08 - uTime * 45.0 + x * 3.0);',
+    '  float cap = smoothstep(0.0, 0.015, vUv.x) * smoothstep(1.0, 0.97, vUv.x);',
+    '  vec3 c = (vec3(1.0) * core * 1.2 + uColor * glow * 1.4) * streak * cap * uAlpha;',
     '  gl_FragColor = vec4(c, 0.0);',
     '}'
   ].join('\n');

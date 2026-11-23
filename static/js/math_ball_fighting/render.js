@@ -422,6 +422,38 @@
       }
     }
 
+    // ------------------------------------------------------------ beams
+    // Held beams for defender attacks: R.fx.beam() hands out a strip that the caller moves each
+    // frame with set(x0, y0, x1, y1, width), fades with alpha(a) and gives back with free().
+    var beams = [];
+    for (var bmi = 0; bmi < 16; bmi++) {
+      var beu = { uColor: { value: new THREE.Color(1, 1, 1) }, uAlpha: { value: 0 }, uTime: { value: 0 }, uLen: { value: 100 } };
+      var bem = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
+        uniforms: beu, vertexShader: S.vertex, fragmentShader: S.beamFragment,
+        transparent: true, premultipliedAlpha: true, blending: THREE.AdditiveBlending,
+        depthTest: false, depthWrite: false, side: THREE.DoubleSide
+      }));
+      bem.renderOrder = 4; bem.visible = false; bem.frustumCulled = false;
+      scene.add(bem);
+      beams.push({ mesh: bem, u: beu, used: false });
+    }
+    function beamHandle(b) {
+      return {
+        set: function (x0, y0, x1, y1, width) {
+          var dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1;
+          b.mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0);
+          b.mesh.rotation.z = Math.atan2(dy, dx);
+          b.mesh.scale.set(L, Math.max(1, width), 1);
+          b.u.uLen.value = L;
+          b.mesh.visible = true;
+        },
+        alpha: function (a) { b.u.uAlpha.value = a; },
+        color: function (c) { b.u.uColor.value.setRGB(c[0], c[1], c[2]); },
+        free: function () { b.used = false; b.mesh.visible = false; }
+      };
+    }
+    function updateBeams() { for (var i = 0; i < beams.length; i++) beams[i].u.uTime.value = R.time; }
+
     // ------------------------------------------------------------ shake / punch / flash
     var trauma = 0, punch = 0, flashAmt = 0, pulse = 0, ca = 0, shatter = 0;
     var swirl = 0, kaleido = 0, feedback = 0, glitch = 0, dream = 0;
@@ -514,6 +546,21 @@
         b.mesh.visible = true;
         shapeBolt(b);
       },
+      // one glowing dot (projectile heads, charge-up glows)
+      dot: function (x, y, vx, vy, life, size, color, grow) {
+        spawn(x, y, vx, vy, life, size, grow || 0, 0, color[0], color[1], color[2]);
+      },
+      // a held beam (see beamHandle); null if all are in use
+      beam: function (color) {
+        for (var i = 0; i < beams.length; i++) {
+          if (beams[i].used) continue;
+          beams[i].used = true;
+          var h = beamHandle(beams[i]);
+          h.color(color); h.alpha(0);
+          return h;
+        }
+        return null;
+      },
       // glass shards flying out from (x, y) along (nx, ny) with spread
       shards: function (x, y, nx, ny, count, speed, size, spread) {
         var base = Math.atan2(ny, nx);
@@ -541,6 +588,7 @@
       updateRings(dt);
       updateBolts(dt);
       updateShards(dt);
+      updateBeams();
       ca *= Math.exp(-dt * 4);
       shatter *= Math.exp(-dt * 2.6);
       if (shatter < 0.002) shatter = 0;

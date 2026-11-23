@@ -4,7 +4,7 @@
  * fight.js owns the rules, physics.js moves the balls, render.js draws them.
  * This file owns the menu, HUD, impact effects and the main loop.
  *
- * URL options (handy for testing): ?a=n1&d=n1000&mode=watch|fight&go=1&speed=4
+ * URL options (handy for testing): ?a=n1&d=n1000&mode=watch|fight&counter=0|1&go=1&speed=4
  */
 (function (root) {
   'use strict';
@@ -19,7 +19,7 @@
 
   // ------------------------------------------------------------ settings
   var SAVE_KEY = 'mbf.settings.v1';
-  var settings = { att: 'n1', def: 'n1', mode: 'watch', wander: 0, calm: reduceMotion ? 1 : 0 };
+  var settings = { att: 'n1', def: 'n1', mode: 'watch', wander: 0, calm: reduceMotion ? 1 : 0, counter: 0 };
   try {
     var saved = JSON.parse(root.localStorage.getItem(SAVE_KEY) || 'null');
     if (saved) for (var k in settings) if (saved[k] !== undefined) settings[k] = saved[k];
@@ -28,6 +28,7 @@
   if (query('a') && (MBF.ballById(query('a')) || /^fx/.test(query('a')))) settings.att = query('a');
   if (query('d') && (MBF.ballById(query('d')) || /^fx/.test(query('d')))) settings.def = query('d');
   if (query('mode') === 'watch' || query('mode') === 'fight') settings.mode = query('mode');
+  if (query('counter') === '0' || query('counter') === '1') settings.counter = Number(query('counter'));
   // fictional ids (fx...) only exist once their data file has loaded
   if (!MBF.ballById(settings.att) && !/^fx/.test(settings.att)) settings.att = 'n1';
   if (!MBF.ballById(settings.def) && !/^fx/.test(settings.def)) settings.def = 'n1';
@@ -63,6 +64,8 @@
   var hitTimes = [], fightStart = 0, lastFx = -1, lastShatter = -1, lastWarp = -1, lastTrip = -1, lastGlitch = -1, lastDream = -1, flashTimes = [];
   var labelDue = false, lastLabel = 0, koAt = 0;
   var hudDirty = true, waitT = 0;
+  var counter = null, defense = null;   // "Defender fights back": the reverse fight and the defender's attacks
+  var loser = 'def', attFade = 1, lastAnnounce = 0;
 
   // Ball size comes from its rank among the numbers (smallest 0 .. biggest 1).
   // Function balls are a medium size whatever their current value.
@@ -154,7 +157,7 @@
   function resume() {
     if (phase !== 'paused') return;
     var mode = settings.mode;
-    if (mode !== world.mode) { startFight(); return; }   // mode changed: restart
+    if (mode !== world.mode || !!settings.counter !== world.counterOn) { startFight(); return; }   // mode or fights-back changed: restart
     closeMenu();
     phase = pausedFrom;
     setFightingUi();
@@ -194,12 +197,26 @@
     if (!MBF.canFight(a, d).ok) return;
     if (attV) attV.dispose();
     if (defV) defV.dispose();
+    if (defense) defense.stop();
     fight = MBF.createFight(a, d);
     world = MBF.createWorld({ W: R.W, H: R.H, mode: settings.mode, wander: !!settings.wander });
+    world.counterOn = !!settings.counter;
     var r = radii();
     world.place(r.a, r.d);
     defV = R.makeBall(d, r.d);
     attV = R.makeBall(a, r.a);
+    loser = 'def'; attFade = 1;
+    counter = world.counterOn ? MBF.createCounter(fight) : null;
+    defense = counter ? MBF.createDefense({
+      R: R, world: world, ball: d, defV: defV, mode: settings.mode, calm: !!settings.calm,
+      onAnnounce: function (name, x, y) {
+        var now = performance.now();                  // at high speeds, don't bury the screen in names
+        if (now - lastAnnounce < 700) return;
+        lastAnnounce = now;
+        damageNumber(name + '!', x, y, 2, 0.5, false, 'atk');
+      }
+    }) : null;
+    $('att-hp').classList.toggle('on', !!counter);
     attQ.setFromEuler(new THREE.Euler(Math.random() * 6, Math.random() * 6, 0));
     defQ.setFromEuler(new THREE.Euler(0.3, -0.4, 0));
     defFade = 1; hitStop = 0; slowT = 0; koT = 0;
@@ -259,6 +276,13 @@
       var h = fight.hits === 1n ? '1 hit' : MBF.fmt(fight.hits) + ' hits';
       $('stat-hits').textContent = fight.over ? h + ' · K.O.!'
         : h + ' · Hits to K.O.: ' + MBF.V.fmt(fight.hitsToKo());
+      if (counter) {
+        $('att-hp-fill').style.transform = 'scaleX(' + counter.fraction() + ')';
+        $('att-hp-text').textContent = counter.text();
+        var left = counter.attacksToKo();
+        $('att-threat').textContent = counter.over ? 'Knocked out!' : fight.defender.name + ' uses ' + defense.name +
+          (left ? ' · Attacks to K.O. you: ' + MBF.V.fmt(left) : ' · your health grows every hit');
+      }
     }
     if (hudDirty || waitT <= 0) {
       var rate = hitsPerSecond();
@@ -279,10 +303,10 @@
   }
 
   var dmgLayer = $('dmg');
-  function damageNumber(text, x, y, level, t, ko) {
+  function damageNumber(text, x, y, level, t, ko, cls) {
     while (dmgLayer.childNodes.length > 14) dmgLayer.removeChild(dmgLayer.firstChild);
     var el = document.createElement('div');
-    el.className = 'dn' + (ko ? ' ko' : '');
+    el.className = 'dn' + (ko ? ' ko' : '') + (cls ? ' ' + cls : '');
     el.textContent = text;
     el.style.left = (R.W / 2 + x) + 'px';
     el.style.top = (R.H / 2 - y) + 'px';
@@ -396,9 +420,9 @@
     }
   }
 
-  // bolts from the hit point crawling over the defender's surface
-  function lightningBurst(ev, count, color, widthK, calm) {
-    var m = world.scale(), D = world.def, base = Math.atan2(ev.ny, ev.nx);
+  // bolts from the hit point crawling over the defender's (or a knocked-out attacker's) surface
+  function lightningBurst(ev, count, color, widthK, calm, body) {
+    var m = world.scale(), D = body || world.def, base = Math.atan2(ev.ny, ev.nx);
     for (var i = 0; i < count; i++) {
       var ang = base + (Math.random() - 0.5) * 2.6;
       var rr = D.r * (0.85 + Math.random() * 0.45);
@@ -407,12 +431,17 @@
     }
   }
 
-  function knockout(ev, res) {
+  // who = 'def' (the attacker won) or 'att' (the defender fought back and won)
+  function knockout(ev, res, who) {
     var now = performance.now();
-    var a = fight.attacker, d = fight.defender;
+    loser = who || 'def';
+    var byAtt = loser === 'def';
+    var a = byAtt ? fight.attacker : fight.defender, d = byAtt ? fight.defender : fight.attacker;   // a = winner, d = loser
+    var L = byAtt ? world.def : world.att;
     var m = world.scale(), calm = !!settings.calm;
     var s = res.level + res.t;
-    var dx = world.def.x, dy = world.def.y, dr = world.def.r;
+    var dx = L.x, dy = L.y, dr = L.r;
+    if (defense) defense.stop();
     attV.boing(0.25); defV.boing(0.2);
     slowT = calm ? 0.4 : 0.9;
     hitStop = 0.12;
@@ -428,7 +457,7 @@
     // bigger K.O.s borrow the higher-level effects
     if (res.level >= 4) {
       R.fx.aberration(calm ? 0.4 : 1.2);
-      lightningBurst(ev, calm ? 2 : 6, a.aura, 1.4, calm);
+      lightningBurst(ev, calm ? 2 : 6, a.aura, 1.4, calm, L);
     }
     if (res.level >= 5) {
       R.fx.shatter(calm ? 0.45 : 1.0, dx, dy);
@@ -449,9 +478,10 @@
     }
     if (res.level >= 8) R.fx.glitch(calm ? 0.2 : 1);
     if (res.level >= 9) R.fx.dream(calm ? 0.3 : 1.2);
-    damageNumber('-' + MBF.V.fmt(res.damage), ev.x + ev.nx * 26 * m, ev.y + ev.ny * 26 * m + 18 * m, Math.min(res.level, 4), res.t, false);
+    damageNumber('-' + MBF.V.fmt(res.damage), ev.x + ev.nx * 26 * m, ev.y + ev.ny * 26 * m + 18 * m, Math.min(res.level, 4), res.t, false,
+      byAtt ? '' : 'hurt');
     damageNumber('K.O.!', dx, dy + dr * 0.2, Math.min(res.level, 3), 1, true);
-    world.defGone = true;
+    if (byAtt) world.defGone = true; else world.attGone = true;
     koAt = now;
     $('banner').classList.remove('show');
     phase = 'ko'; koT = 1.7;
@@ -466,12 +496,45 @@
     hudDirty = true;
     if (fight.isFunction) labelDue = true;
     defV.setHp(fight.hpFraction());
-    if (res.ko) knockout(ev, res); else impact(ev, res);
+    if (counter) attV.setHp(counter.fraction());   // a function's health grows as it climbs
+    if (res.ko) knockout(ev, res, 'def'); else impact(ev, res);
+  }
+
+  // the defender's attack landed on the attacker
+  function onCounterHit(hv) {
+    var res = counter.hit();
+    if (!res) return;
+    hudDirty = true;
+    attV.setHp(counter.fraction());
+    var ev = { x: hv.x, y: hv.y, nx: -hv.dx, ny: -hv.dy };
+    if (res.ko) { knockout(ev, res, 'att'); return; }
+    var now = performance.now(), m = world.scale(), calm = !!settings.calm, d = fight.defender;
+    var A = world.att, s = Math.min(8, res.level + res.t);
+    attV.boing(0.18);
+    var kb = (300 + 40 * s) * m;                                  // knocked back along the blow
+    A.vx += hv.dx * kb; A.vy += hv.dy * kb;
+    R.fx.sparks(hv.x, hv.y, hv.dx, hv.dy, Math.round(10 + 5 * s), (300 + 60 * s) * m, 1.8, d.aura);
+    R.fx.ring(A.x, A.y, d.aura, A.r, A.r * (2.2 + 0.25 * s), 0.45, 0.06);
+    R.fx.shake(calm ? 0.06 : 0.14 + 0.03 * s);
+    if (res.level >= 2 && canFlash(now)) R.fx.flash(calm ? 0.05 : 0.14, d.aura, A.x, A.y);
+    if (res.level >= 3) R.fx.aberration(calm ? 0.2 : 0.6);
+    damageNumber('-' + MBF.V.fmt(res.damage), A.x, A.y + A.r + 22 * m, Math.min(res.level, 4), res.t, false, 'hurt');
   }
 
   function showKoCard() {
     var a = fight.attacker, d = fight.defender;
     var secs = (koAt - fightStart) / 1000;
+    if (loser === 'att') {
+      var n = counter.hits === 1n ? '<b>1</b> attack' : '<b>' + MBF.fmt(counter.hits) + '</b> attacks';
+      var t = '<b>' + esc(d.name) + '</b> fought back and destroyed <b>' + esc(a.name) + '</b> with <b>' + esc(defense.name) +
+        '</b> in ' + n + ' (' + MBF.describeWait(Math.log10(Math.max(1, secs))) + ').';
+      t += '<br>' + esc(a.name) + ' landed ' + (fight.hits === 1n ? '1 hit' : MBF.fmt(fight.hits) + ' hits') +
+        (fight.hits > 0n ? ' and still needed ' + esc(MBF.V.fmt(fight.hitsToKo())) + ' more.' : '.');
+      $('ko-text').innerHTML = t;
+      $('ko').classList.add('on');
+      document.body.classList.remove('fighting');
+      return;
+    }
     var hits = fight.hits === 1n ? '<b>1</b> hit' : '<b>' + MBF.fmt(fight.hits) + '</b> hits';
     var html = '<b>' + esc(a.name) + '</b> destroyed <b>' + esc(d.name) + '</b> in ' + hits +
       ' (' + MBF.describeWait(Math.log10(Math.max(1, secs))) + ').';
@@ -522,9 +585,14 @@
       for (var i = 0; i < n; i++) {
         var evs = world.step(h, inp);
         if (inp) inp.dash = false;
-        for (var j = 0; j < evs.length && !fight.over; j++) onHit(evs[j]);
+        for (var j = 0; j < evs.length && !fight.over && !(counter && counter.over); j++) onHit(evs[j]);
+        if (defense && phase === 'fight' && !fight.over && !counter.over) {
+          var dh = defense.step(h);
+          for (var q = 0; q < dh.length && !counter.over; q++) onCounterHit(dh[q]);
+        }
         if (hitStop > 0) break;
       }
+      if (defense && phase === 'fight') defense.draw(dt);
       if (world.dashed) {
         world.dashed = false;
         var aa = world.att;
@@ -534,7 +602,8 @@
       spin(defQ, world.def, simDt);
       if (phase === 'ko') {
         koT -= dt;
-        defFade = Math.max(0, defFade - dt * 2.2);
+        if (loser === 'att') attFade = Math.max(0, attFade - dt * 2.2);
+        else defFade = Math.max(0, defFade - dt * 2.2);
         if (koT <= 0) { phase = 'done'; showKoCard(); }
       }
     }
@@ -551,13 +620,13 @@
         refreshAttackerText();
       }
       var fnK = fight.attacker.fn;
-      if (fnK === 'tree' || fnK === 'fish7' || fnK === 'garden') attV.setK(fight.over ? fight.input - 1 : fight.input);   // TREE seed colours / Fish count
+      if (fnK === 'tree' || fnK === 'fish7' || fnK === 'garden' || fnK === 'rex') attV.setK(fight.over ? fight.input - 1 : fight.input);   // TREE seed colours / Fish count
     }
 
     if (world && attV) {
       // comet trail behind the attacker
       var A = world.att, sp = Math.hypot(A.vx, A.vy);
-      if (sp > 60 && phase !== 'paused') {
+      if (sp > 60 && phase !== 'paused' && !world.attGone) {
         var c = fight.attacker.aura;
         R.fx.sparks(A.x - A.vx / sp * A.r * 0.6, A.y - A.vy / sp * A.r * 0.6, -A.vx, -A.vy,
           1, sp * 0.15, 0.6, c, 0.15);
@@ -569,8 +638,8 @@
       defV.lookAt(A.x, A.y);                       // Rayo's eye follows its opponent
       attV.lookAt(world.def.x, world.def.y);
       if (phase === 'ko' || phase === 'done') {
-        defV.setFade(defFade);
-        defV.scale += dt * 0.6 * defFade;
+        if (loser === 'att') { attV.setFade(attFade); attV.scale += dt * 0.6 * attFade; }
+        else { defV.setFade(defFade); defV.scale += dt * 0.6 * defFade; }
       }
       attV.tick(dt, R.time);
       defV.tick(dt, R.time);
