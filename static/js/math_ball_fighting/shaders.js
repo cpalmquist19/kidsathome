@@ -595,6 +595,59 @@
     '}'
   ].join('\n');
 
+  // Numbers - every number in the game: a spiral of glowing digits and operation signs
+  // (+ × ^ ↑) pouring inward and piling up into a white-hot core
+  SURF.numbers = SEGD + '\n' + [
+    'float nBit(float m, float i) { return mod(floor(m / pow(2.0, i)), 2.0); }',
+    'float nDigit(vec2 f, float dg) {',
+    '  float m = dg < 0.5 ? 63.0 : dg < 1.5 ? 6.0 : dg < 2.5 ? 91.0 : dg < 3.5 ? 79.0 : dg < 4.5 ? 102.0 :',
+    '            dg < 5.5 ? 109.0 : dg < 6.5 ? 125.0 : dg < 7.5 ? 7.0 : dg < 8.5 ? 127.0 : 111.0;',
+    '  float w = 0.14, h = 0.28, d = 9.0;',
+    '  d = min(d, mix(9.0, segd(f, vec2(-w, h), vec2(w, h)), nBit(m, 0.0)));',
+    '  d = min(d, mix(9.0, segd(f, vec2(w, h), vec2(w, 0.0)), nBit(m, 1.0)));',
+    '  d = min(d, mix(9.0, segd(f, vec2(w, 0.0), vec2(w, -h)), nBit(m, 2.0)));',
+    '  d = min(d, mix(9.0, segd(f, vec2(-w, -h), vec2(w, -h)), nBit(m, 3.0)));',
+    '  d = min(d, mix(9.0, segd(f, vec2(-w, -h), vec2(-w, 0.0)), nBit(m, 4.0)));',
+    '  d = min(d, mix(9.0, segd(f, vec2(-w, 0.0), vec2(-w, h)), nBit(m, 5.0)));',
+    '  d = min(d, mix(9.0, segd(f, vec2(-w, 0.0), vec2(w, 0.0)), nBit(m, 6.0)));',
+    '  return d;',
+    '}',
+    'float nOp(vec2 f, float k) {',
+    '  if (k < 0.25) return min(segd(f, vec2(-0.2, 0.0), vec2(0.2, 0.0)), segd(f, vec2(0.0, -0.2), vec2(0.0, 0.2)));',      // +
+    '  if (k < 0.5) return min(segd(f, vec2(-0.16, -0.16), vec2(0.16, 0.16)), segd(f, vec2(-0.16, 0.16), vec2(0.16, -0.16)));',   // ×
+    '  if (k < 0.75) return min(segd(f, vec2(-0.18, 0.0), vec2(0.0, 0.22)), segd(f, vec2(0.0, 0.22), vec2(0.18, 0.0)));',   // ^
+    '  return min(segd(f, vec2(0.0, -0.25), vec2(0.0, 0.25)), min(segd(f, vec2(-0.15, 0.1), vec2(0.0, 0.25)), segd(f, vec2(0.0, 0.25), vec2(0.15, 0.1))));',   // ↑
+    '}',
+    // one layer: rings of square cells (arms around, arms / TAU per unit of log r) that turn and
+    // drift inward; each digit's "up" points away from the centre
+    'vec3 nLayer(vec2 q, float t, float arms, float speed, float seed) {',
+    '  float r = max(length(q), 1e-3), a = atan(q.y, q.x);',
+    '  float lr = log(r);',
+    '  vec2 g = vec2(a / TAU * arms + t * 0.4, lr * arms / TAU + t * speed);',
+    '  vec2 c = floor(g); vec2 f = fract(g) - 0.5;',
+    '  c.x = mod(c.x, arms);',
+    '  float h = hash2(c + seed), h2 = hash2(c + seed + 3.1);',
+    '  f.x = -f.x;',                                                 // not mirrored
+    '  float d = h2 > 0.82 ? nOp(f, fract(h * 7.3)) : nDigit(f, floor(h * 10.0));',
+    '  float lit = step(0.25, fract(h * 13.7));',
+    '  float glow = smoothstep(0.07, 0.025, d) * lit;',
+    '  vec3 col = h2 > 0.82 ? vec3(1.0, 0.95, 0.7) : hsv2rgb(vec3(fract(h * 5.1 + t * 0.03), 0.65, 1.0));',
+    '  return col * glow * (0.55 + 0.45 * sin(t * 3.0 + h * 40.0));',
+    '}',
+    'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',
+    '  float r = length(q);',
+    '  alb = mix(vec3(0.02, 0.01, 0.05), vec3(0.08, 0.04, 0.14), fbm3(d * 3.0 + t * 0.05));',
+    '  vec3 col = nLayer(q, t, 13.0, 0.35, 1.0) * smoothstep(0.12, 0.3, r);',
+    '  col += nLayer(rot2(0.7) * q, t * 1.3, 26.0, 0.5, 7.0) * 0.6 * smoothstep(0.08, 0.2, r);',
+    '  float core = exp(-r * 9.0);',
+    '  float ring = smoothstep(0.02, 0.0, abs(r - 0.12 - 0.01 * sin(t * 4.0)));',
+    '  col += vec3(1.0, 0.95, 0.8) * (core * 2.2 + ring * 0.8);',
+    '  col += vec3(1.0, 0.85, 0.5) * 0.25 * pow(0.5 + 0.5 * sin(atan(q.y, q.x) * 12.0 - t * 2.0 + r * 10.0), 8.0) * smoothstep(0.6, 0.1, r);',
+    '  emit = col;',
+    '  gloss = 0.6;',
+    '}'
+  ].join('\n');
+
   // BIG FOOT - a giant glowing footprint stamped into rough, furry stone
   SURF.bigfoot = [
     'void surface(vec3 d, vec2 q, float t, inout vec3 alb, inout vec3 emit, inout float gloss) {',

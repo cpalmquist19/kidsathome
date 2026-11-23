@@ -133,6 +133,12 @@ Effects stack.
      with three tracking slit eyes laid out like R^R × R). It sits just above Rayo's number and below Fish 7:
      growth-class values got an optional tie-break, since it beats Rayo(10¹⁰⁰) but Rayo(10¹⁰⁰ + a few
      symbols) beats it. Rayo's number attacking it needs exactly Rayo's number ^ Rayo's number hits.
+   - Added after: Numbers - every number ball in the game added up (Infinity and every fictional number
+     too), plus all of them multiplied together, then raised to its own power, tetrated, pentated and
+     hexated by itself (P^P, E↑↑E, T↑↑↑T, Q↑↑↑↑Q). The sum alone passes the biggest fictional number, so it
+     gets its own growth class (3000) above them, with n = 6 build steps, leaving room for numbers built
+     on top of it. Nothing can take it down ("forever"). Texture: glowing digits and + × ^ ↑ signs pouring
+     into a white-hot core. Picker category "Beyond every number", after the fictional numbers.
    - Added after: Infinity (∞, a glowing lemniscate) and 2,645 fictional numbers from the Fictional Googology
      Wiki (static/data/math_ball_fighting/fictional.json, names only, CC BY-SA credit in the menu). Of the
      category's 2,697 entries, 30 were not numbers (user pages, templates, categories) and 22 were left out as

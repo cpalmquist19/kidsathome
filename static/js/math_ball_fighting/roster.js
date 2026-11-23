@@ -112,6 +112,9 @@
       texture: 'infinity', aura: [1.0, 1.0, 0.85], ink: ['#ffffff', '#2a1a00'],
       fact: 'Not a number you can reach by counting. No amount of hits from a real number can ever take it down.' },
 
+    { id: 'numbers', kind: 'number', name: 'Numbers', special: 'numbers', label: 'Numbers', labelAt: 'banner', glitch: 0.5,
+      texture: 'numbers', aura: [1.0, 0.95, 0.7], ink: ['#ffffff', '#1a1030'], fact: '' },
+
     // ---- functions: attack only. Input starts at 1 and goes up by one every hit.
     { id: 'f_succ', kind: 'function', fn: 'succ', name: 'Plus One', formula: 'n+1', labelAt: 'center',
       texture: 'fnring', aura: [0.4, 1.0, 0.5], ink: ['#eaffef', '#06351a'],
@@ -249,13 +252,26 @@
       MBF.fxEqual['fx' + p[0] + '|fx' + p[1]] = MBF.fxEqual['fx' + p[1] + '|fx' + p[0]] = true;
     });
     MBF.fictional = out;
+    MBF.numbersFact();
     return out;
+  };
+
+  // Numbers' fact card counts every other number ball, so it is rebuilt when the fictional list loads
+  MBF.numbersFact = function () {
+    var count = MBF.roster.filter(function (b) { return b.kind === 'number' && b.special !== 'numbers'; }).length;
+    var nb = MBF.ballById('numbers');
+    var all = MBF.fictional.length ? 'all ' + count.toLocaleString('en-US') + ' of them, ' : '';
+    if (nb) nb.fact = 'Take every number in the game (' + all + 'Infinity and every fictional number too) and add them up. Add on all of them multiplied together. ' +
+      'Then raise it to its own power, tetrate it (↑↑), pentate it (↑↑↑) and hexate it (↑↑↑↑). ' +
+      'It beats every other ball in the game, even the biggest fictional number.';
   };
 
   MBF.ballById = function (id) {
     for (var i = 0; i < MBF.roster.length; i++) if (MBF.roster[i].id === id) return MBF.roster[i];
     return null;
   };
+
+  MBF.numbersFact();
 
   if (typeof module !== 'undefined' && module.exports) module.exports = MBF;
 })(typeof window !== 'undefined' ? window : globalThis);

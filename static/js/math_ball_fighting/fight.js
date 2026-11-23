@@ -44,6 +44,7 @@
     // growth-class value: class r at input n. Anything in a higher class beats anything lower.
     //   1 TREE · 2 SCG · 3 Loader · 10 Busy Beaver · 11 Rayo · 11.5 Fish 7 · 12 BIG FOOT · 12.5 Garden
     //   13 Oblivion · 14 Utter Oblivion · 1000 Infinity · 2000 fictional numbers (beyond infinity)
+    //   3000 built from every number in the game (Numbers), so beyond every fictional number
     // x (optional) breaks ties at the same r and n: "a bit more than f(n)", like Rayo's number
     // raised to its own power, which is still far below f(n + 1).
     cls: function (r, n, name, x) { var g = { r: r, n: n }; if (x) g.x = x; return { g: g, name: name }; },
@@ -98,7 +99,7 @@
     }
   };
 
-  var CLASS_NAMES = { 1000: '∞', 2000: 'Fictional', 1: 'TREE', 2: 'SCG-class', 3: 'Loader-class', 10: 'BB', 11: 'Rayo', 11.5: 'F₇', 12: 'FOOT', 12.5: 'Garden f', 13: 'Oblivion', 14: 'Utter Oblivion' };
+  var CLASS_NAMES = { 1000: '∞', 2000: 'Fictional', 3000: 'Numbers', 1: 'TREE', 2: 'SCG-class', 3: 'Loader-class', 10: 'BB', 11: 'Rayo', 11.5: 'F₇', 12: 'FOOT', 12.5: 'Garden f', 13: 'Oblivion', 14: 'Utter Oblivion' };
   var SUB = '₀₁₂₃₄₅₆₇₈₉';
   // Infinity: no number of finite hits ever reaches it. Fictional numbers sit above it.
   MBF.INFINITY = { g: { r: 1000, n: { b: 0n } }, name: '∞' };
@@ -108,6 +109,19 @@
   var GOOGOL = 10n ** 100n;
   MBF.GOTCH = V.cls(11, { b: GOOGOL }, 'Gotchrognathicus', 2);
   MBF.RAYO_POW_RAYO = V.cls(11, { b: GOOGOL }, "Rayo's number ^ Rayo's number", 1);
+  // Numbers: every number ball in the game added up (Infinity and every fictional number too),
+  // plus all of them multiplied together, then raised to its own power, then tetrated, pentated
+  // and hexated by itself. The sum alone beats the biggest fictional number, so it gets its own
+  // class above them. n counts the 6 build steps, leaving room for bigger numbers built on it.
+  MBF.NUMBERS_STEPS = [
+    'S = every number in the game added together',
+    'P = S + every number in the game multiplied together',
+    'E = P^P (exponentiate)',
+    'T = E↑↑E (tetrate)',
+    'Q = T↑↑↑T (pentate)',
+    'Numbers = Q↑↑↑↑Q (hexate)'
+  ];
+  MBF.NUMBERS = V.cls(3000, { b: 6n }, 'Numbers');
   function unreachable(hp) { return hp.g && hp.g.r >= 1000; }
   function sub(n) { return String(n).replace(/[0-9]/g, function (c) { return SUB[c]; }); }
   function arrows(k) { return k <= 5 ? '↑'.repeat(k) : '↑' + sup(k); }
@@ -137,6 +151,7 @@
     if (ball.special === 'fish7') return fish7(63);
     if (ball.special === 'lngn') return gardenF(10);
     if (ball.special === 'infinity') return MBF.INFINITY;
+    if (ball.special === 'numbers') return MBF.NUMBERS;
     if (ball.fictional) return V.cls(2000, { b: BigInt(ball.frank) }, ball.name);
     if (ball.special === 'oblivion') return V.cls(13, { b: 1n }, 'Oblivion');
     if (ball.special === 'utter') return V.cls(14, { b: 1n }, 'Utter Oblivion');

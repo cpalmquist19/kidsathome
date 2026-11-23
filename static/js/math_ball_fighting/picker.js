@@ -85,6 +85,7 @@
         if (b.kind === 'function') return 'fn';
         if (b.fictional) return 'fx-' + letterOf(b.name);
         if (b.special === 'infinity') return 'inf';
+        if (b.special === 'numbers') return 'top';
         var v = MBF.valueOf(b);
         if (V.cmp(v, t1000) <= 0) return 'small';
         if (V.cmp(v, tGplex) <= 0) return 'big';
@@ -100,6 +101,7 @@
       makeCat('giant', "Giant numbers (up to Graham's number)", null, true);
       makeCat('beyond', "Beyond Graham's number", null, true);
       makeCat('inf', 'Infinity', null, true);
+      makeCat('top', 'Beyond every number (built from all of them)', null, true);
       makeCat('fn', 'Functions (attack only, they grow every hit)', null, true);
       var fx = null;
       var cat = categorize(balls);
@@ -128,6 +130,7 @@
         });
         fx.el.classList.add('pk-group');
         fx.built = true;                                  // its body holds sub-categories, not tiles
+        list.appendChild(catByKey.top.el);                // after the fictional numbers it beats
       }
       render();
     }
