@@ -152,6 +152,7 @@
       <button class="hbtn" data-speed="16" type="button">16×</button>
       <button class="hbtn" data-speed="64" type="button">64×</button>
     </div>
+    <button id="btn-sound" class="hbtn" type="button" title="Sound">🔊</button>
     <button id="btn-menu" class="hbtn" type="button" title="Menu (Esc)">MENU</button>
   </div>
 </div>
@@ -177,6 +178,7 @@
   <div class="opts">
     <div class="row"><span>Mode</span><button class="opt" data-opt="mode" data-val="watch" type="button">Watch</button><button class="opt" data-opt="mode" data-val="fight" type="button">Fight (you control the attacker)</button></div>
     <div class="row"><span>Defender wanders</span><button class="opt" data-opt="wander" data-val="0" type="button">Off</button><button class="opt" data-opt="wander" data-val="1" type="button">On</button></div>
+    <div class="row"><span>Sound</span><button class="opt" data-opt="sound" data-val="1" type="button">On</button><button class="opt" data-opt="sound" data-val="0" type="button">Off</button></div>
     <div class="row"><span>Calm effects</span><button class="opt" data-opt="calm" data-val="0" type="button">Off</button><button class="opt" data-opt="calm" data-val="1" type="button">On</button></div>
   </div>
   <div class="btns">
@@ -209,6 +211,7 @@
 <script src="{{ static_file('js/math_ball_fighting/render.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/physics.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/input.js') }}"></script>
+<script src="{{ static_file('js/math_ball_fighting/audio.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/sheets.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/picker.js') }}"></script>
 <script src="{{ static_file('js/math_ball_fighting/main.js') }}"></script>

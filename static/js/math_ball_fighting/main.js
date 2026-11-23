@@ -19,7 +19,7 @@
 
   // ------------------------------------------------------------ settings
   var SAVE_KEY = 'mbf.settings.v1';
-  var settings = { att: 'n1', def: 'n1', mode: 'watch', wander: 0, calm: reduceMotion ? 1 : 0 };
+  var settings = { att: 'n1', def: 'n1', mode: 'watch', wander: 0, calm: reduceMotion ? 1 : 0, sound: 1 };
   try {
     var saved = JSON.parse(root.localStorage.getItem(SAVE_KEY) || 'null');
     if (saved) for (var k in settings) if (saved[k] !== undefined) settings[k] = saved[k];
@@ -34,6 +34,8 @@
   function pick(id) { return MBF.ballById(id) || MBF.ballById('n1'); }
 
   // ------------------------------------------------------------ setup
+  var SND = MBF.audio;
+  SND.setEnabled(!!settings.sound);
   var R = MBF.createRenderer($('stage'));
   var input = MBF.createInput({
     stickBase: $('stick-base'), stickKnob: $('stick-knob'),
@@ -118,6 +120,7 @@
       settings[key] = key === 'mode' ? val : Number(val);
       save(); refreshMenu();
       if (key === 'wander' && world) world.wander = !!settings.wander;
+      if (key === 'sound') { SND.setEnabled(!!settings.sound); if (settings.sound) SND.unlock(); refreshSoundBtn(); }
     });
   });
 
@@ -147,6 +150,7 @@
     $('menu').classList.add('on');
     input.setEnabled(false);
     document.body.classList.remove('fighting');
+    SND.duck(true);
     refreshMenu();
   }
   function closeMenu() { $('menu').classList.remove('on'); }
@@ -157,14 +161,26 @@
     if (mode !== world.mode) { startFight(); return; }   // mode changed: restart
     closeMenu();
     phase = pausedFrom;
+    SND.duck(false);
     setFightingUi();
   }
 
+  function refreshSoundBtn() {
+    var b = $('btn-sound');
+    b.textContent = settings.sound ? '🔊' : '🔇';
+    b.title = settings.sound ? 'Sound on (click to mute)' : 'Sound off (click to turn on)';
+  }
+  $('btn-sound').addEventListener('click', function () {
+    settings.sound = settings.sound ? 0 : 1; save();
+    SND.setEnabled(!!settings.sound); if (settings.sound) SND.unlock();
+    refreshSoundBtn(); refreshMenu();
+  });
+  refreshSoundBtn();
   $('btn-start').addEventListener('click', function () { startFight(); });
   $('btn-resume').addEventListener('click', resume);
   $('btn-menu').addEventListener('click', openMenu);
   $('btn-rematch').addEventListener('click', function () { startFight(); });
-  $('btn-new').addEventListener('click', function () { phase = 'menu'; openMenu(); });
+  $('btn-new').addEventListener('click', function () { phase = 'menu'; SND.stopTheme(); openMenu(); });
   root.addEventListener('keydown', function (e) {
     if (e.code === 'Escape') {
       if ($('menu').classList.contains('on')) { if (phase === 'paused') resume(); }
@@ -195,6 +211,8 @@
     if (attV) attV.dispose();
     if (defV) defV.dispose();
     fight = MBF.createFight(a, d);
+    SND.unlock();
+    if (SND.hasTheme(d)) SND.startTheme(d); else SND.stopTheme();   // boss music for big defenders
     world = MBF.createWorld({ W: R.W, H: R.H, mode: settings.mode, wander: !!settings.wander });
     var r = radii();
     world.place(r.a, r.d);
@@ -309,6 +327,7 @@
     var busy = speed > 1 && settings.mode === 'watch';
     var throttled = !res.ko && (now - lastFx) < (busy ? 110 : 30);
 
+    SND.hit(res.level, res.t, { weight: sizeFrac(a), busy: busy, calm: calm });
     attV.boing(0.1 + 0.04 * s, throttled);
     defV.boing(0.03 + 0.025 * s, throttled || busy);
     if (throttled) return;
@@ -414,6 +433,8 @@
     var s = res.level + res.t;
     var dx = world.def.x, dy = world.def.y, dr = world.def.r;
     attV.boing(0.25); defV.boing(0.2);
+    SND.stopTheme();
+    SND.ko(res.level, { calm: calm });
     slowT = calm ? 0.4 : 0.9;
     hitStop = 0.12;
     R.fx.ring(dx, dy, d.aura, dr, dr * 3.2, 0.9, 0.05);
@@ -527,6 +548,7 @@
       }
       if (world.dashed) {
         world.dashed = false;
+        SND.dash();
         var aa = world.att;
         R.fx.sparks(aa.x, aa.y, -aa.vx, -aa.vy, 14, 260 * world.scale(), 0.9, fight.attacker.aura, 0.5);
       }
